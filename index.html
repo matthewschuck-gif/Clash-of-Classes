@@ -3,815 +3,1490 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Clash of Classes — EMS Live Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<title>Clash of Classes — Ephrata Middle School</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700;900&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  /* EMS Brand */
-  --ems-purple:      #490e6f;
-  --ems-purple-mid:  #6a1fa0;
-  --ems-purple-lite: #9b4dca;
-  --ems-purple-bg:   #1a0529;
-  --ems-purple-dim:  #2d0845;
+  /* Warm charcoal base */
+  --bg:        #1c1917;
+  --bg2:       #231f1c;
+  --surface:   #2c2724;
+  --surface2:  #342e2a;
+  --border:    rgba(255,220,150,0.10);
+  --border2:   rgba(255,220,150,0.18);
+
+  /* EMS Brand — softened */
+  --purple:    #6d2b9f;
+  --purple-lt: #9d5fcc;
+  --purple-dim:#3d1a5a;
+  --gold:      #ffe100;
+  --gold-soft: #e8c840;
+  --gold-dim:  rgba(255,225,0,0.12);
 
   /* Squad colors */
-  --sq-black:  #c8ccd4;
+  --sq-black:  #c5c9d1;
   --sq-gold:   #ffe100;
-  --sq-grey:   #9ba8bc;
-  --sq-purple: #c084fc;
+  --sq-grey:   #99a8bb;
+  --sq-purple: #bb8ef5;
 
-  /* UI */
-  --bg:       #0e0516;
-  --surface:  #170724;
-  --surface2: #1e0b2e;
-  --border:   rgba(147,51,234,0.15);
-  --border2:  rgba(147,51,234,0.28);
-  --text:     #f0edf5;
-  --muted:    #7c6a94;
-  --accent:   #9333ea;
+  /* Text */
+  --text:      #f0ebe4;
+  --text2:     #b5a99a;
+  --text3:     #7a6e63;
+
+  --radius:    8px;
+  --radius-lg: 12px;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Rajdhani', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   min-height: 100vh;
-  overflow-x: hidden;
+  line-height: 1.6;
 }
 
-/* Subtle purple grid */
+/* Warm subtle texture */
 body::before {
   content:'';
   position:fixed; inset:0;
-  background-image:
-    linear-gradient(rgba(147,51,234,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(147,51,234,0.04) 1px, transparent 1px);
-  background-size: 52px 52px;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 0%, rgba(109,43,159,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(255,225,0,0.04) 0%, transparent 50%);
   pointer-events:none; z-index:0;
 }
 
-/* Scanline */
-body::after {
-  content:'';
-  position:fixed; inset:0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.025) 2px, rgba(0,0,0,0.025) 4px);
-  pointer-events:none; z-index:1000;
-}
-
-/* ─── VIEWS ─── */
-#adminView, #displayView { display:none; }
-#mainView { display:block; }
-
-/* ─── HEADER ─── */
-.site-header {
-  position:relative; z-index:10;
-  padding: 0 32px;
-  display:flex; align-items:stretch; justify-content:space-between;
+/* ── TAB NAV ── */
+.nav {
+  position: sticky; top:0; z-index:200;
+  background: rgba(28,25,23,0.97);
+  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border2);
-  background: linear-gradient(180deg, rgba(73,14,111,0.5) 0%, transparent 100%);
 }
 
-.logo-block {
-  display:flex; align-items:center; gap:20px;
-  padding: 20px 0;
+.nav-accent { height:3px; background:linear-gradient(90deg,var(--purple),var(--purple-lt),var(--gold),var(--purple-lt),var(--purple)); }
+
+.nav-inner {
+  display:flex; align-items:center;
+  padding:0 24px; gap:0;
+  height:58px; max-width:1280px; margin:0 auto;
 }
 
-.logo-e {
-  width: 52px; height: 52px;
-  background: var(--ems-purple);
-  border: 2px solid var(--ems-purple-lite);
-  border-radius: 6px;
-  display:flex; align-items:center; justify-content:center;
-  font-family:'Bebas Neue', sans-serif;
-  font-size: 32px; color: #fff; letter-spacing: 1px;
-  flex-shrink: 0;
-}
-
-.logo-text {}
-.logo-school {
-  font-family:'Share Tech Mono', monospace;
-  font-size: 10px; letter-spacing: 4px;
-  color: var(--ems-purple-lite); text-transform:uppercase;
-  margin-bottom: 2px;
-}
-.logo-title {
-  font-family:'Bebas Neue', sans-serif;
-  font-size: clamp(28px,5vw,52px);
-  letter-spacing: 5px; line-height:1; color: var(--text);
-}
-.logo-title em {
-  font-style:normal;
-  color: var(--sq-gold);
-}
-
-.header-right {
+.nav-brand {
   display:flex; align-items:center; gap:10px;
+  margin-right:24px; flex-shrink:0; cursor:pointer;
 }
-
-/* Purple bar across top of header */
-.header-topbar {
-  position:absolute; top:0; left:0; right:0; height:3px;
-  background: linear-gradient(90deg, var(--ems-purple), var(--ems-purple-lite), var(--sq-gold), var(--ems-purple-lite), var(--ems-purple));
+.nav-e {
+  width:36px; height:36px; background:var(--purple);
+  border-radius:6px; display:flex; align-items:center; justify-content:center;
+  font-family:'Fraunces',serif; font-size:22px; font-weight:900; color:var(--gold);
 }
-
-.btn {
-  font-family:'Rajdhani', sans-serif; font-weight:700;
-  font-size:13px; letter-spacing:2px; text-transform:uppercase;
-  padding: 9px 18px; border-radius:3px;
-  border: 1px solid var(--border2);
-  background: var(--surface2); color: var(--muted);
-  cursor:pointer; transition:all 0.2s;
+.nav-wordmark {
+  font-family:'Fraunces',serif; font-size:17px; font-weight:700;
+  color:var(--text); letter-spacing:0.5px;
+  line-height:1.1;
 }
-.btn:hover { color:var(--text); border-color:var(--ems-purple-lite); }
-.btn-primary { background:var(--ems-purple); color:#fff; border-color:var(--ems-purple-mid); }
-.btn-primary:hover { background:var(--ems-purple-mid); color:#fff; }
-.btn-gold { background:var(--sq-gold); color:#000; border-color:var(--sq-gold); }
-.btn-gold:hover { opacity:0.88; color:#000; }
-.btn-tv { border-color:var(--ems-purple-lite); color:var(--ems-purple-lite); }
-.btn-tv:hover { background:rgba(147,51,234,0.12); }
+.nav-wordmark span { color:var(--gold-soft); }
 
-/* ─── SCORE STRIP ─── */
-.score-strip {
-  position:relative; z-index:10;
-  display:grid; grid-template-columns:repeat(4,1fr);
-  border-bottom: 1px solid var(--border2);
-}
+.nav-tabs { display:flex; flex:1; gap:2px; overflow-x:auto; scrollbar-width:none; }
+.nav-tabs::-webkit-scrollbar { display:none; }
 
-.strip-card {
-  padding: 24px 24px 20px;
-  border-right: 1px solid var(--border);
-  position:relative; overflow:hidden;
-  transition: background 0.3s;
-}
-.strip-card:last-child { border-right:none; }
-.strip-card.rank-1 { background: rgba(73,14,111,0.2); }
-
-.strip-rank-row {
+.tab {
   display:flex; align-items:center; gap:6px;
-  font-family:'Share Tech Mono', monospace;
-  font-size:10px; letter-spacing:3px; color:var(--muted);
-  margin-bottom:6px;
+  padding:0 14px; height:58px; border:none; background:none;
+  font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600;
+  color:var(--text3); cursor:pointer; white-space:nowrap;
+  border-bottom:3px solid transparent; transition:all 0.2s;
+  position:relative; flex-shrink:0;
 }
-.crown-icon { color:var(--sq-gold); font-size:13px; }
+.tab:hover { color:var(--text2); background:rgba(255,255,255,0.03); }
+.tab.active { color:var(--text); border-bottom-color:var(--gold); }
+.tab .tab-icon { font-size:15px; }
 
-.strip-name {
-  font-family:'Bebas Neue', sans-serif;
-  font-size:26px; letter-spacing:3px; margin-bottom:0;
+.nav-admin {
+  margin-left:auto; flex-shrink:0;
+  font-family:'DM Mono',monospace; font-size:11px; font-weight:500;
+  letter-spacing:1px; text-transform:uppercase;
+  padding:8px 16px; border-radius:6px;
+  background:var(--purple-dim); color:var(--purple-lt);
+  border:1px solid rgba(157,95,204,0.3); cursor:pointer; transition:all 0.2s;
 }
-.strip-total {
-  font-family:'Bebas Neue', sans-serif;
-  font-size:56px; line-height:1; letter-spacing:2px;
-  transition:all 0.4s;
+.nav-admin:hover { background:var(--purple); color:#fff; border-color:var(--purple); }
+
+/* Mobile nav */
+.nav-mobile-row {
+  display:none; padding:8px 16px 0;
+  overflow-x:auto; scrollbar-width:none; gap:4px;
+  border-top:1px solid var(--border);
 }
-.strip-total.bump { animation:bump 0.4s ease; }
-@keyframes bump { 0%{transform:scale(1)} 50%{transform:scale(1.1)} 100%{transform:scale(1)} }
-
-.strip-label {
-  font-family:'Share Tech Mono', monospace;
-  font-size:9px; letter-spacing:3px; color:var(--muted); margin-top:2px;
+.nav-mobile-row::-webkit-scrollbar { display:none; }
+.mob-tab {
+  padding:6px 12px; border-radius:20px; font-size:12px; font-weight:600;
+  color:var(--text3); background:none; border:1px solid var(--border);
+  cursor:pointer; white-space:nowrap; transition:all 0.2s; flex-shrink:0;
 }
+.mob-tab.active { background:var(--gold); color:#000; border-color:var(--gold); }
 
-.strip-bar {
-  position:absolute; bottom:0; left:0;
-  height:3px; transition:width 0.8s cubic-bezier(0.4,0,0.2,1);
-}
-
-/* Squad color classes */
-.sq-BLACK .strip-name, .sq-BLACK .strip-total { color:var(--sq-black); }
-.sq-BLACK .strip-bar, .sq-BLACK .cat-bar, .sq-BLACK .met-bar { background:var(--sq-black); }
-.sq-GOLD  .strip-name, .sq-GOLD  .strip-total { color:var(--sq-gold); }
-.sq-GOLD  .strip-bar, .sq-GOLD  .cat-bar, .sq-GOLD  .met-bar { background:var(--sq-gold); }
-.sq-GREY  .strip-name, .sq-GREY  .strip-total { color:var(--sq-grey); }
-.sq-GREY  .strip-bar, .sq-GREY  .cat-bar, .sq-GREY  .met-bar { background:var(--sq-grey); }
-.sq-PURPLE .strip-name, .sq-PURPLE .strip-total { color:var(--sq-purple); }
-.sq-PURPLE .strip-bar, .sq-PURPLE .cat-bar, .sq-PURPLE .met-bar { background:var(--sq-purple); }
-
-/* ─── MAIN LAYOUT ─── */
-.main-layout {
-  position:relative; z-index:10;
-  display:grid; grid-template-columns:1fr 320px;
-  min-height: calc(100vh - 200px);
+@media(max-width:768px) {
+  .nav-tabs { display:none; }
+  .nav-mobile-row { display:flex; }
+  .nav-inner { height:52px; }
+  .nav-wordmark { font-size:15px; }
 }
 
-/* ─── EVENTS TABLE ─── */
-.events-panel { padding:28px 32px; border-right:1px solid var(--border); }
+/* ── PAGES ── */
+.page { display:none; position:relative; z-index:10; max-width:1280px; margin:0 auto; padding:0 24px 80px; }
+.page.active { display:block; animation:fadeIn 0.25s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
 
-.panel-hdr {
-  display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:20px;
+/* ── TYPOGRAPHY ── */
+.page-title {
+  font-family:'Fraunces',serif; font-weight:900;
+  font-size:clamp(32px,5vw,56px); letter-spacing:-0.5px;
+  color:var(--text); margin-bottom:6px;
 }
-.panel-title {
-  font-family:'Bebas Neue', sans-serif;
-  font-size:18px; letter-spacing:4px; color:var(--muted);
+.page-title span { color:var(--gold-soft); }
+.page-subtitle {
+  font-family:'DM Mono',monospace; font-size:11px; letter-spacing:3px;
+  text-transform:uppercase; color:var(--purple-lt); margin-bottom:32px;
+}
+.section-label {
+  font-family:'DM Mono',monospace; font-size:10px; letter-spacing:3px;
+  text-transform:uppercase; color:var(--text3); margin-bottom:12px;
 }
 
+.page-hero { padding:48px 0 32px; border-bottom:1px solid var(--border); margin-bottom:40px; }
+
+/* ── CARDS ── */
+.card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-lg); padding:24px;
+  transition:border-color 0.2s;
+}
+.card:hover { border-color:var(--border2); }
+.card-accent { border-top:3px solid var(--purple); }
+.card-gold { border-top:3px solid var(--gold-soft); }
+
+/* ── BUTTONS ── */
+.btn {
+  display:inline-flex; align-items:center; gap:8px;
+  font-family:'DM Sans',sans-serif; font-weight:600; font-size:14px;
+  padding:10px 20px; border-radius:8px; cursor:pointer;
+  border:1px solid var(--border2); background:var(--surface2); color:var(--text2);
+  transition:all 0.2s; text-decoration:none;
+}
+.btn:hover { color:var(--text); border-color:var(--border2); background:var(--surface); }
+.btn-purple { background:var(--purple); color:#fff; border-color:var(--purple); }
+.btn-purple:hover { background:var(--purple-lt); color:#fff; border-color:var(--purple-lt); }
+.btn-gold { background:var(--gold); color:#1c1917; border-color:var(--gold); font-weight:700; }
+.btn-gold:hover { background:var(--gold-soft); color:#1c1917; }
+.btn-sm { font-size:12px; padding:6px 14px; }
+.btn-full { width:100%; justify-content:center; }
+
+/* ── HOME PAGE ── */
+.home-hero-section {
+  display:grid; grid-template-columns:1fr 1fr; gap:48px;
+  align-items:center; padding:56px 0 48px;
+  border-bottom:1px solid var(--border);
+}
+.home-eyebrow {
+  font-family:'DM Mono',monospace; font-size:11px; letter-spacing:3px;
+  text-transform:uppercase; color:var(--purple-lt); margin-bottom:16px;
+}
+.home-h1 {
+  font-family:'Fraunces',serif; font-weight:900;
+  font-size:clamp(44px,6vw,72px); letter-spacing:-1px; line-height:1;
+  color:var(--text); margin-bottom:16px;
+}
+.home-h1 em { font-style:normal; color:var(--gold-soft); }
+.home-lead { font-size:16px; color:var(--text2); line-height:1.7; margin-bottom:28px; }
+.home-cta { display:flex; gap:12px; flex-wrap:wrap; }
+
+/* Mini scoreboard */
+.mini-board { display:flex; flex-direction:column; gap:10px; }
+.mini-sq {
+  display:flex; align-items:center; gap:16px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:14px 18px; transition:all 0.2s;
+}
+.mini-sq.rank-1 { background:var(--surface2); border-color:var(--border2); }
+.mini-sq-rank { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:2px; color:var(--text3); min-width:52px; }
+.mini-sq-crown { color:var(--gold); margin-right:2px; }
+.mini-sq-name { font-family:'Fraunces',serif; font-size:20px; font-weight:700; flex:1; }
+.mini-sq-pts { font-family:'DM Mono',monospace; font-size:14px; font-weight:500; }
+.mini-sq-bar { width:80px; height:4px; background:rgba(255,255,255,0.06); border-radius:2px; overflow:hidden; }
+.mini-sq-fill { height:100%; border-radius:2px; transition:width 0.6s ease; }
+
+/* Pillars */
+.pillars-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:40px 0; }
+.pillar-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-lg); padding:28px 24px;
+}
+.pillar-icon { font-size:28px; margin-bottom:14px; display:block; }
+.pillar-title { font-family:'Fraunces',serif; font-size:18px; font-weight:700; color:var(--gold-soft); margin-bottom:8px; }
+.pillar-text { font-size:14px; color:var(--text2); line-height:1.6; }
+
+/* About strip */
+.about-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:32px 0; }
+.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:20px; text-align:center; }
+.stat-num { font-family:'Fraunces',serif; font-size:36px; font-weight:900; color:var(--gold-soft); line-height:1; }
+.stat-label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-top:4px; }
+
+/* ── TRACKER ── */
+.score-strip {
+  display:grid; grid-template-columns:repeat(4,1fr);
+  gap:12px; margin-bottom:32px;
+}
+.strip-sq {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-lg); padding:20px 18px;
+  position:relative; overflow:hidden; transition:all 0.2s;
+}
+.strip-sq.rank-1 { background:var(--surface2); border-color:var(--border2); }
+.strip-sq-rank { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:2px; color:var(--text3); margin-bottom:6px; display:flex; align-items:center; gap:4px; }
+.strip-crown { color:var(--gold); }
+.strip-sq-name { font-family:'Fraunces',serif; font-size:22px; font-weight:700; margin-bottom:2px; }
+.strip-sq-pts { font-family:'Fraunces',serif; font-size:42px; font-weight:900; line-height:1; }
+.strip-sq-lbl { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--text3); margin-top:2px; text-transform:uppercase; }
+.strip-sq-bar { position:absolute; bottom:0; left:0; height:3px; transition:width 0.7s ease; }
+.bump { animation:bump 0.4s ease; }
+@keyframes bump { 0%{transform:scale(1)} 50%{transform:scale(1.08)} 100%{transform:scale(1)} }
+
+.sq-BLACK .strip-sq-name, .sq-BLACK .strip-sq-pts { color:var(--sq-black); }
+.sq-BLACK .strip-sq-bar { background:var(--sq-black); }
+.sq-GOLD  .strip-sq-name, .sq-GOLD  .strip-sq-pts { color:var(--sq-gold); }
+.sq-GOLD  .strip-sq-bar { background:var(--sq-gold); }
+.sq-GREY  .strip-sq-name, .sq-GREY  .strip-sq-pts { color:var(--sq-grey); }
+.sq-GREY  .strip-sq-bar { background:var(--sq-grey); }
+.sq-PURPLE .strip-sq-name, .sq-PURPLE .strip-sq-pts { color:var(--sq-purple); }
+.sq-PURPLE .strip-sq-bar { background:var(--sq-purple); }
+
+.tracker-layout { display:grid; grid-template-columns:1fr 300px; gap:24px; }
+
+/* Events table */
+.events-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; }
+.events-header { padding:18px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.events-title { font-family:'Fraunces',serif; font-size:16px; font-weight:700; }
 .evt-table { width:100%; border-collapse:collapse; }
 .evt-table th {
-  font-family:'Share Tech Mono', monospace;
-  font-size:10px; letter-spacing:3px; text-transform:uppercase;
-  color:var(--muted); padding:8px 10px;
-  text-align:right; border-bottom:1px solid var(--border2);
+  font-family:'DM Mono',monospace; font-size:10px; letter-spacing:2px; text-transform:uppercase;
+  color:var(--text3); padding:10px 14px; text-align:right;
+  background:rgba(255,255,255,0.02); border-bottom:1px solid var(--border);
 }
 .evt-table th:first-child { text-align:left; }
-.evt-table th.th-BLACK { color:var(--sq-black); }
-.evt-table th.th-GOLD  { color:var(--sq-gold);  }
-.evt-table th.th-GREY  { color:var(--sq-grey);  }
-.evt-table th.th-PURPLE{ color:var(--sq-purple);}
-
-.evt-table td {
-  padding:8px 10px; font-size:14px; font-weight:500;
-  border-bottom:1px solid var(--border); text-align:right;
+.th-BLACK { color:var(--sq-black) !important; }
+.th-GOLD  { color:var(--sq-gold) !important; }
+.th-GREY  { color:var(--sq-grey) !important; }
+.th-PURPLE{ color:var(--sq-purple) !important; }
+.evt-table td { padding:9px 14px; font-size:13px; font-weight:500; border-bottom:1px solid var(--border); text-align:right; color:var(--text2); }
+.evt-table td:first-child { text-align:left; color:var(--text); font-weight:600; font-size:14px; }
+.evt-table tr:hover td { background:rgba(255,255,255,0.02); }
+.td-BLACK { color:var(--sq-black); } .td-GOLD { color:var(--sq-gold); }
+.td-GREY  { color:var(--sq-grey);  } .td-PURPLE { color:var(--sq-purple); }
+.td-win { font-weight:700 !important; }
+.type-pill {
+  display:inline-block; font-family:'DM Mono',monospace; font-size:9px; letter-spacing:1px;
+  padding:2px 6px; border-radius:4px; margin-left:6px; vertical-align:middle;
 }
-.evt-table td:first-child { text-align:left; color:var(--text); font-weight:600; }
-.evt-table tr:hover td { background:rgba(147,51,234,0.05); }
+.pill-event { background:rgba(255,225,0,0.1); color:var(--gold-soft); }
+.pill-other { background:rgba(157,95,204,0.12); color:var(--purple-lt); }
+.tfoot-total td { font-family:'Fraunces',serif; font-size:18px; font-weight:900; border-top:2px solid var(--border2); border-bottom:none; padding-top:14px; }
+.tfoot-sub td { font-family:'DM Mono',monospace; font-size:10px; color:var(--text3); border-bottom:none; padding-top:2px; }
 
-.td-BLACK  { color:var(--sq-black); }
-.td-GOLD   { color:var(--sq-gold);  }
-.td-GREY   { color:var(--sq-grey);  }
-.td-PURPLE { color:var(--sq-purple);}
-.td-win    { font-weight:700 !important; }
-
-.type-badge {
-  display:inline-block; font-size:9px; letter-spacing:1px;
-  padding:2px 5px; border-radius:2px; margin-left:6px;
-  font-family:'Share Tech Mono', monospace; text-transform:uppercase; vertical-align:middle;
-}
-.b-event  { background:rgba(240,165,0,0.12); color:var(--sq-gold); }
-.b-other  { background:rgba(147,51,234,0.12); color:var(--ems-purple-lite); }
-
-.tfoot-total td {
-  font-family:'Bebas Neue', sans-serif; font-size:22px; letter-spacing:2px;
-  border-top:2px solid var(--border2); border-bottom:none; padding-top:14px;
-}
-.tfoot-metrics td { font-size:11px; color:var(--muted); padding-top:2px; border-bottom:none; }
-
-/* ─── METRICS PANEL ─── */
-.metrics-panel { padding:28px 20px; }
-
-.metric-card {
-  background:var(--surface2); border:1px solid var(--border);
-  border-radius:3px; padding:16px; margin-bottom:16px;
-  border-top:2px solid var(--ems-purple);
-}
-.metric-head {
-  font-family:'Share Tech Mono', monospace;
-  font-size:10px; letter-spacing:3px; text-transform:uppercase;
-  color:var(--ems-purple-lite); margin-bottom:14px;
-  display:flex; align-items:center; gap:8px;
-}
-.metric-rows { display:flex; flex-direction:column; gap:10px; }
+/* Metrics sidebar */
+.metrics-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; }
+.metrics-header { padding:16px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.metrics-title { font-family:'Fraunces',serif; font-size:15px; font-weight:700; }
+.metric-block { padding:14px 18px; border-bottom:1px solid var(--border); }
+.metric-block:last-child { border-bottom:none; }
+.metric-lbl { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--purple-lt); margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.week-chip { background:var(--gold-dim); color:var(--gold-soft); font-size:9px; padding:2px 8px; border-radius:4px; margin-left:auto; letter-spacing:1px; }
+.metric-rows { display:flex; flex-direction:column; gap:8px; }
 .metric-row { display:flex; align-items:center; gap:8px; }
-.met-sq-name {
-  font-family:'Bebas Neue', sans-serif;
-  font-size:15px; letter-spacing:2px; min-width:56px;
+.met-name { font-family:'Fraunces',serif; font-size:13px; font-weight:600; min-width:54px; }
+.met-bar-wrap { flex:1; height:6px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden; }
+.met-bar { height:100%; border-radius:3px; transition:width 0.6s ease; }
+.met-val { font-family:'DM Mono',monospace; font-size:10px; color:var(--text3); min-width:30px; text-align:right; }
+.met-pts { font-family:'Fraunces',serif; font-size:13px; font-weight:700; min-width:26px; text-align:right; }
+.sq-BLACK .met-name { color:var(--sq-black); } .sq-BLACK .met-bar { background:var(--sq-black); } .sq-BLACK .met-pts { color:var(--sq-black); }
+.sq-GOLD  .met-name { color:var(--sq-gold);  } .sq-GOLD  .met-bar { background:var(--sq-gold); } .sq-GOLD  .met-pts { color:var(--sq-gold); }
+.sq-GREY  .met-name { color:var(--sq-grey);  } .sq-GREY  .met-bar { background:var(--sq-grey); } .sq-GREY  .met-pts { color:var(--sq-grey); }
+.sq-PURPLE .met-name { color:var(--sq-purple);} .sq-PURPLE .met-bar { background:var(--sq-purple); } .sq-PURPLE .met-pts { color:var(--sq-purple); }
+
+/* ── TRAIT PAGE ── */
+.month-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:28px; }
+.month-btn {
+  font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600;
+  padding:8px 16px; border-radius:20px; border:1px solid var(--border);
+  background:none; color:var(--text3); cursor:pointer; transition:all 0.2s;
+  display:flex; align-items:center; gap:6px;
 }
-.met-bar-wrap {
-  flex:1; height:7px; background:rgba(147,51,234,0.1); border-radius:3px; overflow:hidden;
+.month-btn:hover { color:var(--text2); border-color:var(--border2); }
+.month-btn.active { background:var(--purple); color:#fff; border-color:var(--purple); }
+.month-btn.current-month { border-color:var(--gold-soft); color:var(--gold-soft); }
+.month-btn.current-month.active { background:var(--gold); color:#1c1917; border-color:var(--gold); }
+.now-dot { width:6px; height:6px; background:var(--gold); border-radius:50%; display:inline-block; }
+.active .now-dot { background:#1c1917; }
+
+.trait-display { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+.trait-main { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:32px; }
+.trait-month-tag { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--purple-lt); margin-bottom:10px; }
+.trait-name { font-family:'Fraunces',serif; font-size:clamp(24px,3.5vw,38px); font-weight:900; color:var(--text); margin-bottom:16px; line-height:1.1; }
+.trait-desc { font-size:15px; color:var(--text2); line-height:1.7; margin-bottom:24px; }
+.trait-skills { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.trait-skill {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:8px; padding:10px 14px; font-size:13px; font-weight:500;
+  color:var(--text); display:flex; align-items:center; gap:8px;
 }
-.met-bar { height:100%; border-radius:3px; transition:width 0.7s cubic-bezier(0.4,0,0.2,1); }
-.met-pct { font-family:'Share Tech Mono', monospace; font-size:11px; color:var(--muted); min-width:36px; text-align:right; }
-.met-pts { font-family:'Bebas Neue', sans-serif; font-size:14px; min-width:28px; text-align:right; }
+.trait-skill::before { content:'→'; color:var(--purple-lt); font-weight:700; flex-shrink:0; }
 
-.week-tag {
-  font-family:'Share Tech Mono', monospace; font-size:9px; letter-spacing:2px;
-  color:var(--muted); background:rgba(147,51,234,0.1); padding:2px 7px; border-radius:2px;
-  margin-left:auto;
-}
-
-/* ─── MODAL ─── */
-.overlay {
-  display:none; position:fixed; inset:0;
-  background:rgba(0,0,0,0.88); z-index:500;
-  align-items:center; justify-content:center; backdrop-filter:blur(6px);
-}
-.overlay.open { display:flex; }
-
-.modal {
-  background:var(--surface); border:1px solid var(--border2);
-  border-radius:4px; width:100%; max-width:560px;
-  max-height:90vh; overflow-y:auto; padding:36px;
-  position:relative; animation:mIn 0.2s ease;
-  border-top:3px solid var(--ems-purple);
-}
-@keyframes mIn { from{opacity:0;transform:translateY(10px) scale(0.97)} to{opacity:1;transform:none} }
-
-.modal-close {
-  position:absolute; top:14px; right:16px;
-  background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer;
-}
-.modal-close:hover { color:var(--text); }
-
-.modal h2 {
-  font-family:'Bebas Neue', sans-serif;
-  font-size:26px; letter-spacing:4px; margin-bottom:24px; color:var(--text);
-}
-
-.fr { margin-bottom:14px; }
-.fr label {
-  display:block; font-family:'Share Tech Mono', monospace;
-  font-size:10px; letter-spacing:3px; text-transform:uppercase;
-  color:var(--muted); margin-bottom:7px;
-}
-.fr input, .fr select, .fr textarea {
-  width:100%; background:rgba(147,51,234,0.07);
-  border:1px solid var(--border2); border-radius:2px;
-  color:var(--text); font-family:'Rajdhani', sans-serif;
-  font-size:15px; font-weight:500; padding:9px 13px;
-  outline:none; transition:border-color 0.2s;
-}
-.fr input:focus, .fr select:focus { border-color:var(--ems-purple-lite); }
-.fr select option { background:#1a0529; }
-
-.g2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.g4 { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-
-.sq-in-label {
-  display:block; font-family:'Bebas Neue', sans-serif;
-  font-size:13px; letter-spacing:2px; text-align:center; margin-bottom:5px;
-}
-.sq-in { text-align:center !important; }
-
-.btn-full {
-  width:100%; background:var(--ems-purple); color:#fff;
-  border:none; font-family:'Bebas Neue', sans-serif;
-  font-size:20px; letter-spacing:4px; padding:13px;
-  cursor:pointer; border-radius:2px; margin-top:8px;
-  transition:all 0.2s;
-}
-.btn-full:hover { background:var(--ems-purple-mid); }
-.btn-full.danger { background:#7f1d1d; }
-.btn-full.danger:hover { background:#991b1b; }
-
-.fmsg { font-size:12px; margin-top:7px; display:none; }
-.fmsg.ok  { color:#4ade80; display:block; }
-.fmsg.err { color:#f87171; display:block; }
-
-/* Admin tabs */
-.atabs { display:flex; gap:5px; margin-bottom:22px; flex-wrap:wrap; }
-.atab {
-  flex:1; min-width:70px; background:rgba(147,51,234,0.07);
-  border:1px solid var(--border2); color:var(--muted);
-  font-family:'Share Tech Mono', monospace; font-size:10px;
-  letter-spacing:2px; text-transform:uppercase;
-  padding:8px 4px; cursor:pointer; border-radius:2px;
-  transition:all 0.2s; text-align:center;
-}
-.atab.on { background:var(--ems-purple); color:#fff; border-color:var(--ems-purple-mid); }
-
-.apanel { display:none; }
-.apanel.on { display:block; }
-
-/* History */
-.hlist { max-height:280px; overflow-y:auto; }
-.h-item {
-  display:flex; justify-content:space-between; align-items:flex-start;
-  padding:10px 0; border-bottom:1px solid var(--border); gap:8px;
-}
-.h-item:last-child { border-bottom:none; }
-.h-name { font-weight:600; font-size:14px; }
-.h-meta { font-size:11px; color:var(--muted); margin-top:2px; }
-.h-pts { font-family:'Bebas Neue', sans-serif; font-size:20px; }
-.h-pts.pos { color:#4ade80; } .h-pts.neg { color:#f87171; }
-.undo-btn {
-  background:none; border:1px solid var(--border2); color:var(--muted);
-  font-size:10px; padding:3px 8px; cursor:pointer; border-radius:2px;
-  font-family:'Share Tech Mono', monospace; letter-spacing:1px; transition:all 0.15s;
-}
-.undo-btn:hover { border-color:#f87171; color:#f87171; }
-
-/* ─── TV DISPLAY ─── */
-#displayView {
-  position:fixed; inset:0; z-index:900;
-  background:var(--bg);
-  flex-direction:column;
-}
-#displayView.active { display:flex; }
-
-.tv-topbar {
-  height:4px; flex-shrink:0;
-  background: linear-gradient(90deg, var(--ems-purple), var(--ems-purple-lite), var(--sq-gold), var(--ems-purple-lite), var(--ems-purple));
-}
-
-.tv-progress { height:2px; background:rgba(147,51,234,0.15); flex-shrink:0; position:relative; }
-.tv-progress-fill { height:100%; background:var(--ems-purple-lite); transition:width 0.1s linear; }
-
-.tv-header {
-  padding:20px 48px 16px; flex-shrink:0;
+/* Mindset lessons panel */
+.mindset-panel { display:flex; flex-direction:column; gap:12px; }
+.mindset-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px; }
+.mindset-title { font-family:'Fraunces',serif; font-size:15px; font-weight:700; color:var(--gold-soft); margin-bottom:8px; }
+.mindset-grade-links { display:flex; flex-direction:column; gap:6px; margin-top:10px; }
+.grade-link {
   display:flex; align-items:center; justify-content:space-between;
-  border-bottom:1px solid var(--border2);
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:8px; padding:10px 14px; font-size:13px; font-weight:600;
+  color:var(--text2); cursor:pointer; transition:all 0.2s; text-decoration:none;
 }
-.tv-logo-e {
-  width:44px; height:44px; background:var(--ems-purple);
-  border:2px solid var(--ems-purple-lite); border-radius:5px;
-  display:flex; align-items:center; justify-content:center;
-  font-family:'Bebas Neue', sans-serif; font-size:28px; color:#fff;
-  flex-shrink:0;
-}
-.tv-logo-text { margin-left:14px; }
-.tv-logo-school {
-  font-family:'Share Tech Mono', monospace;
-  font-size:10px; letter-spacing:4px; color:var(--ems-purple-lite);
-}
-.tv-logo-title {
-  font-family:'Bebas Neue', sans-serif;
-  font-size:32px; letter-spacing:6px; color:var(--text); line-height:1;
-}
-.tv-logo-title em { font-style:normal; color:var(--sq-gold); }
-.tv-logo-group { display:flex; align-items:center; }
+.grade-link:hover { color:var(--text); border-color:var(--border2); background:var(--surface); }
+.grade-link.has-link { color:var(--purple-lt); border-color:rgba(157,95,204,0.25); }
+.grade-link.has-link:hover { color:var(--text); border-color:var(--purple-lt); }
+.grade-arrow { font-size:12px; opacity:0.5; }
+.grade-link.has-link .grade-arrow { opacity:1; color:var(--purple-lt); }
 
-.tv-right { display:flex; align-items:center; gap:24px; }
-.tv-date { font-family:'Share Tech Mono', monospace; font-size:12px; letter-spacing:3px; color:var(--muted); }
-.tv-live { display:flex; align-items:center; gap:8px; font-family:'Share Tech Mono', monospace; font-size:11px; letter-spacing:3px; color:#4ade80; }
+/* ── SQUADS PAGE ── */
+.squads-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.squad-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-lg); overflow:hidden; transition:all 0.2s;
+}
+.squad-card:hover { border-color:var(--border2); transform:translateY(-2px); }
+.squad-header { padding:24px 24px 18px; }
+.squad-name { font-family:'Fraunces',serif; font-size:32px; font-weight:900; margin-bottom:4px; }
+.squad-rank-chip {
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:'DM Mono',monospace; font-size:10px; letter-spacing:2px;
+  padding:4px 10px; border-radius:4px; background:rgba(255,255,255,0.05);
+  color:var(--text3); text-transform:uppercase;
+}
+.squad-pts-big { font-family:'Fraunces',serif; font-size:28px; font-weight:900; float:right; margin-top:-28px; }
+.squad-teachers-section { padding:0 24px 20px; }
+.squad-teachers-label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:10px; }
+.teacher-chips { display:flex; flex-wrap:wrap; gap:6px; }
+.teacher-chip {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:6px; padding:6px 10px;
+}
+.tc-name { font-size:12px; font-weight:600; color:var(--text); }
+.tc-room { font-family:'DM Mono',monospace; font-size:10px; color:var(--text3); }
+.squad-footer { height:3px; }
+.sq-BLACK .squad-name, .sq-BLACK .squad-pts-big { color:var(--sq-black); } .sq-BLACK .squad-footer { background:var(--sq-black); }
+.sq-GOLD  .squad-name, .sq-GOLD  .squad-pts-big { color:var(--sq-gold);  } .sq-GOLD  .squad-footer { background:var(--sq-gold); }
+.sq-GREY  .squad-name, .sq-GREY  .squad-pts-big { color:var(--sq-grey);  } .sq-GREY  .squad-footer { background:var(--sq-grey); }
+.sq-PURPLE .squad-name, .sq-PURPLE .squad-pts-big { color:var(--sq-purple); } .sq-PURPLE .squad-footer { background:var(--sq-purple); }
+
+/* ── GALLERY ── */
+.gallery-tabs { display:flex; gap:8px; margin-bottom:28px; flex-wrap:wrap; }
+.g-tab {
+  font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600;
+  padding:9px 18px; border-radius:8px; border:1px solid var(--border);
+  background:none; color:var(--text3); cursor:pointer; transition:all 0.2s;
+}
+.g-tab.active { background:var(--purple); color:#fff; border-color:var(--purple); }
+.g-tab:hover:not(.active) { color:var(--text2); border-color:var(--border2); }
+.gallery-section { display:none; }
+.gallery-section.active { display:block; }
+.photo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
+.photo-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; transition:all 0.2s; }
+.photo-card:hover { transform:translateY(-3px); border-color:var(--border2); }
+.photo-img { width:100%; height:180px; object-fit:cover; display:block; background:var(--purple-dim); }
+.photo-placeholder { width:100%; height:180px; display:flex; align-items:center; justify-content:center; background:var(--purple-dim); font-size:40px; opacity:0.4; }
+.photo-caption { padding:14px 16px; }
+.photo-title { font-size:14px; font-weight:600; color:var(--text); margin-bottom:3px; }
+.photo-date { font-family:'DM Mono',monospace; font-size:10px; color:var(--text3); }
+.quotes-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+.quote-card { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--purple); border-radius:var(--radius-lg); padding:24px; }
+.quote-mark { color:var(--gold-soft); font-family:'Fraunces',serif; font-size:36px; line-height:1; margin-bottom:4px; display:block; }
+.quote-text { font-size:15px; color:var(--text); line-height:1.6; margin-bottom:14px; font-style:italic; }
+.quote-by { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:2px; color:var(--purple-lt); }
+.quote-squad-tag { display:inline-block; font-size:9px; padding:2px 7px; border-radius:4px; margin-left:8px; background:rgba(157,95,204,0.12); }
+.staff-spotlight-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; }
+.spotlight-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:24px; text-align:center; }
+.spotlight-avatar { width:60px; height:60px; border-radius:50%; background:var(--purple-dim); border:2px solid var(--purple-lt); display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-size:22px; font-weight:900; color:var(--purple-lt); margin:0 auto 14px; }
+.spotlight-name { font-family:'Fraunces',serif; font-size:18px; font-weight:700; margin-bottom:3px; }
+.spotlight-role { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:2px; color:var(--purple-lt); text-transform:uppercase; margin-bottom:12px; }
+.spotlight-quote { font-size:13px; color:var(--text2); line-height:1.6; font-style:italic; }
+.calendar-items { display:flex; flex-direction:column; gap:12px; max-width:720px; }
+.cal-item { display:flex; gap:18px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; }
+.cal-date-box { flex-shrink:0; width:54px; background:var(--purple-dim); border:1px solid rgba(157,95,204,0.2); border-radius:8px; padding:8px 4px; text-align:center; }
+.cal-month { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--purple-lt); text-transform:uppercase; }
+.cal-day { font-family:'Fraunces',serif; font-size:26px; font-weight:900; color:var(--gold-soft); line-height:1; }
+.cal-info { flex:1; }
+.cal-title { font-family:'Fraunces',serif; font-size:17px; font-weight:700; margin-bottom:4px; }
+.cal-desc { font-size:13px; color:var(--text2); line-height:1.5; }
+.cal-type { display:inline-block; font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px; padding:3px 8px; border-radius:4px; margin-top:8px; }
+.ct-event { background:rgba(255,225,0,0.1); color:var(--gold-soft); }
+.ct-metric { background:rgba(157,95,204,0.12); color:var(--purple-lt); }
+
+/* ── CONTENT PAGES (Mayhem, Championships, Staff) ── */
+.content-page-layout { display:grid; grid-template-columns:1fr 320px; gap:32px; }
+.content-body { }
+.content-sidebar { display:flex; flex-direction:column; gap:16px; }
+.rich-text { font-size:15px; color:var(--text2); line-height:1.8; }
+.rich-text h3 { font-family:'Fraunces',serif; font-size:20px; font-weight:700; color:var(--text); margin:24px 0 10px; }
+.rich-text p { margin-bottom:14px; }
+.rich-text ul { padding-left:20px; margin-bottom:14px; }
+.rich-text li { margin-bottom:6px; }
+
+.link-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; }
+.link-card-title { font-family:'Fraunces',serif; font-size:15px; font-weight:700; color:var(--gold-soft); margin-bottom:12px; }
+.ext-link {
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:8px; padding:10px 14px; text-decoration:none;
+  font-size:13px; font-weight:600; color:var(--text2);
+  margin-bottom:6px; transition:all 0.2s;
+}
+.ext-link:last-child { margin-bottom:0; }
+.ext-link:hover { color:var(--text); border-color:var(--border2); }
+.ext-link.active-link { color:var(--purple-lt); border-color:rgba(157,95,204,0.25); }
+.ext-link.active-link:hover { color:var(--text); border-color:var(--purple-lt); }
+.link-arrow { opacity:0.4; font-size:12px; }
+.ext-link.active-link .link-arrow { opacity:1; color:var(--purple-lt); }
+
+/* Empty state */
+.empty-state { text-align:center; padding:48px 20px; color:var(--text3); }
+.empty-icon { font-size:40px; display:block; margin-bottom:12px; opacity:0.4; }
+.empty-msg { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:2px; text-transform:uppercase; }
+
+/* ── STAFF PAGE ── */
+.staff-guide-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+.guide-card { background:var(--surface); border:1px solid var(--border); border-top:2px solid var(--purple); border-radius:var(--radius-lg); padding:24px; }
+.guide-title { font-family:'Fraunces',serif; font-size:17px; font-weight:700; color:var(--gold-soft); margin-bottom:14px; }
+.guide-steps { display:flex; flex-direction:column; gap:10px; }
+.guide-step { display:flex; gap:12px; align-items:flex-start; }
+.step-num { width:26px; height:26px; background:var(--purple-dim); border:1px solid rgba(157,95,204,0.3); border-radius:6px; display:flex; align-items:center; justify-content:center; font-family:'DM Mono',monospace; font-size:11px; font-weight:500; color:var(--purple-lt); flex-shrink:0; }
+.step-text { font-size:13px; color:var(--text2); line-height:1.5; padding-top:4px; }
+
+/* ── TV DISPLAY ── */
+#tvView { position:fixed; inset:0; z-index:900; background:var(--bg); flex-direction:column; display:none; }
+#tvView.active { display:flex; }
+.tv-accent { height:4px; background:linear-gradient(90deg,var(--purple),var(--purple-lt),var(--gold),var(--purple-lt),var(--purple)); flex-shrink:0; }
+.tv-prog-wrap { height:2px; background:rgba(255,255,255,0.05); flex-shrink:0; }
+.tv-prog-fill { height:100%; background:var(--purple-lt); transition:width 0.1s linear; }
+.tv-hdr { padding:16px 40px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); flex-shrink:0; }
+.tv-brand { display:flex; align-items:center; gap:12px; }
+.tv-e { width:40px; height:40px; background:var(--purple); border-radius:6px; display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-size:24px; font-weight:900; color:var(--gold); }
+.tv-title { font-family:'Fraunces',serif; font-size:26px; font-weight:700; letter-spacing:0.5px; }
+.tv-title em { font-style:normal; color:var(--gold-soft); }
+.tv-school { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:3px; color:var(--purple-lt); text-transform:uppercase; }
+.tv-meta { display:flex; align-items:center; gap:20px; }
+.tv-date { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:2px; color:var(--text3); }
+.tv-live { display:flex; align-items:center; gap:7px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:3px; color:#4ade80; }
 .live-dot { width:8px; height:8px; background:#4ade80; border-radius:50%; animation:lpulse 1.5s infinite; }
 @keyframes lpulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.7)} }
-
 .tv-slides { flex:1; position:relative; overflow:hidden; }
-.tv-slide { position:absolute; inset:0; opacity:0; transition:opacity 0.7s; pointer-events:none; display:flex; flex-direction:column; padding:28px 48px; }
+.tv-slide { position:absolute; inset:0; opacity:0; transition:opacity 0.7s; pointer-events:none; display:flex; flex-direction:column; padding:20px 40px; }
 .tv-slide.active { opacity:1; pointer-events:auto; }
+.tv-rank-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; flex:1; min-height:0; }
+.tv-rank-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; position:relative; min-height:0; }
+.tv-rank-card.rank-1 { background:var(--surface2); border-color:var(--border2); }
+.tv-rank-body { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px; overflow:hidden; }
+.tv-rk-num { font-family:'DM Mono',monospace; font-size:clamp(9px,1vw,11px); letter-spacing:3px; color:var(--text3); }
+.tv-rk-crown { font-size:clamp(14px,2vw,22px); margin-bottom:4px; }
+.tv-rk-name { font-family:'Fraunces',serif; font-size:clamp(24px,3.5vw,44px); font-weight:900; line-height:1; }
+.tv-rk-pts { font-family:'Fraunces',serif; font-size:clamp(40px,7vw,80px); font-weight:900; line-height:1; margin-top:6px; }
+.tv-rk-lbl { font-family:'DM Mono',monospace; font-size:clamp(8px,0.8vw,10px); letter-spacing:3px; color:var(--text3); margin-top:3px; text-transform:uppercase; }
+.tv-rk-bar { height:4px; width:100%; flex-shrink:0; }
+.tv-cat-title { font-family:'Fraunces',serif; font-size:26px; font-weight:700; color:var(--text3); text-align:center; margin-bottom:16px; flex-shrink:0; }
+.tv-cat-rows { flex:1; display:flex; flex-direction:column; gap:12px; justify-content:center; }
+.tv-cat-row { display:grid; grid-template-columns:160px repeat(4,1fr); gap:10px; align-items:center; }
+.tv-cat-lbl { font-family:'Fraunces',serif; font-size:15px; font-weight:600; color:var(--text3); text-align:right; padding-right:12px; }
+.tv-cat-bwrap { height:34px; background:rgba(255,255,255,0.04); border-radius:6px; overflow:hidden; }
+.tv-cat-bfill { height:100%; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; transition:width 1.2s ease; border-radius:6px; }
+.tv-cat-bval { font-family:'Fraunces',serif; font-size:17px; font-weight:700; color:rgba(0,0,0,0.7); }
+.tv-cat-bval.lt { color:rgba(255,255,255,0.6); }
+.tv-col-hdr { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:2px; text-align:center; padding-bottom:4px; text-transform:uppercase; }
+.tv-met-grid { display:grid; grid-template-columns:repeat(2,1fr) 1fr; gap:16px; flex:1; }
+.tv-met-card { background:var(--surface); border:1px solid var(--border); border-top:2px solid var(--purple); border-radius:12px; padding:22px; display:flex; flex-direction:column; }
+.tv-met-icon { font-size:26px; margin-bottom:8px; }
+.tv-met-name { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:3px; color:var(--purple-lt); text-transform:uppercase; margin-bottom:16px; }
+.tv-met-rows { flex:1; display:flex; flex-direction:column; gap:12px; justify-content:center; }
+.tv-met-row { display:flex; align-items:center; gap:10px; }
+.tv-met-sq { font-family:'Fraunces',serif; font-size:17px; font-weight:700; min-width:64px; }
+.tv-met-bw { flex:1; height:10px; background:rgba(255,255,255,0.05); border-radius:5px; overflow:hidden; }
+.tv-met-bf { height:100%; border-radius:5px; transition:width 1s ease; }
+.tv-met-pct { font-family:'DM Mono',monospace; font-size:11px; min-width:36px; text-align:right; color:var(--text3); }
+.tv-week-card { background:var(--purple-dim); border:1px solid rgba(157,95,204,0.25); border-radius:12px; padding:24px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; }
+.tv-week-lbl { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:4px; color:var(--purple-lt); text-transform:uppercase; }
+.tv-week-val { font-family:'Fraunces',serif; font-size:clamp(24px,3.5vw,44px); font-weight:900; color:var(--gold-soft); line-height:1; text-align:center; }
+.tv-nav { padding:12px; display:flex; justify-content:center; gap:10px; flex-shrink:0; }
+.tv-dot { width:7px; height:7px; border-radius:50%; background:var(--text3); cursor:pointer; transition:all 0.3s; }
+.tv-dot.on { background:var(--gold-soft); transform:scale(1.4); }
+.tv-exit { position:fixed; top:14px; right:16px; z-index:950; background:rgba(28,25,23,0.8); border:1px solid var(--border); color:var(--text3); font-size:12px; padding:7px 14px; cursor:pointer; border-radius:6px; font-family:'DM Mono',monospace; letter-spacing:2px; transition:all 0.2s; }
+.tv-exit:hover { color:var(--text); border-color:var(--border2); }
 
-/* TV Slide 1: Rankings */
-.tv-rank-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; flex:1; }
-.tv-rank-card {
-  background:var(--surface2); border:1px solid var(--border);
-  border-radius:4px; overflow:hidden; display:flex; flex-direction:column;
-  position:relative;
+/* ── MODAL / ADMIN ── */
+.overlay { display:none; position:fixed; inset:0; background:rgba(10,8,6,0.85); z-index:500; align-items:center; justify-content:center; backdrop-filter:blur(6px); }
+.overlay.open { display:flex; }
+.modal {
+  background:var(--bg2); border:1px solid var(--border2);
+  border-radius:var(--radius-lg); width:100%; max-width:620px;
+  max-height:90vh; overflow-y:auto; padding:36px;
+  position:relative; animation:mIn 0.2s ease;
+  border-top:3px solid var(--purple);
 }
-.tv-rank-card.rank-1 { border-color:var(--ems-purple-mid); }
-.tv-rank-card-body { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 16px; }
-.tv-rank-num { font-family:'Share Tech Mono', monospace; font-size:11px; letter-spacing:3px; color:var(--muted); }
-.tv-rank-crown { font-size:24px; margin-bottom:4px; }
-.tv-rank-name { font-family:'Bebas Neue', sans-serif; font-size:46px; letter-spacing:4px; line-height:1; }
-.tv-rank-pts  { font-family:'Bebas Neue', sans-serif; font-size:88px; line-height:1; letter-spacing:2px; margin-top:6px; }
-.tv-rank-lbl  { font-family:'Share Tech Mono', monospace; font-size:10px; letter-spacing:4px; color:var(--muted); margin-top:4px; }
-.tv-rank-bar  { height:5px; width:100%; }
-.tv-rank-bg   { font-family:'Bebas Neue', sans-serif; font-size:80px; position:absolute; top:8px; left:12px; color:rgba(255,255,255,0.03); line-height:1; }
+@keyframes mIn { from{opacity:0;transform:translateY(10px) scale(0.97)} to{opacity:1;transform:none} }
+.modal-close { position:absolute; top:14px; right:16px; background:none; border:none; color:var(--text3); font-size:20px; cursor:pointer; transition:color 0.2s; }
+.modal-close:hover { color:var(--text); }
+.modal h2 { font-family:'Fraunces',serif; font-size:24px; font-weight:900; margin-bottom:24px; }
 
-/* TV Slide 2: Category bars */
-.tv-cat-title { font-family:'Bebas Neue', sans-serif; font-size:28px; letter-spacing:8px; color:var(--muted); text-align:center; margin-bottom:20px; flex-shrink:0; }
-.tv-cat-rows  { flex:1; display:flex; flex-direction:column; gap:14px; justify-content:center; }
-.tv-cat-row   { display:grid; grid-template-columns:180px repeat(4,1fr); gap:10px; align-items:center; }
-.tv-cat-lbl   { font-family:'Bebas Neue', sans-serif; font-size:16px; letter-spacing:3px; color:var(--muted); text-align:right; padding-right:14px; }
-.tv-cat-bwrap { height:36px; background:rgba(147,51,234,0.08); border-radius:2px; overflow:hidden; }
-.tv-cat-bfill { height:100%; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; transition:width 1.2s ease; border-radius:2px; }
-.tv-cat-bval  { font-family:'Bebas Neue', sans-serif; font-size:18px; color:rgba(0,0,0,0.75); letter-spacing:1px; }
-.tv-cat-bval.lt { color:rgba(255,255,255,0.65); }
-.tv-col-hdr   { font-family:'Bebas Neue', sans-serif; font-size:14px; letter-spacing:3px; text-align:center; padding-bottom:6px; }
+.admin-tabs { display:flex; gap:4px; margin-bottom:24px; flex-wrap:wrap; background:var(--surface); border-radius:8px; padding:4px; }
+.a-tab { flex:1; min-width:60px; background:none; border:none; color:var(--text3); font-family:'DM Sans',sans-serif; font-size:12px; font-weight:600; padding:7px 8px; cursor:pointer; border-radius:6px; transition:all 0.2s; text-align:center; }
+.a-tab.on { background:var(--bg2); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,0.3); }
 
-/* TV Slide 3: Metrics */
-.tv-metrics-grid { display:grid; grid-template-columns:repeat(2,1fr) 1fr; gap:16px; flex:1; }
-.tv-met-card { background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:24px; display:flex; flex-direction:column; border-top:3px solid var(--ems-purple); }
-.tv-met-icon { font-size:28px; margin-bottom:8px; }
-.tv-met-name { font-family:'Share Tech Mono', monospace; font-size:11px; letter-spacing:3px; color:var(--ems-purple-lite); text-transform:uppercase; margin-bottom:18px; }
-.tv-met-rows { flex:1; display:flex; flex-direction:column; gap:14px; justify-content:center; }
-.tv-met-row  { display:flex; align-items:center; gap:10px; }
-.tv-met-sq   { font-family:'Bebas Neue', sans-serif; font-size:18px; letter-spacing:2px; min-width:66px; }
-.tv-met-bw   { flex:1; height:12px; background:rgba(147,51,234,0.1); border-radius:5px; overflow:hidden; }
-.tv-met-bf   { height:100%; border-radius:5px; transition:width 1s ease; }
-.tv-met-pct  { font-family:'Share Tech Mono', monospace; font-size:12px; min-width:40px; text-align:right; color:var(--muted); }
+.a-panel { display:none; }
+.a-panel.on { display:block; }
 
-.tv-week-card { background:var(--ems-purple-dim); border:1px solid var(--ems-purple-mid); border-radius:4px; padding:24px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; }
-.tv-week-lbl { font-family:'Share Tech Mono', monospace; font-size:11px; letter-spacing:4px; color:var(--ems-purple-lite); text-transform:uppercase; }
-.tv-week-val { font-family:'Bebas Neue', sans-serif; font-size:52px; letter-spacing:4px; color:var(--sq-gold); line-height:1; text-align:center; }
-
-.tv-nav { padding:14px; display:flex; justify-content:center; gap:10px; flex-shrink:0; }
-.tv-dot { width:8px; height:8px; border-radius:50%; background:var(--muted); cursor:pointer; transition:all 0.3s; }
-.tv-dot.on { background:var(--ems-purple-lite); transform:scale(1.4); }
-
-.tv-exit {
-  position:fixed; top:16px; right:16px; z-index:950;
-  background:rgba(73,14,111,0.7); border:1px solid var(--border2);
-  color:var(--muted); font-size:12px; padding:7px 14px;
-  cursor:pointer; border-radius:2px; font-family:'Share Tech Mono', monospace;
-  letter-spacing:2px; transition:all 0.2s;
+.fr { margin-bottom:14px; }
+.fr label { display:block; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }
+.fr input, .fr select, .fr textarea {
+  width:100%; background:var(--surface); border:1px solid var(--border2);
+  border-radius:8px; color:var(--text); font-family:'DM Sans',sans-serif;
+  font-size:14px; font-weight:500; padding:10px 14px; outline:none;
+  transition:border-color 0.2s;
 }
-.tv-exit:hover { color:var(--text); border-color:var(--ems-purple-lite); }
+.fr input:focus, .fr select:focus, .fr textarea:focus { border-color:var(--purple-lt); }
+.fr select option { background:var(--bg2); }
+.fr textarea { resize:vertical; min-height:80px; line-height:1.5; }
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.g4 { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.sq-lbl { display:block; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:2px; text-align:center; margin-bottom:5px; text-transform:uppercase; }
+.sq-in { text-align:center !important; }
+.btn-submit { width:100%; background:var(--purple); color:#fff; border:none; font-family:'Fraunces',serif; font-size:18px; font-weight:700; padding:13px; cursor:pointer; border-radius:8px; margin-top:10px; transition:all 0.2s; }
+.btn-submit:hover { background:var(--purple-lt); }
+.btn-submit.danger { background:#7f1d1d; }
+.fmsg { font-family:'DM Mono',monospace; font-size:11px; margin-top:8px; display:none; letter-spacing:1px; }
+.fmsg.ok { color:#4ade80; display:block; }
+.fmsg.err { color:#f87171; display:block; }
 
-/* ─── RESPONSIVE ─── */
+.hist-list { max-height:260px; overflow-y:auto; }
+.h-item { display:flex; justify-content:space-between; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--border); gap:8px; }
+.h-item:last-child { border-bottom:none; }
+.h-name { font-size:14px; font-weight:600; }
+.h-meta { font-size:11px; color:var(--text3); margin-top:2px; }
+.undo-btn { background:none; border:1px solid var(--border); color:var(--text3); font-size:10px; padding:3px 8px; cursor:pointer; border-radius:4px; font-family:'DM Mono',monospace; transition:all 0.15s; white-space:nowrap; }
+.undo-btn:hover { border-color:#f87171; color:#f87171; }
+
+/* Page content editor */
+.page-editor-section { margin-bottom:20px; }
+.page-editor-label { font-family:'Fraunces',serif; font-size:14px; font-weight:700; color:var(--gold-soft); margin-bottom:10px; }
+
+/* ── FOOTER ── */
+footer { position:relative; z-index:10; border-top:1px solid var(--border); padding:28px 24px; text-align:center; max-width:1280px; margin:0 auto; }
+.footer-brand { font-family:'Fraunces',serif; font-size:18px; font-weight:700; color:var(--text3); margin-bottom:4px; }
+.footer-brand em { font-style:normal; color:var(--gold-soft); }
+.footer-sub { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:3px; color:var(--text3); opacity:0.5; }
+
+/* ── RESPONSIVE ── */
 @media(max-width:900px) {
+  .home-hero-section { grid-template-columns:1fr; }
+  .tracker-layout { grid-template-columns:1fr; }
+  .squads-grid { grid-template-columns:1fr; }
+  .trait-display { grid-template-columns:1fr; }
+  .content-page-layout { grid-template-columns:1fr; }
+  .staff-guide-grid { grid-template-columns:1fr; }
   .score-strip { grid-template-columns:repeat(2,1fr); }
-  .main-layout { grid-template-columns:1fr; }
-  .metrics-panel { border-top:1px solid var(--border); }
+  .pillars-grid { grid-template-columns:1fr; }
+  .about-strip { grid-template-columns:repeat(2,1fr); }
+  .tv-met-grid { grid-template-columns:1fr 1fr; }
 }
 @media(max-width:600px) {
-  .site-header { flex-direction:column; align-items:flex-start; gap:12px; padding:16px; }
   .score-strip { grid-template-columns:repeat(2,1fr); }
+  .modal { margin:12px; padding:20px; }
   .g4 { grid-template-columns:repeat(2,1fr); }
-  .events-panel { padding:20px 16px; }
-  .modal { margin:12px; padding:24px; }
+  .page { padding:0 16px 60px; }
+  .mini-board { gap:8px; }
 }
 </style>
 </head>
 <body>
 
-<!-- ═══════ MAIN VIEW ═══════ -->
-<div id="mainView">
-  <header class="site-header">
-    <div class="header-topbar"></div>
-    <div class="logo-block">
-      <div class="logo-e">E</div>
-      <div class="logo-text">
-        <div class="logo-school">Ephrata Middle School · Mountaineers</div>
-        <div class="logo-title">Clash <em>of</em> Classes</div>
+<!-- ═══ NAV ═══ -->
+<nav class="nav">
+  <div class="nav-accent"></div>
+  <div class="nav-inner">
+    <div class="nav-brand" onclick="goTo('home')">
+      <div class="nav-e">E</div>
+      <div class="nav-wordmark">Clash <span>of</span> Classes<br><small style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:2px;color:var(--text3);font-weight:400">Ephrata Middle School</small></div>
+    </div>
+    <div class="nav-tabs" id="navTabs"></div>
+    <button class="nav-admin" onclick="openLogin()">⚙ Admin</button>
+  </div>
+  <div class="nav-mobile-row" id="mobileNav"></div>
+</nav>
+
+<!-- ═══ PAGES ═══ -->
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="home-hero-section">
+    <div>
+      <div class="home-eyebrow">Ephrata Middle School · Mountaineers</div>
+      <h1 class="home-h1">Clash <em>of</em> Classes</h1>
+      <p class="home-lead" id="homeDesc">One school. Four squads. A program built by EMS staff to develop Life Ready Graduate traits, build community, and have fun together every month.</p>
+      <div class="home-cta">
+        <button class="btn btn-gold" onclick="goTo('tracker')">📊 Live Tracker</button>
+        <button class="btn btn-purple" onclick="goTo('trait')">⭐ This Month's Trait</button>
+        <button class="btn" onclick="goTo('squads')">👥 Meet the Squads</button>
       </div>
     </div>
-    <div class="header-right">
-      <button class="btn btn-tv" onclick="openDisplay()">📺 Display Mode</button>
-      <button class="btn btn-gold" onclick="openLogin()">⚙ Admin</button>
+    <div class="mini-board" id="miniBoard">
+      <div style="text-align:center;padding:20px;color:var(--text3);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px">Connecting…</div>
     </div>
-  </header>
+  </div>
 
-  <div class="score-strip" id="scoreStrip"></div>
+  <div class="about-strip" id="aboutStrip" style="margin-top:40px">
+    <div class="stat-card"><div class="stat-num">4</div><div class="stat-label">Color Squads</div></div>
+    <div class="stat-card"><div class="stat-num">9</div><div class="stat-label">LRG Traits</div></div>
+    <div class="stat-card"><div class="stat-num" id="statEvents">—</div><div class="stat-label">Events This Year</div></div>
+    <div class="stat-card"><div class="stat-num" id="statWeek">—</div><div class="stat-label">Current Week</div></div>
+  </div>
 
-  <div class="main-layout">
-    <div class="events-panel">
-      <div class="panel-hdr">
-        <div class="panel-title">All Events & Categories</div>
-        <button class="btn btn-primary" onclick="requireAdmin(openAddEvent)" style="font-size:12px;padding:8px 14px">+ Add Event</button>
+  <div class="pillars-grid" style="margin-top:40px">
+    <div class="pillar-card">
+      <span class="pillar-icon">🎓</span>
+      <div class="pillar-title">Develop LRG Traits</div>
+      <div class="pillar-text" id="pillar1Text">Each month we focus on a Life Ready Graduate skill — from Growth Mindset to Resilience. Students learn, reflect, and put these skills into real action through competitions and daily school life.</div>
+    </div>
+    <div class="pillar-card">
+      <span class="pillar-icon">🤝</span>
+      <div class="pillar-title">Build Community</div>
+      <div class="pillar-text" id="pillar2Text">Students and staff across 7th and 8th grade are mixed together into four color squads — Black, Gold, Grey, and Purple. Every event is a new chance to connect with people outside the classroom.</div>
+    </div>
+    <div class="pillar-card">
+      <span class="pillar-icon">🎉</span>
+      <div class="pillar-title">Have Fun Together</div>
+      <div class="pillar-text" id="pillar3Text">From Mummy Wrap to Lip Sync Battles to Championship events — Clash of Classes brings real energy and joy to school. We believe school should be engaging, memorable, and something students look forward to.</div>
+    </div>
+  </div>
+  <footer style="margin-top:60px">
+    <div class="footer-brand">Clash <em>of</em> Classes</div>
+    <div class="footer-sub">Ephrata Middle School · Mountaineers · #490e6f · #ffe100</div>
+  </footer>
+</div>
+
+<!-- MONTHLY TRAIT -->
+<div class="page" id="page-trait">
+  <div class="page-hero">
+    <h1 class="page-title">Monthly <span>LRG Traits</span></h1>
+    <div class="page-subtitle">Life Ready Graduate Skills · 2025–2026</div>
+  </div>
+  <div class="month-tabs" id="monthTabs"></div>
+  <div class="trait-display">
+    <div id="traitMain"></div>
+    <div class="mindset-panel" id="mindsetPanel"></div>
+  </div>
+</div>
+
+<!-- SQUADS -->
+<div class="page" id="page-squads">
+  <div class="page-hero">
+    <h1 class="page-title">The Four <span>Squads</span></h1>
+    <div class="page-subtitle">Everyone Belongs</div>
+  </div>
+  <div class="squads-grid" id="squadsGrid"></div>
+</div>
+
+<!-- TRACKER -->
+<div class="page" id="page-tracker">
+  <div class="page-hero" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+    <div>
+      <h1 class="page-title">Live <span>Tracker</span></h1>
+      <div class="page-subtitle">Real-time squad standings</div>
+    </div>
+    <button class="btn btn-purple" onclick="openDisplay()">📺 TV Display Mode</button>
+  </div>
+  <div class="score-strip" id="scoreStrip">
+    <div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text3);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px">Connecting to Firebase…</div>
+  </div>
+  <div class="tracker-layout">
+    <div class="events-card">
+      <div class="events-header">
+        <div class="events-title">Events & Categories</div>
+        <button class="btn btn-purple btn-sm" onclick="requireAdmin(openAddEvent)">+ Add Event</button>
       </div>
       <table class="evt-table">
-        <thead>
-          <tr>
-            <th>Event / Category</th>
-            <th class="th-BLACK">Black</th>
-            <th class="th-GOLD">Gold</th>
-            <th class="th-GREY">Grey</th>
-            <th class="th-PURPLE">Purple</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th>Event</th>
+          <th class="th-BLACK">Black</th><th class="th-GOLD">Gold</th>
+          <th class="th-GREY">Grey</th><th class="th-PURPLE">Purple</th>
+        </tr></thead>
         <tbody id="evtBody"></tbody>
         <tfoot id="evtFoot"></tfoot>
       </table>
     </div>
-
-    <div class="metrics-panel">
-      <div class="panel-hdr">
-        <div class="panel-title">Weekly Metrics</div>
-        <button class="btn btn-tv" style="font-size:11px;padding:6px 11px" onclick="requireAdmin(()=>{openAdmin();atab('metrics')})">Update</button>
+    <div>
+      <div class="metrics-card">
+        <div class="metrics-header">
+          <div class="metrics-title">Weekly Metrics</div>
+          <button class="btn btn-sm" onclick="requireAdmin(()=>{openAdmin();aTab('metrics')})" style="color:var(--purple-lt);border-color:rgba(157,95,204,0.3)">Update</button>
+        </div>
+        <div id="metricsDisplay"></div>
       </div>
-      <div id="metricsDisplay"></div>
     </div>
   </div>
 </div>
 
-<!-- ═══════ TV DISPLAY ═══════ -->
-<div id="displayView">
-  <button class="tv-exit" onclick="closeDisplay()">✕ EXIT</button>
-  <div class="tv-topbar"></div>
-  <div class="tv-progress"><div class="tv-progress-fill" id="tvProg"></div></div>
-  <div class="tv-header">
-    <div class="tv-logo-group">
-      <div class="tv-logo-e">E</div>
-      <div class="tv-logo-text">
-        <div class="tv-logo-school">Ephrata Middle School · Mountaineers</div>
-        <div class="tv-logo-title">Clash <em>of</em> Classes</div>
+<!-- MOUNTAINEER MINDSET -->
+<div class="page" id="page-mindset">
+  <div class="page-hero">
+    <h1 class="page-title">Mountaineer <span>Mindset</span></h1>
+    <div class="page-subtitle">Monthly lesson plans by grade level</div>
+  </div>
+  <div class="content-page-layout">
+    <div class="content-body">
+      <div class="rich-text" id="mindsetBody">
+        <p>The Mountaineer Mindset program provides structured monthly lesson plans aligned with each month's LRG trait. Each plan is designed for classroom use and connects the Clash of Classes theme to academic and social-emotional learning.</p>
+        <p>Select a month and grade level below to access the lesson plan directly from Google Drive.</p>
+      </div>
+      <div style="margin-top:28px" id="mindsetLessonsBlock"></div>
+    </div>
+    <div class="content-sidebar">
+      <div class="link-card">
+        <div class="link-card-title">📅 Quick Access by Month</div>
+        <div id="mindsetQuickLinks"></div>
       </div>
     </div>
-    <div class="tv-right">
+  </div>
+</div>
+
+<!-- MOUNTAINEER MAYHEM -->
+<div class="page" id="page-mayhem">
+  <div class="page-hero">
+    <h1 class="page-title">Mountaineer <span>Mayhem</span></h1>
+    <div class="page-subtitle" id="mayhemSubtitle">Special events & competitions</div>
+  </div>
+  <div class="content-page-layout">
+    <div class="content-body">
+      <div class="rich-text" id="mayhemBody">
+        <p>Welcome to Mountaineer Mayhem — add details about this event using the admin panel.</p>
+      </div>
+    </div>
+    <div class="content-sidebar">
+      <div class="link-card" id="mayhemLinks">
+        <div class="link-card-title">🔗 Resources & Links</div>
+        <div style="color:var(--text3);font-size:13px">Add links via the admin panel.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHAMPIONSHIPS -->
+<div class="page" id="page-champs">
+  <div class="page-hero">
+    <h1 class="page-title">CoC <span>Championships</span></h1>
+    <div class="page-subtitle" id="champsSubtitle">End-of-year championship event</div>
+  </div>
+  <div class="content-page-layout">
+    <div class="content-body">
+      <div class="rich-text" id="champsBody">
+        <p>Welcome to the Clash of Classes Championships — add details about this event using the admin panel.</p>
+      </div>
+    </div>
+    <div class="content-sidebar">
+      <div class="link-card" id="champsLinks">
+        <div class="link-card-title">🔗 Resources & Links</div>
+        <div style="color:var(--text3);font-size:13px">Add links via the admin panel.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GALLERY -->
+<div class="page" id="page-gallery">
+  <div class="page-hero">
+    <h1 class="page-title">Gallery &amp; <span>Events</span></h1>
+    <div class="page-subtitle">Photos, voices, spotlights & upcoming events</div>
+  </div>
+  <div class="gallery-tabs">
+    <button class="g-tab active" onclick="gTab('photos')">📸 Photos</button>
+    <button class="g-tab" onclick="gTab('quotes')">💬 Student Voices</button>
+    <button class="g-tab" onclick="gTab('staff')">👤 Staff Spotlights</button>
+    <button class="g-tab" onclick="gTab('calendar')">📅 Upcoming Events</button>
+  </div>
+  <div class="gallery-section active" id="gs-photos"><div class="photo-grid" id="photosGrid"></div></div>
+  <div class="gallery-section" id="gs-quotes"><div class="quotes-grid" id="quotesGrid"></div></div>
+  <div class="gallery-section" id="gs-staff"><div class="staff-spotlight-grid" id="staffGrid"></div></div>
+  <div class="gallery-section" id="gs-calendar"><div class="calendar-items" id="calGrid"></div></div>
+</div>
+
+<!-- STAFF -->
+<div class="page" id="page-staff">
+  <div class="page-hero">
+    <h1 class="page-title">Staff <span>Resources</span></h1>
+    <div class="page-subtitle">Everything you need to run Clash of Classes</div>
+  </div>
+  <div class="staff-guide-grid">
+    <div class="guide-card">
+      <div class="guide-title">🏆 Adding Event Points</div>
+      <div class="guide-steps">
+        <div class="guide-step"><div class="step-num">1</div><div class="step-text">Click <strong>⚙ Admin</strong> in the top navigation</div></div>
+        <div class="guide-step"><div class="step-num">2</div><div class="step-text">Enter the admin password to unlock</div></div>
+        <div class="guide-step"><div class="step-num">3</div><div class="step-text">Go to <strong>Points</strong> tab — enter event name, type, and points per squad</div></div>
+        <div class="guide-step"><div class="step-num">4</div><div class="step-text">Click Add Event — syncs live to all devices instantly via Firebase</div></div>
+      </div>
+      <button class="btn btn-purple btn-full" style="margin-top:16px" onclick="openLogin()">Open Admin Panel →</button>
+    </div>
+    <div class="guide-card">
+      <div class="guide-title">📅 Weekly Metrics</div>
+      <div class="guide-steps">
+        <div class="guide-step"><div class="step-num">1</div><div class="step-text">Pull attendance % for each squad from your system</div></div>
+        <div class="guide-step"><div class="step-num">2</div><div class="step-text">Calculate % of students without an office referral</div></div>
+        <div class="guide-step"><div class="step-num">3</div><div class="step-text">Calculate % of students without a failing grade</div></div>
+        <div class="guide-step"><div class="step-num">4</div><div class="step-text">Admin → Metrics tab → enter values → Save (1pt per 1%)</div></div>
+      </div>
+    </div>
+    <div class="guide-card">
+      <div class="guide-title">📺 TV / Display Mode</div>
+      <div class="guide-steps">
+        <div class="guide-step"><div class="step-num">1</div><div class="step-text">Go to the <strong>Tracker</strong> page</div></div>
+        <div class="guide-step"><div class="step-num">2</div><div class="step-text">Click <strong>📺 TV Display Mode</strong></div></div>
+        <div class="guide-step"><div class="step-num">3</div><div class="step-text">Press <strong>F11</strong> for fullscreen on a TV or projector</div></div>
+        <div class="guide-step"><div class="step-num">4</div><div class="step-text">Slides rotate every 9 seconds — arrow keys to advance manually, Esc to exit</div></div>
+      </div>
+      <button class="btn btn-full" style="margin-top:16px" onclick="goTo('tracker')">Go to Tracker →</button>
+    </div>
+    <div class="guide-card">
+      <div class="guide-title">🔒 Admin & Links</div>
+      <div class="guide-steps">
+        <div class="guide-step"><div class="step-num">👥</div><div class="step-text"><strong>Public URL:</strong> clashofclasses.org — share with everyone</div></div>
+        <div class="guide-step"><div class="step-num">🔒</div><div class="step-text"><strong>Admin URL:</strong> clashofclasses.org?admin=true — staff only, auto-opens admin</div></div>
+        <div class="guide-step"><div class="step-num">✏️</div><div class="step-text">Edit page text, links, and content in Admin → Pages tab</div></div>
+        <div class="guide-step"><div class="step-num">🔑</div><div class="step-text">Change password anytime in Admin → Settings</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TV DISPLAY ═══ -->
+<div id="tvView">
+  <button class="tv-exit" onclick="closeDisplay()">✕ Exit</button>
+  <div class="tv-accent"></div>
+  <div class="tv-prog-wrap"><div class="tv-prog-fill" id="tvProg"></div></div>
+  <div class="tv-hdr">
+    <div class="tv-brand">
+      <div class="tv-e">E</div>
+      <div>
+        <div class="tv-school">Ephrata Middle School · Mountaineers</div>
+        <div class="tv-title">Clash <em>of</em> Classes</div>
+      </div>
+    </div>
+    <div class="tv-meta">
       <div class="tv-date" id="tvDate"></div>
       <div class="tv-live"><div class="live-dot"></div>LIVE</div>
     </div>
   </div>
   <div class="tv-slides">
-    <div class="tv-slide active" id="tvS0">
-      <div class="tv-rank-grid" id="tvRanks"></div>
-    </div>
-    <div class="tv-slide" id="tvS1">
-      <div class="tv-cat-title">Points by Category</div>
-      <div class="tv-cat-rows" id="tvCats"></div>
-    </div>
-    <div class="tv-slide" id="tvS2">
-      <div class="tv-metrics-grid" id="tvMets"></div>
-    </div>
+    <div class="tv-slide active" id="tvS0"><div class="tv-rank-grid" id="tvRanks"></div></div>
+    <div class="tv-slide" id="tvS1"><div class="tv-cat-title">Points by Category</div><div class="tv-cat-rows" id="tvCats"></div></div>
+    <div class="tv-slide" id="tvS2"><div class="tv-met-grid" id="tvMets"></div></div>
   </div>
   <div class="tv-nav" id="tvNav"></div>
 </div>
 
-<!-- ═══════ LOGIN MODAL ═══════ -->
+<!-- ═══ LOGIN MODAL ═══ -->
 <div class="overlay" id="loginModal">
   <div class="modal" style="max-width:380px">
     <button class="modal-close" onclick="close1('loginModal')">✕</button>
     <h2>Admin Access</h2>
-    <div class="fr">
-      <label>Password</label>
+    <div class="fr"><label>Password</label>
       <input type="password" id="pwIn" onkeydown="if(event.key==='Enter')tryLogin()" placeholder="Enter admin password">
     </div>
     <div class="fmsg err" id="loginErr">Incorrect password.</div>
-    <button class="btn-full" onclick="tryLogin()">Unlock</button>
-    <p style="font-size:12px;color:var(--muted);margin-top:14px;text-align:center">Default: <strong style="color:var(--sq-gold)">ephrata2026</strong></p>
+    <button class="btn-submit" onclick="tryLogin()">Unlock</button>
   </div>
 </div>
 
-<!-- ═══════ ADMIN MODAL ═══════ -->
+<!-- ═══ ADMIN MODAL ═══ -->
 <div class="overlay" id="adminModal">
   <div class="modal">
     <button class="modal-close" onclick="close1('adminModal')">✕</button>
     <h2>Admin Panel</h2>
-    <div class="atabs">
-      <button class="atab on" onclick="atab('event')">Add Event</button>
-      <button class="atab" onclick="atab('metrics')">Metrics</button>
-      <button class="atab" onclick="atab('scores')">Scores</button>
-      <button class="atab" onclick="atab('history')">History</button>
-      <button class="atab" onclick="atab('settings')">Settings</button>
+    <div class="admin-tabs">
+      <button class="a-tab on" onclick="aTab('points')">Points</button>
+      <button class="a-tab" onclick="aTab('metrics')">Metrics</button>
+      <button class="a-tab" onclick="aTab('pages')">Pages</button>
+      <button class="a-tab" onclick="aTab('links')">Links</button>
+      <button class="a-tab" onclick="aTab('gallery')">Gallery</button>
+      <button class="a-tab" onclick="aTab('scores')">Scores</button>
+      <button class="a-tab" onclick="aTab('history')">History</button>
+      <button class="a-tab" onclick="aTab('settings')">Settings</button>
     </div>
 
-    <div class="apanel on" id="ap-event">
-      <div class="fr"><label>Event / Category Name</label><input type="text" id="evtName" placeholder="e.g. March Trivia, Tug of War…"></div>
+    <!-- POINTS -->
+    <div class="a-panel on" id="ap-points">
+      <div class="fr"><label>Event / Category Name</label><input type="text" id="evtName" placeholder="e.g. April Trivia, Tug of War…"></div>
       <div class="g2">
-        <div class="fr"><label>Type</label>
-          <select id="evtType"><option value="event">🏆 Competition / Event</option><option value="other">📌 Other</option></select>
-        </div>
+        <div class="fr"><label>Type</label><select id="evtType"><option value="event">🏆 Competition / Event</option><option value="other">📌 Other</option></select></div>
         <div class="fr"><label>Date</label><input type="date" id="evtDate"></div>
       </div>
-      <div class="fr">
-        <label>Points per Squad</label>
+      <div class="fr"><label>Points per Squad</label>
         <div class="g4">
-          <div><span class="sq-in-label" style="color:var(--sq-black)">Black</span><input class="sq-in" type="number" id="ptsBLACK" value="0"></div>
-          <div><span class="sq-in-label" style="color:var(--sq-gold)">Gold</span><input class="sq-in" type="number" id="ptsGOLD" value="0"></div>
-          <div><span class="sq-in-label" style="color:var(--sq-grey)">Grey</span><input class="sq-in" type="number" id="ptsGREY" value="0"></div>
-          <div><span class="sq-in-label" style="color:var(--sq-purple)">Purple</span><input class="sq-in" type="number" id="ptsPURPLE" value="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-black)">Black</span><input class="sq-in" type="number" id="ptsBLACK" value="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-gold)">Gold</span><input class="sq-in" type="number" id="ptsGOLD" value="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-grey)">Grey</span><input class="sq-in" type="number" id="ptsGREY" value="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-purple)">Purple</span><input class="sq-in" type="number" id="ptsPURPLE" value="0"></div>
         </div>
       </div>
       <div class="fr"><label>Note (optional)</label><input type="text" id="evtNote" placeholder="e.g. Black 1st, Gold 2nd"></div>
       <div class="fmsg" id="evtOk">✓ Event added!</div>
-      <button class="btn-full" onclick="addEvent()">Add Event</button>
+      <button class="btn-submit" onclick="addEvent()">Add Event</button>
     </div>
 
-    <div class="apanel" id="ap-metrics">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:18px">Enter raw percentages — 1 point per 1%. Weekly data replaces the previous week's metrics totals.</p>
-      <div class="fr">
-        <label>📅 Average Attendance Rate (%)</label>
+    <!-- METRICS -->
+    <div class="a-panel" id="ap-metrics">
+      <p style="font-size:13px;color:var(--text3);margin-bottom:16px">Enter raw percentages — 1 point per 1%. Replaces previous week.</p>
+      <div class="fr"><label>📅 Avg Attendance Rate (%)</label>
         <div class="g4">
-          <div><span class="sq-in-label" style="color:var(--sq-black)">Black</span><input class="sq-in" type="number" id="attBLACK" min="0" max="100" step="0.1" placeholder="0"></div>
-          <div><span class="sq-in-label" style="color:var(--sq-gold)">Gold</span><input class="sq-in" type="number" id="attGOLD" min="0" max="100" step="0.1" placeholder="0"></div>
-          <div><span class="sq-in-label" style="color:var(--sq-grey)">Grey</span><input class="sq-in" type="number" id="attGREY" min="0" max="100" step="0.1" placeholder="0"></div>
-          <div><span class="sq-in-label" style="color:var(--sq-purple)">Purple</span><input class="sq-in" type="number" id="attPURPLE" min="0" max="100" step="0.1" placeholder="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-black)">Black</span><input class="sq-in" type="number" id="attBLACK" min="0" max="100" step="0.1" placeholder="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-gold)">Gold</span><input class="sq-in" type="number" id="attGOLD" min="0" max="100" step="0.1" placeholder="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-grey)">Grey</span><input class="sq-in" type="number" id="attGREY" min="0" max="100" step="0.1" placeholder="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-purple)">Purple</span><input class="sq-in" type="number" id="attPURPLE" min="0" max="100" step="0.1" placeholder="0"></div>
         </div>
       </div>
-      <div class="fr">
-        <label>⭐ % of Students Without an Office Referral</label>
+      <div class="fr"><label>⭐ % Without Office Referral</label>
         <div class="g4">
-          <div><span class="sq-in-label" style="color:var(--sq-black)">Black</span><input class="sq-in" type="number" id="refBLACK" min="0" max="100" step="0.1" placeholder="0"></div>
-          <div><span class="sq-in-label" style="color:var(--sq-gold)">Gold</span><input class="sq-in" type="number" id="refGOLD" min="0" max="100" step="0.1" placeholder="0"></div>
-          <div><span class="sq-in-label" style="color:var(--sq-grey)">Grey</span><input class="sq-in" type="number" id="refGREY" min="0" max="100" step="0.1" placeholder="0"></div>
-          <div><span class="sq-in-label" style="color:var(--sq-purple)">Purple</span><input class="sq-in" type="number" id="refPURPLE" min="0" max="100" step="0.1" placeholder="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-black)">Black</span><input class="sq-in" type="number" id="refBLACK" min="0" max="100" step="0.1" placeholder="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-gold)">Gold</span><input class="sq-in" type="number" id="refGOLD" min="0" max="100" step="0.1" placeholder="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-grey)">Grey</span><input class="sq-in" type="number" id="refGREY" min="0" max="100" step="0.1" placeholder="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-purple)">Purple</span><input class="sq-in" type="number" id="refPURPLE" min="0" max="100" step="0.1" placeholder="0"></div>
         </div>
       </div>
-      <div class="fr">
-        <label>📚 % of Students Without a Failing Grade</label>
+      <div class="fr"><label>📚 % Without Failing Grade</label>
         <div class="g4">
-          <div><span class="sq-in-label" style="color:var(--sq-black)">Black</span><input class="sq-in" type="number" id="gradBLACK" min="0" max="100" step="0.1" placeholder="0"></div>
-          <div><span class="sq-in-label" style="color:var(--sq-gold)">Gold</span><input class="sq-in" type="number" id="gradGOLD" min="0" max="100" step="0.1" placeholder="0"></div>
-          <div><span class="sq-in-label" style="color:var(--sq-grey)">Grey</span><input class="sq-in" type="number" id="gradGREY" min="0" max="100" step="0.1" placeholder="0"></div>
-          <div><span class="sq-in-label" style="color:var(--sq-purple)">Purple</span><input class="sq-in" type="number" id="gradPURPLE" min="0" max="100" step="0.1" placeholder="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-black)">Black</span><input class="sq-in" type="number" id="gradBLACK" min="0" max="100" step="0.1" placeholder="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-gold)">Gold</span><input class="sq-in" type="number" id="gradGOLD" min="0" max="100" step="0.1" placeholder="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-grey)">Grey</span><input class="sq-in" type="number" id="gradGREY" min="0" max="100" step="0.1" placeholder="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-purple)">Purple</span><input class="sq-in" type="number" id="gradPURPLE" min="0" max="100" step="0.1" placeholder="0"></div>
         </div>
       </div>
       <div class="fr"><label>Week Label</label><input type="text" id="weekLabel" placeholder="e.g. Week of March 17"></div>
       <div class="fmsg" id="metOk">✓ Metrics saved!</div>
-      <button class="btn-full" onclick="saveMetrics()">Save Weekly Metrics</button>
+      <button class="btn-submit" onclick="saveMetrics()">Save Weekly Metrics</button>
     </div>
 
-    <div class="apanel" id="ap-scores">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Current overall totals:</p>
+    <!-- PAGES -->
+    <div class="a-panel" id="ap-pages">
+      <p style="font-size:13px;color:var(--text3);margin-bottom:18px">Edit the text content on each page. Changes go live instantly.</p>
+      <div class="fr"><label>Page</label>
+        <select id="pageSelect" onchange="loadPageContent()">
+          <option value="home">🏠 Home — About Text</option>
+          <option value="mayhem">⚡ Mountaineer Mayhem</option>
+          <option value="champs">🏆 Championships</option>
+        </select>
+      </div>
+      <div id="pageEditorFields"></div>
+      <div class="fmsg" id="pageOk">✓ Page content saved!</div>
+      <button class="btn-submit" onclick="savePageContent()">Save Page Content</button>
+    </div>
+
+    <!-- LINKS -->
+    <div class="a-panel" id="ap-links">
+      <p style="font-size:13px;color:var(--text3);margin-bottom:18px">Add Google Drive links for Mountaineer Mindset lessons and other resources.</p>
+      <div class="fr"><label>Page / Section</label>
+        <select id="linkSection">
+          <option value="mindset">📚 Mountaineer Mindset — Lesson Plans</option>
+          <option value="mayhem">⚡ Mountaineer Mayhem — Resources</option>
+          <option value="champs">🏆 Championships — Resources</option>
+        </select>
+      </div>
+      <div class="fr"><label>Link Label</label><input type="text" id="linkLabel" placeholder="e.g. Sept — Growth Mindset (7th Grade)"></div>
+      <div class="fr"><label>URL (Google Drive link)</label><input type="url" id="linkUrl" placeholder="https://docs.google.com/…"></div>
+      <div class="fmsg" id="linkOk">✓ Link added!</div>
+      <button class="btn-submit" onclick="addLink()">Add Link</button>
+      <div style="margin-top:20px" id="linksListEl"></div>
+    </div>
+
+    <!-- GALLERY -->
+    <div class="a-panel" id="ap-gallery">
+      <div class="admin-tabs" style="margin-bottom:16px">
+        <button class="a-tab on" onclick="gATab('photo')">Photo</button>
+        <button class="a-tab" onclick="gATab('quote')">Quote</button>
+        <button class="a-tab" onclick="gATab('spotlight')">Spotlight</button>
+        <button class="a-tab" onclick="gATab('cal')">Calendar</button>
+      </div>
+      <div class="a-panel on" id="gap-photo">
+        <div class="fr">
+          <label>Upload Image File</label>
+          <input type="file" id="gPhotoFile" accept="image/*" onchange="previewPhoto(this)" style="padding:8px">
+          <div id="gPhotoPreview" style="margin-top:8px;display:none"><img id="gPhotoPreviewImg" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid var(--border2)" /></div>
+        </div>
+        <div class="fr"><label>— or — Image URL</label><input type="url" id="gPhotoUrl" placeholder="https://… (leave blank if uploading file)"></div>
+        <div class="fr"><label>Caption</label><input type="text" id="gPhotoTitle" placeholder="e.g. Mummy Wrap 2025"></div>
+        <div class="fr"><label>Date</label><input type="date" id="gPhotoDate"></div>
+        <div class="fmsg" id="gPhotoOk">✓ Photo added!</div>
+        <button class="btn-submit" onclick="addGItem('photo')">Add Photo</button>
+      </div>
+      <div class="a-panel" id="gap-quote">
+        <div class="fr"><label>Quote</label><textarea id="gQuoteText" placeholder="What did a student say?"></textarea></div>
+        <div class="fr"><label>Student (name or anonymous)</label><input type="text" id="gQuoteAuthor" placeholder="e.g. 8th Grader, Alex"></div>
+        <div class="fr"><label>Squad</label><select id="gQuadeSquad"><option value="">— Select —</option><option value="BLACK">Black</option><option value="GOLD">Gold</option><option value="GREY">Grey</option><option value="PURPLE">Purple</option></select></div>
+        <div class="fmsg" id="gQuoteOk">✓ Quote added!</div>
+        <button class="btn-submit" onclick="addGItem('quote')">Add Quote</button>
+      </div>
+      <div class="a-panel" id="gap-spotlight">
+        <div class="fr"><label>Staff Name</label><input type="text" id="gStaffName" placeholder="e.g. Ms. Johnson"></div>
+        <div class="fr"><label>Role / Squad</label><input type="text" id="gStaffRole" placeholder="e.g. 7th Grade Math · Gold Squad"></div>
+        <div class="fr"><label>Quote</label><textarea id="gStaffQuote" placeholder="What do they love about Clash of Classes?"></textarea></div>
+        <div class="fr"><label>Initials (2 letters)</label><input type="text" id="gStaffInit" maxlength="2" placeholder="MJ"></div>
+        <div class="fmsg" id="gStaffOk">✓ Spotlight added!</div>
+        <button class="btn-submit" onclick="addGItem('spotlight')">Add Spotlight</button>
+      </div>
+      <div class="a-panel" id="gap-cal">
+        <div class="fr"><label>Event Title</label><input type="text" id="gCalTitle" placeholder="e.g. April Championship"></div>
+        <div class="fr"><label>Date</label><input type="date" id="gCalDate"></div>
+        <div class="fr"><label>Description</label><textarea id="gCalDesc" placeholder="Brief description"></textarea></div>
+        <div class="fr"><label>Type</label><select id="gCalType"><option value="event">🏆 Competition</option><option value="metric">📊 Metric Update</option></select></div>
+        <div class="fmsg" id="gCalOk">✓ Added to calendar!</div>
+        <button class="btn-submit" onclick="addGItem('cal')">Add to Calendar</button>
+      </div>
+    </div>
+
+    <!-- SCORES -->
+    <div class="a-panel" id="ap-scores">
+      <p style="font-size:13px;color:var(--text3);margin-bottom:14px">Current overall totals:</p>
       <div id="scoreSummary" style="margin-bottom:20px"></div>
-      <button class="btn-full danger" onclick="if(confirm('Reset ALL scores to zero?'))resetAll()">⚠ Reset All Scores</button>
+      <button class="btn-submit danger" onclick="if(confirm('Reset ALL scores to zero?'))resetAll()">⚠ Reset All Scores</button>
     </div>
 
-    <div class="apanel" id="ap-history">
-      <div class="hlist" id="histList"></div>
-    </div>
+    <!-- HISTORY -->
+    <div class="a-panel" id="ap-history"><div class="hist-list" id="histList"></div></div>
 
-    <div class="apanel" id="ap-settings">
+    <!-- SETTINGS -->
+    <div class="a-panel" id="ap-settings">
       <div class="fr"><label>New Admin Password</label><input type="password" id="newPw" placeholder="New password (min 4 chars)"></div>
       <div class="fr"><input type="password" id="newPw2" placeholder="Confirm password"></div>
       <div class="fmsg err" id="pwErr">Passwords don't match or too short.</div>
       <div class="fmsg" id="pwOk">✓ Password updated!</div>
-      <button class="btn-full" onclick="changePw()">Update Password</button>
+      <button class="btn-submit" onclick="changePw()">Update Password</button>
     </div>
   </div>
 </div>
 
 <script>
-// ═══ DATA ═══
-const SQUADS = ['BLACK','GOLD','GREY','PURPLE'];
-const SQ_COLOR = { BLACK:'var(--sq-black)', GOLD:'var(--sq-gold)', GREY:'var(--sq-grey)', PURPLE:'var(--sq-purple)' };
-const SQ_HEX   = { BLACK:'#c8ccd4', GOLD:'#ffe100', GREY:'#9ba8bc', PURPLE:'#c084fc' };
+// Bridge: allows onclick handlers in dynamic HTML to call module functions
+// Module will overwrite these with real implementations
+window.__moduleReady = false;
+window.__pendingCalls = [];
+['goTo','__goTo','setTrait','__setTrait','gTab','gATab','openLogin','tryLogin',
+ 'requireAdmin','openAddEvent','openAdmin','close1','aTab','addEvent','saveMetrics',
+ 'savePageContent','loadPageContent','addLink','removeLink','addGItem','resetAll',
+ 'undoEvt','changePw','openDisplay','closeDisplay','showSlide','previewPhoto',
+ '__scrollMindset'].forEach(fn=>{
+  window[fn]=function(){
+    const args=Array.from(arguments);
+    if(window.__moduleReady && typeof window['_real_'+fn]==='function'){
+      window['_real_'+fn].apply(null,args);
+    }
+  };
+});
+</script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-const SEED = [
-  {id:1,  name:'Mummy Wrap',              type:'event', date:'2025-10', note:'',                         pts:{BLACK:25,GOLD:14,GREY:19,PURPLE:10}},
-  {id:2,  name:'Puzzle Race',             type:'event', date:'2025-10', note:'',                         pts:{BLACK:28,GOLD:19,GREY:23,PURPLE:35}},
-  {id:3,  name:'Lip Sync Battle',         type:'event', date:'2025-10', note:'',                         pts:{BLACK:14,GOLD:10,GREY:25,PURPLE:19}},
-  {id:4,  name:'Wheel',                   type:'event', date:'2025-10', note:'',                         pts:{BLACK:11,GOLD:23,GREY:69,PURPLE:75}},
-  {id:5,  name:'T-shirts',                type:'other', date:'2025-10', note:'1pt per percent, high 60', pts:{BLACK:56,GOLD:60,GREY:59,PURPLE:60}},
-  {id:6,  name:'Trivia',                  type:'event', date:'2025-10', note:'Highest sheets per HR',    pts:{BLACK:75,GOLD:75,GREY:82,PURPLE:80}},
-  {id:7,  name:'Trait Dough Wheel (prior)',type:'other',date:'2025-03', note:'Through 3/13',             pts:{BLACK:246,GOLD:230,GREY:414,PURPLE:122}},
-  {id:8,  name:'Student of Month — Sept', type:'other', date:'2025-09', note:'5pts per student',        pts:{BLACK:40,GOLD:20,GREY:20,PURPLE:40}},
-  {id:9,  name:'Student of Month — Oct',  type:'other', date:'2025-10', note:'',                        pts:{BLACK:25,GOLD:15,GREY:40,PURPLE:40}},
-  {id:10, name:'Student of Month — Nov',  type:'other', date:'2025-11', note:'',                        pts:{BLACK:35,GOLD:45,GREY:10,PURPLE:25}},
-  {id:11, name:'Student of Month — Dec',  type:'other', date:'2025-12', note:'',                        pts:{BLACK:20,GOLD:15,GREY:45,PURPLE:20}},
-  {id:12, name:'Student of Month — Jan',  type:'other', date:'2026-01', note:'',                        pts:{BLACK:45,GOLD:40,GREY:10,PURPLE:25}},
-  {id:13, name:'Student of Month — Feb',  type:'other', date:'2026-02', note:'',                        pts:{BLACK:20,GOLD:10,GREY:45,PURPLE:40}},
-  {id:14, name:'Staff Challenge Points',  type:'other', date:'2026-02', note:'Updated 2/24',            pts:{BLACK:170,GOLD:163,GREY:136,PURPLE:187}},
-  {id:15, name:'Turkey Contest',          type:'event', date:'2025-11', note:'',                        pts:{BLACK:25,GOLD:65,GREY:25,PURPLE:20}},
-  {id:16, name:'Random Kid Contests',     type:'other', date:'2026-03', note:'',                        pts:{BLACK:85,GOLD:139,GREY:60,PURPLE:69}},
+const FB = { apiKey:"AIzaSyAonPnPsg3Yu4sivt3ZetjdtEoAalQZZWQ", authDomain:"clash-of-classes.firebaseapp.com", databaseURL:"https://clash-of-classes-default-rtdb.firebaseio.com", projectId:"clash-of-classes", storageBucket:"clash-of-classes.firebasestorage.app", messagingSenderId:"171056314869", appId:"1:171056314869:web:abaefecb4882ae134448bc" };
+const db = getDatabase(initializeApp(FB));
+const DB = ref(db,'coc');
+
+const params = new URLSearchParams(window.location.search);
+const ADMIN_URL = params.get('admin')==='true';
+
+// ── CONSTANTS ──
+const SQUADS = ['BLACK','GOLD','GREY','PURPLE'];
+const SQ_HEX = { BLACK:'#c5c9d1', GOLD:'#ffe100', GREY:'#99a8bb', PURPLE:'#bb8ef5' };
+const SQ_CSS = { BLACK:'var(--sq-black)', GOLD:'var(--sq-gold)', GREY:'var(--sq-grey)', PURPLE:'var(--sq-purple)' };
+
+const PAGES_DEF = [
+  { id:'home',    icon:'🏠', label:'Home'       },
+  { id:'trait',   icon:'⭐', label:'Trait'      },
+  { id:'squads',  icon:'👥', label:'Squads'     },
+  { id:'tracker', icon:'📊', label:'Tracker'    },
+  { id:'mindset', icon:'📚', label:'Mindset'    },
+  { id:'mayhem',  icon:'⚡', label:'Mayhem'     },
+  { id:'champs',  icon:'🏆', label:'Champs'     },
+  { id:'gallery', icon:'📸', label:'Gallery'    },
+  { id:'staff',   icon:'👤', label:'Staff'      },
+];
+
+const TRAITS = [
+  {month:'September',trait:'Continual Learning & Growth Mindset',     desc:'Embracing challenges as opportunities, developing a love of learning, and believing abilities can be developed through dedication and hard work.',                  skills:['Embrace challenges','Learn from feedback','Persist through obstacles','Celebrate others\' success']},
+  {month:'October',  trait:'Critical Thinking & Problem Solving',      desc:'Analyzing information objectively, asking great questions, and developing creative, evidence-based solutions to complex problems.',                                    skills:['Ask deeper questions','Analyze evidence','Consider multiple perspectives','Develop creative solutions']},
+  {month:'November', trait:'Creativity & Innovation',                  desc:'Thinking outside the box, generating original ideas, and finding new ways to approach challenges in every area of life.',                                               skills:['Generate original ideas','Take creative risks','Combine ideas in new ways','Prototype and iterate']},
+  {month:'December', trait:'Honesty, Integrity & Responsibility',      desc:'Acting with consistency between our values and actions, taking ownership of our choices, and being trustworthy in all situations.',                                    skills:['Be truthful always','Own your mistakes','Follow through on commitments','Act with integrity when no one\'s watching']},
+  {month:'January',  trait:'Collaboration & Teamwork',                 desc:'Working effectively with others, valuing diverse perspectives, and achieving more together than we ever could alone.',                                                  skills:['Listen to understand','Build on others\' ideas','Share credit generously','Navigate conflict constructively']},
+  {month:'February', trait:'Communication & Empathy',                  desc:'Expressing ideas clearly and confidently, listening actively, and connecting genuinely with others through understanding their experiences.',                            skills:['Communicate clearly','Listen actively','Show genuine empathy','Adapt communication style']},
+  {month:'March',    trait:'Healthy Living, Wellness & Self-awareness', desc:'Understanding our physical, mental, and emotional health — and making intentional choices that support our whole selves.',                                             skills:['Build healthy habits','Manage stress effectively','Know your strengths & limits','Practice self-care']},
+  {month:'April',    trait:'Resilience & Grit',                        desc:'Bouncing back from setbacks, persisting through difficulty, and developing the mental toughness to keep going when things get hard.',                                   skills:['Embrace failure as learning','Develop mental toughness','Stay focused on long-term goals','Build a support network']},
+  {month:'May',      trait:'Adaptability & Flexibility',               desc:'Thriving in changing environments, adjusting our approach when needed, and seeing change as an opportunity rather than a threat.',                                      skills:['Embrace change','Adjust plans fluidly','Stay calm under uncertainty','Find opportunity in disruption']},
+];
+
+const SEED_EVENTS = [
+  {id:1,  name:'Mummy Wrap',               type:'event',date:'2025-10',note:'',                          pts:{BLACK:25,GOLD:14,GREY:19,PURPLE:10}},
+  {id:2,  name:'Puzzle Race',              type:'event',date:'2025-10',note:'',                          pts:{BLACK:28,GOLD:19,GREY:23,PURPLE:35}},
+  {id:3,  name:'Lip Sync Battle',          type:'event',date:'2025-10',note:'',                          pts:{BLACK:14,GOLD:10,GREY:25,PURPLE:19}},
+  {id:4,  name:'Wheel',                    type:'event',date:'2025-10',note:'',                          pts:{BLACK:11,GOLD:23,GREY:69,PURPLE:75}},
+  {id:5,  name:'T-shirts',                 type:'other',date:'2025-10',note:'1pt per percent, high 60',  pts:{BLACK:56,GOLD:60,GREY:59,PURPLE:60}},
+  {id:6,  name:'Trivia',                   type:'event',date:'2025-10',note:'Highest sheets per HR',     pts:{BLACK:75,GOLD:75,GREY:82,PURPLE:80}},
+  {id:7,  name:'Trait Dough Wheel (prior)',type:'other',date:'2025-03',note:'Through 3/13',              pts:{BLACK:246,GOLD:230,GREY:414,PURPLE:122}},
+  {id:8,  name:'Student of Month — Sept',  type:'other',date:'2025-09',note:'5pts per student',         pts:{BLACK:40,GOLD:20,GREY:20,PURPLE:40}},
+  {id:9,  name:'Student of Month — Oct',   type:'other',date:'2025-10',note:'',                         pts:{BLACK:25,GOLD:15,GREY:40,PURPLE:40}},
+  {id:10, name:'Student of Month — Nov',   type:'other',date:'2025-11',note:'',                         pts:{BLACK:35,GOLD:45,GREY:10,PURPLE:25}},
+  {id:11, name:'Student of Month — Dec',   type:'other',date:'2025-12',note:'',                         pts:{BLACK:20,GOLD:15,GREY:45,PURPLE:20}},
+  {id:12, name:'Student of Month — Jan',   type:'other',date:'2026-01',note:'',                         pts:{BLACK:45,GOLD:40,GREY:10,PURPLE:25}},
+  {id:13, name:'Student of Month — Feb',   type:'other',date:'2026-02',note:'',                         pts:{BLACK:20,GOLD:10,GREY:45,PURPLE:40}},
+  {id:14, name:'Staff Challenge Points',   type:'other',date:'2026-02',note:'Updated 2/24',             pts:{BLACK:170,GOLD:163,GREY:136,PURPLE:187}},
+  {id:15, name:'Turkey Contest',           type:'event',date:'2025-11',note:'',                         pts:{BLACK:25,GOLD:65,GREY:25,PURPLE:20}},
+  {id:16, name:'Random Kid Contests',      type:'other',date:'2026-03',note:'',                         pts:{BLACK:85,GOLD:139,GREY:60,PURPLE:69}},
 ];
 
 const DEF = {
-  events: SEED,
-  metrics: {attendance:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, referral:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, grades:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, weekLabel:''},
-  history: [], password:'ephrata2026', nextId:100,
+  events: SEED_EVENTS,
+  metrics: { attendance:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, referral:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, grades:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, weekLabel:'' },
+  gallery: { photos:[], quotes:[], spotlights:[], calendar:[] },
+  links: { mindset:[], mayhem:[], champs:[] },
+  pageContent: {
+    homeDesc: 'One school. Four squads. A program built by EMS staff to develop Life Ready Graduate traits, build community, and have fun together every month.',
+    pillar1: 'Each month we focus on a Life Ready Graduate skill — from Growth Mindset to Resilience. Students learn, reflect, and put these skills into real action through competitions and daily school life.',
+    pillar2: 'Students and staff across 7th and 8th grade are mixed together into four color squads — Black, Gold, Grey, and Purple. Every event is a new chance to connect with people outside the classroom.',
+    pillar3: 'From Mummy Wrap to Lip Sync Battles to Championship events — Clash of Classes brings real energy and joy to school. We believe school should be engaging, memorable, and something students look forward to.',
+    mayhemBody: 'Welcome to Mountaineer Mayhem — add details about this event using the admin panel.',
+    mayhemSubtitle: 'Special events & competitions',
+    champsBody: 'Welcome to the Clash of Classes Championships — add details about this event using the admin panel.',
+    champsSubtitle: 'End-of-year championship event',
+    mindsetBody: 'The Mountaineer Mindset program provides structured monthly lesson plans aligned with each month\'s LRG trait. Each plan is designed for classroom use and connects the Clash of Classes theme to academic and social-emotional learning.\n\nSelect a month and grade level below to access the lesson plan directly from Google Drive.',
+  },
+  history: [], password: 'ephrata2026', nextId: 100,
 };
 
-function load() { try { const s=localStorage.getItem('coc3'); return s?JSON.parse(s):JSON.parse(JSON.stringify(DEF)); } catch { return JSON.parse(JSON.stringify(DEF)); } }
-function save() { localStorage.setItem('coc3', JSON.stringify(D)); }
-let D = load();
-let authed = false, pendingFn = null;
+const SQUAD_TEACHERS = {
+  BLACK:  [{name:'DeTore',room:'72'},{name:'Hungerford',room:'72'},{name:'Goss',room:'72'},{name:'Doyle',room:'78'},{name:'Rice',room:'78'},{name:'Aydin',room:'78'},{name:'Erickson',room:'74'},{name:'Jones',room:'74'},{name:'Sweigart',room:'74'},{name:'Leister',room:'71'},{name:'Sensenig',room:'71'},{name:'Tiesi',room:'71'}],
+  GOLD:   [{name:'Rios',room:'77'},{name:'Ney',room:'77'},{name:'Apgar-Rodriguez',room:'77'},{name:'Brosig',room:'98'},{name:'Mr. Miller',room:'98'},{name:'Reynolds',room:'93'},{name:'Troop',room:'93'},{name:'McQuate',room:'93'},{name:'Mr. Ullrich',room:'86'},{name:'Delaney',room:'86'},{name:'Young',room:'81'},{name:'Milligan',room:'81'}],
+  GREY:   [{name:'Edmiston',room:'75'},{name:'McCabe',room:'75'},{name:'Trout',room:'96'},{name:'Reichl',room:'96'},{name:'Meehan',room:'96'},{name:'Daniels',room:'90'},{name:'T. Weaver',room:'90'},{name:'Thomas',room:'88'},{name:'D. Weaver',room:'88'},{name:'Bradley',room:'83'},{name:'Ohlinger',room:'83'}],
+  PURPLE: [{name:'Haupt',room:'73'},{name:'Rineer',room:'73'},{name:'Mrs. Jones',room:'76'},{name:'Mrs. Ullrich',room:'76'},{name:'Lebo',room:'99'},{name:'Truskey',room:'99'},{name:'Rigg',room:'91'},{name:'Bartsch',room:'91'},{name:'Segura',room:'85'},{name:'Hooper',room:'85'},{name:'Horner',room:'84'},{name:'Sunday',room:'84'}],
+};
 
-// ═══ CALCS ═══
-const evtTotal = sq => D.events.reduce((s,e)=>s+(e.pts[sq]||0),0);
-const metTotal = sq => Math.round(Object.values(D.metrics).slice(0,3).reduce((s,m)=>s+(m[sq]||0),0));
-// Note: D.metrics has keys attendance, referral, grades, weekLabel. slice(0,3) on values won't work reliably.
-// Fix:
-function metTotalFixed(sq) {
-  return Math.round((D.metrics.attendance[sq]||0)+(D.metrics.referral[sq]||0)+(D.metrics.grades[sq]||0));
+let D = JSON.parse(JSON.stringify(DEF));
+let authed=false, pendingFn=null, fbReady=false;
+let currentPage='home', currentTrait='March', currentGTab='photos';
+
+async function save(){ try{ await set(DB,D); }catch(e){ console.error(e); } }
+
+onValue(DB,(snap)=>{
+  const v=snap.val();
+  if(v){
+    D=v;
+    if(!Array.isArray(D.events)) D.events=[];
+    if(!Array.isArray(D.history)) D.history=[];
+    if(!D.metrics) D.metrics=JSON.parse(JSON.stringify(DEF.metrics));
+    ['attendance','referral','grades'].forEach(k=>{ if(!D.metrics[k]) D.metrics[k]={BLACK:0,GOLD:0,GREY:0,PURPLE:0}; });
+    if(!D.gallery) D.gallery={photos:[],quotes:[],spotlights:[],calendar:[]};
+    ['photos','quotes','spotlights','calendar'].forEach(k=>{ if(!Array.isArray(D.gallery[k])) D.gallery[k]=[]; });
+    if(!D.links) D.links={mindset:[],mayhem:[],champs:[]};
+    ['mindset','mayhem','champs'].forEach(k=>{ if(!Array.isArray(D.links[k])) D.links[k]=[]; });
+    if(!D.pageContent) D.pageContent={...DEF.pageContent};
+    Object.keys(DEF.pageContent).forEach(k=>{ if(!D.pageContent[k]) D.pageContent[k]=DEF.pageContent[k]; });
+  } else {
+    D=JSON.parse(JSON.stringify(DEF));
+    save();
+  }
+  if(!fbReady){
+    fbReady=true;
+    buildNav();
+    document.getElementById('evtDate').value=new Date().toISOString().split('T')[0];
+    const pg=params.get('page');
+    if(pg) goTo(pg); else goTo('home');
+    if(ADMIN_URL){ authed=true; openAdmin(); }
+  }
+  renderAll();
+});
+
+// ── CALCS ──
+const evtTotal=sq=>(D.events||[]).reduce((s,e)=>s+(e.pts[sq]||0),0);
+const metTotal=sq=>Math.round((D.metrics.attendance[sq]||0)+(D.metrics.referral[sq]||0)+(D.metrics.grades[sq]||0));
+const grand=sq=>evtTotal(sq)+metTotal(sq);
+const ranked=()=>[...SQUADS].sort((a,b)=>grand(b)-grand(a));
+const maxGrand=()=>Math.max(...SQUADS.map(grand),1);
+
+// ── NAV ──
+function buildNav(){
+  const tabs=document.getElementById('navTabs');
+  const mob=document.getElementById('mobileNav');
+  tabs.innerHTML=PAGES_DEF.map(p=>`<button class="tab ${p.id===currentPage?'active':''}" id="tab-${p.id}" onclick="goTo('${p.id}')"><span class="tab-icon">${p.icon}</span>${p.label}</button>`).join('');
+  mob.innerHTML=PAGES_DEF.map(p=>`<button class="mob-tab ${p.id===currentPage?'active':''}" id="mobtab-${p.id}" onclick="goTo('${p.id}')">${p.icon} ${p.label}</button>`).join('');
 }
-const grand = sq => evtTotal(sq) + metTotalFixed(sq);
-const ranked = () => [...SQUADS].sort((a,b)=>grand(b)-grand(a));
-const maxGrand = () => Math.max(...SQUADS.map(grand),1);
 
-// ═══ RENDER ═══
-function render() { renderStrip(); renderTable(); renderMetrics(); }
+function goTo(id){
+  currentPage=id;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const el=document.getElementById('page-'+id);
+  if(el) el.classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.id==='tab-'+id));
+  document.querySelectorAll('.mob-tab').forEach(t=>t.classList.toggle('active',t.id==='mobtab-'+id));
+  window.scrollTo(0,0);
+  if(id==='trait') renderTrait();
+  if(id==='mindset') renderMindset();
+  if(id==='mayhem') renderMayhem();
+  if(id==='champs') renderChamps();
+}
 
-function renderStrip() {
+// ── RENDER ALL ──
+function renderAll(){
+  renderMini();
+  renderStrip();
+  renderTable();
+  renderMetrics();
+  renderSquads();
+  renderGallery();
+  renderHomeText();
+  document.getElementById('statEvents').textContent=(D.events||[]).length;
+  document.getElementById('statWeek').textContent=D.metrics.weekLabel||'—';
+  if(currentPage==='trait') renderTrait();
+  if(currentPage==='mindset') renderMindset();
+  if(currentPage==='mayhem') renderMayhem();
+  if(currentPage==='champs') renderChamps();
+}
+
+function renderHomeText(){
+  const pc=D.pageContent||{};
+  const hd=document.getElementById('homeDesc'); if(hd) hd.textContent=pc.homeDesc||DEF.pageContent.homeDesc;
+  const p1=document.getElementById('pillar1Text'); if(p1) p1.textContent=pc.pillar1||DEF.pageContent.pillar1;
+  const p2=document.getElementById('pillar2Text'); if(p2) p2.textContent=pc.pillar2||DEF.pageContent.pillar2;
+  const p3=document.getElementById('pillar3Text'); if(p3) p3.textContent=pc.pillar3||DEF.pageContent.pillar3;
+}
+
+// ── HOME MINI ──
+function renderMini(){
   const r=ranked(), mx=maxGrand();
-  document.getElementById('scoreStrip').innerHTML = r.map((sq,i)=>`
-    <div class="strip-card sq-${sq} ${i===0?'rank-1':''}">
-      <div class="strip-rank-row">${i===0?'<span class="crown-icon">★</span>':''}RANK #${i+1}</div>
-      <div class="strip-name">${sq}</div>
-      <div class="strip-total" id="st-${sq}">${grand(sq).toLocaleString()}</div>
-      <div class="strip-label">TOTAL POINTS</div>
-      <div class="strip-bar" style="width:${Math.round(grand(sq)/mx*100)}%"></div>
+  document.getElementById('miniBoard').innerHTML=r.map((sq,i)=>`
+    <div class="mini-sq sq-${sq} ${i===0?'rank-1':''}">
+      <div class="mini-sq-rank">${i===0?'<span class="mini-sq-crown">★</span>':''} #${i+1}</div>
+      <div class="mini-sq-name" style="color:${SQ_HEX[sq]}">${sq}</div>
+      <div class="mini-sq-pts" style="color:${SQ_HEX[sq]}">${grand(sq).toLocaleString()}</div>
+      <div class="mini-sq-bar"><div class="mini-sq-fill" style="width:${Math.round(grand(sq)/mx*100)}%;background:${SQ_HEX[sq]}"></div></div>
     </div>`).join('');
 }
 
-function renderTable() {
-  document.getElementById('evtBody').innerHTML = D.events.map(ev=>{
-    const vals=SQUADS.map(sq=>ev.pts[sq]||0), mx=Math.max(...vals);
-    const badge=ev.type==='event'?'<span class="type-badge b-event">Event</span>':'<span class="type-badge b-other">Other</span>';
-    const note=ev.note?`<br><span style="font-size:11px;color:var(--muted)">${ev.note}</span>`:'';
-    return `<tr><td>${ev.name}${badge}${note}</td>${SQUADS.map(sq=>`<td class="td-${sq}${(ev.pts[sq]||0)===mx&&mx>0?' td-win':''}">${ev.pts[sq]||0}</td>`).join('')}</tr>`;
-  }).join('');
-
-  const tots=SQUADS.map(sq=>`<td class="td-${sq}">${grand(sq).toLocaleString()}</td>`).join('');
-  const mets=SQUADS.map(sq=>`<td style="font-size:11px;color:var(--muted)">+${metTotalFixed(sq)} metrics</td>`).join('');
-  document.getElementById('evtFoot').innerHTML=`
-    <tr class="tfoot-total"><td>OVERALL TOTAL</td>${tots}</tr>
-    <tr class="tfoot-metrics"><td>Metrics</td>${mets}</tr>`;
+// ── TRACKER ──
+function renderStrip(){
+  const r=ranked(), mx=maxGrand();
+  document.getElementById('scoreStrip').innerHTML=r.map((sq,i)=>`
+    <div class="strip-sq sq-${sq} ${i===0?'rank-1':''}">
+      <div class="strip-sq-rank">${i===0?'<span class="strip-crown">★</span> ':''} Rank #${i+1}</div>
+      <div class="strip-sq-name">${sq}</div>
+      <div class="strip-sq-pts" id="spt-${sq}">${grand(sq).toLocaleString()}</div>
+      <div class="strip-sq-lbl">Total Points</div>
+      <div class="strip-sq-bar" style="width:${Math.round(grand(sq)/mx*100)}%"></div>
+    </div>`).join('');
 }
 
-function renderMetrics() {
-  const defs=[
-    {key:'attendance', icon:'📅', label:'Avg Attendance Rate'},
-    {key:'referral',   icon:'⭐', label:'No Office Referral'},
-    {key:'grades',     icon:'📚', label:'No Failing Grade'},
-  ];
+function renderTable(){
+  document.getElementById('evtBody').innerHTML=(D.events||[]).map(ev=>{
+    const vals=SQUADS.map(sq=>ev.pts[sq]||0), mx=Math.max(...vals);
+    const pill=ev.type==='event'?'<span class="type-pill pill-event">Event</span>':'<span class="type-pill pill-other">Other</span>';
+    const note=ev.note?`<br><span style="font-size:11px;color:var(--text3)">${ev.note}</span>`:'';
+    return `<tr><td>${ev.name}${pill}${note}</td>${SQUADS.map(sq=>`<td class="td-${sq}${(ev.pts[sq]||0)===mx&&mx>0?' td-win':''}">${ev.pts[sq]||0}</td>`).join('')}</tr>`;
+  }).join('');
+  const tots=SQUADS.map(sq=>`<td class="td-${sq}">${grand(sq).toLocaleString()}</td>`).join('');
+  const mets=SQUADS.map(sq=>`<td style="color:var(--text3)">+${metTotal(sq)}</td>`).join('');
+  document.getElementById('evtFoot').innerHTML=`<tr class="tfoot-total"><td>Overall Total</td>${tots}</tr><tr class="tfoot-sub"><td>Metrics Points</td>${mets}</tr>`;
+}
+
+function renderMetrics(){
+  const defs=[{key:'attendance',icon:'📅',label:'Attendance'},{key:'referral',icon:'⭐',label:'No Referral'},{key:'grades',icon:'📚',label:'No Fail Grade'}];
   const wl=D.metrics.weekLabel;
-  document.getElementById('metricsDisplay').innerHTML = defs.map(d=>{
+  document.getElementById('metricsDisplay').innerHTML=defs.map(d=>{
     const vals=SQUADS.map(sq=>D.metrics[d.key][sq]||0), mx=Math.max(...vals,1);
-    return `<div class="metric-card">
-      <div class="metric-head">
-        ${d.icon} ${d.label}
-        ${wl?`<span class="week-tag">${wl}</span>`:''}
+    return `<div class="metric-block"><div class="metric-lbl">${d.icon} ${d.label}${wl?`<span class="week-chip">${wl}</span>`:''}</div>
+    <div class="metric-rows">${SQUADS.map(sq=>{const v=D.metrics[d.key][sq]||0,pct=Math.round(v/mx*100);
+      return `<div class="metric-row sq-${sq}"><span class="met-name">${sq}</span><div class="met-bar-wrap"><div class="met-bar" style="width:${pct}%"></div></div><span class="met-val">${v}%</span><span class="met-pts">${Math.round(v)}</span></div>`;
+    }).join('')}</div></div>`;
+  }).join('');
+}
+
+// ── SQUADS ──
+function renderSquads(){
+  const r=ranked();
+  document.getElementById('squadsGrid').innerHTML=SQUADS.map(sq=>{
+    const rank=r.indexOf(sq)+1;
+    const teachers=SQUAD_TEACHERS[sq]||[];
+    return `<div class="squad-card sq-${sq}">
+      <div class="squad-header">
+        <div><div class="squad-name">${sq}</div>
+        <div class="squad-rank-chip">Rank #${rank}</div></div>
+        <div class="squad-pts-big">${grand(sq).toLocaleString()}</div>
       </div>
-      <div class="metric-rows">${SQUADS.map(sq=>{
-        const v=D.metrics[d.key][sq]||0, pct=Math.round(v/mx*100);
-        return `<div class="metric-row sq-${sq}">
-          <span class="met-sq-name" style="color:${SQ_COLOR[sq]}">${sq}</span>
-          <div class="met-bar-wrap"><div class="met-bar" style="width:${pct}%"></div></div>
-          <span class="met-pct">${v}%</span>
-          <span class="met-pts" style="color:${SQ_COLOR[sq]}">${Math.round(v)}</span>
-        </div>`;
-      }).join('')}</div>
+      <div class="squad-teachers-section">
+        <div class="squad-teachers-label">Squad Teachers</div>
+        <div class="teacher-chips">${teachers.map(t=>`<div class="teacher-chip"><div class="tc-name">${t.name}</div><div class="tc-room">Rm ${t.room}</div></div>`).join('')}</div>
+      </div>
+      <div class="squad-footer"></div>
     </div>`;
   }).join('');
 }
 
-// ═══ ADMIN ACTIONS ═══
-function addEvent() {
+// ── TRAIT ──
+function renderTrait(){
+  const curMonth=new Date().toLocaleString('en-US',{month:'long'});
+  document.getElementById('monthTabs').innerHTML=TRAITS.map(t=>`
+    <button class="month-btn ${t.month===currentTrait?'active':''} ${t.month===curMonth?'current-month':''}"
+      onclick="window.__setTrait && window.__setTrait('${t.month}')">
+      ${t.month}${t.month===curMonth?'<span class="now-dot"></span>':''}
+    </button>`).join('');
+  const t=TRAITS.find(x=>x.month===currentTrait)||TRAITS[6];
+  const isCurrent=t.month===curMonth;
+  document.getElementById('traitMain').innerHTML=`
+    <div class="trait-main">
+      <div class="trait-month-tag">${t.month} 2025–2026${isCurrent?' · Current Month':''}</div>
+      <div class="trait-name">${t.trait}</div>
+      <div class="trait-desc">${t.desc}</div>
+      <div class="trait-skills">${t.skills.map(s=>`<div class="trait-skill">${s}</div>`).join('')}</div>
+    </div>`;
+
+  // Mindset links for this month in trait page sidebar
+  const monthLinks=(D.links.mindset||[]).filter(l=>l.month===t.month||!l.month);
+  document.getElementById('mindsetPanel').innerHTML=`
+    <div class="mindset-card">
+      <div class="mindset-title">📚 Mindset Lessons — ${t.month}</div>
+      <p style="font-size:13px;color:var(--text3);margin-bottom:12px">Grade-level lesson plans for this trait:</p>
+      <div class="mindset-grade-links">
+        ${buildGradeLinks(t.month)}
+      </div>
+    </div>
+    <div class="mindset-card" style="margin-top:0">
+      <div class="mindset-title">🔗 All Lesson Plans</div>
+      <button class="btn btn-full" style="margin-top:4px" onclick="goTo('mindset')">View Mountaineer Mindset →</button>
+    </div>`;
+}
+
+function buildGradeLinks(month){
+  const links=D.links.mindset||[];
+  const grades=[
+    {label:'7th Grade Plan', key:`7th-${month}`},
+    {label:'8th Grade Plan', key:`8th-${month}`},
+    {label:'Extension Activity', key:`ext-${month}`},
+  ];
+  return grades.map(g=>{
+    const found=links.find(l=>l.key===g.key);
+    if(found) return `<a href="${found.url}" target="_blank" class="grade-link has-link">${g.label}<span class="grade-arrow">↗</span></a>`;
+    return `<div class="grade-link" style="opacity:0.4;cursor:default">${g.label}<span class="grade-arrow" style="font-size:10px;color:var(--text3)">No link yet</span></div>`;
+  }).join('');
+}
+
+// ── MINDSET PAGE ──
+function renderMindset(){
+  const pc=D.pageContent||{};
+  document.getElementById('mindsetBody').innerHTML=`<p>${(pc.mindsetBody||DEF.pageContent.mindsetBody).replace(/\n/g,'</p><p>')}</p>`;
+
+  const months=TRAITS.map(t=>t.month);
+  let html='';
+  months.forEach(month=>{
+    const links=D.links.mindset||[];
+    const gradeItems=[
+      {label:'7th Grade Lesson Plan', key:`7th-${month}`},
+      {label:'8th Grade Lesson Plan', key:`8th-${month}`},
+      {label:'Extension Activity',    key:`ext-${month}`},
+    ];
+    html+=`<div style="margin-bottom:24px;scroll-margin-top:80px" data-mindset-month="${month}">
+      <div style="font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:var(--gold-soft);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">${month}</div>
+      ${gradeItems.map(g=>{
+        const found=links.find(l=>l.key===g.key);
+        if(found) return `<a href="${found.url}" target="_blank" class="ext-link active-link" style="margin-bottom:6px">${g.label}<span class="link-arrow">↗</span></a>`;
+        return `<div class="ext-link" style="opacity:0.35;cursor:default;margin-bottom:6px">${g.label}<span class="link-arrow">—</span></div>`;
+      }).join('')}
+    </div>`;
+  });
+  document.getElementById('mindsetLessonsBlock').innerHTML=html;
+
+  // Quick links sidebar
+  document.getElementById('mindsetQuickLinks').innerHTML=months.map(m=>`
+    <button onclick="window.__setTrait && window.__setTrait('${m}'); window.__goTo && window.__goTo('trait')" class="ext-link" style="border:none;cursor:pointer;display:flex;width:100%;text-align:left;margin-bottom:4px">${m}<span class="link-arrow">→</span></button>`).join('');
+}
+
+// ── MAYHEM / CHAMPS ──
+function renderMayhem(){
+  const pc=D.pageContent||{};
+  const sub=document.getElementById('mayhemSubtitle'); if(sub) sub.textContent=pc.mayhemSubtitle||DEF.pageContent.mayhemSubtitle;
+  const body=document.getElementById('mayhemBody'); if(body) body.innerHTML=`<p>${(pc.mayhemBody||DEF.pageContent.mayhemBody).replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
+  const links=D.links.mayhem||[];
+  const el=document.getElementById('mayhemLinks');
+  if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map((l,i)=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via the admin panel.</div>'}`;
+}
+
+function renderChamps(){
+  const pc=D.pageContent||{};
+  const sub=document.getElementById('champsSubtitle'); if(sub) sub.textContent=pc.champsSubtitle||DEF.pageContent.champsSubtitle;
+  const body=document.getElementById('champsBody'); if(body) body.innerHTML=`<p>${(pc.champsBody||DEF.pageContent.champsBody).replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
+  const links=D.links.champs||[];
+  const el=document.getElementById('champsLinks');
+  if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map((l,i)=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via the admin panel.</div>'}`;
+}
+
+// ── GALLERY ──
+function renderGallery(){
+  const g=D.gallery;
+  const empty=(icon,msg)=>`<div class="empty-state"><span class="empty-icon">${icon}</span><div class="empty-msg">${msg}</div></div>`;
+
+  const showDel=authed;
+  document.getElementById('photosGrid').innerHTML=g.photos.length
+    ? g.photos.map((p,i)=>`<div class="photo-card" style="position:relative">${showDel?`<button onclick="deletePhoto(${i})" style="position:absolute;top:8px;right:8px;z-index:10;background:rgba(0,0,0,0.7);border:none;color:#fff;font-size:11px;padding:4px 8px;border-radius:4px;cursor:pointer">✕</button>`:''}<img class="photo-img" src="${p.url}" alt="${p.title}" onerror="this.style.display='none';this.nextSibling.style.display='flex'"><div class="photo-placeholder" style="display:none">📸</div><div class="photo-caption"><div class="photo-title">${p.title}</div><div class="photo-date">${p.date||''}</div></div></div>`).join('')
+    : empty('📸','No photos yet — add via Admin → Gallery');
+
+  const sqC={BLACK:'var(--sq-black)',GOLD:'var(--sq-gold)',GREY:'var(--sq-grey)',PURPLE:'var(--sq-purple)'};
+  document.getElementById('quotesGrid').innerHTML=g.quotes.length
+    ? g.quotes.map(q=>`<div class="quote-card"><span class="quote-mark">"</span><div class="quote-text">${q.text}</div><div class="quote-by">— ${q.author}${q.squad?`<span class="quote-squad-tag" style="color:${sqC[q.squad]||'var(--text3)'}">${q.squad}</span>`:''}</div></div>`).join('')
+    : empty('💬','No quotes yet — add via Admin → Gallery');
+
+  document.getElementById('staffGrid').innerHTML=g.spotlights.length
+    ? g.spotlights.map(s=>`<div class="spotlight-card"><div class="spotlight-avatar">${s.initials||'?'}</div><div class="spotlight-name">${s.name}</div><div class="spotlight-role">${s.role}</div><div class="spotlight-quote">${s.quote}</div></div>`).join('')
+    : empty('👤','No spotlights yet — add via Admin → Gallery');
+
+  const sorted=[...g.calendar].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  document.getElementById('calGrid').innerHTML=sorted.length
+    ? sorted.map(e=>{const d=new Date(e.date+'T12:00:00');return`<div class="cal-item"><div class="cal-date-box"><div class="cal-month">${d.toLocaleString('en-US',{month:'short'})}</div><div class="cal-day">${d.getDate()}</div></div><div class="cal-info"><div class="cal-title">${e.title}</div><div class="cal-desc">${e.desc||''}</div><span class="cal-type ${e.type==='event'?'ct-event':'ct-metric'}">${e.type==='event'?'Competition':'Metric Update'}</span></div></div>`;}).join('')
+    : empty('📅','No events yet — add via Admin → Gallery');
+}
+
+// ── GALLERY TAB ──
+function gTab(t){
+  currentGTab=t;
+  document.querySelectorAll('.gallery-section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('gs-'+t).classList.add('active');
+  document.querySelectorAll('.g-tab').forEach((b,i)=>b.classList.toggle('active',['photos','quotes','staff','calendar'][i]===t));
+}
+
+// ── ADMIN ACTIONS ──
+async function addEvent(){
   const name=document.getElementById('evtName').value.trim(); if(!name) return;
   const pts={}; SQUADS.forEach(sq=>pts[sq]=parseFloat(document.getElementById('pts'+sq).value)||0);
-  const ev={id:D.nextId++, name, type:document.getElementById('evtType').value, date:document.getElementById('evtDate').value, note:document.getElementById('evtNote').value.trim(), pts};
-  D.events.push(ev);
+  if(!Array.isArray(D.events)) D.events=[];
+  D.events.push({id:D.nextId++,name,type:document.getElementById('evtType').value,date:document.getElementById('evtDate').value,note:document.getElementById('evtNote').value.trim(),pts});
   D.history.unshift({type:'event',name,pts,time:new Date().toISOString()});
-  save(); render();
-  const el=document.getElementById('evtOk'); el.className='fmsg ok'; el.style.display='block';
-  setTimeout(()=>el.style.display='none',2000);
-  document.getElementById('evtName').value=''; document.getElementById('evtNote').value='';
+  await save();
+  flash('evtOk'); document.getElementById('evtName').value=''; document.getElementById('evtNote').value='';
   SQUADS.forEach(sq=>document.getElementById('pts'+sq).value=0);
 }
 
-function saveMetrics() {
+async function saveMetrics(){
   SQUADS.forEach(sq=>{
     D.metrics.attendance[sq]=parseFloat(document.getElementById('att'+sq).value)||0;
     D.metrics.referral[sq]=parseFloat(document.getElementById('ref'+sq).value)||0;
@@ -819,196 +1494,296 @@ function saveMetrics() {
   });
   D.metrics.weekLabel=document.getElementById('weekLabel').value.trim();
   D.history.unshift({type:'metrics',label:D.metrics.weekLabel,time:new Date().toISOString()});
-  save(); render();
-  const el=document.getElementById('metOk'); el.className='fmsg ok'; el.style.display='block';
-  setTimeout(()=>el.style.display='none',2000);
+  await save(); flash('metOk');
 }
 
-function resetAll() {
-  D.events=[]; D.metrics=JSON.parse(JSON.stringify(DEF.metrics));
-  D.history.unshift({type:'reset',time:new Date().toISOString()});
-  save(); render(); renderScoreSummary();
+async function savePageContent(){
+  const page=document.getElementById('pageSelect').value;
+  if(!D.pageContent) D.pageContent={...DEF.pageContent};
+  if(page==='home'){
+    D.pageContent.homeDesc=document.getElementById('peHomeDesc')?.value||'';
+    D.pageContent.pillar1=document.getElementById('pePillar1')?.value||'';
+    D.pageContent.pillar2=document.getElementById('pePillar2')?.value||'';
+    D.pageContent.pillar3=document.getElementById('pePillar3')?.value||'';
+  } else if(page==='mayhem'){
+    D.pageContent.mayhemSubtitle=document.getElementById('peMayhemSub')?.value||'';
+    D.pageContent.mayhemBody=document.getElementById('peMayhemBody')?.value||'';
+  } else if(page==='champs'){
+    D.pageContent.champsSubtitle=document.getElementById('peChampsSub')?.value||'';
+    D.pageContent.champsBody=document.getElementById('peChampsBody')?.value||'';
+  } else if(page==='mindset'){
+    D.pageContent.mindsetBody=document.getElementById('peMindsetBody')?.value||'';
+  }
+  await save(); flash('pageOk');
 }
 
-function renderScoreSummary() {
-  document.getElementById('scoreSummary').innerHTML=SQUADS.map(sq=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
-      <span style="font-family:'Bebas Neue';font-size:20px;letter-spacing:2px;color:${SQ_COLOR[sq]}">${sq}</span>
-      <span style="font-family:'Bebas Neue';font-size:28px">${grand(sq).toLocaleString()}</span>
+function loadPageContent(){
+  const page=document.getElementById('pageSelect').value;
+  const pc=D.pageContent||DEF.pageContent;
+  const f=document.getElementById('pageEditorFields');
+  if(page==='home'){
+    f.innerHTML=`
+      <div class="fr"><label>Homepage Description</label><textarea id="peHomeDesc" rows="3">${pc.homeDesc||''}</textarea></div>
+      <div class="fr"><label>Pillar 1 — LRG Traits Text</label><textarea id="pePillar1" rows="3">${pc.pillar1||''}</textarea></div>
+      <div class="fr"><label>Pillar 2 — Build Community Text</label><textarea id="pePillar2" rows="3">${pc.pillar2||''}</textarea></div>
+      <div class="fr"><label>Pillar 3 — Have Fun Text</label><textarea id="pePillar3" rows="3">${pc.pillar3||''}</textarea></div>`;
+  } else if(page==='mayhem'){
+    f.innerHTML=`
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peMayhemSub" value="${pc.mayhemSubtitle||''}"></div>
+      <div class="fr"><label>Page Body Text (use blank lines between paragraphs)</label><textarea id="peMayhemBody" rows="8">${pc.mayhemBody||''}</textarea></div>`;
+  } else if(page==='champs'){
+    f.innerHTML=`
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peChampsSub" value="${pc.champsSubtitle||''}"></div>
+      <div class="fr"><label>Page Body Text (use blank lines between paragraphs)</label><textarea id="peChampsBody" rows="8">${pc.champsBody||''}</textarea></div>`;
+  } else if(page==='mindset'){
+    f.innerHTML=`<div class="fr"><label>Intro Body Text</label><textarea id="peMindsetBody" rows="5">${pc.mindsetBody||''}</textarea></div>`;
+  }
+}
+
+async function addLink(){
+  const section=document.getElementById('linkSection').value;
+  const label=document.getElementById('linkLabel').value.trim();
+  const url=document.getElementById('linkUrl').value.trim();
+  if(!label||!url) return;
+  if(!D.links) D.links={mindset:[],mayhem:[],champs:[]};
+  if(!Array.isArray(D.links[section])) D.links[section]=[];
+
+  // For mindset, parse month and grade from label
+  let key=null;
+  if(section==='mindset'){
+    const months=TRAITS.map(t=>t.month);
+    const foundMonth=months.find(m=>label.toLowerCase().includes(m.toLowerCase()));
+    if(label.toLowerCase().includes('7th')||label.toLowerCase().includes('seventh')) key=`7th-${foundMonth||''}`;
+    else if(label.toLowerCase().includes('8th')||label.toLowerCase().includes('eighth')) key=`8th-${foundMonth||''}`;
+    else if(label.toLowerCase().includes('ext')) key=`ext-${foundMonth||''}`;
+  }
+
+  D.links[section].push({label,url,key,id:Date.now()});
+  await save(); flash('linkOk');
+  document.getElementById('linkLabel').value=''; document.getElementById('linkUrl').value='';
+  renderLinksList();
+}
+
+function renderLinksList(){
+  const section=document.getElementById('linkSection')?.value;
+  if(!section) return;
+  const links=(D.links||{})[section]||[];
+  const el=document.getElementById('linksListEl');
+  if(!el) return;
+  if(!links.length){ el.innerHTML='<p style="color:var(--text3);font-size:13px">No links added yet.</p>'; return; }
+  el.innerHTML=`<div style="font-family:\'DM Mono\',monospace;font-size:10px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px">Current Links</div>`+
+    links.map((l,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;font-size:13px;color:var(--text2)">${l.label}</div>
+      <button onclick="removeLink('${section}',${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;padding:4px 8px;border-radius:4px;border:1px solid var(--border)" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='var(--text3)'">Remove</button>
     </div>`).join('');
 }
 
-function renderHistList() {
+async function removeLink(section,i){
+  if(!D.links||!D.links[section]) return;
+  D.links[section].splice(i,1);
+  await save(); renderLinksList();
+}
+
+async function addGItem(type){
+  if(!D.gallery) D.gallery={photos:[],quotes:[],spotlights:[],calendar:[]};
+  let okId;
+  if(type==='photo'){
+    const fileInput=document.getElementById('gPhotoFile');
+    const urlInput=document.getElementById('gPhotoUrl').value.trim();
+    const title=document.getElementById('gPhotoTitle').value.trim();
+    const date=document.getElementById('gPhotoDate').value;
+    if(fileInput&&fileInput.files&&fileInput.files[0]){
+      const file=fileInput.files[0];
+      const reader=new FileReader();
+      reader.onload=async(e)=>{
+        D.gallery.photos.unshift({url:e.target.result,title,date,id:Date.now()});
+        await save(); flash('gPhotoOk'); renderGallery();
+        document.getElementById('gPhotoUrl').value=''; document.getElementById('gPhotoTitle').value='';
+        fileInput.value=''; document.getElementById('gPhotoPreview').style.display='none';
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+    if(!urlInput) return;
+    D.gallery.photos.unshift({url:urlInput,title,date,id:Date.now()});
+    okId='gPhotoOk'; document.getElementById('gPhotoUrl').value=''; document.getElementById('gPhotoTitle').value='';
+  } else if(type==='quote'){
+    const text=document.getElementById('gQuoteText').value.trim(); if(!text) return;
+    D.gallery.quotes.unshift({text,author:document.getElementById('gQuoteAuthor').value.trim()||'EMS Student',squad:document.getElementById('gQuadeSquad').value,id:Date.now()});
+    okId='gQuoteOk'; document.getElementById('gQuoteText').value='';
+  } else if(type==='spotlight'){
+    const name=document.getElementById('gStaffName').value.trim(); if(!name) return;
+    D.gallery.spotlights.unshift({name,role:document.getElementById('gStaffRole').value.trim(),quote:document.getElementById('gStaffQuote').value.trim(),initials:document.getElementById('gStaffInit').value.trim().toUpperCase(),id:Date.now()});
+    okId='gStaffOk'; document.getElementById('gStaffName').value=''; document.getElementById('gStaffQuote').value='';
+  } else if(type==='cal'){
+    const title=document.getElementById('gCalTitle').value.trim(); if(!title) return;
+    D.gallery.calendar.push({title,date:document.getElementById('gCalDate').value,desc:document.getElementById('gCalDesc').value.trim(),type:document.getElementById('gCalType').value,id:Date.now()});
+    okId='gCalOk'; document.getElementById('gCalTitle').value=''; document.getElementById('gCalDesc').value='';
+  }
+  await save(); flash(okId); renderGallery();
+}
+
+async function resetAll(){
+  D.events=[]; D.metrics=JSON.parse(JSON.stringify(DEF.metrics));
+  D.history.unshift({type:'reset',time:new Date().toISOString()});
+  await save(); renderScoreSummary();
+}
+
+function renderScoreSummary(){
+  document.getElementById('scoreSummary').innerHTML=SQUADS.map(sq=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span style="font-family:\'Fraunces\',serif;font-size:18px;font-weight:700;color:${SQ_CSS[sq]}">${sq}</span>
+      <span style="font-family:\'Fraunces\',serif;font-size:24px;font-weight:900">${grand(sq).toLocaleString()}</span>
+    </div>`).join('');
+}
+
+function renderHistList(){
   const el=document.getElementById('histList');
-  if(!D.history.length){el.innerHTML='<p style="color:var(--muted);text-align:center;padding:24px;font-size:13px">No history yet.</p>';return;}
+  if(!D.history?.length){ el.innerHTML='<p style="color:var(--text3);text-align:center;padding:24px;font-size:13px;font-family:\'DM Mono\',monospace">No history yet.</p>'; return; }
   el.innerHTML=D.history.slice(0,60).map((h,i)=>{
     const d=new Date(h.time);
-    if(h.type==='event'){
-      const s=SQUADS.map(sq=>`<span style="color:${SQ_COLOR[sq]}">${sq}:${h.pts[sq]||0}</span>`).join(' ');
-      return `<div class="h-item"><div><div class="h-name">${h.name}</div><div class="h-meta">${s}</div><div class="h-meta">${d.toLocaleString()}</div></div><button class="undo-btn" onclick="undoEvt(${i})">Undo</button></div>`;
-    }
+    if(h.type==='event'){ const s=SQUADS.map(sq=>`<span style="color:${SQ_CSS[sq]}">${sq}:${h.pts[sq]||0}</span>`).join(' ');
+      return `<div class="h-item"><div><div class="h-name">${h.name}</div><div class="h-meta">${s}<br>${d.toLocaleString()}</div></div><button class="undo-btn" onclick="undoEvt(${i})">Undo</button></div>`; }
     if(h.type==='metrics') return `<div class="h-item"><div><div class="h-name">📊 Metrics Updated</div><div class="h-meta">${h.label||''} · ${d.toLocaleString()}</div></div></div>`;
-    if(h.type==='reset')   return `<div class="h-item"><div><div class="h-name" style="color:#f87171">⚠ All Scores Reset</div><div class="h-meta">${d.toLocaleString()}</div></div></div>`;
+    if(h.type==='reset') return `<div class="h-item"><div><div class="h-name" style="color:#f87171">⚠ All Scores Reset</div><div class="h-meta">${d.toLocaleString()}</div></div></div>`;
     return '';
   }).join('');
 }
 
-function undoEvt(i) {
-  const h=D.history[i]; if(h.type!=='event') return;
-  const idx=D.events.findIndex(e=>e.name===h.name&&JSON.stringify(e.pts)===JSON.stringify(h.pts));
+async function undoEvt(i){
+  const h=D.history[i]; if(!h||h.type!=='event') return;
+  const idx=(D.events||[]).findIndex(e=>e.name===h.name&&JSON.stringify(e.pts)===JSON.stringify(h.pts));
   if(idx>-1) D.events.splice(idx,1);
   D.history.splice(i,1);
-  save(); render(); renderHistList();
+  await save(); renderHistList();
 }
 
-function changePw() {
+async function changePw(){
   const a=document.getElementById('newPw').value, b=document.getElementById('newPw2').value;
-  const err=document.getElementById('pwErr'), ok=document.getElementById('pwOk');
-  if(a!==b||a.length<4){err.style.display='block';ok.style.display='none';return;}
-  D.password=a; save(); err.style.display='none';
-  ok.className='fmsg ok'; ok.style.display='block';
-  setTimeout(()=>ok.style.display='none',2000);
+  if(a!==b||a.length<4){ document.getElementById('pwErr').style.display='block'; document.getElementById('pwOk').style.display='none'; return; }
+  D.password=a; await save();
+  document.getElementById('pwErr').style.display='none'; flash('pwOk');
   document.getElementById('newPw').value=''; document.getElementById('newPw2').value='';
 }
 
-// ═══ AUTH / MODALS ═══
-function openLogin() {
-  document.getElementById('loginModal').classList.add('open');
-  document.getElementById('loginErr').style.display='none';
-  document.getElementById('pwIn').value='';
-  setTimeout(()=>document.getElementById('pwIn').focus(),80);
-}
-function tryLogin() {
-  if(document.getElementById('pwIn').value===D.password){
-    authed=true; close1('loginModal'); openAdmin();
-    if(pendingFn){pendingFn();pendingFn=null;}
-  } else { document.getElementById('loginErr').style.display='block'; }
-}
+function flash(id){ const el=document.getElementById(id); if(!el) return; el.className='fmsg ok'; el.style.display='block'; setTimeout(()=>el.style.display='none',2500); }
+
+// ── AUTH ──
+function openLogin(){ document.getElementById('loginModal').classList.add('open'); document.getElementById('loginErr').style.display='none'; document.getElementById('pwIn').value=''; setTimeout(()=>document.getElementById('pwIn').focus(),80); }
+function tryLogin(){ if(document.getElementById('pwIn').value===D.password){ authed=true; close1('loginModal'); openAdmin(); if(pendingFn){pendingFn();pendingFn=null;} } else { document.getElementById('loginErr').style.display='block'; } }
 function requireAdmin(fn){ if(authed) fn(); else { pendingFn=fn; openLogin(); } }
-function openAddEvent(){ openAdmin(); atab('event'); }
-function openAdmin(){ document.getElementById('adminModal').classList.add('open'); }
+function openAddEvent(){ openAdmin(); aTab('points'); }
+function openAdmin(){ document.getElementById('adminModal').classList.add('open'); aTab('points'); loadPageContent(); }
 function close1(id){ document.getElementById(id).classList.remove('open'); }
 
-function atab(name) {
-  const names=['event','metrics','scores','history','settings'];
-  names.forEach((n,i)=>{
-    document.querySelectorAll('.atab')[i].classList.toggle('on',n===name);
-    document.getElementById('ap-'+n).classList.toggle('on',n===name);
-  });
+function aTab(name){
+  const names=['points','metrics','pages','links','gallery','scores','history','settings'];
+  document.querySelectorAll('#adminModal .a-tab').forEach((b,i)=>b.classList.toggle('on',names[i]===name));
+  names.forEach(n=>{ const el=document.getElementById('ap-'+n); if(el) el.classList.toggle('on',n===name); });
   if(name==='scores') renderScoreSummary();
   if(name==='history') renderHistList();
-  if(name==='metrics') {
+  if(name==='links') renderLinksList();
+  if(name==='metrics'){
     SQUADS.forEach(sq=>{
-      const a=document.getElementById('att'+sq); if(a&&D.metrics.attendance[sq]) a.value=D.metrics.attendance[sq];
-      const r=document.getElementById('ref'+sq); if(r&&D.metrics.referral[sq])   r.value=D.metrics.referral[sq];
-      const g=document.getElementById('grad'+sq); if(g&&D.metrics.grades[sq])    g.value=D.metrics.grades[sq];
+      const a=document.getElementById('att'+sq); if(a) a.value=D.metrics.attendance[sq]||'';
+      const r=document.getElementById('ref'+sq); if(r) r.value=D.metrics.referral[sq]||'';
+      const g=document.getElementById('grad'+sq); if(g) g.value=D.metrics.grades[sq]||'';
     });
-    const wl=document.getElementById('weekLabel'); if(wl&&D.metrics.weekLabel) wl.value=D.metrics.weekLabel;
+    const wl=document.getElementById('weekLabel'); if(wl) wl.value=D.metrics.weekLabel||'';
   }
 }
 
-document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+function gATab(name){
+  const names=['photo','quote','spotlight','cal'];
+  document.querySelectorAll('#ap-gallery .a-tab').forEach((b,i)=>b.classList.toggle('on',names[i]===name));
+  names.forEach(n=>{ const el=document.getElementById('gap-'+n); if(el) el.classList.toggle('on',n===name); });
+}
 
-// ═══ TV DISPLAY ═══
-let tvSlide=0, tvTimer=null, tvProgTimer=null, tvPct=0;
-const TV_SECS=9000;
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }));
 
-function openDisplay() {
-  document.getElementById('displayView').classList.add('active');
-  document.getElementById('mainView').style.display='none';
+// ── TV DISPLAY ──
+let tvSlide=0, tvTimer=null, tvPTimer=null, tvPct=0;
+const TV_MS=9000;
+
+function openDisplay(){
+  document.getElementById('tvView').classList.add('active');
   document.getElementById('tvDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   buildTV(); showSlide(0); startAuto();
 }
-function closeDisplay() {
-  document.getElementById('displayView').classList.remove('active');
-  document.getElementById('mainView').style.display='block';
-  clearInterval(tvTimer); clearInterval(tvProgTimer);
-}
+function closeDisplay(){ document.getElementById('tvView').classList.remove('active'); clearInterval(tvTimer); clearInterval(tvPTimer); }
 
-function buildTV() {
+function buildTV(){
   const r=ranked(), mx=maxGrand();
-
-  // Slide 1
   document.getElementById('tvRanks').innerHTML=r.map((sq,i)=>`
     <div class="tv-rank-card ${i===0?'rank-1':''}">
-      <div class="tv-rank-bg">${i+1}</div>
-      <div class="tv-rank-card-body">
-        ${i===0?'<div class="tv-rank-crown">★</div>':''}
-        <div class="tv-rank-num">RANK #${i+1}</div>
-        <div class="tv-rank-name" style="color:${SQ_HEX[sq]}">${sq}</div>
-        <div class="tv-rank-pts"  style="color:${SQ_HEX[sq]}">${grand(sq).toLocaleString()}</div>
-        <div class="tv-rank-lbl">TOTAL POINTS</div>
+      <div class="tv-rank-body">
+        ${i===0?'<div class="tv-rk-crown">★</div>':''}
+        <div class="tv-rk-num">Rank #${i+1}</div>
+        <div class="tv-rk-name" style="color:${SQ_HEX[sq]}">${sq}</div>
+        <div class="tv-rk-pts" style="color:${SQ_HEX[sq]}">${grand(sq).toLocaleString()}</div>
+        <div class="tv-rk-lbl">Total Points</div>
       </div>
-      <div class="tv-rank-bar" style="background:${SQ_HEX[sq]};width:${Math.round(grand(sq)/mx*100)}%"></div>
+      <div class="tv-rk-bar" style="background:${SQ_HEX[sq]};width:${Math.round(grand(sq)/mx*100)}%"></div>
     </div>`).join('');
 
-  // Slide 2
-  const cats=[
-    {label:'Event Points', vals:Object.fromEntries(SQUADS.map(sq=>[sq,evtTotal(sq)]))},
-    {label:'Attendance',   vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.attendance[sq]||0)]))},
-    {label:'No Referral',  vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.referral[sq]||0)]))},
-    {label:'No Fail Grade',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.grades[sq]||0)]))},
-  ];
-  const hdrs=`<div class="tv-cat-row" style="margin-bottom:4px"><div></div>${SQUADS.map(sq=>`<div class="tv-col-hdr" style="color:${SQ_HEX[sq]}">${sq}</div>`).join('')}</div>`;
+  const cats=[{label:'Event Points',vals:Object.fromEntries(SQUADS.map(sq=>[sq,evtTotal(sq)]))},{label:'Attendance',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.attendance[sq]||0)]))},{label:'No Referral',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.referral[sq]||0)]))},{label:'No Fail Grade',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.grades[sq]||0)]))}];
+  const hdrs=`<div class="tv-cat-row" style="margin-bottom:6px"><div></div>${SQUADS.map(sq=>`<div class="tv-col-hdr" style="color:${SQ_HEX[sq]}">${sq}</div>`).join('')}</div>`;
   document.getElementById('tvCats').innerHTML=hdrs+cats.map(c=>{
     const vals=SQUADS.map(sq=>c.vals[sq]||0), mx2=Math.max(...vals,1);
-    return `<div class="tv-cat-row"><div class="tv-cat-lbl">${c.label}</div>${SQUADS.map(sq=>{
-      const v=c.vals[sq]||0, pct=Math.round(v/mx2*100);
-      const light=['GREY','BLACK'].includes(sq);
-      return `<div class="tv-cat-bwrap"><div class="tv-cat-bfill" style="width:${pct}%;background:${SQ_HEX[sq]}"><span class="tv-cat-bval${light?' lt':''}">${v>0?v:''}</span></div></div>`;
-    }).join('')}</div>`;
+    return `<div class="tv-cat-row"><div class="tv-cat-lbl">${c.label}</div>${SQUADS.map(sq=>{const v=c.vals[sq]||0,pct=Math.round(v/mx2*100),lt=['GREY','BLACK'].includes(sq);return`<div class="tv-cat-bwrap"><div class="tv-cat-bfill" style="width:${pct}%;background:${SQ_HEX[sq]}"><span class="tv-cat-bval${lt?' lt':''}">${v>0?v:''}</span></div></div>`;}).join('')}</div>`;
   }).join('');
 
-  // Slide 3
-  const metDefs=[
-    {key:'attendance',icon:'📅',label:'Avg Attendance Rate'},
-    {key:'referral',  icon:'⭐',label:'No Office Referral'},
-    {key:'grades',    icon:'📚',label:'No Failing Grade'},
-  ];
-  document.getElementById('tvMets').innerHTML=metDefs.map(d=>{
+  const mDefs=[{key:'attendance',icon:'📅',label:'Avg Attendance'},{key:'referral',icon:'⭐',label:'No Referral'},{key:'grades',icon:'📚',label:'No Fail Grade'}];
+  document.getElementById('tvMets').innerHTML=mDefs.map(d=>{
     const vals=SQUADS.map(sq=>D.metrics[d.key][sq]||0), mx2=Math.max(...vals,1);
-    return `<div class="tv-met-card">
-      <div class="tv-met-icon">${d.icon}</div>
-      <div class="tv-met-name">${d.label}</div>
-      <div class="tv-met-rows">${SQUADS.map(sq=>{
-        const v=D.metrics[d.key][sq]||0;
-        return `<div class="tv-met-row"><span class="tv-met-sq" style="color:${SQ_HEX[sq]}">${sq}</span><div class="tv-met-bw"><div class="tv-met-bf" style="width:${Math.round(v/mx2*100)}%;background:${SQ_HEX[sq]}"></div></div><span class="tv-met-pct">${v}%</span></div>`;
-      }).join('')}</div>
-    </div>`;
-  }).join('')+`<div class="tv-week-card">
-    <div class="tv-week-lbl">Current Week</div>
-    <div class="tv-week-val">${D.metrics.weekLabel||'—'}</div>
-  </div>`;
+    return `<div class="tv-met-card"><div class="tv-met-icon">${d.icon}</div><div class="tv-met-name">${d.label}</div>
+    <div class="tv-met-rows">${SQUADS.map(sq=>{const v=D.metrics[d.key][sq]||0;return`<div class="tv-met-row"><span class="tv-met-sq" style="color:${SQ_HEX[sq]}">${sq}</span><div class="tv-met-bw"><div class="tv-met-bf" style="width:${Math.round(v/mx2*100)}%;background:${SQ_HEX[sq]}"></div></div><span class="tv-met-pct">${v}%</span></div>`;}).join('')}</div></div>`;
+  }).join('')+`<div class="tv-week-card"><div class="tv-week-lbl">Current Week</div><div class="tv-week-val">${D.metrics.weekLabel||'—'}</div></div>`;
 
-  // Nav
   document.getElementById('tvNav').innerHTML=[0,1,2].map(i=>`<div class="tv-dot${i===tvSlide?' on':''}" onclick="showSlide(${i})"></div>`).join('');
 }
 
-function showSlide(n) {
-  tvSlide=n;
-  document.querySelectorAll('.tv-slide').forEach((s,i)=>s.classList.toggle('active',i===n));
-  document.querySelectorAll('.tv-dot').forEach((d,i)=>d.classList.toggle('on',i===n));
-  tvPct=0; document.getElementById('tvProg').style.width='0%';
-}
-
-function startAuto() {
-  clearInterval(tvTimer); clearInterval(tvProgTimer);
-  const step=80, inc=step/TV_SECS*100;
-  tvProgTimer=setInterval(()=>{ tvPct=Math.min(tvPct+inc,100); document.getElementById('tvProg').style.width=tvPct+'%'; },step);
-  tvTimer=setInterval(()=>{ showSlide((tvSlide+1)%3); startAuto(); },TV_SECS);
-}
+function showSlide(n){ tvSlide=n; document.querySelectorAll('.tv-slide').forEach((s,i)=>s.classList.toggle('active',i===n)); document.querySelectorAll('.tv-dot').forEach((d,i)=>d.classList.toggle('on',i===n)); tvPct=0; document.getElementById('tvProg').style.width='0%'; }
+function startAuto(){ clearInterval(tvTimer); clearInterval(tvPTimer); const step=80,inc=step/TV_MS*100; tvPTimer=setInterval(()=>{tvPct=Math.min(tvPct+inc,100);document.getElementById('tvProg').style.width=tvPct+'%';},step); tvTimer=setInterval(()=>{showSlide((tvSlide+1)%3);startAuto();},TV_MS); }
 
 document.addEventListener('keydown',e=>{
-  if(!document.getElementById('displayView').classList.contains('active')) return;
+  if(!document.getElementById('tvView').classList.contains('active')) return;
   if(e.key==='Escape') closeDisplay();
-  if(e.key==='ArrowRight'||e.key===' '){ showSlide((tvSlide+1)%3); startAuto(); }
-  if(e.key==='ArrowLeft'){ showSlide((tvSlide+2)%3); startAuto(); }
+  if(e.key==='ArrowRight'||e.key===' '){showSlide((tvSlide+1)%3);startAuto();}
+  if(e.key==='ArrowLeft'){showSlide((tvSlide+2)%3);startAuto();}
 });
 
-// ═══ INIT ═══
-render();
-document.getElementById('evtDate').value=new Date().toISOString().split('T')[0];
-setInterval(()=>{ D=load(); render(); },30000);
+function setTrait(m){ currentTrait=m; renderTrait(); }
+async function deletePhoto(i){
+  if(!confirm('Remove this photo?')) return;
+  D.gallery.photos.splice(i,1);
+  await save(); renderGallery();
+}
+function previewPhoto(input){
+  if(input.files&&input.files[0]){
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const prev=document.getElementById('gPhotoPreview');
+      const img=document.getElementById('gPhotoPreviewImg');
+      if(prev&&img){ img.src=e.target.result; prev.style.display='block'; }
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+function scrollMindset(month){
+  // scroll to the month block in the mindset page
+  const el=document.querySelector('[data-mindset-month="'+month+'"]');
+  if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); }
+}
+
+// Expose globals — direct assignment (module scope, safe after load)
+const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePhoto,
+  __scrollMindset:scrollMindset,previewPhoto,openLogin,tryLogin,close1,
+  requireAdmin,openAddEvent,openAdmin,aTab,addEvent,saveMetrics,
+  savePageContent,loadPageContent,addLink,removeLink,addGItem,
+  resetAll,undoEvt,changePw,openDisplay,closeDisplay,showSlide};
+Object.entries(_fns).forEach(([k,v])=>{ window[k]=v; window['_real_'+k]=v; });
+window.__moduleReady=true;
 </script>
 </body>
 </html>
