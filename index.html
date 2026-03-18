@@ -811,6 +811,80 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   </div>
 </div>
 
+<!-- WHEEL -->
+<div class="page" id="page-wheel">
+  <div class="page-hero" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:20px">
+    <div>
+      <h1 class="page-title">The <span>Wheel</span></h1>
+      <div class="page-subtitle" id="wheelSubtitle">Spin to earn squad points</div>
+    </div>
+    <button class="btn btn-purple" onclick="requireAdmin(()=>{openAdmin();aTab('pages')})">✏ Edit This Page</button>
+  </div>
+  <div class="content-page-layout">
+    <div class="content-body">
+      <div class="rich-text" id="wheelBody"><p>The Wheel is a core part of Clash of Classes. Spin the wheel to earn Trait Dough points for your squad. Edit this description via Admin → Pages.</p></div>
+      <div style="margin-top:24px" id="wheelVideoBlock"></div>
+      <div style="margin-top:24px" id="wheelPresentationBlock"></div>
+    </div>
+    <div class="content-sidebar">
+      <div class="link-card" id="wheelLinks">
+        <div class="link-card-title">🔗 Resources & Links</div>
+        <div style="color:var(--text3);font-size:13px">Add links via Admin → Links.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TRAIT DOUGH -->
+<div class="page" id="page-traitdough">
+  <div class="page-hero" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:20px">
+    <div>
+      <h1 class="page-title">Trait <span>Dough</span></h1>
+      <div class="page-subtitle" id="traitdoughSubtitle">EMS schoolwide token economy system</div>
+    </div>
+    <button class="btn btn-purple" onclick="requireAdmin(()=>{openAdmin();aTab('pages')})">✏ Edit This Page</button>
+  </div>
+  <div class="content-page-layout">
+    <div class="content-body">
+      <div class="rich-text" id="traitdoughBody">
+        <p>Trait Dough is a schoolwide token economy system that highlights individual students demonstrating Life Ready Graduate Traits in action.</p>
+        <h3>Ways to Earn</h3>
+        <p>Students can earn Trait Dough through three pathways: In Action (Individual recognition), Clash of Classes Competition (Team), and Mountaineer Pride (Team).</p>
+        <h3>The Process</h3>
+        <p>Staff members are provided "Trait Dough" to give to students who exemplify different LRG traits. When students "Be the E" by demonstrating ANY Life Ready Graduate trait, the adult recognizes their actions by providing the physical or digital Trait Dough with the reason for earning.</p>
+        <p>The adult immediately circles the trait recognized and writes/signs their name on the back. The student may collect, save, or turn in their Trait Dough at any point — during lunch, PASS, or the beginning/end of the school day.</p>
+        <p>Once in the office, the student explains why they are there and turns in their Trait Dough. They are then entered into a drawing to receive a "gnarly prize" during period drawings. Winners are announced through the morning announcements.</p>
+        <h3>Principles</h3>
+        <p><strong>Purposeful</strong> — Each adult may give as little or as much Trait Dough each day.<br>
+        <strong>Sustainable</strong> — Printed templates can be found in the workroom and a digital copy is available in the links section.<br>
+        <strong>Equitable</strong> — Using data to log what trait, who is giving, and who is receiving is vital to ensure fair distribution.<br>
+        <strong>Manageable</strong> — Make it your own. Don't stress over how much or when you distribute Trait Dough. Look for authentic opportunities.</p>
+        <h3>Student of the Month Connection</h3>
+        <p>Both Trait Dough and Student of the Month highlight students demonstrating LRG Traits, but in different ways. Trait Dough can happen anytime from any adult, while Student of the Month recognizes 2 students per team each month for exemplifying the elevated trait of the month. Selected students are invited to a special monthly experience.</p>
+      </div>
+    </div>
+    <div class="content-sidebar">
+      <div class="link-card" style="margin-bottom:16px">
+        <div class="link-card-title">📋 Student of the Month Experiences</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.7">
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>September</span><span style="color:var(--text3)">Millersville / Thaddeus Stevens</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>October</span><span style="color:var(--text3)">Meadow Valley Electric</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>November</span><span style="color:var(--text3)">Pastry Decorating</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>December</span><span style="color:var(--text3)">Ephrata Borough Police</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>January</span><span style="color:var(--text3)">EASD Athletics / Trivia</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>February</span><span style="color:var(--text3)">Fox Meadows</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>March</span><span style="color:var(--text3)">GEARS</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0"><span>April</span><span style="color:var(--text3)">Refreshing Mountain</span></div>
+        </div>
+      </div>
+      <div class="link-card" id="traitdoughLinks">
+        <div class="link-card-title">🔗 Resources & Links</div>
+        <div style="color:var(--text3);font-size:13px">Add links via Admin → Links.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- GALLERY -->
 <div class="page" id="page-gallery">
   <div class="page-hero">
@@ -989,9 +1063,16 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <p style="font-size:13px;color:var(--text3);margin-bottom:18px">Edit the text content on each page. Changes go live instantly.</p>
       <div class="fr"><label>Page</label>
         <select id="pageSelect" onchange="loadPageContent()">
-          <option value="home">🏠 Home — About Text</option>
+          <option value="home">🏠 Home</option>
+          <option value="trait">⭐ Monthly Trait (intro text)</option>
+          <option value="squads">👥 Squads (intro text)</option>
+          <option value="mindset">📚 Mountaineer Mindset</option>
+          <option value="wheel">🎡 The Wheel</option>
+          <option value="traitdough">💵 Trait Dough</option>
           <option value="mayhem">⚡ Mountaineer Mayhem</option>
           <option value="champs">🏆 Championships</option>
+          <option value="gallery">📸 Gallery (intro text)</option>
+          <option value="staff">👤 Staff Resources (intro text)</option>
         </select>
       </div>
       <div id="pageEditorFields"></div>
@@ -1005,6 +1086,8 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <div class="fr"><label>Page / Section</label>
         <select id="linkSection">
           <option value="mindset">📚 Mountaineer Mindset — Lesson Plans</option>
+          <option value="wheel">🎡 The Wheel — Resources</option>
+          <option value="traitdough">💵 Trait Dough — Resources</option>
           <option value="mayhem">⚡ Mountaineer Mayhem — Resources</option>
           <option value="champs">🏆 Championships — Resources</option>
         </select>
@@ -1117,15 +1200,17 @@ const SQ_HEX = { BLACK:'#c5c9d1', GOLD:'#ffe100', GREY:'#99a8bb', PURPLE:'#bb8ef
 const SQ_CSS = { BLACK:'var(--sq-black)', GOLD:'var(--sq-gold)', GREY:'var(--sq-grey)', PURPLE:'var(--sq-purple)' };
 
 const PAGES_DEF = [
-  { id:'home',    icon:'🏠', label:'Home'       },
-  { id:'trait',   icon:'⭐', label:'Trait'      },
-  { id:'squads',  icon:'👥', label:'Squads'     },
-  { id:'tracker', icon:'📊', label:'Tracker'    },
-  { id:'mindset', icon:'📚', label:'Mindset'    },
-  { id:'mayhem',  icon:'⚡', label:'Mayhem'     },
-  { id:'champs',  icon:'🏆', label:'Champs'     },
-  { id:'gallery', icon:'📸', label:'Gallery'    },
-  { id:'staff',   icon:'👤', label:'Staff'      },
+  { id:'home',       icon:'🏠', label:'Home'        },
+  { id:'trait',      icon:'⭐', label:'Trait'       },
+  { id:'squads',     icon:'👥', label:'Squads'      },
+  { id:'tracker',    icon:'📊', label:'Tracker'     },
+  { id:'mindset',    icon:'📚', label:'Mindset'     },
+  { id:'wheel',      icon:'🎡', label:'Wheel'       },
+  { id:'traitdough', icon:'💵', label:'Trait Dough' },
+  { id:'mayhem',     icon:'⚡', label:'Mayhem'      },
+  { id:'champs',     icon:'🏆', label:'Champs'      },
+  { id:'gallery',    icon:'📸', label:'Gallery'     },
+  { id:'staff',      icon:'👤', label:'Staff'       },
 ];
 
 const TRAITS = [
@@ -1163,7 +1248,7 @@ const DEF = {
   events: SEED_EVENTS,
   metrics: { attendance:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, referral:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, grades:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, weekLabel:'' },
   gallery: { photos:[], quotes:[], spotlights:[], calendar:[] },
-  links: { mindset:[], mayhem:[], champs:[] },
+  links: { mindset:[], mayhem:[], champs:[], wheel:[], traitdough:[] },
   pageContent: {
     homeDesc: 'One school. Four squads. A program built by EMS staff to develop Life Ready Graduate traits, build community, and have fun together every month.',
     pillar1: 'Each month we focus on a Life Ready Graduate skill — from Growth Mindset to Resilience. Students learn, reflect, and put these skills into real action through competitions and daily school life.',
@@ -1174,15 +1259,19 @@ const DEF = {
     champsBody: 'Welcome to the Clash of Classes Championships — add details about this event using the admin panel.',
     champsSubtitle: 'End-of-year championship event',
     mindsetBody: 'The Mountaineer Mindset program provides structured monthly lesson plans aligned with each month\'s LRG trait. Each plan is designed for classroom use and connects the Clash of Classes theme to academic and social-emotional learning.\n\nSelect a month and grade level below to access the lesson plan directly from Google Drive.',
+    wheelSubtitle: 'Spin to earn squad points',
+    wheelBody: 'The Wheel is a core part of Clash of Classes. Trait Dough Wheel points are earned by squads spinning the wheel. Edit this description via Admin → Pages.',
+    traitdoughSubtitle: 'EMS schoolwide token economy system',
+    traitdoughBody: '',
   },
   history: [], password: 'ephrata2026', nextId: 100,
 };
 
 const SQUAD_TEACHERS = {
-  BLACK:  [{name:'DeTore',room:'72'},{name:'Hungerford',room:'72'},{name:'Goss',room:'72'},{name:'Doyle',room:'78'},{name:'Rice',room:'78'},{name:'Aydin',room:'78'},{name:'Erickson',room:'74'},{name:'Jones',room:'74'},{name:'Sweigart',room:'74'},{name:'Leister',room:'71'},{name:'Sensenig',room:'71'},{name:'Tiesi',room:'71'}],
-  GOLD:   [{name:'Rios',room:'77'},{name:'Ney',room:'77'},{name:'Apgar-Rodriguez',room:'77'},{name:'Brosig',room:'98'},{name:'Mr. Miller',room:'98'},{name:'Reynolds',room:'93'},{name:'Troop',room:'93'},{name:'McQuate',room:'93'},{name:'Mr. Ullrich',room:'86'},{name:'Delaney',room:'86'},{name:'Young',room:'81'},{name:'Milligan',room:'81'}],
-  GREY:   [{name:'Edmiston',room:'75'},{name:'McCabe',room:'75'},{name:'Trout',room:'96'},{name:'Reichl',room:'96'},{name:'Meehan',room:'96'},{name:'Daniels',room:'90'},{name:'T. Weaver',room:'90'},{name:'Thomas',room:'88'},{name:'D. Weaver',room:'88'},{name:'Bradley',room:'83'},{name:'Ohlinger',room:'83'}],
-  PURPLE: [{name:'Haupt',room:'73'},{name:'Rineer',room:'73'},{name:'Mrs. Jones',room:'76'},{name:'Mrs. Ullrich',room:'76'},{name:'Lebo',room:'99'},{name:'Truskey',room:'99'},{name:'Rigg',room:'91'},{name:'Bartsch',room:'91'},{name:'Segura',room:'85'},{name:'Hooper',room:'85'},{name:'Horner',room:'84'},{name:'Sunday',room:'84'}],
+  BLACK: ['Jale Aydin','Dawn Butt','Alyce DeTore','Dalton Doyle','Chrystal Garner','Steve Goss','Kristin Groome-Rex','Karile Heft','Shawn Hertzog','Aaron Hungerford','Chrystal Jean','Vanessa Klinger','Heidi Kuska','Jen Lugar','Eric Martin','Maria Miller','Emily Morrison','Maggie Myers','Verteli Perez Castro','Tim Rice','Robin Ward','Austin Wealand','Adam Zeni','Michelle Ziegmont','Tracy Zimmerman'],
+  GOLD:  ['Amy Apgar-Rodriguez','Mike Brosig','Dan Delaney','Danielle Ellis','Cathy Erickson','Amber Gueits','David Hess','Austin Jones','Sara Judge','Jon Miller','Hayley Miller','Kris Miller','Sandy Milligan','Lori Neu','Rick Ney','Kristen Reynolds','Amy Rios','Donna Schlinkman','Michelle Sweigart','Erika Troop','Dan Ullrich','Jennifer Walp','Lori Warfel','Kelly Webb','Rachel Young','Noah Young'],
+  GREY:  ['Adrian Allwein','Brandon Beard','Indra Bradley','Connor Daniels','Matt Edmiston','Emma Leister','Trena Lunsford','Steve McCabe','Kierstin McQuate','Taylor Meehan','Josh Miller','Alane Mowbray','Kristie Ohlinger','Patti Reichl','June Risser','Haley Sensenig','Lauren Stoner','Tina Thomas','Angie Thomas','Wendy Tiesi','Jenn Trout','Kim Wagner','Tanya Weaver','Deni Weaver','Kristen Williamson','Nicole Zimmerman'],
+  PURPLE:['Jessica Bartsch','Daniel Brice','Bryan Clark','Michelle Colon','Tara Eagan','Brooke Gerlach','Josh Haupt','Meghan Hooper','Laura Horner','Cyndi Jones','Rebecca Klemka','Kevin Kuhn','Alexandriya Lebo','Kelley Lindberg','Jenna Nagy','Erica Reed','Kelly Rigg','Kurtis Rineer','Amy Segura','Jessica Shuman','Andrew Sleek','Tiea Sterner','Bret Sunday','Jim Sushinski','Julea Truskey','Michelle Ullrich'],
 };
 
 let D = JSON.parse(JSON.stringify(DEF));
@@ -1202,7 +1291,14 @@ onValue(DB,(snap)=>{
     if(!D.gallery) D.gallery={photos:[],quotes:[],spotlights:[],calendar:[]};
     ['photos','quotes','spotlights','calendar'].forEach(k=>{ if(!Array.isArray(D.gallery[k])) D.gallery[k]=[]; });
     if(!D.links) D.links={mindset:[],mayhem:[],champs:[]};
-    ['mindset','mayhem','champs'].forEach(k=>{ if(!Array.isArray(D.links[k])) D.links[k]=[]; });
+    ['mindset','mayhem','champs','wheel','traitdough'].forEach(k=>{ if(!Array.isArray(D.links[k])) D.links[k]=[]; });
+    // Pre-seed wheel links from the provided Google Drive links
+    if(D.links.wheel.length===0){
+      D.links.wheel=[
+        {label:'Wheel Demo Video',url:'https://drive.google.com/file/d/1cPO_FGUmweW91kBiQ5rmHOuN-jREN7jQ/view?usp=sharing',id:1},
+        {label:'Wheel Presentation (How It Works)',url:'https://docs.google.com/presentation/d/1GV3jLRh4v_-bLNgHiTio-yk7yyVCv_BFnm7k3DNjLxc/edit?usp=sharing',id:2},
+      ];
+    }
     if(!D.pageContent) D.pageContent={...DEF.pageContent};
     Object.keys(DEF.pageContent).forEach(k=>{ if(!D.pageContent[k]) D.pageContent[k]=DEF.pageContent[k]; });
   } else {
@@ -1247,6 +1343,8 @@ function goTo(id){
   if(id==='mindset') renderMindset();
   if(id==='mayhem') renderMayhem();
   if(id==='champs') renderChamps();
+  if(id==='wheel') renderWheel();
+  if(id==='traitdough') renderTraitDough();
 }
 
 // ── RENDER ALL ──
@@ -1264,6 +1362,8 @@ function renderAll(){
   if(currentPage==='mindset') renderMindset();
   if(currentPage==='mayhem') renderMayhem();
   if(currentPage==='champs') renderChamps();
+  if(currentPage==='wheel') renderWheel();
+  if(currentPage==='traitdough') renderTraitDough();
 }
 
 function renderHomeText(){
@@ -1328,16 +1428,16 @@ function renderSquads(){
   const r=ranked();
   document.getElementById('squadsGrid').innerHTML=SQUADS.map(sq=>{
     const rank=r.indexOf(sq)+1;
-    const teachers=SQUAD_TEACHERS[sq]||[];
+    const members=SQUAD_TEACHERS[sq]||[];
     return `<div class="squad-card sq-${sq}">
       <div class="squad-header">
         <div><div class="squad-name">${sq}</div>
-        <div class="squad-rank-chip">Rank #${rank}</div></div>
+        <div class="squad-rank-chip">Rank #${rank} · ${grand(sq).toLocaleString()} pts</div></div>
         <div class="squad-pts-big">${grand(sq).toLocaleString()}</div>
       </div>
       <div class="squad-teachers-section">
-        <div class="squad-teachers-label">Squad Teachers</div>
-        <div class="teacher-chips">${teachers.map(t=>`<div class="teacher-chip"><div class="tc-name">${t.name}</div><div class="tc-room">Rm ${t.room}</div></div>`).join('')}</div>
+        <div class="squad-teachers-label">All Squad Members (${members.length})</div>
+        <div class="teacher-chips">${members.map(n=>`<div class="teacher-chip"><div class="tc-name">${n}</div></div>`).join('')}</div>
       </div>
       <div class="squad-footer"></div>
     </div>`;
@@ -1441,6 +1541,41 @@ function renderChamps(){
   if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map((l,i)=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via the admin panel.</div>'}`;
 }
 
+function renderWheel(){
+  const pc=D.pageContent||{};
+  const sub=document.getElementById('wheelSubtitle'); if(sub) sub.textContent=pc.wheelSubtitle||DEF.pageContent.wheelSubtitle;
+  const body=document.getElementById('wheelBody'); if(body) body.innerHTML=`<p>${(pc.wheelBody||DEF.pageContent.wheelBody).replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
+  const links=D.links.wheel||[];
+  // Build video/presentation embeds from links
+  const vids=links.filter(l=>l.url&&(l.url.includes('drive.google.com')||l.url.includes('docs.google.com')));
+  const vb=document.getElementById('wheelVideoBlock');
+  if(vb&&vids.length){
+    vb.innerHTML=vids.map(l=>{
+      let embedUrl=l.url;
+      // Convert drive view links to embed
+      if(embedUrl.includes('/view')) embedUrl=embedUrl.replace('/view','').replace('file/d/','file/d/')+'?embedded=true';
+      if(embedUrl.includes('presentation')) embedUrl=embedUrl.replace('/edit','').replace('/pub','')+'?embedded=true';
+      return `<div style="margin-bottom:16px"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--purple-lt);text-transform:uppercase;margin-bottom:8px">${l.label}</div>
+        <a href="${l.url}" target="_blank" class="ext-link active-link" style="margin-bottom:8px">${l.label} — Open in Google Drive <span class="link-arrow">↗</span></a></div>`;
+    }).join('');
+  } else if(vb){ vb.innerHTML=''; }
+  const el=document.getElementById('wheelLinks');
+  if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map(l=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via Admin → Links.</div>'}`;
+}
+
+function renderTraitDough(){
+  const pc=D.pageContent||{};
+  const sub=document.getElementById('traitdoughSubtitle'); if(sub) sub.textContent=pc.traitdoughSubtitle||DEF.pageContent.traitdoughSubtitle;
+  // Only override body if admin has set custom content
+  if(pc.traitdoughBody){
+    const body=document.getElementById('traitdoughBody');
+    if(body&&pc.traitdoughBody) body.innerHTML=`<p>${pc.traitdoughBody.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
+  }
+  const links=D.links.traitdough||[];
+  const el=document.getElementById('traitdoughLinks');
+  if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map(l=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via Admin → Links.</div>'}`;
+}
+
 // ── GALLERY ──
 function renderGallery(){
   const g=D.gallery;
@@ -1500,43 +1635,79 @@ async function saveMetrics(){
 async function savePageContent(){
   const page=document.getElementById('pageSelect').value;
   if(!D.pageContent) D.pageContent={...DEF.pageContent};
+  const g=id=>document.getElementById(id)?.value||'';
   if(page==='home'){
-    D.pageContent.homeDesc=document.getElementById('peHomeDesc')?.value||'';
-    D.pageContent.pillar1=document.getElementById('pePillar1')?.value||'';
-    D.pageContent.pillar2=document.getElementById('pePillar2')?.value||'';
-    D.pageContent.pillar3=document.getElementById('pePillar3')?.value||'';
-  } else if(page==='mayhem'){
-    D.pageContent.mayhemSubtitle=document.getElementById('peMayhemSub')?.value||'';
-    D.pageContent.mayhemBody=document.getElementById('peMayhemBody')?.value||'';
-  } else if(page==='champs'){
-    D.pageContent.champsSubtitle=document.getElementById('peChampsSub')?.value||'';
-    D.pageContent.champsBody=document.getElementById('peChampsBody')?.value||'';
+    D.pageContent.homeDesc=g('peHomeDesc');
+    D.pageContent.pillar1=g('pePillar1');
+    D.pageContent.pillar2=g('pePillar2');
+    D.pageContent.pillar3=g('pePillar3');
+  } else if(page==='trait'){
+    D.pageContent.traitSubtitle=g('peTraitSub');
+  } else if(page==='squads'){
+    D.pageContent.squadsSubtitle=g('peSquadsSub');
   } else if(page==='mindset'){
-    D.pageContent.mindsetBody=document.getElementById('peMindsetBody')?.value||'';
+    D.pageContent.mindsetBody=g('peMindsetBody');
+  } else if(page==='wheel'){
+    D.pageContent.wheelSubtitle=g('peWheelSub');
+    D.pageContent.wheelBody=g('peWheelBody');
+  } else if(page==='traitdough'){
+    D.pageContent.traitdoughSubtitle=g('peTDSub');
+    D.pageContent.traitdoughBody=g('peTDBody');
+  } else if(page==='mayhem'){
+    D.pageContent.mayhemSubtitle=g('peMayhemSub');
+    D.pageContent.mayhemBody=g('peMayhemBody');
+  } else if(page==='champs'){
+    D.pageContent.champsSubtitle=g('peChampsSub');
+    D.pageContent.champsBody=g('peChampsBody');
+  } else if(page==='gallery'){
+    D.pageContent.gallerySubtitle=g('peGallerySub');
+  } else if(page==='staff'){
+    D.pageContent.staffSubtitle=g('peStaffSub');
   }
   await save(); flash('pageOk');
+  // Re-render current page if it matches
+  if(page===currentPage) renderAll();
 }
 
 function loadPageContent(){
   const page=document.getElementById('pageSelect').value;
   const pc=D.pageContent||DEF.pageContent;
   const f=document.getElementById('pageEditorFields');
+  const esc=s=>(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   if(page==='home'){
     f.innerHTML=`
-      <div class="fr"><label>Homepage Description</label><textarea id="peHomeDesc" rows="3">${pc.homeDesc||''}</textarea></div>
-      <div class="fr"><label>Pillar 1 — LRG Traits Text</label><textarea id="pePillar1" rows="3">${pc.pillar1||''}</textarea></div>
-      <div class="fr"><label>Pillar 2 — Build Community Text</label><textarea id="pePillar2" rows="3">${pc.pillar2||''}</textarea></div>
-      <div class="fr"><label>Pillar 3 — Have Fun Text</label><textarea id="pePillar3" rows="3">${pc.pillar3||''}</textarea></div>`;
+      <div class="fr"><label>Homepage Description</label><textarea id="peHomeDesc" rows="3">${esc(pc.homeDesc)}</textarea></div>
+      <div class="fr"><label>Pillar 1 — LRG Traits Text</label><textarea id="pePillar1" rows="3">${esc(pc.pillar1)}</textarea></div>
+      <div class="fr"><label>Pillar 2 — Build Community Text</label><textarea id="pePillar2" rows="3">${esc(pc.pillar2)}</textarea></div>
+      <div class="fr"><label>Pillar 3 — Have Fun Text</label><textarea id="pePillar3" rows="3">${esc(pc.pillar3)}</textarea></div>`;
+  } else if(page==='trait'){
+    f.innerHTML=`<div class="fr"><label>Trait Page Subtitle</label><input type="text" id="peTraitSub" value="${esc(pc.traitSubtitle||'Life Ready Graduate Skills · 2025–2026')}"></div>`;
+  } else if(page==='squads'){
+    f.innerHTML=`<div class="fr"><label>Squads Page Subtitle</label><input type="text" id="peSquadsSub" value="${esc(pc.squadsSubtitle||'Everyone Belongs')}"></div>`;
+  } else if(page==='mindset'){
+    f.innerHTML=`<div class="fr"><label>Intro Body Text</label><textarea id="peMindsetBody" rows="5">${esc(pc.mindsetBody)}</textarea></div>`;
+  } else if(page==='wheel'){
+    f.innerHTML=`
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peWheelSub" value="${esc(pc.wheelSubtitle||'')}"></div>
+      <div class="fr"><label>Page Body Text</label><textarea id="peWheelBody" rows="8">${esc(pc.wheelBody||'')}</textarea></div>`;
+  } else if(page==='traitdough'){
+    f.innerHTML=`
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peTDSub" value="${esc(pc.traitdoughSubtitle||'')}"></div>
+      <div class="fr"><label>Custom Body Text (leave blank to use default)</label><textarea id="peTDBody" rows="8">${esc(pc.traitdoughBody||'')}</textarea></div>`;
   } else if(page==='mayhem'){
     f.innerHTML=`
-      <div class="fr"><label>Page Subtitle</label><input type="text" id="peMayhemSub" value="${pc.mayhemSubtitle||''}"></div>
-      <div class="fr"><label>Page Body Text (use blank lines between paragraphs)</label><textarea id="peMayhemBody" rows="8">${pc.mayhemBody||''}</textarea></div>`;
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peMayhemSub" value="${esc(pc.mayhemSubtitle||'')}"></div>
+      <div class="fr"><label>Page Body Text (blank lines = new paragraph)</label><textarea id="peMayhemBody" rows="8">${esc(pc.mayhemBody||'')}</textarea></div>`;
   } else if(page==='champs'){
     f.innerHTML=`
-      <div class="fr"><label>Page Subtitle</label><input type="text" id="peChampsSub" value="${pc.champsSubtitle||''}"></div>
-      <div class="fr"><label>Page Body Text (use blank lines between paragraphs)</label><textarea id="peChampsBody" rows="8">${pc.champsBody||''}</textarea></div>`;
-  } else if(page==='mindset'){
-    f.innerHTML=`<div class="fr"><label>Intro Body Text</label><textarea id="peMindsetBody" rows="5">${pc.mindsetBody||''}</textarea></div>`;
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peChampsSub" value="${esc(pc.champsSubtitle||'')}"></div>
+      <div class="fr"><label>Page Body Text (blank lines = new paragraph)</label><textarea id="peChampsBody" rows="8">${esc(pc.champsBody||'')}</textarea></div>`;
+  } else if(page==='gallery'){
+    f.innerHTML=`<div class="fr"><label>Gallery Page Subtitle</label><input type="text" id="peGallerySub" value="${esc(pc.gallerySubtitle||'Photos, voices, spotlights & upcoming events')}"></div>`;
+  } else if(page==='staff'){
+    f.innerHTML=`<div class="fr"><label>Staff Page Subtitle</label><input type="text" id="peStaffSub" value="${esc(pc.staffSubtitle||'Everything you need to run Clash of Classes')}"></div>`;
+  } else {
+    f.innerHTML=`<p style="color:var(--text3);font-size:13px">Select a page above to edit its content.</p>`;
   }
 }
 
@@ -1726,11 +1897,18 @@ function buildTV(){
       <div class="tv-rk-bar" style="background:${SQ_HEX[sq]};width:${Math.round(grand(sq)/mx*100)}%"></div>
     </div>`).join('');
 
-  const cats=[{label:'Event Points',vals:Object.fromEntries(SQUADS.map(sq=>[sq,evtTotal(sq)]))},{label:'Attendance',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.attendance[sq]||0)]))},{label:'No Referral',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.referral[sq]||0)]))},{label:'No Fail Grade',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.grades[sq]||0)]))}];
+  // Show recent events + metrics on TV slide 2
+  const recentEvents=(D.events||[]).slice(-6); // last 6 events
+  const allCats=[
+    ...recentEvents.map(e=>({label:e.name,vals:e.pts})),
+    {label:'Attendance',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.attendance[sq]||0)]))},
+    {label:'No Referral',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.referral[sq]||0)]))},
+    {label:'No Fail Grade',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.grades[sq]||0)]))},
+  ];
   const hdrs=`<div class="tv-cat-row" style="margin-bottom:6px"><div></div>${SQUADS.map(sq=>`<div class="tv-col-hdr" style="color:${SQ_HEX[sq]}">${sq}</div>`).join('')}</div>`;
-  document.getElementById('tvCats').innerHTML=hdrs+cats.map(c=>{
-    const vals=SQUADS.map(sq=>c.vals[sq]||0), mx2=Math.max(...vals,1);
-    return `<div class="tv-cat-row"><div class="tv-cat-lbl">${c.label}</div>${SQUADS.map(sq=>{const v=c.vals[sq]||0,pct=Math.round(v/mx2*100),lt=['GREY','BLACK'].includes(sq);return`<div class="tv-cat-bwrap"><div class="tv-cat-bfill" style="width:${pct}%;background:${SQ_HEX[sq]}"><span class="tv-cat-bval${lt?' lt':''}">${v>0?v:''}</span></div></div>`;}).join('')}</div>`;
+  document.getElementById('tvCats').innerHTML=hdrs+allCats.map(c=>{
+    const vals=SQUADS.map(sq=>(c.vals&&c.vals[sq])||0), mx2=Math.max(...vals,1);
+    return `<div class="tv-cat-row"><div class="tv-cat-lbl" style="font-size:13px">${c.label.length>20?c.label.substring(0,20)+'…':c.label}</div>${SQUADS.map(sq=>{const v=(c.vals&&c.vals[sq])||0,pct=Math.round(v/mx2*100),lt=['GREY','BLACK'].includes(sq);return`<div class="tv-cat-bwrap"><div class="tv-cat-bfill" style="width:${pct}%;background:${SQ_HEX[sq]}"><span class="tv-cat-bval${lt?' lt':''}">${v>0?v:''}</span></div></div>`;}).join('')}</div>`;
   }).join('');
 
   const mDefs=[{key:'attendance',icon:'📅',label:'Avg Attendance'},{key:'referral',icon:'⭐',label:'No Referral'},{key:'grades',icon:'📚',label:'No Fail Grade'}];
@@ -1777,7 +1955,7 @@ function scrollMindset(month){
 }
 
 // Expose globals — direct assignment (module scope, safe after load)
-const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePhoto,
+const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePhoto,renderWheel,renderTraitDough,
   __scrollMindset:scrollMindset,previewPhoto,openLogin,tryLogin,close1,
   requireAdmin,openAddEvent,openAdmin,aTab,addEvent,saveMetrics,
   savePageContent,loadPageContent,addLink,removeLink,addGItem,
