@@ -169,23 +169,6 @@ body::before {
 .card:hover { border-color:var(--border2); }
 .card-accent { border-top:3px solid var(--purple); }
 .card-gold   { border-top:3px solid var(--gold-soft); }
-
-/* Video / embed cards */
-.embed-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; transition:all 0.2s; }
-.embed-card:hover { border-color:var(--border2); transform:translateY(-2px); }
-.embed-thumb { width:100%; height:160px; object-fit:cover; display:block; background:var(--purple-dim); position:relative; }
-.embed-thumb-inner { width:100%; height:100%; display:flex; align-items:center; justify-content:center; position:relative; }
-.embed-play { width:52px; height:52px; background:rgba(0,0,0,0.65); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; }
-.embed-thumb-img { width:100%; height:100%; object-fit:cover; position:absolute; inset:0; }
-.embed-info { padding:14px 16px; }
-.embed-title { font-size:14px; font-weight:600; color:var(--text); margin-bottom:4px; }
-.embed-type { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--text3); text-transform:uppercase; }
-.embed-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
-.manage-item { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); gap:8px; font-size:13px; }
-.manage-item:last-child { border-bottom:none; }
-.manage-item-name { color:var(--text2); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.del-btn { background:none; border:1px solid var(--border); color:var(--text3); font-size:10px; padding:3px 8px; cursor:pointer; border-radius:4px; font-family:'DM Mono',monospace; flex-shrink:0; transition:all 0.15s; }
-.del-btn:hover { border-color:#f87171; color:#f87171; }
 .card-gold { border-top:3px solid var(--gold-soft); }
 
 /* ── BUTTONS ── */
@@ -731,14 +714,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <h1 class="page-title">Live <span>Tracker</span></h1>
       <div class="page-subtitle">Real-time squad standings</div>
     </div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <div id="sheetSyncStatus" style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);letter-spacing:1px">
-        <div id="sheetSyncDot" style="width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0"></div>
-        <span id="sheetSyncLabel">Connecting to Sheet…</span>
-        <button onclick="syncSheet()" style="background:none;border:none;color:var(--purple-lt);cursor:pointer;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:1px;padding:0;margin-left:4px">↻ Sync</button>
-      </div>
-      <button class="btn btn-purple" onclick="openDisplay()">📺 TV Display Mode</button>
-    </div>
+    <button class="btn btn-purple" onclick="openDisplay()">📺 TV Display Mode</button>
   </div>
   <div class="score-strip" id="scoreStrip">
     <div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text3);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px">Connecting to Firebase…</div>
@@ -756,7 +732,6 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
           <th class="th-GREY">Grey</th><th class="th-PURPLE">Purple</th>
         </tr></thead>
         <tbody id="evtBody"></tbody>
-        <tbody id="sheetBody"></tbody>
         <tfoot id="evtFoot"></tfoot>
       </table>
     </div>
@@ -1159,13 +1134,11 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   </div>
   <div class="gallery-tabs">
     <button class="g-tab active" onclick="gTab('photos')">📸 Photos</button>
-    <button class="g-tab" onclick="gTab('videos')">🎬 Videos</button>
     <button class="g-tab" onclick="gTab('quotes')">💬 Student Voices</button>
     <button class="g-tab" onclick="gTab('staff')">👤 Staff Spotlights</button>
     <button class="g-tab" onclick="gTab('calendar')">📅 Upcoming Events</button>
   </div>
   <div class="gallery-section active" id="gs-photos"><div class="photo-grid" id="photosGrid"></div></div>
-  <div class="gallery-section" id="gs-videos"><div class="embed-grid" id="videosGrid"></div></div>
   <div class="gallery-section" id="gs-quotes"><div class="quotes-grid" id="quotesGrid"></div></div>
   <div class="gallery-section" id="gs-staff"><div class="staff-spotlight-grid" id="staffGrid"></div></div>
   <div class="gallery-section" id="gs-calendar"><div class="calendar-items" id="calGrid"></div></div>
@@ -1372,57 +1345,23 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
     <!-- GALLERY -->
     <div class="a-panel" id="ap-gallery">
       <div class="admin-tabs" style="margin-bottom:16px">
-        <button class="a-tab on" onclick="gATab('photo')">📸 Photos</button>
-        <button class="a-tab" onclick="gATab('video')">🎬 Videos</button>
-        <button class="a-tab" onclick="gATab('quote')">💬 Quotes</button>
-        <button class="a-tab" onclick="gATab('spotlight')">👤 Spotlight</button>
-        <button class="a-tab" onclick="gATab('cal')">📅 Calendar</button>
+        <button class="a-tab on" onclick="gATab('photo')">Photo</button>
+        <button class="a-tab" onclick="gATab('quote')">Quote</button>
+        <button class="a-tab" onclick="gATab('spotlight')">Spotlight</button>
+        <button class="a-tab" onclick="gATab('cal')">Calendar</button>
       </div>
-
-      <!-- PHOTOS -->
       <div class="a-panel on" id="gap-photo">
         <div class="fr">
           <label>Upload Image File</label>
           <input type="file" id="gPhotoFile" accept="image/*" onchange="previewPhoto(this)" style="padding:8px">
           <div id="gPhotoPreview" style="margin-top:8px;display:none"><img id="gPhotoPreviewImg" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid var(--border2)" /></div>
         </div>
-        <div class="fr"><label>— or — Image URL</label><input type="url" id="gPhotoUrl" placeholder="https://… (leave blank if uploading a file)"></div>
+        <div class="fr"><label>— or — Image URL</label><input type="url" id="gPhotoUrl" placeholder="https://… (leave blank if uploading file)"></div>
         <div class="fr"><label>Caption</label><input type="text" id="gPhotoTitle" placeholder="e.g. Mummy Wrap 2025"></div>
         <div class="fr"><label>Date</label><input type="date" id="gPhotoDate"></div>
         <div class="fmsg" id="gPhotoOk">✓ Photo added!</div>
         <button class="btn-submit" onclick="addGItem('photo')">Add Photo</button>
-        <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
-          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Existing Photos</div>
-          <div id="photoManageList"></div>
-        </div>
       </div>
-
-      <!-- VIDEOS / EMBEDS -->
-      <div class="a-panel" id="gap-video">
-        <p style="font-size:13px;color:var(--text3);margin-bottom:16px">Paste a Google Drive or YouTube link — the site will auto-generate a thumbnail and embed card.</p>
-        <div class="fr"><label>Video / File URL</label><input type="url" id="gVidUrl" placeholder="https://drive.google.com/… or https://youtube.com/…" oninput="previewEmbed(this.value)"></div>
-        <div id="gVidPreview" style="margin:8px 0;display:none"></div>
-        <div class="fr"><label>Title / Label</label><input type="text" id="gVidTitle" placeholder="e.g. Wheel Demo Video, Oct Trivia Slides"></div>
-        <div class="fr"><label>Show on Page</label>
-          <select id="gVidPage">
-            <option value="gallery">📸 Gallery</option>
-            <option value="wheel">🎡 The Wheel</option>
-            <option value="traitdough">💵 Trait Dough</option>
-            <option value="mayhem">⚡ Mayhem</option>
-            <option value="champs">🏆 Championships</option>
-            <option value="sotm">🌟 Student of Month</option>
-            <option value="home">🏠 Home</option>
-          </select>
-        </div>
-        <div class="fmsg" id="gVidOk">✓ Embed added!</div>
-        <button class="btn-submit" onclick="addGItem('video')">Add Video / Embed</button>
-        <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
-          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Existing Embeds</div>
-          <div id="videoManageList"></div>
-        </div>
-      </div>
-
-      <!-- QUOTES -->
       <div class="a-panel" id="gap-quote">
         <div class="fr"><label>Quote</label><textarea id="gQuoteText" placeholder="What did a student say?"></textarea></div>
         <div class="fr"><label>Student (name or anonymous)</label><input type="text" id="gQuoteAuthor" placeholder="e.g. 8th Grader, Alex"></div>
@@ -1430,8 +1369,6 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         <div class="fmsg" id="gQuoteOk">✓ Quote added!</div>
         <button class="btn-submit" onclick="addGItem('quote')">Add Quote</button>
       </div>
-
-      <!-- SPOTLIGHT -->
       <div class="a-panel" id="gap-spotlight">
         <div class="fr"><label>Staff Name</label><input type="text" id="gStaffName" placeholder="e.g. Ms. Johnson"></div>
         <div class="fr"><label>Role / Squad</label><input type="text" id="gStaffRole" placeholder="e.g. 7th Grade Math · Gold Squad"></div>
@@ -1440,8 +1377,6 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         <div class="fmsg" id="gStaffOk">✓ Spotlight added!</div>
         <button class="btn-submit" onclick="addGItem('spotlight')">Add Spotlight</button>
       </div>
-
-      <!-- CALENDAR -->
       <div class="a-panel" id="gap-cal">
         <div class="fr"><label>Event Title</label><input type="text" id="gCalTitle" placeholder="e.g. April Championship"></div>
         <div class="fr"><label>Date</label><input type="date" id="gCalDate"></div>
@@ -1481,7 +1416,7 @@ window.__pendingCalls = [];
 ['goTo','__goTo','setTrait','__setTrait','gTab','gATab','openLogin','tryLogin',
  'requireAdmin','openAddEvent','openAdmin','close1','aTab','addEvent','saveMetrics',
  'savePageContent','loadPageContent','addLink','removeLink','addGItem','resetAll',
- 'undoEvt','changePw','openDisplay','closeDisplay','showSlide','previewPhoto','previewEmbed','openEmbed','deleteEmbed','deletePhoto','renderPhotoManageList','renderVideoManageList',
+ 'undoEvt','changePw','openDisplay','closeDisplay','showSlide','previewPhoto',
  '__scrollMindset'].forEach(fn=>{
   window[fn]=function(){
     const args=Array.from(arguments);
@@ -1556,7 +1491,7 @@ const SEED_EVENTS = [
 const DEF = {
   events: SEED_EVENTS,
   metrics: { attendance:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, referral:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, grades:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, weekLabel:'' },
-  gallery: { photos:[], quotes:[], spotlights:[], calendar:[], videos:[] },
+  gallery: { photos:[], quotes:[], spotlights:[], calendar:[] },
   links: { mindset:[], mayhem:[], champs:[], wheel:[], traitdough:[], sotm:[] },
   pageContent: {
     homeDesc: 'One school. Four squads. A program built by EMS staff to develop Life Ready Graduate traits, build community, and have fun together every month.',
@@ -1600,7 +1535,7 @@ onValue(DB,(snap)=>{
     if(!D.metrics) D.metrics=JSON.parse(JSON.stringify(DEF.metrics));
     ['attendance','referral','grades'].forEach(k=>{ if(!D.metrics[k]) D.metrics[k]={BLACK:0,GOLD:0,GREY:0,PURPLE:0}; });
     if(!D.gallery) D.gallery={photos:[],quotes:[],spotlights:[],calendar:[]};
-    ['photos','quotes','spotlights','calendar','videos'].forEach(k=>{ if(!Array.isArray(D.gallery[k])) D.gallery[k]=[]; });
+    ['photos','quotes','spotlights','calendar'].forEach(k=>{ if(!Array.isArray(D.gallery[k])) D.gallery[k]=[]; });
     if(!D.links) D.links={mindset:[],mayhem:[],champs:[]};
     ['mindset','mayhem','champs','wheel','traitdough','sotm'].forEach(k=>{ if(!Array.isArray(D.links[k])) D.links[k]=[]; });
     // Pre-seed wheel links from the provided Google Drive links
@@ -1719,13 +1654,9 @@ function renderTable(){
     const note=ev.note?`<br><span style="font-size:11px;color:var(--text3)">${ev.note}</span>`:'';
     return `<tr><td>${ev.name}${pill}${note}</td>${SQUADS.map(sq=>`<td class="td-${sq}${(ev.pts[sq]||0)===mx&&mx>0?' td-win':''}">${ev.pts[sq]||0}</td>`).join('')}</tr>`;
   }).join('');
-  const tots=SQUADS.map(sq=>`<td class="td-${sq}">${grandWithSheet(sq).toLocaleString()}</td>`).join('');
+  const tots=SQUADS.map(sq=>`<td class="td-${sq}">${grand(sq).toLocaleString()}</td>`).join('');
   const mets=SQUADS.map(sq=>`<td style="color:var(--text3)">+${metTotal(sq)}</td>`).join('');
-  const sheetTots=SQUADS.map(sq=>`<td style="color:#4ade80">+${sheetEvtTotal(sq)}</td>`).join('');
-  document.getElementById('evtFoot').innerHTML=`
-    <tr class="tfoot-total"><td>Overall Total</td>${tots}</tr>
-    <tr class="tfoot-sub"><td>Metrics Points</td>${mets}</tr>
-    ${sheetEvents.length?`<tr class="tfoot-sub"><td style="color:#4ade80">From Google Sheet</td>${sheetTots}</tr>`:''}`;
+  document.getElementById('evtFoot').innerHTML=`<tr class="tfoot-total"><td>Overall Total</td>${tots}</tr><tr class="tfoot-sub"><td>Metrics Points</td>${mets}</tr>`;
 }
 
 function renderMetrics(){
@@ -1878,7 +1809,6 @@ function renderWheel(){
   } else if(vb){ vb.innerHTML=''; }
   const el=document.getElementById('wheelLinks');
   if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map(l=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via Admin → Links.</div>'}`;
-  renderPageEmbeds('wheel','wheelVideoBlock');
 }
 
 function renderTraitDough(){
@@ -1906,14 +1836,6 @@ function renderSotm(){
 }
 
 // ── GALLERY ──
-function renderPageEmbeds(page,containerId){
-  const el=document.getElementById(containerId);
-  if(!el) return;
-  const vids=(D.gallery.videos||[]).filter(v=>v.page===page);
-  if(!vids.length){ el.innerHTML=''; return; }
-  el.innerHTML='<div style="margin-bottom:8px"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--purple-lt);text-transform:uppercase;margin-bottom:12px">Videos & Files</div><div class="embed-grid">'+vids.map((v,i)=>buildEmbedCard(v,i,authed)).join('')+'</div></div>';
-}
-
 function renderGallery(){
   const g=D.gallery;
   const empty=(icon,msg)=>`<div class="empty-state"><span class="empty-icon">${icon}</span><div class="empty-msg">${msg}</div></div>`;
@@ -1922,14 +1844,6 @@ function renderGallery(){
   document.getElementById('photosGrid').innerHTML=g.photos.length
     ? g.photos.map((p,i)=>`<div class="photo-card" style="position:relative">${showDel?`<button onclick="deletePhoto(${i})" style="position:absolute;top:8px;right:8px;z-index:10;background:rgba(0,0,0,0.7);border:none;color:#fff;font-size:11px;padding:4px 8px;border-radius:4px;cursor:pointer">✕</button>`:''}<img class="photo-img" src="${p.url}" alt="${p.title}" onerror="this.style.display='none';this.nextSibling.style.display='flex'"><div class="photo-placeholder" style="display:none">📸</div><div class="photo-caption"><div class="photo-title">${p.title}</div><div class="photo-date">${p.date||''}</div></div></div>`).join('')
     : empty('📸','No photos yet — add via Admin → Gallery');
-
-  const vidsEl=document.getElementById('videosGrid');
-  if(vidsEl){
-    const galleryVids=(g.videos||[]).filter(v=>!v.page||v.page==='gallery');
-    vidsEl.innerHTML=galleryVids.length
-      ? galleryVids.map((v,i)=>buildEmbedCard(v,i,showDel)).join('')
-      : empty('🎬','No videos yet — add via Admin → Gallery → Videos');
-  }
 
   const sqC={BLACK:'var(--sq-black)',GOLD:'var(--sq-gold)',GREY:'var(--sq-grey)',PURPLE:'var(--sq-purple)'};
   document.getElementById('quotesGrid').innerHTML=g.quotes.length
@@ -1951,7 +1865,7 @@ function gTab(t){
   currentGTab=t;
   document.querySelectorAll('.gallery-section').forEach(s=>s.classList.remove('active'));
   document.getElementById('gs-'+t).classList.add('active');
-  document.querySelectorAll('.g-tab').forEach((b,i)=>b.classList.toggle('active',['photos','videos','quotes','staff','calendar'][i]===t));
+  document.querySelectorAll('.g-tab').forEach((b,i)=>b.classList.toggle('active',['photos','quotes','staff','calendar'][i]===t));
 }
 
 // ── ADMIN ACTIONS ──
@@ -2108,16 +2022,8 @@ async function removeLink(section,i){
 }
 
 async function addGItem(type){
-  if(!D.gallery) D.gallery={photos:[],quotes:[],spotlights:[],calendar:[],videos:[]};
-  if(!Array.isArray(D.gallery.videos)) D.gallery.videos=[];
+  if(!D.gallery) D.gallery={photos:[],quotes:[],spotlights:[],calendar:[]};
   let okId;
-  if(type==='video'){
-    const url=document.getElementById('gVidUrl').value.trim(); if(!url) return;
-    const title=document.getElementById('gVidTitle').value.trim();
-    const page=document.getElementById('gVidPage').value;
-    D.gallery.videos.unshift({url,title,page,id:Date.now()});
-    await save(); flash('gVidOk'); renderGallery(); renderVideoManageList(); return;
-  }
   if(type==='photo'){
     const fileInput=document.getElementById('gPhotoFile');
     const urlInput=document.getElementById('gPhotoUrl').value.trim();
@@ -2244,8 +2150,7 @@ function openDisplay(){
 function closeDisplay(){ document.getElementById('tvView').classList.remove('active'); clearInterval(tvTimer); clearInterval(tvPTimer); }
 
 function buildTV(){
-  const r=[...SQUADS].sort((a,b)=>grandWithSheet(b)-grandWithSheet(a));
-  const mx=Math.max(...SQUADS.map(grandWithSheet),1);
+  const r=ranked(), mx=maxGrand();
   document.getElementById('tvRanks').innerHTML=r.map((sq,i)=>`
     <div class="tv-rank-card ${i===0?'rank-1':''}">
       <div class="tv-rank-body">
@@ -2298,75 +2203,6 @@ async function deletePhoto(i){
   D.gallery.photos.splice(i,1);
   await save(); renderGallery();
 }
-
-function parseEmbedUrl(url){
-  if(!url) return null;
-  url=url.trim();
-  const ytMatch=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
-  if(ytMatch){ const id=ytMatch[1]; return {type:'youtube',id,thumb:'https://img.youtube.com/vi/'+id+'/hqdefault.jpg',embed:'https://www.youtube.com/embed/'+id,original:url}; }
-  const driveMatch=url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if(driveMatch){ const id=driveMatch[1]; return {type:'drive',id,thumb:'https://drive.google.com/thumbnail?id='+id+'&sz=w400',embed:'https://drive.google.com/file/d/'+id+'/preview',original:url}; }
-  const slidesMatch=url.match(/docs\.google\.com\/presentation\/d\/([a-zA-Z0-9_-]+)/);
-  if(slidesMatch){ const id=slidesMatch[1]; return {type:'slides',id,thumb:null,embed:'https://docs.google.com/presentation/d/'+id+'/embed?start=false&loop=false',original:url}; }
-  const docMatch=url.match(/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/);
-  if(docMatch){ const id=docMatch[1]; return {type:'doc',id,thumb:null,embed:url.replace('/edit','').replace('/view','')+'?embedded=true',original:url}; }
-  return null;
-}
-
-function previewEmbed(url){
-  const info=parseEmbedUrl(url);
-  const el=document.getElementById('gVidPreview');
-  if(!el) return;
-  if(!info){ el.style.display='none'; return; }
-  const typeLabel={youtube:'YouTube',drive:'Google Drive',slides:'Google Slides',doc:'Google Doc'}[info.type]||'File';
-  const thumb=info.thumb?'<img src="'+info.thumb+'" style="width:80px;height:50px;object-fit:cover;border-radius:4px" onerror="this.style.display='none'">':'<div style="width:80px;height:50px;background:var(--purple-dim);border-radius:4px;display:flex;align-items:center;justify-content:center">📄</div>';
-  el.style.display='block';
-  el.innerHTML='<div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px">'+thumb+'<div><div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">'+typeLabel+' detected</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">Ready to embed</div></div></div>';
-}
-
-function buildEmbedCard(v,idx,showDel){
-  const info=parseEmbedUrl(v.url);
-  const typeLabel=info?{youtube:'YouTube',drive:'Google Drive',slides:'Slides',doc:'Doc'}[info.type]||'Link':'Link';
-  const thumbHtml=info&&info.thumb?'<div class="embed-thumb-inner"><img class="embed-thumb-img" src="'+info.thumb+'" onerror="this.style.display='none';this.nextSibling.style.display='flex'"><div class="embed-play" style="display:none">▶</div></div>':'<div class="embed-thumb-inner" style="background:var(--purple-dim)"><div class="embed-play">▶</div></div>';
-  const delBtn=showDel?'<button class="del-btn" onclick="event.stopPropagation();deleteEmbed('+idx+')" style="position:absolute;top:8px;right:8px;z-index:5">✕</button>':'';
-  return '<div class="embed-card" style="position:relative;cursor:pointer" onclick="openEmbed(''+v.url+'')">'+delBtn+'<div class="embed-thumb">'+thumbHtml+'</div><div class="embed-info"><div class="embed-title">'+(v.title||'Untitled')+'</div><div class="embed-type">'+typeLabel+'</div></div></div>';
-}
-
-function openEmbed(url){
-  const info=parseEmbedUrl(url);
-  if(!info){ window.open(url,'_blank'); return; }
-  const existing=document.getElementById('embedModal');
-  if(existing) existing.remove();
-  const modal=document.createElement('div');
-  modal.id='embedModal';
-  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px';
-  modal.innerHTML='<div style="width:100%;max-width:900px;position:relative"><button onclick="document.getElementById('embedModal').remove()" style="position:absolute;top:-36px;right:0;background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:4px 10px">✕ Close</button><div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;background:var(--surface)"><iframe src="'+info.embed+'" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none" allowfullscreen></iframe></div></div>';
-  modal.addEventListener('click',e=>{ if(e.target===modal) modal.remove(); });
-  document.body.appendChild(modal);
-}
-
-async function deleteEmbed(i){
-  if(!confirm('Remove this embed?')) return;
-  D.gallery.videos.splice(i,1);
-  await save(); renderGallery(); renderVideoManageList();
-}
-
-function renderPhotoManageList(){
-  const el=document.getElementById('photoManageList');
-  if(!el) return;
-  const photos=D.gallery.photos||[];
-  if(!photos.length){ el.innerHTML='<p style="color:var(--text3);font-size:12px">No photos yet.</p>'; return; }
-  el.innerHTML=photos.map((p,i)=>'<div class="manage-item"><span class="manage-item-name">'+(p.title||'Untitled')+'</span><button class="del-btn" onclick="deletePhoto('+i+')">✕ Remove</button></div>').join('');
-}
-
-function renderVideoManageList(){
-  const el=document.getElementById('videoManageList');
-  if(!el) return;
-  const vids=D.gallery.videos||[];
-  if(!vids.length){ el.innerHTML='<p style="color:var(--text3);font-size:12px">No embeds yet.</p>'; return; }
-  el.innerHTML=vids.map((v,i)=>'<div class="manage-item"><span class="manage-item-name">'+(v.title||v.url)+'</span><button class="del-btn" onclick="deleteEmbed('+i+')">✕ Remove</button></div>').join('');
-}
-
 function previewPhoto(input){
   if(input.files&&input.files[0]){
     const reader=new FileReader();
@@ -2385,7 +2221,7 @@ function scrollMindset(month){
 }
 
 // Expose globals — direct assignment (module scope, safe after load)
-const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePhoto,deleteEmbed,parseEmbedUrl,previewEmbed,buildEmbedCard,openEmbed,renderPhotoManageList,renderVideoManageList,renderPageEmbeds,renderWheel,renderTraitDough,renderSotm,
+const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePhoto,renderWheel,renderTraitDough,renderSotm,
   __scrollMindset:scrollMindset,previewPhoto,openLogin,tryLogin,close1,
   requireAdmin,openAddEvent,openAdmin,aTab,addEvent,saveMetrics,
   savePageContent,loadPageContent,addLink,removeLink,addGItem,
