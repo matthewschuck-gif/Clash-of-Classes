@@ -337,13 +337,14 @@ body::before {
 .trait-month-tag { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--purple-lt); margin-bottom:10px; }
 .trait-name { font-family:'Fraunces',serif; font-size:clamp(24px,3.5vw,38px); font-weight:900; color:var(--text); margin-bottom:16px; line-height:1.1; }
 .trait-desc { font-size:15px; color:var(--text2); line-height:1.7; margin-bottom:24px; }
-.trait-skills { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.trait-skills { display:flex; flex-direction:column; gap:8px; }
 .trait-skill {
   background:var(--surface2); border:1px solid var(--border);
-  border-radius:8px; padding:10px 14px; font-size:13px; font-weight:500;
-  color:var(--text); display:flex; align-items:center; gap:8px;
+  border-left:3px solid var(--purple-lt);
+  border-radius:8px; padding:12px 16px;
 }
-.trait-skill::before { content:'→'; color:var(--purple-lt); font-weight:700; flex-shrink:0; }
+.trait-skill-label { font-family:'Fraunces',serif; font-size:14px; font-weight:700; color:var(--text); margin-bottom:3px; }
+.trait-skill-desc { font-size:13px; color:var(--text2); line-height:1.5; }
 
 /* Mindset lessons panel */
 .mindset-panel { display:flex; flex-direction:column; gap:12px; }
@@ -410,12 +411,6 @@ body::before {
 .quote-text { font-size:15px; color:var(--text); line-height:1.6; margin-bottom:14px; font-style:italic; }
 .quote-by { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:2px; color:var(--purple-lt); }
 .quote-squad-tag { display:inline-block; font-size:9px; padding:2px 7px; border-radius:4px; margin-left:8px; background:rgba(157,95,204,0.12); }
-.staff-spotlight-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; }
-.spotlight-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:24px; text-align:center; }
-.spotlight-avatar { width:60px; height:60px; border-radius:50%; background:var(--purple-dim); border:2px solid var(--purple-lt); display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-size:22px; font-weight:900; color:var(--purple-lt); margin:0 auto 14px; }
-.spotlight-name { font-family:'Fraunces',serif; font-size:18px; font-weight:700; margin-bottom:3px; }
-.spotlight-role { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:2px; color:var(--purple-lt); text-transform:uppercase; margin-bottom:12px; }
-.spotlight-quote { font-size:13px; color:var(--text2); line-height:1.6; font-style:italic; }
 .calendar-items { display:flex; flex-direction:column; gap:12px; max-width:720px; }
 .cal-item { display:flex; gap:18px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; }
 .cal-date-box { flex-shrink:0; width:54px; background:var(--purple-dim); border:1px solid rgba(157,95,204,0.2); border-radius:8px; padding:8px 4px; text-align:center; }
@@ -599,6 +594,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 /* ── RESPONSIVE ── */
 @media(max-width:900px) {
   .home-hero-section { grid-template-columns:1fr; }
+  .lrg-framework { grid-template-columns:1fr !important; }
   .tracker-layout { grid-template-columns:1fr; }
   .squads-grid { grid-template-columns:1fr; }
   .trait-display { grid-template-columns:1fr; }
@@ -688,8 +684,41 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 <div class="page" id="page-trait">
   <div class="page-hero">
     <h1 class="page-title">Monthly <span>LRG Traits</span></h1>
-    <div class="page-subtitle">Life Ready Graduate Skills · 2025–2026</div>
+    <div class="page-subtitle">Life Ready Graduate Skills · 2025–2026 · Ephrata Area School District</div>
   </div>
+
+  <!-- LRG Framework -->
+  <div class="lrg-framework" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:40px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--purple-lt);border-radius:12px;padding:22px">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);margin-bottom:10px">Acquire the Knowledge</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--text);padding:7px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">Content Mastery &amp; Financial Literacy</div>
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);padding:7px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border2)">Healthy Living, Wellness &amp; Self-Awareness</div>
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--text);padding:7px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">Civics, Leadership &amp; Service</div>
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--text);padding:7px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">Digital Literacy &amp; Technological Proficiency</div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--gold-soft);border-radius:12px;padding:22px">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-soft);margin-bottom:10px">Apply the Skills</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);padding:7px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border2)">Communication &amp; Empathy</div>
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);padding:7px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border2)">Critical Thinking &amp; Problem Solving</div>
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);padding:7px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border2)">Creativity &amp; Innovation</div>
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);padding:7px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border2)">Collaboration &amp; Teamwork</div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--sq-grey);border-radius:12px;padding:22px">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--sq-grey);margin-bottom:10px">Demonstrate the Dispositions</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);padding:7px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border2)">Honesty, Integrity &amp; Responsibility</div>
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);padding:7px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border2)">Adaptability &amp; Flexibility</div>
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);padding:7px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border2)">Continual Learning &amp; A Growth Mindset</div>
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);padding:7px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border2)">Resilience &amp; Grit</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:16px">Monthly Focus — Select a Trait</div>
   <div class="month-tabs" id="monthTabs"></div>
   <div class="trait-display">
     <div id="traitMain"></div>
@@ -959,12 +988,11 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   <div class="gallery-tabs">
     <button class="g-tab active" onclick="gTab('photos')">📸 Photos</button>
     <button class="g-tab" onclick="gTab('quotes')">💬 Student Voices</button>
-    <button class="g-tab" onclick="gTab('staff')">👤 Staff Spotlights</button>
     <button class="g-tab" onclick="gTab('calendar')">📅 Upcoming Events</button>
   </div>
   <div class="gallery-section active" id="gs-photos"><div class="photo-grid" id="photosGrid"></div></div>
   <div class="gallery-section" id="gs-quotes"><div class="quotes-grid" id="quotesGrid"></div></div>
-  <div class="gallery-section" id="gs-staff"><div class="staff-spotlight-grid" id="staffGrid"></div></div>
+  
   <div class="gallery-section" id="gs-calendar"><div class="calendar-items" id="calGrid"></div></div>
 </div>
 
@@ -1202,7 +1230,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <div class="admin-tabs" style="margin-bottom:16px">
         <button class="a-tab on" onclick="gATab('photo')">Photo</button>
         <button class="a-tab" onclick="gATab('quote')">Quote</button>
-        <button class="a-tab" onclick="gATab('spotlight')">Spotlight</button>
+        
         <button class="a-tab" onclick="gATab('cal')">Calendar</button>
       </div>
       <div class="a-panel on" id="gap-photo">
@@ -1219,18 +1247,9 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       </div>
       <div class="a-panel" id="gap-quote">
         <div class="fr"><label>Quote</label><textarea id="gQuoteText" placeholder="What did a student say?"></textarea></div>
-        <div class="fr"><label>Student (name or anonymous)</label><input type="text" id="gQuoteAuthor" placeholder="e.g. 8th Grader, Alex"></div>
         <div class="fr"><label>Squad</label><select id="gQuadeSquad"><option value="">— Select —</option><option value="BLACK">Black</option><option value="GOLD">Gold</option><option value="GREY">Grey</option><option value="PURPLE">Purple</option></select></div>
         <div class="fmsg" id="gQuoteOk">✓ Quote added!</div>
         <button class="btn-submit" onclick="addGItem('quote')">Add Quote</button>
-      </div>
-      <div class="a-panel" id="gap-spotlight">
-        <div class="fr"><label>Staff Name</label><input type="text" id="gStaffName" placeholder="e.g. Ms. Johnson"></div>
-        <div class="fr"><label>Role / Squad</label><input type="text" id="gStaffRole" placeholder="e.g. 7th Grade Math · Gold Squad"></div>
-        <div class="fr"><label>Quote</label><textarea id="gStaffQuote" placeholder="What do they love about Clash of Classes?"></textarea></div>
-        <div class="fr"><label>Initials (2 letters)</label><input type="text" id="gStaffInit" maxlength="2" placeholder="MJ"></div>
-        <div class="fmsg" id="gStaffOk">✓ Spotlight added!</div>
-        <button class="btn-submit" onclick="addGItem('spotlight')">Add Spotlight</button>
       </div>
       <div class="a-panel" id="gap-cal">
         <div class="fr"><label>Event Title</label><input type="text" id="gCalTitle" placeholder="e.g. April Championship"></div>
@@ -1254,6 +1273,21 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 
     <!-- SETTINGS -->
     <div class="a-panel" id="ap-settings">
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">📢 Announcement Bar</div>
+        <div class="fr"><label>Message (leave blank to hide)</label><input type="text" id="annInput" placeholder="e.g. Wheel spin this Friday at lunch!"></div>
+        <div class="fmsg" id="annOk">✓ Saved!</div>
+        <button class="btn-submit" onclick="saveAnnouncement()">Save Announcement</button>
+      </div>
+
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">⏱ Countdown Event</div>
+        <div class="fr"><label>Event Label</label><input type="text" id="cdLabel" placeholder="e.g. Championship Day"></div>
+        <div class="fr"><label>Date</label><input type="date" id="cdDate"></div>
+        <div class="fmsg" id="cdOk">✓ Saved!</div>
+        <button class="btn-submit" onclick="saveCountdown()">Save Countdown Event</button>
+      </div>
+      <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">🔑 Change Password</div>
       <div class="fr"><label>New Admin Password</label><input type="password" id="newPw" placeholder="New password (min 4 chars)"></div>
       <div class="fr"><input type="password" id="newPw2" placeholder="Confirm password"></div>
       <div class="fmsg err" id="pwErr">Passwords don't match or too short.</div>
@@ -1337,15 +1371,80 @@ const PAGES_DEF = [
 ];
 
 const TRAITS = [
-  {month:'September',trait:'Continual Learning & Growth Mindset',     desc:'Embracing challenges as opportunities, developing a love of learning, and believing abilities can be developed through dedication and hard work.',                  skills:['Embrace challenges','Learn from feedback','Persist through obstacles','Celebrate others\' success']},
-  {month:'October',  trait:'Critical Thinking & Problem Solving',      desc:'Analyzing information objectively, asking great questions, and developing creative, evidence-based solutions to complex problems.',                                    skills:['Ask deeper questions','Analyze evidence','Consider multiple perspectives','Develop creative solutions']},
-  {month:'November', trait:'Creativity & Innovation',                  desc:'Thinking outside the box, generating original ideas, and finding new ways to approach challenges in every area of life.',                                               skills:['Generate original ideas','Take creative risks','Combine ideas in new ways','Prototype and iterate']},
-  {month:'December', trait:'Honesty, Integrity & Responsibility',      desc:'Acting with consistency between our values and actions, taking ownership of our choices, and being trustworthy in all situations.',                                    skills:['Be truthful always','Own your mistakes','Follow through on commitments','Act with integrity when no one\'s watching']},
-  {month:'January',  trait:'Collaboration & Teamwork',                 desc:'Working effectively with others, valuing diverse perspectives, and achieving more together than we ever could alone.',                                                  skills:['Listen to understand','Build on others\' ideas','Share credit generously','Navigate conflict constructively']},
-  {month:'February', trait:'Communication & Empathy',                  desc:'Expressing ideas clearly and confidently, listening actively, and connecting genuinely with others through understanding their experiences.',                            skills:['Communicate clearly','Listen actively','Show genuine empathy','Adapt communication style']},
-  {month:'March',    trait:'Healthy Living, Wellness & Self-awareness', desc:'Understanding our physical, mental, and emotional health — and making intentional choices that support our whole selves.',                                             skills:['Build healthy habits','Manage stress effectively','Know your strengths & limits','Practice self-care']},
-  {month:'April',    trait:'Resilience & Grit',                        desc:'Bouncing back from setbacks, persisting through difficulty, and developing the mental toughness to keep going when things get hard.',                                   skills:['Embrace failure as learning','Develop mental toughness','Stay focused on long-term goals','Build a support network']},
-  {month:'May',      trait:'Adaptability & Flexibility',               desc:'Thriving in changing environments, adjusting our approach when needed, and seeing change as an opportunity rather than a threat.',                                      skills:['Embrace change','Adjust plans fluidly','Stay calm under uncertainty','Find opportunity in disruption']},
+  {month:'September',trait:'Continual Learning & Growth Mindset',
+   desc:'"I believe that intelligence and ability are not fixed traits and can develop over time."',
+   skills:[
+     {label:'Awareness',    desc:'Acknowledge that new learning is achieved and maintained through effort and continual practice.'},
+     {label:'Mindset',      desc:'Open to and embrace challenges.'},
+     {label:'Feedback',     desc:'Seek and utilize feedback throughout the learning process to continue to improve.'},
+     {label:'Persistence',  desc:'Give sustained effort in learning over time when encountering a challenging concept or topic.'},
+   ]},
+  {month:'October', trait:'Critical Thinking & Problem Solving',
+   desc:'"I think through complex issues to identify and make informed decisions."',
+   skills:[
+     {label:'Gathering Information',   desc:'Collect relevant information, data, and perspectives to generate a deeper understanding of the problem.'},
+     {label:'Analyzing Information',   desc:'Engage in a deliberate process to determine information\'s accuracy and relevance in order to draw conclusions.'},
+     {label:'Identifying Solutions',   desc:'Consider a variety of possibilities to make sound judgments and decisions about action.'},
+     {label:'Taking Action',           desc:'Make an informed decision and use available resources to take action on a possible solution.'},
+     {label:'Reflecting',              desc:'Interpret the outcome of the action and consider possible adjustments for improvement.'},
+   ]},
+  {month:'November',trait:'Creativity & Innovation',
+   desc:'"I engage in an ongoing, cyclical process of design and improvement."',
+   skills:[
+     {label:'Original Ideas',   desc:'Generate original ideas bringing unique perspectives and imagining new opportunities.'},
+     {label:'Techniques',       desc:'Utilize a variety of techniques to imagine, visualize, brainstorm, and get feedback.'},
+     {label:'Iteration',        desc:'Use feedback to evaluate the implementation of an idea; effective design is ongoing and adaptive.'},
+     {label:'Implementation',   desc:'Understand situational limits when moving from idea to action.'},
+   ]},
+  {month:'December',trait:'Honesty, Integrity & Responsibility',
+   desc:'"I am honest and take ownership of my actions, regardless of the circumstances."',
+   skills:[
+     {label:'Consistency',    desc:'Align actions with words; follow through.'},
+     {label:'Responsibility', desc:'Own one\'s intentions, actions, and the results of those actions.'},
+     {label:'Principles',     desc:'Act morally and ethically, even when no one is looking.'},
+   ]},
+  {month:'January', trait:'Collaboration & Teamwork',
+   desc:'"I effectively collaborate with others, and compromise when necessary for the betterment of the group."',
+   skills:[
+     {label:'Collaboration',  desc:'Engage in interdependent planning and decision-making to accomplish a common goal.'},
+     {label:'Dynamics',       desc:'Identify and appropriately use the skill set of each individual to support the team.'},
+     {label:'Compromise',     desc:'Value and incorporate the ideas, perspectives, strengths, and expertise of others.'},
+     {label:'Accountability', desc:'Demonstrate trust in team members and assume mutual accountability for agreed-upon responsibilities.'},
+   ]},
+  {month:'February',trait:'Communication & Empathy',
+   desc:'"I effectively communicate in oral, written, visual, and nonverbal forms, with a variety of audiences."',
+   skills:[
+     {label:'Active Listening',  desc:'Acknowledge others\' feelings and opinions through engagement and thoughtful processing of information.'},
+     {label:'Meaningful Inquiry',desc:'Ask clarifying questions to develop a broader understanding of the concept, problem, or situation.'},
+     {label:'Audience',          desc:'Demonstrate an awareness of audience members\' identity and background knowledge to inform communication strategies.'},
+     {label:'Clear Purpose',     desc:'Express ideas with the purpose of informing, instructing, motivating, or persuading using appropriate language and format.'},
+   ]},
+  {month:'March',   trait:'Healthy Living, Wellness & Self-Awareness',
+   desc:'"I make healthy choices and develop an understanding of and confidence in my own identity."',
+   skills:[
+     {label:'Physical Health & Safety', desc:'Develop a healthy lifestyle through diet, nutrition, exercise, sleep, and safe choices.'},
+     {label:'Self-Awareness',           desc:'Develop an understanding of and confidence in my characteristics, interests, strengths, and areas for growth.'},
+     {label:'Goal Setting & Management',desc:'Plan, organize, prioritize, and initiate progress on specific tasks in pursuit of a goal.'},
+     {label:'Emotional Regulation',     desc:'Use effective strategies to express emotions and manage responses appropriately to the situation.'},
+     {label:'Social Awareness',         desc:'Recognize, understand, and respectfully acknowledge similarities and differences in others\' perspectives.'},
+     {label:'Relationships',            desc:'Establish, maintain, and repair healthy relationships.'},
+     {label:'Responsible Decision Making',desc:'Consider various options and anticipate possible outcomes to make caring and constructive choices.'},
+     {label:'Advocacy',                 desc:'Recognize when help is needed and seek appropriate people and resources to support myself or others.'},
+   ]},
+  {month:'April',   trait:'Resilience & Grit',
+   desc:'"I persist through adversity and never give up on myself or the team."',
+   skills:[
+     {label:'Dedication',    desc:'Use courage and determination to consistently work toward goals.'},
+     {label:'Perseverance',  desc:'Respond positively to unexpected challenges and rebound from setbacks.'},
+     {label:'Reflection',    desc:'Consider experiences and use feedback from challenges as opportunities for improvement.'},
+   ]},
+  {month:'May',     trait:'Adaptability & Flexibility',
+   desc:'"I adjust to new or different circumstances with a solution-focused attitude."',
+   skills:[
+     {label:'Perspectives',  desc:'Seek to understand the situation and the options and strategies available.'},
+     {label:'Adjustments',   desc:'Adjust to new or different circumstances by changing thinking, behaviors, actions, contexts, and/or objectives.'},
+     {label:'Frame of Mind', desc:'Maintain a solution-focused attitude when conditions change.'},
+   ]},
 ];
 
 const SEED_EVENTS = [
@@ -1421,6 +1520,9 @@ onValue(DB,(snap)=>{
     if(!D.gallery) D.gallery={photos:[],quotes:[],spotlights:[],calendar:[]};
     ['photos','quotes','spotlights','calendar'].forEach(k=>{ if(!Array.isArray(D.gallery[k])) D.gallery[k]=[]; });
     if(!D.links) D.links={mindset:[],mayhem:[],champs:[]};
+    if(!D.announcement) D.announcement='';
+    if(!D.traitDoughTally) D.traitDoughTally={BLACK:0,GOLD:0,GREY:0,PURPLE:0};
+    if(!D.countdownEvents) D.countdownEvents=[{label:'Last Day of School',date:'2026-06-04'}];
     ['mindset','wheel','traitdough','sotm','mayhem','champs'].forEach(k=>{ if(!Array.isArray(D.links[k])) D.links[k]=[]; });
     if(D.links.wheel.length===0){D.links.wheel=[{label:'Wheel Demo Video',url:'https://drive.google.com/file/d/1cPO_FGUmweW91kBiQ5rmHOuN-jREN7jQ/view?usp=sharing',id:1},{label:'Wheel Presentation',url:'https://docs.google.com/presentation/d/1GV3jLRh4v_-bLNgHiTio-yk7yyVCv_BFnm7k3DNjLxc/edit?usp=sharing',id:2}];}
     if(!D.pageContent) D.pageContent={...DEF.pageContent};
@@ -1490,6 +1592,7 @@ function renderAll(){
   renderSquads();
   renderGallery();
   renderHomeText();
+  renderTraitBanner(); renderAnnouncement(); renderCountdown(); renderTally(); renderTimeline();
   document.getElementById('statEvents').textContent=(D.events||[]).length;
   document.getElementById('statWeek').textContent=D.metrics.weekLabel||'—';
   if(currentPage==='trait') renderTrait();
@@ -1591,7 +1694,8 @@ function renderTrait(){
       <div class="trait-month-tag">${t.month} 2025–2026${isCurrent?' · Current Month':''}</div>
       <div class="trait-name">${t.trait}</div>
       <div class="trait-desc">${t.desc}</div>
-      <div class="trait-skills">${t.skills.map(s=>`<div class="trait-skill">${s}</div>`).join('')}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Look-Fors</div>
+      <div class="trait-skills">${t.skills.map(s=>`<div class="trait-skill"><div class="trait-skill-label">${s.label}</div><div class="trait-skill-desc">${s.desc}</div></div>`).join('')}</div>
     </div>`;
 
   // Mindset links for this month in trait page sidebar
@@ -1715,12 +1819,10 @@ function renderGallery(){
 
   const sqC={BLACK:'var(--sq-black)',GOLD:'var(--sq-gold)',GREY:'var(--sq-grey)',PURPLE:'var(--sq-purple)'};
   document.getElementById('quotesGrid').innerHTML=g.quotes.length
-    ? g.quotes.map(q=>`<div class="quote-card"><span class="quote-mark">"</span><div class="quote-text">${q.text}</div><div class="quote-by">— ${q.author}${q.squad?`<span class="quote-squad-tag" style="color:${sqC[q.squad]||'var(--text3)'}">${q.squad}</span>`:''}</div></div>`).join('')
+    ? g.quotes.map(q=>`<div class="quote-card"><span class="quote-mark">"</span><div class="quote-text">${q.text}</div><div class="quote-by">— ${q.squad?`<span class="quote-squad-tag" style="color:${sqC[q.squad]||'var(--text3)'}">${q.squad} Squad</span>`:'EMS Student'}</div></div>`).join('')
     : empty('💬','No quotes yet — add via Admin → Gallery');
 
-  document.getElementById('staffGrid').innerHTML=g.spotlights.length
-    ? g.spotlights.map(s=>`<div class="spotlight-card"><div class="spotlight-avatar">${s.initials||'?'}</div><div class="spotlight-name">${s.name}</div><div class="spotlight-role">${s.role}</div><div class="spotlight-quote">${s.quote}</div></div>`).join('')
-    : empty('👤','No spotlights yet — add via Admin → Gallery');
+  
 
   const sorted=[...g.calendar].sort((a,b)=>new Date(a.date)-new Date(b.date));
   document.getElementById('calGrid').innerHTML=sorted.length
@@ -1755,8 +1857,10 @@ async function saveMetrics(){
     D.metrics.grades[sq]=parseFloat(document.getElementById('grad'+sq).value)||0;
   });
   D.metrics.weekLabel=document.getElementById('weekLabel').value.trim();
+  if(!D.traitDoughTally) D.traitDoughTally={BLACK:0,GOLD:0,GREY:0,PURPLE:0};
+  SQUADS.forEach(sq=>{ const v=document.getElementById('tally'+sq); if(v&&v.value!=='') D.traitDoughTally[sq]=parseInt(v.value)||0; });
   D.history.unshift({type:'metrics',label:D.metrics.weekLabel,time:new Date().toISOString()});
-  await save(); flash('metOk');
+  await save(); flash('metOk'); renderTally();
 }
 
 async function savePageContent(){
@@ -1897,12 +2001,8 @@ async function addGItem(type){
     okId='gPhotoOk'; document.getElementById('gPhotoUrl').value=''; document.getElementById('gPhotoTitle').value='';
   } else if(type==='quote'){
     const text=document.getElementById('gQuoteText').value.trim(); if(!text) return;
-    D.gallery.quotes.unshift({text,author:document.getElementById('gQuoteAuthor').value.trim()||'EMS Student',squad:document.getElementById('gQuadeSquad').value,id:Date.now()});
+    D.gallery.quotes.unshift({text,author:'EMS Student',squad:document.getElementById('gQuadeSquad').value,id:Date.now()});
     okId='gQuoteOk'; document.getElementById('gQuoteText').value='';
-  } else if(type==='spotlight'){
-    const name=document.getElementById('gStaffName').value.trim(); if(!name) return;
-    D.gallery.spotlights.unshift({name,role:document.getElementById('gStaffRole').value.trim(),quote:document.getElementById('gStaffQuote').value.trim(),initials:document.getElementById('gStaffInit').value.trim().toUpperCase(),id:Date.now()});
-    okId='gStaffOk'; document.getElementById('gStaffName').value=''; document.getElementById('gStaffQuote').value='';
   } else if(type==='cal'){
     const title=document.getElementById('gCalTitle').value.trim(); if(!title) return;
     D.gallery.calendar.push({title,date:document.getElementById('gCalDate').value,desc:document.getElementById('gCalDesc').value.trim(),type:document.getElementById('gCalType').value,id:Date.now()});
@@ -1972,20 +2072,27 @@ function aTab(name){
   if(name==='history') renderHistList();
   if(name==='links'){ lTab('mindset'); }
   if(name==='pages'){ pTab(window._currentPageTab||'home'); }
+  if(name==='settings'){
+    const ai=document.getElementById('annInput'); if(ai) ai.value=D.announcement||'';
+    const evt=(D.countdownEvents||[])[0];
+    const cl=document.getElementById('cdLabel'); if(cl) cl.value=evt?evt.label:'';
+    const cd=document.getElementById('cdDate'); if(cd) cd.value=evt?evt.date:'';
+  }
   if(name==='metrics'){
     SQUADS.forEach(sq=>{
       const a=document.getElementById('att'+sq); if(a) a.value=D.metrics.attendance[sq]||'';
       const r=document.getElementById('ref'+sq); if(r) r.value=D.metrics.referral[sq]||'';
       const g=document.getElementById('grad'+sq); if(g) g.value=D.metrics.grades[sq]||'';
+      const t=document.getElementById('tally'+sq); if(t) t.value=(D.traitDoughTally&&D.traitDoughTally[sq])||'';
     });
     const wl=document.getElementById('weekLabel'); if(wl) wl.value=D.metrics.weekLabel||'';
   }
 }
 
 function gATab(name){
-  const names=['photo','quote','spotlight','cal'];
+  const names=['photo','quote','cal'];
   document.querySelectorAll('#ap-gallery .a-tab').forEach((b,i)=>b.classList.toggle('on',names[i]===name));
-  names.forEach(n=>{ const el=document.getElementById('gap-'+n); if(el) el.classList.toggle('on',n===name); });
+  ['photo','quote','cal'].forEach(n=>{ const el=document.getElementById('gap-'+n); if(el) el.classList.toggle('on',n===name); });
 }
 
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }));
@@ -2152,6 +2259,7 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   savePageContent,loadPageContent,addLink,removeLink,addGItem,
   resetAll,undoEvt,changePw,openDisplay,closeDisplay,showSlide,
   lTab,saveMindsetLinks,addLinkSection,removeLinkSection,pTab,loadPageContent,
+  focusSquad,saveAnnouncement,saveCountdown,
   renderWheel,renderTraitDough,renderSotm};
 Object.entries(_fns).forEach(([k,v])=>{ window[k]=v; window['_real_'+k]=v; });
 window.__moduleReady=true;
