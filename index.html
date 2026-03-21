@@ -547,6 +547,14 @@ body::before {
 
 .a-panel { display:none; }
 .a-panel.on { display:block; }
+.l-panel { display:none; }
+.l-panel.on { display:block; }
+.mindset-grid-row { display:grid; grid-template-columns:90px 1fr 1fr 1fr; gap:8px; align-items:center; margin-bottom:8px; }
+.mindset-grid-row .mgr-month { font-family:'Fraunces',serif; font-size:13px; font-weight:700; color:var(--gold-soft); }
+.mindset-grid-row input { background:var(--surface); border:1px solid var(--border2); border-radius:6px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:12px; padding:7px 10px; outline:none; width:100%; }
+.mindset-grid-row input:focus { border-color:var(--purple-lt); }
+.mindset-grid-hdr { display:grid; grid-template-columns:90px 1fr 1fr 1fr; gap:8px; margin-bottom:6px; }
+.mindset-grid-hdr span { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); }
 
 .fr { margin-bottom:14px; }
 .fr label { display:block; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }
@@ -1117,41 +1125,76 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 
     <!-- PAGES -->
     <div class="a-panel" id="ap-pages">
-      <p style="font-size:13px;color:var(--text3);margin-bottom:18px">Edit the text content on each page. Changes go live instantly.</p>
-      <div class="fr"><label>Page</label>
-        <select id="pageSelect" onchange="loadPageContent()">
-          <option value="home">🏠 Home — About Text</option>
-          <option value="mindset">📚 Mountaineer Mindset</option>
-          <option value="wheel">🎡 The Wheel</option>
-          <option value="traitdough">💵 Trait Dough</option>
-          <option value="sotm">🌟 Student of the Month</option>
-          <option value="mayhem">⚡ Mountaineer Mayhem</option>
-          <option value="champs">🏆 Championships</option>
-        </select>
+      <div class="admin-tabs" style="margin-bottom:16px">
+        <button class="a-tab on" onclick="pTab('home')">🏠 Home</button>
+        <button class="a-tab" onclick="pTab('mindset')">📚 Mindset</button>
+        <button class="a-tab" onclick="pTab('wheel')">🎡 Wheel</button>
+        <button class="a-tab" onclick="pTab('traitdough')">💵 Trait Dough</button>
+        <button class="a-tab" onclick="pTab('sotm')">🌟 SotM</button>
+        <button class="a-tab" onclick="pTab('mayhem')">⚡ Mayhem</button>
+        <button class="a-tab" onclick="pTab('champs')">🏆 Champs</button>
       </div>
       <div id="pageEditorFields"></div>
-      <div class="fmsg" id="pageOk">✓ Page content saved!</div>
-      <button class="btn-submit" onclick="savePageContent()">Save Page Content</button>
+      <div class="fmsg" id="pageOk">✓ Saved!</div>
+      <button class="btn-submit" onclick="savePageContent()">Save</button>
     </div>
 
     <!-- LINKS -->
     <div class="a-panel" id="ap-links">
-      <p style="font-size:13px;color:var(--text3);margin-bottom:18px">Add Google Drive links for Mountaineer Mindset lessons and other resources.</p>
-      <div class="fr"><label>Page / Section</label>
-        <select id="linkSection">
-          <option value="mindset">📚 Mountaineer Mindset — Lesson Plans</option>
-          <option value="wheel">🎡 The Wheel — Resources</option>
-          <option value="traitdough">💵 Trait Dough — Resources</option>
-          <option value="sotm">🌟 Student of Month — Resources</option>
-          <option value="mayhem">⚡ Mountaineer Mayhem — Resources</option>
-          <option value="champs">🏆 Championships — Resources</option>
-        </select>
+      <!-- Sub-tabs for link sections -->
+      <div class="admin-tabs" style="margin-bottom:16px">
+        <button class="a-tab on" onclick="lTab('mindset')">📚 Mindset</button>
+        <button class="a-tab" onclick="lTab('wheel')">🎡 Wheel</button>
+        <button class="a-tab" onclick="lTab('traitdough')">💵 Trait Dough</button>
+        <button class="a-tab" onclick="lTab('sotm')">🌟 SotM</button>
+        <button class="a-tab" onclick="lTab('mayhem')">⚡ Mayhem</button>
+        <button class="a-tab" onclick="lTab('champs')">🏆 Champs</button>
       </div>
-      <div class="fr"><label>Link Label</label><input type="text" id="linkLabel" placeholder="e.g. Sept — Growth Mindset (7th Grade)"></div>
-      <div class="fr"><label>URL (Google Drive link)</label><input type="url" id="linkUrl" placeholder="https://docs.google.com/…"></div>
-      <div class="fmsg" id="linkOk">✓ Link added!</div>
-      <button class="btn-submit" onclick="addLink()">Add Link</button>
-      <div style="margin-top:20px" id="linksListEl"></div>
+
+      <!-- MINDSET: month × grade grid -->
+      <div class="l-panel on" id="lp-mindset">
+        <p style="font-size:13px;color:var(--text3);margin-bottom:16px">Paste a Google Drive URL for each month and grade. Leave blank to clear.</p>
+        <div id="mindsetLinkGrid"></div>
+        <div class="fmsg" id="mindsetLinkOk">✓ Saved!</div>
+        <button class="btn-submit" onclick="saveMindsetLinks()">Save All Mindset Links</button>
+      </div>
+
+      <!-- OTHER SECTIONS: simple label + URL -->
+      <div class="l-panel" id="lp-wheel">
+        <div class="fr"><label>Link Label</label><input type="text" id="linkLabel-wheel" placeholder="e.g. Wheel Demo Video"></div>
+        <div class="fr"><label>URL</label><input type="url" id="linkUrl-wheel" placeholder="https://…"></div>
+        <div class="fmsg" id="linkOk-wheel">✓ Added!</div>
+        <button class="btn-submit" onclick="addLinkSection('wheel')">Add Link</button>
+        <div style="margin-top:16px" id="linksList-wheel"></div>
+      </div>
+      <div class="l-panel" id="lp-traitdough">
+        <div class="fr"><label>Link Label</label><input type="text" id="linkLabel-traitdough" placeholder="e.g. Trait Dough Template"></div>
+        <div class="fr"><label>URL</label><input type="url" id="linkUrl-traitdough" placeholder="https://…"></div>
+        <div class="fmsg" id="linkOk-traitdough">✓ Added!</div>
+        <button class="btn-submit" onclick="addLinkSection('traitdough')">Add Link</button>
+        <div style="margin-top:16px" id="linksList-traitdough"></div>
+      </div>
+      <div class="l-panel" id="lp-sotm">
+        <div class="fr"><label>Link Label</label><input type="text" id="linkLabel-sotm" placeholder="e.g. Nomination Form"></div>
+        <div class="fr"><label>URL</label><input type="url" id="linkUrl-sotm" placeholder="https://…"></div>
+        <div class="fmsg" id="linkOk-sotm">✓ Added!</div>
+        <button class="btn-submit" onclick="addLinkSection('sotm')">Add Link</button>
+        <div style="margin-top:16px" id="linksList-sotm"></div>
+      </div>
+      <div class="l-panel" id="lp-mayhem">
+        <div class="fr"><label>Link Label</label><input type="text" id="linkLabel-mayhem" placeholder="e.g. Mayhem Schedule"></div>
+        <div class="fr"><label>URL</label><input type="url" id="linkUrl-mayhem" placeholder="https://…"></div>
+        <div class="fmsg" id="linkOk-mayhem">✓ Added!</div>
+        <button class="btn-submit" onclick="addLinkSection('mayhem')">Add Link</button>
+        <div style="margin-top:16px" id="linksList-mayhem"></div>
+      </div>
+      <div class="l-panel" id="lp-champs">
+        <div class="fr"><label>Link Label</label><input type="text" id="linkLabel-champs" placeholder="e.g. Championship Bracket"></div>
+        <div class="fr"><label>URL</label><input type="url" id="linkUrl-champs" placeholder="https://…"></div>
+        <div class="fmsg" id="linkOk-champs">✓ Added!</div>
+        <button class="btn-submit" onclick="addLinkSection('champs')">Add Link</button>
+        <div style="margin-top:16px" id="linksList-champs"></div>
+      </div>
     </div>
 
     <!-- GALLERY -->
@@ -1717,68 +1760,73 @@ async function saveMetrics(){
 }
 
 async function savePageContent(){
-  const page=document.getElementById('pageSelect').value;
+  const page=window._currentPageTab||'home';
   if(!D.pageContent) D.pageContent={...DEF.pageContent};
+  const g=id=>document.getElementById(id)?.value||'';
   if(page==='home'){
-    D.pageContent.homeDesc=document.getElementById('peHomeDesc')?.value||'';
-    D.pageContent.pillar1=document.getElementById('pePillar1')?.value||'';
-    D.pageContent.pillar2=document.getElementById('pePillar2')?.value||'';
-    D.pageContent.pillar3=document.getElementById('pePillar3')?.value||'';
+    D.pageContent.homeDesc=g('peHomeDesc');
+    D.pageContent.pillar1=g('pePillar1');
+    D.pageContent.pillar2=g('pePillar2');
+    D.pageContent.pillar3=g('pePillar3');
   } else if(page==='mayhem'){
-    D.pageContent.mayhemSubtitle=document.getElementById('peMayhemSub')?.value||'';
-    D.pageContent.mayhemBody=document.getElementById('peMayhemBody')?.value||'';
+    D.pageContent.mayhemSubtitle=g('peMayhemSub');
+    D.pageContent.mayhemBody=g('peMayhemBody');
   } else if(page==='champs'){
-    D.pageContent.champsSubtitle=document.getElementById('peChampsSub')?.value||'';
-    D.pageContent.champsBody=document.getElementById('peChampsBody')?.value||'';
+    D.pageContent.champsSubtitle=g('peChampsSub');
+    D.pageContent.champsBody=g('peChampsBody');
   } else if(page==='mindset'){
-    D.pageContent.mindsetBody=document.getElementById('peMindsetBody')?.value||'';
+    D.pageContent.mindsetBody=g('peMindsetBody');
   } else if(page==='wheel'){
-    D.pageContent.wheelSubtitle=document.getElementById('peWheelSub')?.value||'';
-    D.pageContent.wheelBody=document.getElementById('peWheelBody')?.value||'';
+    D.pageContent.wheelSubtitle=g('peWheelSub');
+    D.pageContent.wheelBody=g('peWheelBody');
   } else if(page==='traitdough'){
-    D.pageContent.traitdoughSubtitle=document.getElementById('peTDSub')?.value||'';
-    D.pageContent.traitdoughBody=document.getElementById('peTDBody')?.value||'';
+    D.pageContent.traitdoughSubtitle=g('peTDSub');
+    D.pageContent.traitdoughBody=g('peTDBody');
   } else if(page==='sotm'){
-    D.pageContent.sotmSubtitle=document.getElementById('peSotmSub')?.value||'';
-    D.pageContent.sotmBody=document.getElementById('peSotmBody')?.value||'';
+    D.pageContent.sotmSubtitle=g('peSotmSub');
+    D.pageContent.sotmBody=g('peSotmBody');
   }
   await save(); flash('pageOk');
 }
 
-function loadPageContent(){
-  const page=document.getElementById('pageSelect').value;
+function pTab(page){
+  window._currentPageTab=page;
+  const tabs=['home','mindset','wheel','traitdough','sotm','mayhem','champs'];
+  document.querySelectorAll('#ap-pages .a-tab').forEach((b,i)=>b.classList.toggle('on',tabs[i]===page));
   const pc=D.pageContent||DEF.pageContent;
+  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   const f=document.getElementById('pageEditorFields');
   if(page==='home'){
     f.innerHTML=`
-      <div class="fr"><label>Homepage Description</label><textarea id="peHomeDesc" rows="3">${pc.homeDesc||''}</textarea></div>
-      <div class="fr"><label>Pillar 1 — LRG Traits Text</label><textarea id="pePillar1" rows="3">${pc.pillar1||''}</textarea></div>
-      <div class="fr"><label>Pillar 2 — Build Community Text</label><textarea id="pePillar2" rows="3">${pc.pillar2||''}</textarea></div>
-      <div class="fr"><label>Pillar 3 — Have Fun Text</label><textarea id="pePillar3" rows="3">${pc.pillar3||''}</textarea></div>`;
-  } else if(page==='mayhem'){
-    f.innerHTML=`
-      <div class="fr"><label>Page Subtitle</label><input type="text" id="peMayhemSub" value="${pc.mayhemSubtitle||''}"></div>
-      <div class="fr"><label>Page Body Text (use blank lines between paragraphs)</label><textarea id="peMayhemBody" rows="8">${pc.mayhemBody||''}</textarea></div>`;
-  } else if(page==='champs'){
-    f.innerHTML=`
-      <div class="fr"><label>Page Subtitle</label><input type="text" id="peChampsSub" value="${pc.champsSubtitle||''}"></div>
-      <div class="fr"><label>Page Body Text (use blank lines between paragraphs)</label><textarea id="peChampsBody" rows="8">${pc.champsBody||''}</textarea></div>`;
+      <div class="fr"><label>Homepage Description</label><textarea id="peHomeDesc" rows="3">${esc(pc.homeDesc)}</textarea></div>
+      <div class="fr"><label>Pillar 1 — LRG Traits</label><textarea id="pePillar1" rows="3">${esc(pc.pillar1)}</textarea></div>
+      <div class="fr"><label>Pillar 2 — Build Community</label><textarea id="pePillar2" rows="3">${esc(pc.pillar2)}</textarea></div>
+      <div class="fr"><label>Pillar 3 — Have Fun</label><textarea id="pePillar3" rows="3">${esc(pc.pillar3)}</textarea></div>`;
   } else if(page==='mindset'){
-    f.innerHTML=`<div class="fr"><label>Intro Body Text</label><textarea id="peMindsetBody" rows="5">${pc.mindsetBody||''}</textarea></div>`;
+    f.innerHTML=`<div class="fr"><label>Intro Body Text</label><textarea id="peMindsetBody" rows="5">${esc(pc.mindsetBody)}</textarea></div>`;
   } else if(page==='wheel'){
     f.innerHTML=`
-      <div class="fr"><label>Page Subtitle</label><input type="text" id="peWheelSub" value="${(pc.wheelSubtitle||'').replace(/"/g,'&quot;')}"></div>
-      <div class="fr"><label>Body Text (leave blank to use default content)</label><textarea id="peWheelBody" rows="6">${(pc.wheelBody||'').replace(/</g,'&lt;')}</textarea></div>`;
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peWheelSub" value="${esc(pc.wheelSubtitle)}"></div>
+      <div class="fr"><label>Body Text</label><textarea id="peWheelBody" rows="6">${esc(pc.wheelBody)}</textarea></div>`;
   } else if(page==='traitdough'){
     f.innerHTML=`
-      <div class="fr"><label>Page Subtitle</label><input type="text" id="peTDSub" value="${(pc.traitdoughSubtitle||'').replace(/"/g,'&quot;')}"></div>
-      <div class="fr"><label>Body Text (leave blank to use default content)</label><textarea id="peTDBody" rows="8">${(pc.traitdoughBody||'').replace(/</g,'&lt;')}</textarea></div>`;
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peTDSub" value="${esc(pc.traitdoughSubtitle)}"></div>
+      <div class="fr"><label>Body Text (leave blank for default)</label><textarea id="peTDBody" rows="8">${esc(pc.traitdoughBody)}</textarea></div>`;
   } else if(page==='sotm'){
     f.innerHTML=`
-      <div class="fr"><label>Page Subtitle</label><input type="text" id="peSotmSub" value="${(pc.sotmSubtitle||'').replace(/"/g,'&quot;')}"></div>
-      <div class="fr"><label>Body Text (leave blank to use default content)</label><textarea id="peSotmBody" rows="6">${(pc.sotmBody||'').replace(/</g,'&lt;')}</textarea></div>`;
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peSotmSub" value="${esc(pc.sotmSubtitle)}"></div>
+      <div class="fr"><label>Body Text (leave blank for default)</label><textarea id="peSotmBody" rows="6">${esc(pc.sotmBody)}</textarea></div>`;
+  } else if(page==='mayhem'){
+    f.innerHTML=`
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peMayhemSub" value="${esc(pc.mayhemSubtitle)}"></div>
+      <div class="fr"><label>Body Text</label><textarea id="peMayhemBody" rows="8">${esc(pc.mayhemBody)}</textarea></div>`;
+  } else if(page==='champs'){
+    f.innerHTML=`
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peChampsSub" value="${esc(pc.champsSubtitle)}"></div>
+      <div class="fr"><label>Body Text</label><textarea id="peChampsBody" rows="8">${esc(pc.champsBody)}</textarea></div>`;
   }
 }
+function loadPageContent(){ pTab(window._currentPageTab||'home'); }
 
 async function addLink(){
   const section=document.getElementById('linkSection').value;
@@ -1922,7 +1970,8 @@ function aTab(name){
   names.forEach(n=>{ const el=document.getElementById('ap-'+n); if(el) el.classList.toggle('on',n===name); });
   if(name==='scores') renderScoreSummary();
   if(name==='history') renderHistList();
-  if(name==='links') renderLinksList();
+  if(name==='links'){ lTab('mindset'); }
+  if(name==='pages'){ pTab(window._currentPageTab||'home'); }
   if(name==='metrics'){
     SQUADS.forEach(sq=>{
       const a=document.getElementById('att'+sq); if(a) a.value=D.metrics.attendance[sq]||'';
@@ -2016,12 +2065,93 @@ function scrollMindset(month){
   if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); }
 }
 
+// ── LINKS TAB FUNCTIONS ──
+const MONTHS_SHORT = ['September','October','November','December','January','February','March','April','May'];
+const GRADE_KEYS = ['7th','8th','ext'];
+const GRADE_LABELS = ['7th Grade','8th Grade','Extension'];
+
+function lTab(name){
+  const names=['mindset','wheel','traitdough','sotm','mayhem','champs'];
+  document.querySelectorAll('#ap-links .a-tab').forEach((b,i)=>b.classList.toggle('on',names[i]===name));
+  document.querySelectorAll('.l-panel').forEach(p=>p.classList.remove('on'));
+  const el=document.getElementById('lp-'+name);
+  if(el) el.classList.add('on');
+  if(name==='mindset') renderMindsetLinkGrid();
+  else renderSimpleLinksList(name);
+}
+
+function renderMindsetLinkGrid(){
+  const links=D.links.mindset||[];
+  const getUrl=(month,grade)=>{
+    const found=links.find(l=>l.key===`${grade}-${month}`);
+    return found?found.url:'';
+  };
+  const hdr=`<div class="mindset-grid-hdr"><span>Month</span>${GRADE_LABELS.map(g=>`<span>${g}</span>`).join('')}</div>`;
+  const rows=MONTHS_SHORT.map(month=>`
+    <div class="mindset-grid-row">
+      <div class="mgr-month">${month}</div>
+      ${GRADE_KEYS.map(grade=>`<input type="url" placeholder="Paste Drive URL…" data-month="${month}" data-grade="${grade}" value="${getUrl(month,grade).replace(/"/g,'&quot;')}">`).join('')}
+    </div>`).join('');
+  document.getElementById('mindsetLinkGrid').innerHTML=hdr+rows;
+}
+
+async function saveMindsetLinks(){
+  if(!D.links) D.links={};
+  if(!Array.isArray(D.links.mindset)) D.links.mindset=[];
+  // Rebuild mindset links from grid
+  const kept=D.links.mindset.filter(l=>!l.key); // keep any without keys
+  document.querySelectorAll('#mindsetLinkGrid input').forEach(input=>{
+    const month=input.dataset.month, grade=input.dataset.grade;
+    const url=input.value.trim();
+    const key=`${grade}-${month}`;
+    const label=`${month} — ${grade==='7th'?'7th Grade':grade==='8th'?'8th Grade':'Extension'}`;
+    if(url) kept.push({label,url,key,id:Date.now()+Math.random()});
+  });
+  D.links.mindset=kept;
+  await save(); flash('mindsetLinkOk');
+}
+
+async function addLinkSection(section){
+  const label=document.getElementById('linkLabel-'+section)?.value.trim();
+  const url=document.getElementById('linkUrl-'+section)?.value.trim();
+  if(!label||!url) return;
+  if(!D.links) D.links={};
+  if(!Array.isArray(D.links[section])) D.links[section]=[];
+  D.links[section].push({label,url,id:Date.now()});
+  await save();
+  flash('linkOk-'+section);
+  document.getElementById('linkLabel-'+section).value='';
+  document.getElementById('linkUrl-'+section).value='';
+  renderSimpleLinksList(section);
+}
+
+function renderSimpleLinksList(section){
+  const el=document.getElementById('linksList-'+section); if(!el) return;
+  const links=(D.links||{})[section]||[];
+  if(!links.length){ el.innerHTML='<p style="color:var(--text3);font-size:13px;margin-top:8px">No links yet.</p>'; return; }
+  el.innerHTML=links.map((l,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;font-size:13px;color:var(--text2)">${l.label}</div>
+      <button onclick="removeLinkSection('${section}',${i})" style="background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:11px;padding:3px 8px;border-radius:4px" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='var(--text3)'">Remove</button>
+    </div>`).join('');
+}
+
+async function removeLinkSection(section,i){
+  if(!D.links||!D.links[section]) return;
+  D.links[section].splice(i,1);
+  await save(); renderSimpleLinksList(section);
+}
+
+// Expose these new functions
+// (old addLink and removeLink kept for backward compat)
+
 // Expose globals — direct assignment (module scope, safe after load)
 const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePhoto,
   __scrollMindset:scrollMindset,previewPhoto,openLogin,tryLogin,close1,
   requireAdmin,openAddEvent,openAdmin,aTab,addEvent,saveMetrics,
   savePageContent,loadPageContent,addLink,removeLink,addGItem,
   resetAll,undoEvt,changePw,openDisplay,closeDisplay,showSlide,
+  lTab,saveMindsetLinks,addLinkSection,removeLinkSection,pTab,loadPageContent,
   renderWheel,renderTraitDough,renderSotm};
 Object.entries(_fns).forEach(([k,v])=>{ window[k]=v; window['_real_'+k]=v; });
 window.__moduleReady=true;
