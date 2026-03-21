@@ -1232,7 +1232,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-// Expose goTo immediately — before Firebase, before onValue, before everything
+// Expose critical UI functions immediately — before Firebase loads
 window.goTo = function(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const el=document.getElementById('page-'+id);
@@ -1241,6 +1241,17 @@ window.goTo = function(id){
   document.querySelectorAll('.mob-tab').forEach(t=>t.classList.toggle('active',t.id==='mobtab-'+id));
   window.scrollTo(0,0);
 };
+window.openLogin = function(){
+  const m=document.getElementById('loginModal');
+  if(!m) return;
+  m.classList.add('open');
+  const e=document.getElementById('loginErr'); if(e) e.style.display='none';
+  const p=document.getElementById('pwIn'); if(p){p.value='';setTimeout(()=>p.focus(),80);}
+};
+window.close1 = function(id){ const m=document.getElementById(id); if(m) m.classList.remove('open'); };
+window.tryLogin = function(){ /* real version replaces this after Firebase loads */ };
+window.requireAdmin = function(fn){ window.openLogin(); };
+window.openAdmin = function(){};
 
 // Build nav immediately so tabs are visible and clickable right away
 (function(){
