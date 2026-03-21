@@ -1232,7 +1232,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-// Expose critical UI functions immediately — before Firebase loads
+// ── EARLY GLOBALS: exposed before Firebase so UI works instantly ──
 window.goTo = function(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const el=document.getElementById('page-'+id);
@@ -1242,18 +1242,22 @@ window.goTo = function(id){
   window.scrollTo(0,0);
 };
 window.openLogin = function(){
-  const m=document.getElementById('loginModal');
-  if(!m) return;
+  const m=document.getElementById('loginModal'); if(!m) return;
   m.classList.add('open');
   const e=document.getElementById('loginErr'); if(e) e.style.display='none';
   const p=document.getElementById('pwIn'); if(p){p.value='';setTimeout(()=>p.focus(),80);}
 };
 window.close1 = function(id){ const m=document.getElementById(id); if(m) m.classList.remove('open'); };
-window.tryLogin = function(){ /* real version replaces this after Firebase loads */ };
-window.requireAdmin = function(fn){ window.openLogin(); };
-window.openAdmin = function(){};
+window.tryLogin = function(){
+  const p=document.getElementById('pwIn'); if(!p) return;
+  if(window._D && p.value===window._D.password){
+    window._authed=true; window.close1('loginModal');
+    if(window.openAdmin) window.openAdmin();
+  } else { const e=document.getElementById('loginErr'); if(e) e.style.display='block'; }
+};
+window.requireAdmin = function(fn){ if(window._authed) fn(); else { window._pendingFn=fn; window.openLogin(); } };
 
-// Build nav immediately so tabs are visible and clickable right away
+// Build nav immediately so tabs appear and work before Firebase loads
 (function(){
   var pages=[
     {id:'home',icon:'🏠',label:'Home'},{id:'trait',icon:'⭐',label:'Trait'},
@@ -1374,12 +1378,18 @@ onValue(DB,(snap)=>{
   }
   if(!fbReady){
     fbReady=true;
+    // Sync any auth state set before Firebase loaded
+    if(window._authed) authed=true;
+    if(window._pendingFn){ pendingFn=window._pendingFn; window._pendingFn=null; }
+    // Share D with early tryLogin
+    window._D = D;
     buildNav();
     document.getElementById('evtDate').value=new Date().toISOString().split('T')[0];
     const pg=params.get('page');
     if(pg) goTo(pg); else goTo('home');
     if(ADMIN_URL){ authed=true; openAdmin(); }
   }
+  window._D = D;
   renderAll();
 });
 
@@ -1504,8 +1514,12 @@ function renderSquads(){
     return `<div class="squad-card sq-${sq}">
       <div class="squad-header">
         <div><div class="squad-name">${sq}</div>
-        <div class="squad-rank-chip">Rank #${rank} · ${grand(sq).toLocaleString()} pts</div></div>
+        <div class="squad-rank-chip">Rank #${rank}</div></div>
         <div class="squad-pts-big">${grand(sq).toLocaleString()}</div>
+      </div>
+      <div class="squad-teachers-section">
+        <div class="squad-teachers-label">All Members (${members.length})</div>
+        <div class="teacher-chips">${members.map(n=>`<div class="teacher-chip"><div class="tc-name">${n}</div></div>`).join('')}</div>
       </div>
       <div class="squad-footer"></div>
     </div>`;
