@@ -1326,6 +1326,7 @@ window.tryLogin = function(){
   } else { const e=document.getElementById('loginErr'); if(e) e.style.display='block'; }
 };
 window.requireAdmin = function(fn){ if(window._authed) fn(); else { window._pendingFn=fn; window.openLogin(); } };
+window.setTrait = function(m){ window._pendingTrait=m; };
 
 // Build nav immediately so tabs appear and work before Firebase loads
 (function(){
@@ -1543,6 +1544,7 @@ onValue(DB,(snap)=>{
     const pg=params.get('page');
     if(pg) goTo(pg); else goTo('home');
     if(ADMIN_URL){ authed=true; openAdmin(); }
+    if(window._pendingTrait){ currentTrait=window._pendingTrait; window._pendingTrait=null; renderTrait(); }
   }
   window._D = D;
   renderAll();
@@ -1684,7 +1686,7 @@ function renderTrait(){
   const curMonth=new Date().toLocaleString('en-US',{month:'long'});
   document.getElementById('monthTabs').innerHTML=TRAITS.map(t=>`
     <button class="month-btn ${t.month===currentTrait?'active':''} ${t.month===curMonth?'current-month':''}"
-      onclick="window.__setTrait && window.__setTrait('${t.month}')">
+      onclick="if(window.setTrait)window.setTrait('${t.month}')">
       ${t.month}${t.month===curMonth?'<span class="now-dot"></span>':''}
     </button>`).join('');
   const t=TRAITS.find(x=>x.month===currentTrait)||TRAITS[6];
