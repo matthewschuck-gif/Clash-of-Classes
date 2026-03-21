@@ -1357,7 +1357,24 @@ let currentPage='home', currentTrait='March', currentGTab='photos';
 
 async function save(){ try{ await set(DB,D); }catch(e){ console.error(e); } }
 
+// Fallback: if Firebase doesn't connect in 5 seconds, render with default data
+const fbTimeout = setTimeout(()=>{
+  if(!fbReady){
+    console.warn('Firebase timeout — rendering with defaults');
+    fbReady=true;
+    window._D=D;
+    buildNav();
+    document.getElementById('evtDate').value=new Date().toISOString().split('T')[0];
+    const pg=params.get('page');
+    if(pg) goTo(pg); else goTo('home');
+    if(ADMIN_URL){ authed=true; openAdmin(); }
+    renderAll();
+  }
+}, 5000);
+
 onValue(DB,(snap)=>{
+  clearTimeout(fbTimeout);
+  try {
   const v=snap.val();
   if(v){
     D=v;
@@ -1391,6 +1408,7 @@ onValue(DB,(snap)=>{
   }
   window._D = D;
   renderAll();
+  } catch(err) { console.error('Firebase onValue error:', err); }
 });
 
 // ── CALCS ──
