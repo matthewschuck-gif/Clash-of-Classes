@@ -168,7 +168,6 @@ body::before {
 }
 .card:hover { border-color:var(--border2); }
 .card-accent { border-top:3px solid var(--purple); }
-.card-gold   { border-top:3px solid var(--gold-soft); }
 .card-gold { border-top:3px solid var(--gold-soft); }
 
 /* ── BUTTONS ── */
@@ -379,14 +378,6 @@ body::before {
   color:var(--text3); text-transform:uppercase;
 }
 .squad-pts-big { font-family:'Fraunces',serif; font-size:28px; font-weight:900; float:right; margin-top:-28px; }
-.squad-teachers-section { padding:0 24px 20px; }
-.squad-teachers-label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:10px; }
-.teacher-chips { display:flex; flex-wrap:wrap; gap:6px; }
-.teacher-chip {
-  background:var(--surface2); border:1px solid var(--border);
-  border-radius:6px; padding:6px 10px;
-}
-.tc-name { font-size:12px; font-weight:600; color:var(--text); }
 .tc-room { font-family:'DM Mono',monospace; font-size:10px; color:var(--text3); }
 .squad-footer { height:3px; }
 .sq-BLACK .squad-name, .sq-BLACK .squad-pts-big { color:var(--sq-black); } .sq-BLACK .squad-footer { background:var(--sq-black); }
@@ -714,7 +705,14 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <h1 class="page-title">Live <span>Tracker</span></h1>
       <div class="page-subtitle">Real-time squad standings</div>
     </div>
-    <button class="btn btn-purple" onclick="openDisplay()">📺 TV Display Mode</button>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <div id="syncBar" style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 13px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:1px">
+        <div id="syncDot" style="width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0"></div>
+        <span id="syncLabel">Connecting to Sheet…</span>
+        <button onclick="syncSheet()" style="background:none;border:none;color:var(--purple-lt);cursor:pointer;font-size:10px;font-family:'DM Mono',monospace;margin-left:4px">↻ Sync</button>
+      </div>
+      <button class="btn btn-purple" onclick="openDisplay()">📺 TV Display Mode</button>
+    </div>
   </div>
   <div class="score-strip" id="scoreStrip">
     <div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text3);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px">Connecting to Firebase…</div>
@@ -732,6 +730,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
           <th class="th-GREY">Grey</th><th class="th-PURPLE">Purple</th>
         </tr></thead>
         <tbody id="evtBody"></tbody>
+        <tbody id="sheetBody"></tbody>
         <tfoot id="evtFoot"></tfoot>
       </table>
     </div>
@@ -814,314 +813,138 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 
 <!-- WHEEL -->
 <div class="page" id="page-wheel">
-  <div class="page-hero" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:20px">
-    <div>
-      <h1 class="page-title">The <span>Wheel</span></h1>
-      <div class="page-subtitle" id="wheelSubtitle">Spin to earn bonus squad points</div>
-    </div>
-    <button class="btn btn-purple" onclick="requireAdmin(()=>{openAdmin();aTab('pages')})">✏ Edit This Page</button>
+  <div class="page-hero" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
+    <div><h1 class="page-title">The <span>Wheel</span></h1><div class="page-subtitle" id="wheelSub">Spin to earn bonus squad points</div></div>
+    <button class="btn btn-purple" onclick="requireAdmin(function(){openAdmin();aTab('pages');})">&#9998; Edit Page</button>
   </div>
   <div class="content-page-layout">
     <div class="content-body">
-      <div class="rich-text" id="wheelBody">
-        <p>The Wheel is one of the most exciting parts of Clash of Classes — a high-stakes, multi-ring spinning challenge where students can earn big bonus points for their squad. Every spin is a choice: bank your points or risk it all to go deeper toward the center for a chance at 100 points!</p>
+      <div class="rich-text" id="wheelBody"><p>The Wheel is one of the most exciting parts of Clash of Classes — a high-stakes multi-ring challenge where students earn bonus points for their squad.</p></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:24px 0">
+        <div class="card card-accent"><div style="font-size:22px;margin-bottom:8px">💵</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:5px">Trait Dough Drawing</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Every Friday, 5 names are drawn from the Trait Dough bin. Those students come to the lobby to spin.</div></div>
+        <div class="card card-accent"><div style="font-size:22px;margin-bottom:8px">🏆</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:5px">Competition Winners</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Winning a Clash of Classes competition can earn your squad Wheel spins as part of the prize.</div></div>
+        <div class="card card-accent"><div style="font-size:22px;margin-bottom:8px">🌟</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:5px">Student of the Month</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Students recognized as Student of the Month may earn a Wheel spin as part of their celebration.</div></div>
+        <div class="card card-accent"><div style="font-size:22px;margin-bottom:8px">⚡</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:5px">Surprise Moments</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Surprise spins happen at lunch, assemblies, and faculty meetings for staff. You never know when!</div></div>
       </div>
-
-      <!-- How You Get to Spin -->
-      <div style="margin:28px 0">
-        <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px">How to Earn a Spin</div>
-        <div style="font-size:14px;color:var(--text2);margin-bottom:16px">There are four ways to get called to the Wheel:</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px">
-          <div class="card" style="display:flex;gap:14px;align-items:flex-start">
-            <div style="font-size:24px;flex-shrink:0">💵</div>
-            <div><div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:4px">Trait Dough Drawing</div><div style="font-size:13px;color:var(--text2);line-height:1.5">Every Friday, 5 names are drawn from the Trait Dough bin. The more Trait Dough you turn in, the more entries you have. Winners are called to the lobby to spin.</div></div>
-          </div>
-          <div class="card" style="display:flex;gap:14px;align-items:flex-start">
-            <div style="font-size:24px;flex-shrink:0">🏆</div>
-            <div><div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:4px">Competition Winners</div><div style="font-size:13px;color:var(--text2);line-height:1.5">Winning a Clash of Classes competition or event can earn your squad Wheel spins as part of the prize.</div></div>
-          </div>
-          <div class="card" style="display:flex;gap:14px;align-items:flex-start">
-            <div style="font-size:24px;flex-shrink:0">🌟</div>
-            <div><div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:4px">Student of the Month</div><div style="font-size:13px;color:var(--text2);line-height:1.5">Students recognized as Student of the Month may earn a Wheel spin as part of their celebration.</div></div>
-          </div>
-          <div class="card" style="display:flex;gap:14px;align-items:flex-start">
-            <div style="font-size:24px;flex-shrink:0">⚡</div>
-            <div><div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:4px">Surprise Moments</div><div style="font-size:13px;color:var(--text2);line-height:1.5">Surprise Wheel spins can happen anytime — at lunch, assemblies, or faculty meetings for staff. You never know when your name might be called!</div></div>
-          </div>
-        </div>
+      <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:var(--text);margin:24px 0 12px">How the Wheel Works</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:0;overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px">
+        <div style="background:rgba(157,95,204,0.12);border:2px solid var(--purple-lt);border-radius:8px;padding:12px 14px;text-align:center;min-width:86px;flex-shrink:0"><div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--purple-lt);text-transform:uppercase;margin-bottom:4px">Ring 1</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--text)">Outer</div><div style="font-size:10px;color:var(--text3);margin-top:2px">Start here</div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;padding:0 4px;flex-shrink:0;color:var(--gold-soft);font-size:14px">&#8595;<div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text3);white-space:nowrap">risk it</div></div>
+        <div style="background:rgba(232,200,64,0.08);border:2px solid var(--gold-soft);border-radius:8px;padding:12px 14px;text-align:center;min-width:86px;flex-shrink:0"><div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--gold-soft);text-transform:uppercase;margin-bottom:4px">Ring 2</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--text)">Second</div><div style="font-size:10px;color:var(--text3);margin-top:2px">1 risk used</div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;padding:0 4px;flex-shrink:0;color:var(--gold-soft);font-size:14px">&#8595;<div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text3);white-space:nowrap">risk it</div></div>
+        <div style="background:rgba(232,200,64,0.06);border:2px solid rgba(232,200,64,0.4);border-radius:8px;padding:12px 14px;text-align:center;min-width:86px;flex-shrink:0"><div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--gold-soft);text-transform:uppercase;margin-bottom:4px;opacity:0.7">Ring 3</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--text)">Third</div><div style="font-size:10px;color:var(--text3);margin-top:2px">2 risks used</div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;padding:0 4px;flex-shrink:0;color:var(--gold-soft);font-size:14px">&#8595;<div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text3);white-space:nowrap">risk it</div></div>
+        <div style="background:rgba(232,200,64,0.05);border:2px solid rgba(232,200,64,0.25);border-radius:8px;padding:12px 14px;text-align:center;min-width:86px;flex-shrink:0"><div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--gold-soft);text-transform:uppercase;margin-bottom:4px;opacity:0.5">Ring 4</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--text)">Fourth</div><div style="font-size:10px;color:var(--text3);margin-top:2px">3 risks used</div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;padding:0 4px;flex-shrink:0;color:var(--gold-soft);font-size:14px">&#8595;<div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text3);white-space:nowrap">final</div></div>
+        <div style="background:linear-gradient(135deg,rgba(255,225,0,0.15),rgba(157,95,204,0.15));border:2px solid var(--gold);border-radius:8px;padding:12px 14px;text-align:center;min-width:86px;flex-shrink:0"><div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:4px">Center!</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold)">100 pts</div><div style="font-size:10px;color:var(--text3);margin-top:2px">Squad color only</div></div>
       </div>
-
-      <!-- The Wheel Rings Explained -->
-      <div style="margin:32px 0">
-        <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px">How the Wheel Works</div>
-        <div style="font-size:14px;color:var(--text2);margin-bottom:20px">The Wheel has multiple rings — outer to center. You always start on the outer ring. The further in you go, the higher the stakes.</div>
-
-        <!-- Ring diagram visual -->
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px;text-align:center">
-          <div style="display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:nowrap;overflow-x:auto">
-            <!-- Ring 1 -->
-            <div style="background:rgba(157,95,204,0.12);border:2px solid var(--purple-lt);border-radius:8px;padding:14px 16px;text-align:center;min-width:100px;flex-shrink:0">
-              <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--purple-lt);text-transform:uppercase;margin-bottom:6px">Ring 1</div>
-              <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--text)">Outer</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:4px">Start here</div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:center;padding:0 6px;flex-shrink:0">
-              <div style="font-size:18px;color:var(--gold-soft)">↓</div>
-              <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:1px;white-space:nowrap">Risk it</div>
-            </div>
-            <!-- Ring 2 -->
-            <div style="background:rgba(232,200,64,0.08);border:2px solid var(--gold-soft);border-radius:8px;padding:14px 16px;text-align:center;min-width:100px;flex-shrink:0">
-              <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--gold-soft);text-transform:uppercase;margin-bottom:6px">Ring 2</div>
-              <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--text)">Second</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:4px">1 risk used</div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:center;padding:0 6px;flex-shrink:0">
-              <div style="font-size:18px;color:var(--gold-soft)">↓</div>
-              <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:1px;white-space:nowrap">Risk it</div>
-            </div>
-            <!-- Ring 3 -->
-            <div style="background:rgba(232,200,64,0.08);border:2px solid rgba(232,200,64,0.4);border-radius:8px;padding:14px 16px;text-align:center;min-width:100px;flex-shrink:0">
-              <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--gold-soft);text-transform:uppercase;margin-bottom:6px;opacity:0.7">Ring 3</div>
-              <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--text)">Third</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:4px">2 risks used</div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:center;padding:0 6px;flex-shrink:0">
-              <div style="font-size:18px;color:var(--gold-soft)">↓</div>
-              <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:1px;white-space:nowrap">Risk it</div>
-            </div>
-            <!-- Ring 4 -->
-            <div style="background:rgba(232,200,64,0.08);border:2px solid rgba(232,200,64,0.25);border-radius:8px;padding:14px 16px;text-align:center;min-width:100px;flex-shrink:0">
-              <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--gold-soft);text-transform:uppercase;margin-bottom:6px;opacity:0.5">Ring 4</div>
-              <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--text)">Fourth</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:4px">3 risks used</div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:center;padding:0 6px;flex-shrink:0">
-              <div style="font-size:18px;color:var(--gold-soft)">↓</div>
-              <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:1px;white-space:nowrap">Final risk</div>
-            </div>
-            <!-- Center -->
-            <div style="background:linear-gradient(135deg,rgba(255,225,0,0.2),rgba(157,95,204,0.2));border:2px solid var(--gold);border-radius:8px;padding:14px 16px;text-align:center;min-width:100px;flex-shrink:0">
-              <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:6px">Center!</div>
-              <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--gold)">100 pts</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:4px">Squad color only</div>
-            </div>
-          </div>
-          <div style="margin-top:14px;font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;letter-spacing:1px">Up to 4 risks total to reach the center</div>
-        </div>
-
-        <!-- Step by step spinning rules -->
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px">
-            <div style="width:32px;height:32px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:14px;color:var(--purple-lt);flex-shrink:0;font-weight:700">1</div>
-            <div><div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px">Start on the Outer Ring</div><div style="font-size:13px;color:var(--text2)">Every spinner begins on Ring 1 — the outer ring. Give it a spin and see where it lands.</div></div>
-          </div>
-          <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px">
-            <div style="width:32px;height:32px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:14px;color:var(--purple-lt);flex-shrink:0;font-weight:700">2</div>
-            <div><div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px">Land on a Number? Bank It or Risk It</div><div style="font-size:13px;color:var(--text2)">If you land on a space showing a number and a down arrow ↓, you have a choice: <strong style="color:var(--text)">keep those points</strong> for your squad and walk away, or <strong style="color:var(--text)">risk them</strong> and spin the next ring inward for a chance at more. You can risk up to 4 times total to work your way to the center.</div></div>
-          </div>
-          <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px">
-            <div style="width:32px;height:32px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:14px;color:var(--purple-lt);flex-shrink:0;font-weight:700">3</div>
-            <div><div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px">Make It to the Center — Squad Color = 100 Points</div><div style="font-size:13px;color:var(--text2)">If you risk all the way to the center ring and your spin lands on <strong style="color:var(--text)">your squad's color</strong>, your squad earns <strong style="color:var(--gold-soft)">100 points</strong>! If it lands on a different color, you earn nothing. Big risk, big reward.</div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Special Spaces -->
-      <div style="margin:32px 0">
-        <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px">Special Spaces</div>
-        <div style="font-size:14px;color:var(--text2);margin-bottom:16px">Watch out for these special spaces on the wheel — they change the rules!</div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="display:flex;gap:16px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--sq-purple);border-radius:10px;padding:16px">
-            <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:900;color:var(--sq-purple);min-width:80px;flex-shrink:0">LOYALTY</div>
-            <div style="font-size:13px;color:var(--text2);line-height:1.6">You only earn the points <strong style="color:var(--text)">if you are on your squad's color section</strong>. If you land on Loyalty but it's not your squad's color, you earn nothing. Loyalty rewards the home team!</div>
-          </div>
-          <div style="display:flex;gap:16px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--sq-gold);border-radius:10px;padding:16px">
-            <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:900;color:var(--sq-gold);min-width:80px;flex-shrink:0">GIVE</div>
-            <div style="font-size:13px;color:var(--text2);line-height:1.6">Landing here means you must <strong style="color:var(--text)">give those points to another squad</strong> instead of keeping them for yourself. A generous — or unlucky — space depending on how you look at it!</div>
-          </div>
-          <div style="display:flex;gap:16px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--sq-grey);border-radius:10px;padding:16px">
-            <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:900;color:var(--sq-grey);min-width:80px;flex-shrink:0">AUTO</div>
-            <div style="font-size:13px;color:var(--text2);line-height:1.6">No choice here — <strong style="color:var(--text)">you automatically advance to the next ring inward</strong>. You don't get to decide whether to risk it; you must spin again. Auto can push you closer to the center whether you're ready or not!</div>
-          </div>
-        </div>
-      </div>
-
-      <div style="margin-top:24px" id="wheelVideoBlock"></div>
+      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px"><div style="width:28px;height:28px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;color:var(--purple-lt);flex-shrink:0;font-weight:700">1</div><div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">Start on the Outer Ring</div><div style="font-size:12px;color:var(--text2)">Every spinner begins on Ring 1. Give it a spin and see where it lands.</div></div></div>
+      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px"><div style="width:28px;height:28px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;color:var(--purple-lt);flex-shrink:0;font-weight:700">2</div><div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">Land on Number + Arrow? Bank It or Risk It</div><div style="font-size:12px;color:var(--text2)">Keep those points for your squad, or risk them and spin the next ring inward. You can risk up to 4 times total to reach the center.</div></div></div>
+      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px"><div style="width:28px;height:28px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;color:var(--purple-lt);flex-shrink:0;font-weight:700">3</div><div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">Center: Land on Your Squad Color = 100 Points!</div><div style="font-size:12px;color:var(--text2)">If you reach the center and land on your squad's color, your squad earns 100 points. Wrong color = nothing. Big risk, big reward.</div></div></div>
+      <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:12px">Special Spaces</div>
+      <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--sq-purple);border-radius:10px;padding:14px;margin-bottom:8px"><div style="font-family:'Fraunces',serif;font-size:16px;font-weight:900;color:var(--sq-purple);min-width:76px;flex-shrink:0">LOYALTY</div><div style="font-size:13px;color:var(--text2);line-height:1.5">You only earn points if you are in your squad's color section. Land on Loyalty on a different color = nothing.</div></div>
+      <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--sq-gold);border-radius:10px;padding:14px;margin-bottom:8px"><div style="font-family:'Fraunces',serif;font-size:16px;font-weight:900;color:var(--sq-gold);min-width:76px;flex-shrink:0">GIVE</div><div style="font-size:13px;color:var(--text2);line-height:1.5">You must give those points to another squad instead of keeping them.</div></div>
+      <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--sq-grey);border-radius:10px;padding:14px;margin-bottom:8px"><div style="font-family:'Fraunces',serif;font-size:16px;font-weight:900;color:var(--sq-grey);min-width:76px;flex-shrink:0">AUTO</div><div style="font-size:13px;color:var(--text2);line-height:1.5">You automatically advance to the next ring inward — no choice, you must spin again.</div></div>
+      <div id="wheelEmbeds" style="margin-top:20px"></div>
     </div>
     <div class="content-sidebar">
-      <div class="card" style="margin-bottom:16px;border-top:3px solid var(--gold-soft)">
-        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">⚡ Quick Facts</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.8">
-          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">When</span><span>Every Friday</span></div>
-          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Where</span><span>School Lobby</span></div>
-          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">How many</span><span>5 students/week</span></div>
-          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Surprise spins</span><span>At lunch!</span></div>
-          <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="color:var(--text3)">Staff spins</span><span>Faculty meetings</span></div>
+      <div class="card card-gold" style="margin-bottom:14px">
+        <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:10px">⚡ Quick Facts</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.9">
+          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">When</span><span>Every Friday</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Where</span><span>School Lobby</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">How many</span><span>5 students/week</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Surprise spins</span><span>At lunch!</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Staff spins</span><span>Faculty meetings</span></div>
         </div>
-      </div>
-      <div class="card" style="margin-bottom:16px">
-        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:10px">🏆 Points go to your Squad</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.6">Every Wheel spin earns points that count toward your squad's live total. Check the Tracker to see how your squad is doing!</div>
         <button class="btn btn-purple btn-full" style="margin-top:12px" onclick="goTo('tracker')">View Live Tracker →</button>
       </div>
-      <div class="link-card" id="wheelLinks">
-        <div class="link-card-title">🔗 Resources & Links</div>
-        <div style="color:var(--text3);font-size:13px">Add links via Admin → Links.</div>
-      </div>
+      <div class="link-card" id="wheelLinks"><div class="link-card-title">🔗 Resources</div><div style="color:var(--text3);font-size:12px">Loading...</div></div>
     </div>
   </div>
 </div>
 
 <!-- TRAIT DOUGH -->
 <div class="page" id="page-traitdough">
-  <div class="page-hero" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:20px">
-    <div>
-      <h1 class="page-title">Trait <span>Dough</span></h1>
-      <div class="page-subtitle" id="traitdoughSubtitle">EMS schoolwide token economy system</div>
-    </div>
-    <button class="btn btn-purple" onclick="requireAdmin(()=>{openAdmin();aTab('pages')})">✏ Edit This Page</button>
+  <div class="page-hero" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
+    <div><h1 class="page-title">Trait <span>Dough</span></h1><div class="page-subtitle" id="traitdoughSub">EMS schoolwide token economy system</div></div>
+    <button class="btn btn-purple" onclick="requireAdmin(function(){openAdmin();aTab('pages');})">&#9998; Edit Page</button>
   </div>
   <div class="content-page-layout">
     <div class="content-body">
       <div class="rich-text" id="traitdoughBody">
         <p>Trait Dough is a schoolwide token economy system that highlights individual students demonstrating Life Ready Graduate Traits in action.</p>
         <h3>Ways to Earn</h3>
-        <p>Students can earn Trait Dough through three pathways: In Action (Individual recognition), Clash of Classes Competition (Team), and Mountaineer Pride (Team).</p>
+        <p>Students can earn Trait Dough in three ways: In Action (individual recognition by any adult), Clash of Classes Competition (team), and Mountaineer Pride (team).</p>
         <h3>The Process</h3>
-        <p>Staff members are provided "Trait Dough" to give to students who exemplify different LRG traits. When students "Be the E" by demonstrating ANY Life Ready Graduate trait, the adult recognizes their actions by providing the physical or digital Trait Dough with the reason for earning.</p>
-        <p>The adult immediately circles the trait recognized and writes/signs their name on the back. The student may collect, save, or turn in their Trait Dough at any point — during lunch, PASS, or the beginning/end of the school day.</p>
-        <p>Once in the office, the student explains why they are there and turns in their Trait Dough. They are then entered into a drawing to receive a "gnarly prize" during period drawings. Winners are announced through the morning announcements.</p>
+        <p>Staff members are provided Trait Dough to give students who exemplify LRG traits. When a student demonstrates a trait, the adult gives them a Trait Dough bill with the trait circled and their name on the back. Students may save, collect, or turn in dough during lunch, PASS, or beginning/end of the school day.</p>
+        <p>Once in the office, the student turns in their dough and is entered into a weekly Friday drawing. Five names are drawn each Friday — those students spin the Wheel in the lobby. Winners are announced on the morning announcements.</p>
         <h3>Principles</h3>
-        <p><strong>Purposeful</strong> — Each adult may give as little or as much Trait Dough each day.<br>
-        <strong>Sustainable</strong> — Printed templates can be found in the workroom and a digital copy is available in the links section.<br>
-        <strong>Equitable</strong> — Using data to log what trait, who is giving, and who is receiving is vital to ensure fair distribution.<br>
-        <strong>Manageable</strong> — Make it your own. Don't stress over how much or when you distribute Trait Dough. Look for authentic opportunities.</p>
-        <h3>Student of the Month Connection</h3>
-        <p>Both Trait Dough and Student of the Month highlight students demonstrating LRG Traits, but in different ways. Trait Dough can happen anytime from any adult, while Student of the Month recognizes 2 students per team each month for exemplifying the elevated trait of the month. Selected students are invited to a special monthly experience.</p>
+        <p><strong>Purposeful</strong> — Each adult may give as little or as much each day.<br><strong>Sustainable</strong> — Templates in the workroom; digital copy in the links section.<br><strong>Equitable</strong> — Data tracks which traits, teachers, and students are involved.<br><strong>Manageable</strong> — Make it your own. Look for authentic opportunities.</p>
       </div>
+      <div id="traitdoughEmbeds" style="margin-top:20px"></div>
     </div>
     <div class="content-sidebar">
-      <div class="link-card" style="margin-bottom:16px">
-        <div class="link-card-title">📋 Student of the Month Experiences</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.7">
-          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>September</span><span style="color:var(--text3)">Millersville / Thaddeus Stevens</span></div>
-          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>October</span><span style="color:var(--text3)">Meadow Valley Electric</span></div>
-          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>November</span><span style="color:var(--text3)">Pastry Decorating</span></div>
-          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>December</span><span style="color:var(--text3)">Ephrata Borough Police</span></div>
-          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>January</span><span style="color:var(--text3)">EASD Athletics / Trivia</span></div>
-          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>February</span><span style="color:var(--text3)">Fox Meadows</span></div>
-          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>March</span><span style="color:var(--text3)">GEARS</span></div>
-          <div style="display:flex;justify-content:space-between;padding:6px 0"><span>April</span><span style="color:var(--text3)">Refreshing Mountain</span></div>
+      <div class="card card-gold" style="margin-bottom:14px">
+        <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:10px">🌟 SotM Experiences</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.8">
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Sept</span><span>Thaddeus Stevens</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Oct</span><span>Meadow Valley Electric</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Nov</span><span>Astro Machine Works</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Dec</span><span>Ephrata Borough Police</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Jan</span><span>Chamber of Commerce</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Feb</span><span>EASD Athletics / PA Guard</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Mar</span><span>Ephrata Review / LEO Club</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Apr</span><span>GEARS / WellSpan</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0"><span style="color:var(--text3)">May</span><span>EHS Future Teachers</span></div>
         </div>
       </div>
-      <div class="link-card" id="traitdoughLinks">
-        <div class="link-card-title">🔗 Resources & Links</div>
-        <div style="color:var(--text3);font-size:13px">Add links via Admin → Links.</div>
-      </div>
+      <div class="link-card" id="traitdoughLinks"><div class="link-card-title">🔗 Resources</div><div style="color:var(--text3);font-size:12px">Loading...</div></div>
     </div>
   </div>
 </div>
 
 <!-- STUDENT OF THE MONTH -->
 <div class="page" id="page-sotm">
-  <div class="page-hero" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:20px">
-    <div>
-      <h1 class="page-title">Student <span>of the Month</span></h1>
-      <div class="page-subtitle" id="sotmSubtitle">A designed experience celebrating LRG traits</div>
-    </div>
-    <button class="btn btn-purple" onclick="requireAdmin(()=>{openAdmin();aTab('pages')})">✏ Edit This Page</button>
+  <div class="page-hero" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
+    <div><h1 class="page-title">Student <span>of the Month</span></h1><div class="page-subtitle" id="sotmSub">A designed experience celebrating LRG traits</div></div>
+    <button class="btn btn-purple" onclick="requireAdmin(function(){openAdmin();aTab('pages');})">&#9998; Edit Page</button>
   </div>
   <div class="content-page-layout">
     <div class="content-body">
-      <div class="rich-text" id="sotmBody">
-        <p>Student of the Month is a designed recognition experience at Ephrata Middle School. Each month, 24 students are selected — 2 per squad — for exemplifying the elevated Life Ready Graduate trait of that month. Selected students are invited to a special community experience to celebrate the trait they demonstrated.</p>
+      <div class="rich-text" id="sotmBody"><p>Student of the Month is a designed recognition experience. Each month, 24 students are selected — 2 per squad — for exemplifying the elevated Life Ready Graduate trait of that month. Selected students are invited to a special community experience.</p></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0">
+        <div class="card card-gold"><div style="font-size:20px;margin-bottom:6px">👥</div><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin-bottom:4px">Who is Selected</div><div style="font-size:12px;color:var(--text2);line-height:1.5">24 students/month — 2 per squad — chosen by team vote for the trait of the month.</div></div>
+        <div class="card card-gold"><div style="font-size:20px;margin-bottom:6px">📅</div><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin-bottom:4px">When</div><div style="font-size:12px;color:var(--text2);line-height:1.5">End of each month. Experience held 2:10–2:55 PM in the EMS Media Center.</div></div>
+        <div class="card card-gold"><div style="font-size:20px;margin-bottom:6px">⭐</div><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin-bottom:4px">Points</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Each selection earns 5 points for that squad on the live tracker.</div></div>
       </div>
-
-      <!-- How it works cards -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:28px 0">
-        <div class="card card-gold">
-          <div style="font-size:22px;margin-bottom:8px">👥</div>
-          <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:6px">Who is Selected</div>
-          <div style="font-size:13px;color:var(--text2);line-height:1.5">24 students total each month — 2 per squad (Black, Gold, Grey, Purple) — selected by their squad team for exemplifying the trait of the month.</div>
-        </div>
-        <div class="card card-gold">
-          <div style="font-size:22px;margin-bottom:8px">📅</div>
-          <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:6px">When</div>
-          <div style="font-size:13px;color:var(--text2);line-height:1.5">Selections are made at the end of each month. The recognition experience typically takes place from 2:10–2:55 PM in the EMS Media Center.</div>
-        </div>
-        <div class="card card-gold">
-          <div style="font-size:22px;margin-bottom:8px">🌟</div>
-          <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:6px">The Experience</div>
-          <div style="font-size:13px;color:var(--text2);line-height:1.5">Each month features a unique community partnership — students celebrate their trait through hands-on experiences with local businesses, organizations, and community leaders.</div>
-        </div>
+      <div style="font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:var(--text);margin:20px 0 12px">Community Partners by Month</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <div style="display:grid;grid-template-columns:90px 1fr 1fr;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border);padding:8px 14px"><div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Month</div><div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Trait</div><div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Partners</div></div>
+        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">September</div><div style="font-size:11px;color:var(--text2)">Continual Learning</div><div style="font-size:11px;color:var(--text2)">Thaddeus Stevens, Ephrata Fair</div></div>
+        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">October</div><div style="font-size:11px;color:var(--text2)">Critical Thinking</div><div style="font-size:11px;color:var(--text2)">Meadow Valley Electric, Refreshing Mountain</div></div>
+        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">November</div><div style="font-size:11px;color:var(--text2)">Creativity &amp; Innovation</div><div style="font-size:11px;color:var(--text2)">Astro Machine Works, NAHS, Mainspring, Cafeteria</div></div>
+        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">December</div><div style="font-size:11px;color:var(--text2)">Honesty &amp; Integrity</div><div style="font-size:11px;color:var(--text2)">Pioneer Fire Co., Ephrata Police, Art of Recycle</div></div>
+        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">January</div><div style="font-size:11px;color:var(--text2)">Personal Accountability</div><div style="font-size:11px;color:var(--text2)">Borough Mayor, NL Chamber, Lawn Bros</div></div>
+        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">February</div><div style="font-size:11px;color:var(--text2)">Collaboration</div><div style="font-size:11px;color:var(--text2)">EASD Athletics, PA National Guard, Kel Lee Entertainment</div></div>
+        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">March</div><div style="font-size:11px;color:var(--text2)">Communication &amp; Empathy</div><div style="font-size:11px;color:var(--text2)">Ephrata Review, EHS LEO Club, Senior Helpers</div></div>
+        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">April</div><div style="font-size:11px;color:var(--text2)">Healthy Living</div><div style="font-size:11px;color:var(--text2)">GEARS, EHS Yoga, Hotworx, WellSpan</div></div>
+        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">May</div><div style="font-size:11px;color:var(--text2)">Adaptability</div><div style="font-size:11px;color:var(--text2)">EHS Future Teachers, 6th Grade Tours, Escape Room</div></div>
       </div>
-
-      <!-- Process steps -->
-      <div style="margin:28px 0">
-        <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:16px">How Teams Select Students</div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px">
-            <div style="width:32px;height:32px;background:rgba(232,200,64,0.12);border:1px solid rgba(232,200,64,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:14px;color:var(--gold-soft);flex-shrink:0;font-weight:700">1</div>
-            <div><div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px">Collaborate with Your Team</div><div style="font-size:13px;color:var(--text2)">Squad team members discuss which students have most authentically exemplified the trait of the month. Look for genuine moments — not just academic performance.</div></div>
-          </div>
-          <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px">
-            <div style="width:32px;height:32px;background:rgba(232,200,64,0.12);border:1px solid rgba(232,200,64,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:14px;color:var(--gold-soft);flex-shrink:0;font-weight:700">2</div>
-            <div><div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px">Submit via the CoC Landing Page</div><div style="font-size:13px;color:var(--text2)">Use the Student of the Month nomination form on the Clash of Classes Landing Page. Select 2 students from your squad and include a brief reason for each.</div></div>
-          </div>
-          <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px">
-            <div style="width:32px;height:32px;background:rgba(232,200,64,0.12);border:1px solid rgba(232,200,64,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:14px;color:var(--gold-soft);flex-shrink:0;font-weight:700">3</div>
-            <div><div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px">Students Are Invited</div><div style="font-size:13px;color:var(--text2)">Selected students receive their certificate and a personal message from their team explaining why they were chosen. They are then invited to the monthly experience.</div></div>
-          </div>
-          <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px">
-            <div style="width:32px;height:32px;background:rgba(232,200,64,0.12);border:1px solid rgba(232,200,64,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:14px;color:var(--gold-soft);flex-shrink:0;font-weight:700">4</div>
-            <div><div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px">Squad Points Awarded</div><div style="font-size:13px;color:var(--text2)">Each Student of the Month selection earns 5 points for your squad. These points are added to the live tracker and count toward the overall standings.</div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Community partnerships -->
-      <div style="margin:32px 0">
-        <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:16px">Community Partners & Experiences</div>
-        <div style="font-size:14px;color:var(--text2);margin-bottom:16px">Each month's experience is connected to the LRG trait and features a local community partner. Experiences take place 2:10–2:55 PM.</div>
-        <div id="sotmExperiencesTable" style="display:flex;flex-direction:column;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-          <div style="display:grid;grid-template-columns:90px 1fr 1fr;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border);padding:10px 16px">
-            <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Month</div>
-            <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Trait</div>
-            <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Community Partners</div>
-          </div>
-          <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:11px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft)">Sept</div><div style="font-size:12px;color:var(--text2)">Continual Learning & Growth Mindset</div><div style="font-size:12px;color:var(--text2)">Thaddeus Stevens, Ephrata Fair Committee</div></div>
-          <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:11px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft)">Oct</div><div style="font-size:12px;color:var(--text2)">Critical Thinking & Problem Solving</div><div style="font-size:12px;color:var(--text2)">Meadow Valley Electric, Refreshing Mountain</div></div>
-          <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:11px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft)">Nov</div><div style="font-size:12px;color:var(--text2)">Creativity & Innovation</div><div style="font-size:12px;color:var(--text2)">Astro Machine Works, National Art Honor Society, Mainspring Ephrata, Cookie Baking w/ EMS Cafeteria</div></div>
-          <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:11px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft)">Dec</div><div style="font-size:12px;color:var(--text2)">Honesty, Integrity & Responsibility</div><div style="font-size:12px;color:var(--text2)">Pioneer Fire Company, Ephrata Borough Police, Art of Recycle</div></div>
-          <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:11px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft)">Jan</div><div style="font-size:12px;color:var(--text2)">Personal Accountability</div><div style="font-size:12px;color:var(--text2)">Ephrata Borough Mayor, Northern Lancaster Chamber of Commerce, Lawn Bros Inc</div></div>
-          <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:11px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft)">Feb</div><div style="font-size:12px;color:var(--text2)">Collaboration & Teamwork</div><div style="font-size:12px;color:var(--text2)">EASD Athletic Teams, PA National Guard, Kel Lee Entertainment (Team Trivia)</div></div>
-          <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:11px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft)">Mar</div><div style="font-size:12px;color:var(--text2)">Communication & Empathy</div><div style="font-size:12px;color:var(--text2)">Ephrata Review, EHS LEO Club, Senior Helpers</div></div>
-          <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:11px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft)">Apr</div><div style="font-size:12px;color:var(--text2)">Healthy Living, Wellness & Self-Awareness</div><div style="font-size:12px;color:var(--text2)">GEARS, EHS Yoga Class, Hotworx Yoga, WellSpan</div></div>
-          <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:11px 16px"><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft)">May</div><div style="font-size:12px;color:var(--text2)">Adaptability & Flexibility</div><div style="font-size:12px;color:var(--text2)">EHS Future Teacher Class, 6th Grade Tours, EMS Designed Escape Room</div></div>
-        </div>
-      </div>
+      <div id="sotmEmbeds" style="margin-top:20px"></div>
     </div>
     <div class="content-sidebar">
-      <div class="card" style="margin-bottom:16px;border-top:3px solid var(--gold-soft)">
-        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">📊 By the Numbers</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.8">
-          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Selected/month</span><span style="font-weight:700">24 students</span></div>
-          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Per squad</span><span style="font-weight:700">2 students</span></div>
-          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Points earned</span><span style="font-weight:700">5 pts/student</span></div>
-          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Time</span><span style="font-weight:700">2:10–2:55 PM</span></div>
-          <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="color:var(--text3)">Location</span><span style="font-weight:700">EMS Media Center</span></div>
+      <div class="card card-gold" style="margin-bottom:14px">
+        <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:10px">📊 By the Numbers</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.9">
+          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Selected/month</span><strong>24 students</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Per squad</span><strong>2 students</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Points earned</span><strong>5 pts/student</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Time</span><strong>2:10–2:55 PM</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Location</span><strong>EMS Media Center</strong></div>
         </div>
       </div>
-      <div class="card" style="margin-bottom:16px">
-        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:10px">💡 Trait Dough vs. SotM</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px"><strong style="color:var(--text)">Trait Dough</strong> — anytime, from any adult, for any LRG trait moment.</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.6"><strong style="color:var(--text)">Student of the Month</strong> — end of month, by squad team vote, for the elevated trait of that month.</div>
-        <button class="btn btn-full" style="margin-top:12px" onclick="goTo('traitdough')">Learn About Trait Dough →</button>
-      </div>
-      <div class="link-card" id="sotmLinks">
-        <div class="link-card-title">🔗 Resources & Links</div>
-        <div style="color:var(--text3);font-size:13px">Add links via Admin → Links.</div>
-      </div>
+      <div class="link-card" id="sotmLinks"><div class="link-card-title">🔗 Resources</div><div style="color:var(--text3);font-size:12px">Loading...</div></div>
     </div>
   </div>
 </div>
@@ -1304,17 +1127,13 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <p style="font-size:13px;color:var(--text3);margin-bottom:18px">Edit the text content on each page. Changes go live instantly.</p>
       <div class="fr"><label>Page</label>
         <select id="pageSelect" onchange="loadPageContent()">
-          <option value="home">🏠 Home</option>
-          <option value="trait">⭐ Monthly Trait (intro text)</option>
-          <option value="squads">👥 Squads (intro text)</option>
+          <option value="home">🏠 Home — About Text</option>
           <option value="mindset">📚 Mountaineer Mindset</option>
           <option value="wheel">🎡 The Wheel</option>
           <option value="traitdough">💵 Trait Dough</option>
           <option value="sotm">🌟 Student of the Month</option>
           <option value="mayhem">⚡ Mountaineer Mayhem</option>
           <option value="champs">🏆 Championships</option>
-          <option value="gallery">📸 Gallery (intro text)</option>
-          <option value="staff">👤 Staff Resources (intro text)</option>
         </select>
       </div>
       <div id="pageEditorFields"></div>
@@ -1330,7 +1149,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
           <option value="mindset">📚 Mountaineer Mindset — Lesson Plans</option>
           <option value="wheel">🎡 The Wheel — Resources</option>
           <option value="traitdough">💵 Trait Dough — Resources</option>
-          <option value="sotm">🌟 Student of the Month — Resources</option>
+          <option value="sotm">🌟 Student of Month — Resources</option>
           <option value="mayhem">⚡ Mountaineer Mayhem — Resources</option>
           <option value="champs">🏆 Championships — Resources</option>
         </select>
@@ -1408,27 +1227,36 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   </div>
 </div>
 
-<script>
-// Bridge: allows onclick handlers in dynamic HTML to call module functions
-// Module will overwrite these with real implementations
-window.__moduleReady = false;
-window.__pendingCalls = [];
-['goTo','__goTo','setTrait','__setTrait','gTab','gATab','openLogin','tryLogin',
- 'requireAdmin','openAddEvent','openAdmin','close1','aTab','addEvent','saveMetrics',
- 'savePageContent','loadPageContent','addLink','removeLink','addGItem','resetAll',
- 'undoEvt','changePw','openDisplay','closeDisplay','showSlide','previewPhoto',
- '__scrollMindset'].forEach(fn=>{
-  window[fn]=function(){
-    const args=Array.from(arguments);
-    if(window.__moduleReady && typeof window['_real_'+fn]==='function'){
-      window['_real_'+fn].apply(null,args);
-    }
-  };
-});
-</script>
+
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+// Expose goTo immediately — before Firebase, before onValue, before everything
+window.goTo = function(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const el=document.getElementById('page-'+id);
+  if(el) el.classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.id==='tab-'+id));
+  document.querySelectorAll('.mob-tab').forEach(t=>t.classList.toggle('active',t.id==='mobtab-'+id));
+  window.scrollTo(0,0);
+};
+
+// Build nav immediately so tabs are visible and clickable right away
+(function(){
+  var pages=[
+    {id:'home',icon:'🏠',label:'Home'},{id:'trait',icon:'⭐',label:'Trait'},
+    {id:'squads',icon:'👥',label:'Squads'},{id:'tracker',icon:'📊',label:'Tracker'},
+    {id:'mindset',icon:'📚',label:'Mindset'},{id:'wheel',icon:'🎡',label:'Wheel'},
+    {id:'traitdough',icon:'💵',label:'Trait Dough'},{id:'sotm',icon:'🌟',label:'Student of Month'},
+    {id:'mayhem',icon:'⚡',label:'Mayhem'},{id:'champs',icon:'🏆',label:'Champs'},
+    {id:'gallery',icon:'📸',label:'Gallery'},{id:'staff',icon:'👤',label:'Staff'},
+  ];
+  var tabs=document.getElementById('navTabs');
+  var mob=document.getElementById('mobileNav');
+  if(tabs) tabs.innerHTML=pages.map(p=>`<button class="tab${p.id==='home'?' active':''}" id="tab-${p.id}" onclick="goTo('${p.id}')"><span class="tab-icon">${p.icon}</span>${p.label}</button>`).join('');
+  if(mob) mob.innerHTML=pages.map(p=>`<button class="mob-tab${p.id==='home'?' active':''}" id="mobtab-${p.id}" onclick="goTo('${p.id}')">${p.icon} ${p.label}</button>`).join('');
+})();
 
 const FB = { apiKey:"AIzaSyAonPnPsg3Yu4sivt3ZetjdtEoAalQZZWQ", authDomain:"clash-of-classes.firebaseapp.com", databaseURL:"https://clash-of-classes-default-rtdb.firebaseio.com", projectId:"clash-of-classes", storageBucket:"clash-of-classes.firebasestorage.app", messagingSenderId:"171056314869", appId:"1:171056314869:web:abaefecb4882ae134448bc" };
 const db = getDatabase(initializeApp(FB));
@@ -1492,7 +1320,7 @@ const DEF = {
   events: SEED_EVENTS,
   metrics: { attendance:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, referral:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, grades:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, weekLabel:'' },
   gallery: { photos:[], quotes:[], spotlights:[], calendar:[] },
-  links: { mindset:[], mayhem:[], champs:[], wheel:[], traitdough:[], sotm:[] },
+  links: { mindset:[], wheel:[], traitdough:[], sotm:[], mayhem:[], champs:[] },
   pageContent: {
     homeDesc: 'One school. Four squads. A program built by EMS staff to develop Life Ready Graduate traits, build community, and have fun together every month.',
     pillar1: 'Each month we focus on a Life Ready Graduate skill — from Growth Mindset to Resilience. Students learn, reflect, and put these skills into real action through competitions and daily school life.',
@@ -1503,22 +1331,10 @@ const DEF = {
     champsBody: 'Welcome to the Clash of Classes Championships — add details about this event using the admin panel.',
     champsSubtitle: 'End-of-year championship event',
     mindsetBody: 'The Mountaineer Mindset program provides structured monthly lesson plans aligned with each month\'s LRG trait. Each plan is designed for classroom use and connects the Clash of Classes theme to academic and social-emotional learning.\n\nSelect a month and grade level below to access the lesson plan directly from Google Drive.',
-    wheelSubtitle: 'Spin to earn squad points',
-    sotmSubtitle: 'A designed experience celebrating LRG traits',
-    sotmBody: '',
-    wheelBody: 'The Wheel is a core part of Clash of Classes. Trait Dough Wheel points are earned by squads spinning the wheel. Edit this description via Admin → Pages.',
-    traitdoughSubtitle: 'EMS schoolwide token economy system',
-    traitdoughBody: '',
   },
   history: [], password: 'ephrata2026', nextId: 100,
 };
 
-const SQUAD_TEACHERS = {
-  BLACK: ['Jale Aydin','Dawn Butt','Alyce DeTore','Dalton Doyle','Chrystal Garner','Steve Goss','Kristin Groome-Rex','Karile Heft','Shawn Hertzog','Aaron Hungerford','Chrystal Jean','Vanessa Klinger','Heidi Kuska','Jen Lugar','Eric Martin','Maria Miller','Emily Morrison','Maggie Myers','Verteli Perez Castro','Tim Rice','Robin Ward','Austin Wealand','Adam Zeni','Michelle Ziegmont','Tracy Zimmerman'],
-  GOLD:  ['Amy Apgar-Rodriguez','Mike Brosig','Dan Delaney','Danielle Ellis','Cathy Erickson','Amber Gueits','David Hess','Austin Jones','Sara Judge','Jon Miller','Hayley Miller','Kris Miller','Sandy Milligan','Lori Neu','Rick Ney','Kristen Reynolds','Amy Rios','Donna Schlinkman','Michelle Sweigart','Erika Troop','Dan Ullrich','Jennifer Walp','Lori Warfel','Kelly Webb','Rachel Young','Noah Young'],
-  GREY:  ['Adrian Allwein','Brandon Beard','Indra Bradley','Connor Daniels','Matt Edmiston','Emma Leister','Trena Lunsford','Steve McCabe','Kierstin McQuate','Taylor Meehan','Josh Miller','Alane Mowbray','Kristie Ohlinger','Patti Reichl','June Risser','Haley Sensenig','Lauren Stoner','Tina Thomas','Angie Thomas','Wendy Tiesi','Jenn Trout','Kim Wagner','Tanya Weaver','Deni Weaver','Kristen Williamson','Nicole Zimmerman'],
-  PURPLE:['Jessica Bartsch','Daniel Brice','Bryan Clark','Michelle Colon','Tara Eagan','Brooke Gerlach','Josh Haupt','Meghan Hooper','Laura Horner','Cyndi Jones','Rebecca Klemka','Kevin Kuhn','Alexandriya Lebo','Kelley Lindberg','Jenna Nagy','Erica Reed','Kelly Rigg','Kurtis Rineer','Amy Segura','Jessica Shuman','Andrew Sleek','Tiea Sterner','Bret Sunday','Jim Sushinski','Julea Truskey','Michelle Ullrich'],
-};
 
 let D = JSON.parse(JSON.stringify(DEF));
 let authed=false, pendingFn=null, fbReady=false;
@@ -1537,14 +1353,8 @@ onValue(DB,(snap)=>{
     if(!D.gallery) D.gallery={photos:[],quotes:[],spotlights:[],calendar:[]};
     ['photos','quotes','spotlights','calendar'].forEach(k=>{ if(!Array.isArray(D.gallery[k])) D.gallery[k]=[]; });
     if(!D.links) D.links={mindset:[],mayhem:[],champs:[]};
-    ['mindset','mayhem','champs','wheel','traitdough','sotm'].forEach(k=>{ if(!Array.isArray(D.links[k])) D.links[k]=[]; });
-    // Pre-seed wheel links from the provided Google Drive links
-    if(D.links.wheel.length===0){
-      D.links.wheel=[
-        {label:'Wheel Demo Video',url:'https://drive.google.com/file/d/1cPO_FGUmweW91kBiQ5rmHOuN-jREN7jQ/view?usp=sharing',id:1},
-        {label:'Wheel Presentation (How It Works)',url:'https://docs.google.com/presentation/d/1GV3jLRh4v_-bLNgHiTio-yk7yyVCv_BFnm7k3DNjLxc/edit?usp=sharing',id:2},
-      ];
-    }
+    ['mindset','wheel','traitdough','sotm','mayhem','champs'].forEach(k=>{ if(!Array.isArray(D.links[k])) D.links[k]=[]; });
+    if(D.links.wheel.length===0){D.links.wheel=[{label:'Wheel Demo Video',url:'https://drive.google.com/file/d/1cPO_FGUmweW91kBiQ5rmHOuN-jREN7jQ/view?usp=sharing',id:1},{label:'Wheel Presentation',url:'https://docs.google.com/presentation/d/1GV3jLRh4v_-bLNgHiTio-yk7yyVCv_BFnm7k3DNjLxc/edit?usp=sharing',id:2}];}
     if(!D.pageContent) D.pageContent={...DEF.pageContent};
     Object.keys(DEF.pageContent).forEach(k=>{ if(!D.pageContent[k]) D.pageContent[k]=DEF.pageContent[k]; });
   } else {
@@ -1565,7 +1375,9 @@ onValue(DB,(snap)=>{
 // ── CALCS ──
 const evtTotal=sq=>(D.events||[]).reduce((s,e)=>s+(e.pts[sq]||0),0);
 const metTotal=sq=>Math.round((D.metrics.attendance[sq]||0)+(D.metrics.referral[sq]||0)+(D.metrics.grades[sq]||0));
-const grand=sq=>evtTotal(sq)+metTotal(sq);
+let sheetEvents=[];
+const sheetTotal=sq=>sheetEvents.reduce((s,e)=>s+(e.pts[sq]||0),0);
+const grand=sq=>evtTotal(sq)+metTotal(sq)+sheetTotal(sq);
 const ranked=()=>[...SQUADS].sort((a,b)=>grand(b)-grand(a));
 const maxGrand=()=>Math.max(...SQUADS.map(grand),1);
 
@@ -1656,7 +1468,9 @@ function renderTable(){
   }).join('');
   const tots=SQUADS.map(sq=>`<td class="td-${sq}">${grand(sq).toLocaleString()}</td>`).join('');
   const mets=SQUADS.map(sq=>`<td style="color:var(--text3)">+${metTotal(sq)}</td>`).join('');
-  document.getElementById('evtFoot').innerHTML=`<tr class="tfoot-total"><td>Overall Total</td>${tots}</tr><tr class="tfoot-sub"><td>Metrics Points</td>${mets}</tr>`;
+  const shTs=SQUADS.map(sq=>`<td style="color:#4ade80">+${sheetTotal(sq)}</td>`).join('');
+  const shRow=sheetEvents.length?`<tr class="tfoot-sub"><td style="color:#4ade80">From Sheet</td>${shTs}</tr>`:'';
+  document.getElementById('evtFoot').innerHTML=`<tr class="tfoot-total"><td>Overall Total</td>${tots}</tr><tr class="tfoot-sub"><td>Metrics</td>${mets}</tr>${shRow}`;
 }
 
 function renderMetrics(){
@@ -1676,16 +1490,11 @@ function renderSquads(){
   const r=ranked();
   document.getElementById('squadsGrid').innerHTML=SQUADS.map(sq=>{
     const rank=r.indexOf(sq)+1;
-    const members=SQUAD_TEACHERS[sq]||[];
     return `<div class="squad-card sq-${sq}">
       <div class="squad-header">
         <div><div class="squad-name">${sq}</div>
         <div class="squad-rank-chip">Rank #${rank} · ${grand(sq).toLocaleString()} pts</div></div>
         <div class="squad-pts-big">${grand(sq).toLocaleString()}</div>
-      </div>
-      <div class="squad-teachers-section">
-        <div class="squad-teachers-label">All Squad Members (${members.length})</div>
-        <div class="teacher-chips">${members.map(n=>`<div class="teacher-chip"><div class="tc-name">${n}</div></div>`).join('')}</div>
       </div>
       <div class="squad-footer"></div>
     </div>`;
@@ -1792,21 +1601,9 @@ function renderChamps(){
 function renderWheel(){
   const pc=D.pageContent||{};
   const sub=document.getElementById('wheelSubtitle'); if(sub) sub.textContent=pc.wheelSubtitle||DEF.pageContent.wheelSubtitle;
-  const body=document.getElementById('wheelBody'); if(body) body.innerHTML=`<p>${(pc.wheelBody||DEF.pageContent.wheelBody).replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
+  const body=document.getElementById('wheelBody');
+  if(body&&pc.wheelBody) body.innerHTML=`<p>${pc.wheelBody.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
   const links=D.links.wheel||[];
-  // Build video/presentation embeds from links
-  const vids=links.filter(l=>l.url&&(l.url.includes('drive.google.com')||l.url.includes('docs.google.com')));
-  const vb=document.getElementById('wheelVideoBlock');
-  if(vb&&vids.length){
-    vb.innerHTML=vids.map(l=>{
-      let embedUrl=l.url;
-      // Convert drive view links to embed
-      if(embedUrl.includes('/view')) embedUrl=embedUrl.replace('/view','').replace('file/d/','file/d/')+'?embedded=true';
-      if(embedUrl.includes('presentation')) embedUrl=embedUrl.replace('/edit','').replace('/pub','')+'?embedded=true';
-      return `<div style="margin-bottom:16px"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--purple-lt);text-transform:uppercase;margin-bottom:8px">${l.label}</div>
-        <a href="${l.url}" target="_blank" class="ext-link active-link" style="margin-bottom:8px">${l.label} — Open in Google Drive <span class="link-arrow">↗</span></a></div>`;
-    }).join('');
-  } else if(vb){ vb.innerHTML=''; }
   const el=document.getElementById('wheelLinks');
   if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map(l=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via Admin → Links.</div>'}`;
 }
@@ -1814,10 +1611,8 @@ function renderWheel(){
 function renderTraitDough(){
   const pc=D.pageContent||{};
   const sub=document.getElementById('traitdoughSubtitle'); if(sub) sub.textContent=pc.traitdoughSubtitle||DEF.pageContent.traitdoughSubtitle;
-  if(pc.traitdoughBody){
-    const body=document.getElementById('traitdoughBody');
-    if(body&&pc.traitdoughBody) body.innerHTML=`<p>${pc.traitdoughBody.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
-  }
+  const body=document.getElementById('traitdoughBody');
+  if(body&&pc.traitdoughBody) body.innerHTML=`<p>${pc.traitdoughBody.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
   const links=D.links.traitdough||[];
   const el=document.getElementById('traitdoughLinks');
   if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map(l=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via Admin → Links.</div>'}`;
@@ -1826,10 +1621,8 @@ function renderTraitDough(){
 function renderSotm(){
   const pc=D.pageContent||{};
   const sub=document.getElementById('sotmSubtitle'); if(sub) sub.textContent=pc.sotmSubtitle||DEF.pageContent.sotmSubtitle;
-  if(pc.sotmBody){
-    const body=document.getElementById('sotmBody');
-    if(body&&pc.sotmBody) body.innerHTML=`<p>${pc.sotmBody.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
-  }
+  const body=document.getElementById('sotmBody');
+  if(body&&pc.sotmBody) body.innerHTML=`<p>${pc.sotmBody.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
   const links=D.links.sotm||[];
   const el=document.getElementById('sotmLinks');
   if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map(l=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via Admin → Links.</div>'}`;
@@ -1894,86 +1687,64 @@ async function saveMetrics(){
 async function savePageContent(){
   const page=document.getElementById('pageSelect').value;
   if(!D.pageContent) D.pageContent={...DEF.pageContent};
-  const g=id=>document.getElementById(id)?.value||'';
   if(page==='home'){
-    D.pageContent.homeDesc=g('peHomeDesc');
-    D.pageContent.pillar1=g('pePillar1');
-    D.pageContent.pillar2=g('pePillar2');
-    D.pageContent.pillar3=g('pePillar3');
-  } else if(page==='trait'){
-    D.pageContent.traitSubtitle=g('peTraitSub');
-  } else if(page==='squads'){
-    D.pageContent.squadsSubtitle=g('peSquadsSub');
-  } else if(page==='mindset'){
-    D.pageContent.mindsetBody=g('peMindsetBody');
-  } else if(page==='wheel'){
-    D.pageContent.wheelSubtitle=g('peWheelSub');
-    D.pageContent.wheelBody=g('peWheelBody');
-  } else if(page==='sotm'){
-    D.pageContent.sotmSubtitle=g('peSotmSub');
-    D.pageContent.sotmBody=g('peSotmBody');
-  } else if(page==='traitdough'){
-    D.pageContent.traitdoughSubtitle=g('peTDSub');
-    D.pageContent.traitdoughBody=g('peTDBody');
+    D.pageContent.homeDesc=document.getElementById('peHomeDesc')?.value||'';
+    D.pageContent.pillar1=document.getElementById('pePillar1')?.value||'';
+    D.pageContent.pillar2=document.getElementById('pePillar2')?.value||'';
+    D.pageContent.pillar3=document.getElementById('pePillar3')?.value||'';
   } else if(page==='mayhem'){
-    D.pageContent.mayhemSubtitle=g('peMayhemSub');
-    D.pageContent.mayhemBody=g('peMayhemBody');
+    D.pageContent.mayhemSubtitle=document.getElementById('peMayhemSub')?.value||'';
+    D.pageContent.mayhemBody=document.getElementById('peMayhemBody')?.value||'';
   } else if(page==='champs'){
-    D.pageContent.champsSubtitle=g('peChampsSub');
-    D.pageContent.champsBody=g('peChampsBody');
-  } else if(page==='gallery'){
-    D.pageContent.gallerySubtitle=g('peGallerySub');
-  } else if(page==='staff'){
-    D.pageContent.staffSubtitle=g('peStaffSub');
+    D.pageContent.champsSubtitle=document.getElementById('peChampsSub')?.value||'';
+    D.pageContent.champsBody=document.getElementById('peChampsBody')?.value||'';
+  } else if(page==='mindset'){
+    D.pageContent.mindsetBody=document.getElementById('peMindsetBody')?.value||'';
+  } else if(page==='wheel'){
+    D.pageContent.wheelSubtitle=document.getElementById('peWheelSub')?.value||'';
+    D.pageContent.wheelBody=document.getElementById('peWheelBody')?.value||'';
+  } else if(page==='traitdough'){
+    D.pageContent.traitdoughSubtitle=document.getElementById('peTDSub')?.value||'';
+    D.pageContent.traitdoughBody=document.getElementById('peTDBody')?.value||'';
+  } else if(page==='sotm'){
+    D.pageContent.sotmSubtitle=document.getElementById('peSotmSub')?.value||'';
+    D.pageContent.sotmBody=document.getElementById('peSotmBody')?.value||'';
   }
   await save(); flash('pageOk');
-  // Re-render current page if it matches
-  if(page===currentPage) renderAll();
 }
 
 function loadPageContent(){
   const page=document.getElementById('pageSelect').value;
   const pc=D.pageContent||DEF.pageContent;
   const f=document.getElementById('pageEditorFields');
-  const esc=s=>(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   if(page==='home'){
     f.innerHTML=`
-      <div class="fr"><label>Homepage Description</label><textarea id="peHomeDesc" rows="3">${esc(pc.homeDesc)}</textarea></div>
-      <div class="fr"><label>Pillar 1 — LRG Traits Text</label><textarea id="pePillar1" rows="3">${esc(pc.pillar1)}</textarea></div>
-      <div class="fr"><label>Pillar 2 — Build Community Text</label><textarea id="pePillar2" rows="3">${esc(pc.pillar2)}</textarea></div>
-      <div class="fr"><label>Pillar 3 — Have Fun Text</label><textarea id="pePillar3" rows="3">${esc(pc.pillar3)}</textarea></div>`;
-  } else if(page==='trait'){
-    f.innerHTML=`<div class="fr"><label>Trait Page Subtitle</label><input type="text" id="peTraitSub" value="${esc(pc.traitSubtitle||'Life Ready Graduate Skills · 2025–2026')}"></div>`;
-  } else if(page==='squads'){
-    f.innerHTML=`<div class="fr"><label>Squads Page Subtitle</label><input type="text" id="peSquadsSub" value="${esc(pc.squadsSubtitle||'Everyone Belongs')}"></div>`;
-  } else if(page==='mindset'){
-    f.innerHTML=`<div class="fr"><label>Intro Body Text</label><textarea id="peMindsetBody" rows="5">${esc(pc.mindsetBody)}</textarea></div>`;
-  } else if(page==='wheel'){
-    f.innerHTML=`
-      <div class="fr"><label>Page Subtitle</label><input type="text" id="peWheelSub" value="${esc(pc.wheelSubtitle||'')}"></div>
-      <div class="fr"><label>Page Body Text</label><textarea id="peWheelBody" rows="8">${esc(pc.wheelBody||'')}</textarea></div>`;
-  } else if(page==='sotm'){
-    f.innerHTML=`
-      <div class="fr"><label>Page Subtitle</label><input type="text" id="peSotmSub" value="${esc(pc.sotmSubtitle||'')}"></div>
-      <div class="fr"><label>Custom Intro Text (leave blank to use default)</label><textarea id="peSotmBody" rows="6">${esc(pc.sotmBody||'')}</textarea></div>`;
-  } else if(page==='traitdough'){
-    f.innerHTML=`
-      <div class="fr"><label>Page Subtitle</label><input type="text" id="peTDSub" value="${esc(pc.traitdoughSubtitle||'')}"></div>
-      <div class="fr"><label>Custom Body Text (leave blank to use default)</label><textarea id="peTDBody" rows="8">${esc(pc.traitdoughBody||'')}</textarea></div>`;
+      <div class="fr"><label>Homepage Description</label><textarea id="peHomeDesc" rows="3">${pc.homeDesc||''}</textarea></div>
+      <div class="fr"><label>Pillar 1 — LRG Traits Text</label><textarea id="pePillar1" rows="3">${pc.pillar1||''}</textarea></div>
+      <div class="fr"><label>Pillar 2 — Build Community Text</label><textarea id="pePillar2" rows="3">${pc.pillar2||''}</textarea></div>
+      <div class="fr"><label>Pillar 3 — Have Fun Text</label><textarea id="pePillar3" rows="3">${pc.pillar3||''}</textarea></div>`;
   } else if(page==='mayhem'){
     f.innerHTML=`
-      <div class="fr"><label>Page Subtitle</label><input type="text" id="peMayhemSub" value="${esc(pc.mayhemSubtitle||'')}"></div>
-      <div class="fr"><label>Page Body Text (blank lines = new paragraph)</label><textarea id="peMayhemBody" rows="8">${esc(pc.mayhemBody||'')}</textarea></div>`;
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peMayhemSub" value="${pc.mayhemSubtitle||''}"></div>
+      <div class="fr"><label>Page Body Text (use blank lines between paragraphs)</label><textarea id="peMayhemBody" rows="8">${pc.mayhemBody||''}</textarea></div>`;
   } else if(page==='champs'){
     f.innerHTML=`
-      <div class="fr"><label>Page Subtitle</label><input type="text" id="peChampsSub" value="${esc(pc.champsSubtitle||'')}"></div>
-      <div class="fr"><label>Page Body Text (blank lines = new paragraph)</label><textarea id="peChampsBody" rows="8">${esc(pc.champsBody||'')}</textarea></div>`;
-  } else if(page==='gallery'){
-    f.innerHTML=`<div class="fr"><label>Gallery Page Subtitle</label><input type="text" id="peGallerySub" value="${esc(pc.gallerySubtitle||'Photos, voices, spotlights & upcoming events')}"></div>`;
-  } else if(page==='staff'){
-    f.innerHTML=`<div class="fr"><label>Staff Page Subtitle</label><input type="text" id="peStaffSub" value="${esc(pc.staffSubtitle||'Everything you need to run Clash of Classes')}"></div>`;
-  } else {
-    f.innerHTML=`<p style="color:var(--text3);font-size:13px">Select a page above to edit its content.</p>`;
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peChampsSub" value="${pc.champsSubtitle||''}"></div>
+      <div class="fr"><label>Page Body Text (use blank lines between paragraphs)</label><textarea id="peChampsBody" rows="8">${pc.champsBody||''}</textarea></div>`;
+  } else if(page==='mindset'){
+    f.innerHTML=`<div class="fr"><label>Intro Body Text</label><textarea id="peMindsetBody" rows="5">${pc.mindsetBody||''}</textarea></div>`;
+  } else if(page==='wheel'){
+    f.innerHTML=`
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peWheelSub" value="${(pc.wheelSubtitle||'').replace(/"/g,'&quot;')}"></div>
+      <div class="fr"><label>Body Text (leave blank to use default content)</label><textarea id="peWheelBody" rows="6">${(pc.wheelBody||'').replace(/</g,'&lt;')}</textarea></div>`;
+  } else if(page==='traitdough'){
+    f.innerHTML=`
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peTDSub" value="${(pc.traitdoughSubtitle||'').replace(/"/g,'&quot;')}"></div>
+      <div class="fr"><label>Body Text (leave blank to use default content)</label><textarea id="peTDBody" rows="8">${(pc.traitdoughBody||'').replace(/</g,'&lt;')}</textarea></div>`;
+  } else if(page==='sotm'){
+    f.innerHTML=`
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peSotmSub" value="${(pc.sotmSubtitle||'').replace(/"/g,'&quot;')}"></div>
+      <div class="fr"><label>Body Text (leave blank to use default content)</label><textarea id="peSotmBody" rows="6">${(pc.sotmBody||'').replace(/</g,'&lt;')}</textarea></div>`;
   }
 }
 
@@ -2163,18 +1934,11 @@ function buildTV(){
       <div class="tv-rk-bar" style="background:${SQ_HEX[sq]};width:${Math.round(grand(sq)/mx*100)}%"></div>
     </div>`).join('');
 
-  // Show recent events + metrics on TV slide 2
-  const recentEvents=(D.events||[]).slice(-6); // last 6 events
-  const allCats=[
-    ...recentEvents.map(e=>({label:e.name,vals:e.pts})),
-    {label:'Attendance',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.attendance[sq]||0)]))},
-    {label:'No Referral',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.referral[sq]||0)]))},
-    {label:'No Fail Grade',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.grades[sq]||0)]))},
-  ];
+  const cats=[{label:'Event Points',vals:Object.fromEntries(SQUADS.map(sq=>[sq,evtTotal(sq)]))},{label:'Attendance',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.attendance[sq]||0)]))},{label:'No Referral',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.referral[sq]||0)]))},{label:'No Fail Grade',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.grades[sq]||0)]))}];
   const hdrs=`<div class="tv-cat-row" style="margin-bottom:6px"><div></div>${SQUADS.map(sq=>`<div class="tv-col-hdr" style="color:${SQ_HEX[sq]}">${sq}</div>`).join('')}</div>`;
-  document.getElementById('tvCats').innerHTML=hdrs+allCats.map(c=>{
-    const vals=SQUADS.map(sq=>(c.vals&&c.vals[sq])||0), mx2=Math.max(...vals,1);
-    return `<div class="tv-cat-row"><div class="tv-cat-lbl" style="font-size:13px">${c.label.length>20?c.label.substring(0,20)+'…':c.label}</div>${SQUADS.map(sq=>{const v=(c.vals&&c.vals[sq])||0,pct=Math.round(v/mx2*100),lt=['GREY','BLACK'].includes(sq);return`<div class="tv-cat-bwrap"><div class="tv-cat-bfill" style="width:${pct}%;background:${SQ_HEX[sq]}"><span class="tv-cat-bval${lt?' lt':''}">${v>0?v:''}</span></div></div>`;}).join('')}</div>`;
+  document.getElementById('tvCats').innerHTML=hdrs+cats.map(c=>{
+    const vals=SQUADS.map(sq=>c.vals[sq]||0), mx2=Math.max(...vals,1);
+    return `<div class="tv-cat-row"><div class="tv-cat-lbl">${c.label}</div>${SQUADS.map(sq=>{const v=c.vals[sq]||0,pct=Math.round(v/mx2*100),lt=['GREY','BLACK'].includes(sq);return`<div class="tv-cat-bwrap"><div class="tv-cat-bfill" style="width:${pct}%;background:${SQ_HEX[sq]}"><span class="tv-cat-bval${lt?' lt':''}">${v>0?v:''}</span></div></div>`;}).join('')}</div>`;
   }).join('');
 
   const mDefs=[{key:'attendance',icon:'📅',label:'Avg Attendance'},{key:'referral',icon:'⭐',label:'No Referral'},{key:'grades',icon:'📚',label:'No Fail Grade'}];
@@ -2221,11 +1985,12 @@ function scrollMindset(month){
 }
 
 // Expose globals — direct assignment (module scope, safe after load)
-const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePhoto,renderWheel,renderTraitDough,renderSotm,
+const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePhoto,
   __scrollMindset:scrollMindset,previewPhoto,openLogin,tryLogin,close1,
   requireAdmin,openAddEvent,openAdmin,aTab,addEvent,saveMetrics,
   savePageContent,loadPageContent,addLink,removeLink,addGItem,
-  resetAll,undoEvt,changePw,openDisplay,closeDisplay,showSlide};
+  resetAll,undoEvt,changePw,openDisplay,closeDisplay,showSlide,syncSheet,
+  renderWheel,renderTraitDough,renderSotm};
 Object.entries(_fns).forEach(([k,v])=>{ window[k]=v; window['_real_'+k]=v; });
 window.__moduleReady=true;
 </script>
