@@ -1525,12 +1525,8 @@ function renderSquads(){
     return `<div class="squad-card sq-${sq}">
       <div class="squad-header">
         <div><div class="squad-name">${sq}</div>
-        <div class="squad-rank-chip">Rank #${rank}</div></div>
+        <div class="squad-rank-chip">Rank #${rank} · ${grand(sq).toLocaleString()} pts</div></div>
         <div class="squad-pts-big">${grand(sq).toLocaleString()}</div>
-      </div>
-      <div class="squad-teachers-section">
-        <div class="squad-teachers-label">All Members (${members.length})</div>
-        <div class="teacher-chips">${members.map(n=>`<div class="teacher-chip"><div class="tc-name">${n}</div></div>`).join('')}</div>
       </div>
       <div class="squad-footer"></div>
     </div>`;
