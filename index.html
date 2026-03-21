@@ -705,14 +705,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <h1 class="page-title">Live <span>Tracker</span></h1>
       <div class="page-subtitle">Real-time squad standings</div>
     </div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <div id="syncBar" style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 13px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:1px">
-        <div id="syncDot" style="width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0"></div>
-        <span id="syncLabel">Connecting to Sheet…</span>
-        <button onclick="syncSheet()" style="background:none;border:none;color:var(--purple-lt);cursor:pointer;font-size:10px;font-family:'DM Mono',monospace;margin-left:4px">↻ Sync</button>
-      </div>
-      <button class="btn btn-purple" onclick="openDisplay()">📺 TV Display Mode</button>
-    </div>
+    <button class="btn btn-purple" onclick="openDisplay()">📺 TV Display Mode</button>
   </div>
   <div class="score-strip" id="scoreStrip">
     <div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text3);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px">Connecting to Firebase…</div>
@@ -2032,7 +2025,7 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   __scrollMindset:scrollMindset,previewPhoto,openLogin,tryLogin,close1,
   requireAdmin,openAddEvent,openAdmin,aTab,addEvent,saveMetrics,
   savePageContent,loadPageContent,addLink,removeLink,addGItem,
-  resetAll,undoEvt,changePw,openDisplay,closeDisplay,showSlide,syncSheet,
+  resetAll,undoEvt,changePw,openDisplay,closeDisplay,showSlide,
   renderWheel,renderTraitDough,renderSotm};
 Object.entries(_fns).forEach(([k,v])=>{ window[k]=v; window['_real_'+k]=v; });
 window.__moduleReady=true;
