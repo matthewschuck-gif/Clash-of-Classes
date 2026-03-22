@@ -1586,6 +1586,119 @@ function goTo(id){
   if(id==='sotm') renderSotm();
 }
 
+// ── NEW FEATURE FUNCTIONS ──
+function renderTraitBanner(){
+  const curMonth=new Date().toLocaleString('en-US',{month:'long'});
+  const t=TRAITS.find(x=>x.month===curMonth)||TRAITS[6];
+  const el=document.getElementById('traitBannerName');
+  if(el) el.textContent=t.trait;
+}
+
+function renderAnnouncement(){
+  const bar=document.getElementById('annBar');
+  const txt=document.getElementById('annText');
+  if(!bar||!txt) return;
+  const msg=(D.announcement||'').trim();
+  if(msg){ txt.textContent=msg; bar.classList.add('has-msg'); }
+  else { bar.classList.remove('has-msg'); }
+}
+
+function renderCountdown(){
+  const el=document.getElementById('countdownStrip'); if(!el) return;
+  const now=new Date(); now.setHours(0,0,0,0);
+  const schoolStart=new Date('2025-09-02');
+  const lastDay=new Date('2026-06-04');
+  const daysSinceStart=Math.max(0,Math.floor((now-schoolStart)/864e5));
+  const daysToEnd=Math.max(0,Math.floor((lastDay-now)/864e5));
+  const events=(D.countdownEvents||DEF.countdownEvents||[]);
+  const nextEvt=events.find(e=>new Date(e.date+'T00:00:00')>=now);
+  const daysToNext=nextEvt?Math.max(0,Math.floor((new Date(nextEvt.date+'T00:00:00')-now)/864e5)):null;
+  el.innerHTML=`
+    <div class="countdown-card"><div class="countdown-num">${daysSinceStart}</div><div class="countdown-lbl">Days of School</div><div class="countdown-sub">Since Sep 2, 2025</div></div>
+    ${daysToNext!==null?`<div class="countdown-card" style="border-top-color:var(--purple-lt)"><div class="countdown-num" style="color:var(--purple-lt)">${daysToNext}</div><div class="countdown-lbl">Days Until</div><div class="countdown-sub">${nextEvt.label}</div></div>`:'<div class="countdown-card"><div class="countdown-num">—</div><div class="countdown-lbl">Next Event</div><div class="countdown-sub">Add in Admin → Settings</div></div>'}
+    <div class="countdown-card" style="border-top-color:#4ade80"><div class="countdown-num" style="color:#4ade80">${daysToEnd}</div><div class="countdown-lbl">Days Left</div><div class="countdown-sub">Until June 4, 2026</div></div>`;
+}
+
+function renderTally(){
+  const tally=D.traitDoughTally||{BLACK:0,GOLD:0,GREY:0,PURPLE:0};
+  const max=Math.max(...Object.values(tally),1);
+  const el=document.getElementById('tallyRows'); if(!el) return;
+  const anyData=Object.values(tally).some(v=>v>0);
+  if(!anyData){ el.innerHTML='<div style="color:var(--text3);font-size:13px">No tally data yet — update in Admin → Metrics.</div>'; return; }
+  el.innerHTML=SQUADS.map(sq=>`
+    <div class="tally-row">
+      <span class="tally-sq-name" style="color:${SQ_HEX[sq]}">${sq}</span>
+      <div class="tally-bar-wrap"><div class="tally-bar" style="width:${Math.round((tally[sq]||0)/max*100)}%;background:${SQ_HEX[sq]}"></div></div>
+      <span class="tally-count">${(tally[sq]||0).toLocaleString()}</span>
+    </div>`).join('');
+}
+
+function renderTimeline(){
+  const el=document.getElementById('timelineChart'); if(!el) return;
+  const events=D.events||[];
+  if(events.length<2){ el.innerHTML="<div style='text-align:center;color:var(--text3);padding:20px'>Add more events to see the timeline</div>"; return; }
+  let running={BLACK:0,GOLD:0,GREY:0,PURPLE:0};
+  const points=events.map(ev=>{
+    SQUADS.forEach(sq=>running[sq]+=(ev.pts[sq]||0));
+    const name=ev.name.length>14?ev.name.substring(0,14)+'…':ev.name;
+    return {BLACK:running.BLACK,GOLD:running.GOLD,GREY:running.GREY,PURPLE:running.PURPLE,name};
+  });
+  const allVals=points.flatMap(p=>SQUADS.map(sq=>p[sq]));
+  const maxVal=Math.max(...allVals,1);
+  const H=160,padL=44,padR=16,padT=16,padB=50;
+  const W=Math.max(560,points.length*72);
+  const px=i=>padL+i*((W-padL-padR)/Math.max(points.length-1,1));
+  const py=v=>padT+Math.round((1-v/maxVal)*(H-padT-padB));
+  let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:${W}px;height:${H}px">`;
+  [0,0.25,0.5,0.75,1].forEach(f=>{
+    const y=py(maxVal*f);
+    svg+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>`;
+    svg+=`<text x="${padL-4}" y="${y+4}" font-size="9" fill="rgba(255,255,255,0.25)" text-anchor="end" font-family="monospace">${Math.round(maxVal*f)}</text>`;
+  });
+  SQUADS.forEach(sq=>{
+    const col=SQ_HEX[sq];
+    const d=points.map((p,i)=>`${i===0?'M':'L'}${px(i)},${py(p[sq])}`).join(' ');
+    svg+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linejoin="round" opacity="0.9"/>`;
+    points.forEach((p,i)=>{ svg+=`<circle cx="${px(i)}" cy="${py(p[sq])}" r="3.5" fill="${col}"/>`; });
+  });
+  points.forEach((p,i)=>{
+    svg+=`<text x="${px(i)}" y="${H-padB+14}" font-size="8" fill="rgba(255,255,255,0.3)" text-anchor="middle" font-family="sans-serif">${p.name}</text>`;
+  });
+  const legY=H-12;
+  SQUADS.forEach((sq,i)=>{
+    const lx=padL+i*100;
+    svg+=`<rect x="${lx}" y="${legY-8}" width="10" height="10" rx="2" fill="${SQ_HEX[sq]}"/>`;
+    svg+=`<text x="${lx+14}" y="${legY}" font-size="10" fill="rgba(255,255,255,0.5)" font-family="sans-serif">${sq}</text>`;
+  });
+  svg+='</svg>';
+  el.innerHTML=svg;
+}
+
+function focusSquad(sq){
+  document.querySelectorAll('.squad-card').forEach(card=>{
+    card.style.opacity=card.classList.contains('sq-'+sq)?'1':'0.45';
+    card.style.transform=card.classList.contains('sq-'+sq)?'translateY(-4px)':'none';
+  });
+  setTimeout(()=>{
+    document.querySelectorAll('.squad-card').forEach(card=>{
+      card.style.opacity='1'; card.style.transform='';
+    });
+  },3000);
+}
+
+async function saveAnnouncement(){
+  D.announcement=document.getElementById('annInput')?.value.trim()||'';
+  await save(); flash('annOk'); renderAnnouncement();
+}
+
+async function saveCountdown(){
+  const label=document.getElementById('cdLabel')?.value.trim();
+  const date=document.getElementById('cdDate')?.value;
+  if(!label||!date) return;
+  D.countdownEvents=[{label,date}];
+  await save(); flash('cdOk'); renderCountdown();
+}
+
 // ── RENDER ALL ──
 function renderAll(){
   renderMini();
