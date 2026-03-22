@@ -38,6 +38,43 @@
   --radius-lg: 12px;
 }
 
+/* ── LIGHT MODE ── */
+body.light-mode {
+  --bg:        #f5f3f0;
+  --bg2:       #ede9e4;
+  --surface:   #ffffff;
+  --surface2:  #f0ece8;
+  --border:    rgba(100,60,140,0.12);
+  --border2:   rgba(100,60,140,0.22);
+  --purple:    #6d2b9f;
+  --purple-lt: #7d3aac;
+  --purple-dim:#ede0f7;
+  --gold:      #c9a800;
+  --gold-soft: #b08800;
+  --gold-dim:  rgba(180,140,0,0.10);
+  --sq-black:  #3a3f4a;
+  --sq-gold:   #8a6800;
+  --sq-grey:   #4a6070;
+  --sq-purple: #6d2b9f;
+  --text:      #1a1208;
+  --text2:     #4a3f34;
+  --text3:     #8a7a6a;
+}
+body.light-mode::before { display:none; }
+
+/* Squad detail page tint */
+[id^="page-squad-"].active {
+  background: var(--bg);
+}
+[id^="page-squad-"].active::before {
+  content:'';
+  position:fixed;inset:0;
+  background: radial-gradient(ellipse 100% 60% at 50% 0%, var(--squad-color, #6d2b9f) 0%, transparent 70%);
+  opacity: 0.08;
+  pointer-events:none;
+  z-index:0;
+}
+
 * { margin:0; padding:0; box-sizing:border-box; }
 html { scroll-behavior:smooth; }
 
@@ -601,7 +638,8 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   .content-page-layout { grid-template-columns:1fr; }
   .staff-guide-grid { grid-template-columns:1fr; }
   .score-strip { grid-template-columns:repeat(2,1fr); }
-  .pillars-grid { grid-template-columns:1fr; }
+  .pillars-grid { grid-template-columns:1fr 1fr !important; }
+  #traitPillar { grid-column:1/-1; }
   .about-strip { grid-template-columns:repeat(2,1fr); }
   .tv-met-grid { grid-template-columns:1fr 1fr; }
 }
@@ -675,13 +713,18 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   <!-- COUNTDOWN -->
   <div class="countdown-strip" id="countdownStrip" style="margin-top:24px"></div>
 
-  <div class="pillars-grid" style="margin-top:40px">
+  <div class="pillars-grid" style="margin-top:40px;grid-template-columns:repeat(4,1fr)">
     <div class="pillar-card" id="traitPillar" style="cursor:pointer;border-top:3px solid var(--purple)" onclick="goTo('trait')">
       <span class="pillar-icon">⭐</span>
       <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);margin-bottom:4px">This Month's Trait</div>
       <div class="pillar-title" id="traitPillarName">Loading…</div>
       <div class="pillar-text" id="traitPillarDesc" style="margin-bottom:8px"></div>
       <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--purple-lt)">View Look-Fors →</div>
+    </div>
+    <div class="pillar-card">
+      <span class="pillar-icon">🎓</span>
+      <div class="pillar-title">Develop LRG Traits</div>
+      <div class="pillar-text" id="pillar1Text">Each month we focus on a Life Ready Graduate skill — from Growth Mindset to Resilience. Students learn, reflect, and put these skills into real action through competitions and daily school life.</div>
     </div>
     <div class="pillar-card">
       <span class="pillar-icon">🤝</span>
@@ -1024,6 +1067,20 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <div class="link-card" id="sotmLinks"><div class="link-card-title">🔗 Resources</div><div style="color:var(--text3);font-size:12px">Loading...</div></div>
     </div>
   </div>
+</div>
+
+<!-- SQUAD DETAIL PAGES -->
+<div class="page" id="page-squad-BLACK" style="--squad-color:var(--sq-black)">
+  <div id="sqd-BLACK"></div>
+</div>
+<div class="page" id="page-squad-GOLD" style="--squad-color:var(--sq-gold)">
+  <div id="sqd-GOLD"></div>
+</div>
+<div class="page" id="page-squad-GREY" style="--squad-color:var(--sq-grey)">
+  <div id="sqd-GREY"></div>
+</div>
+<div class="page" id="page-squad-PURPLE" style="--squad-color:var(--sq-purple)">
+  <div id="sqd-PURPLE"></div>
 </div>
 
 <!-- GALLERY -->
@@ -1779,17 +1836,6 @@ function renderTimeline(){
   el.innerHTML=svg;
 }
 
-function focusSquad(sq){
-  document.querySelectorAll('.squad-card').forEach(card=>{
-    card.style.opacity=card.classList.contains('sq-'+sq)?'1':'0.45';
-    card.style.transform=card.classList.contains('sq-'+sq)?'translateY(-4px)':'none';
-  });
-  setTimeout(()=>{
-    document.querySelectorAll('.squad-card').forEach(card=>{
-      card.style.opacity='1'; card.style.transform='';
-    });
-  },3000);
-}
 
 async function saveAnnouncement(){
   D.announcement=document.getElementById('annInput')?.value.trim()||'';
@@ -1890,15 +1936,88 @@ function renderSquads(){
   const r=ranked();
   document.getElementById('squadsGrid').innerHTML=SQUADS.map(sq=>{
     const rank=r.indexOf(sq)+1;
-    return `<div class="squad-card sq-${sq}">
+    const motto=(D.mottos&&D.mottos[sq])||'';
+    return `<div class="squad-card sq-${sq}" onclick="goToSquad('${sq}')" style="cursor:pointer">
       <div class="squad-header">
         <div><div class="squad-name">${sq}</div>
         <div class="squad-rank-chip">Rank #${rank} · ${grand(sq).toLocaleString()} pts</div></div>
         <div class="squad-pts-big">${grand(sq).toLocaleString()}</div>
       </div>
+      ${motto?`<div style="padding:0 24px 16px;font-size:14px;font-style:italic;color:var(--text2)">"${motto}"</div>`:''}
+      <div style="padding:0 24px 14px"><span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:${SQ_HEX[sq]};opacity:0.7">View Squad Page →</span></div>
       <div class="squad-footer"></div>
     </div>`;
   }).join('');
+  // Also render each squad detail page
+  SQUADS.forEach(sq=>renderSquadDetail(sq));
+}
+
+function goToSquad(sq){
+  // Tint the page background with squad color
+  document.body.style.setProperty('--squad-tint', SQ_HEX[sq]);
+  goTo('squad-'+sq);
+}
+
+function renderSquadDetail(sq){
+  const el=document.getElementById('sqd-'+sq); if(!el) return;
+  const r=ranked();
+  const rank=r.indexOf(sq)+1;
+  const motto=(D.mottos&&D.mottos[sq])||'';
+  const hex=SQ_HEX[sq];
+  const evtPts=evtTotal(sq), metPts=metTotal(sq), total=grand(sq);
+  // Recent events for this squad
+  const recentEvts=(D.events||[]).slice(-8).reverse();
+  el.innerHTML=`
+    <div style="padding:48px 0 32px;border-bottom:1px solid var(--border);margin-bottom:40px;position:relative">
+      <button onclick="goTo('squads')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;margin-bottom:20px;display:flex;align-items:center;gap:6px">← Back to Squads</button>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px">
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:${hex};opacity:0.7;margin-bottom:8px">Rank #${rank} of 4</div>
+          <div style="font-family:'Fraunces',serif;font-size:clamp(48px,8vw,80px);font-weight:900;color:${hex};line-height:1">${sq}</div>
+          ${motto?`<div style="font-family:'Fraunces',serif;font-size:18px;font-style:italic;color:var(--text2);margin-top:8px">"${motto}"</div>`:''}
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'Fraunces',serif;font-size:clamp(48px,7vw,72px);font-weight:900;color:${hex};line-height:1">${total.toLocaleString()}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text3)">Total Points</div>
+        </div>
+      </div>
+      <div style="position:absolute;bottom:0;left:0;height:3px;width:100%;background:linear-gradient(90deg,${hex},transparent)"></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:40px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid ${hex};border-radius:12px;padding:20px;text-align:center">
+        <div style="font-family:'Fraunces',serif;font-size:36px;font-weight:900;color:${hex}">${evtPts.toLocaleString()}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-top:4px">Event Points</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid ${hex};border-radius:12px;padding:20px;text-align:center">
+        <div style="font-family:'Fraunces',serif;font-size:36px;font-weight:900;color:${hex}">${metPts.toLocaleString()}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-top:4px">Metric Points</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid ${hex};border-radius:12px;padding:20px;text-align:center">
+        <div style="font-family:'Fraunces',serif;font-size:36px;font-weight:900;color:${hex}">#${rank}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-top:4px">Current Rank</div>
+      </div>
+    </div>
+
+    <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:16px">Recent Events</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      ${recentEvts.map(ev=>{
+        const maxPts=Math.max(...SQUADS.map(s=>ev.pts[s]||0));
+        const isWin=(ev.pts[sq]||0)===maxPts&&maxPts>0;
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text)">${ev.name}${isWin?' 🏆':''}</div>
+            <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">${ev.date||''}</div>
+          </div>
+          <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:900;color:${isWin?hex:'var(--text2)'}">+${(ev.pts[sq]||0).toLocaleString()}</div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div style="margin-top:32px;display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-purple" onclick="goTo('tracker')">📊 View Full Tracker</button>
+      <button class="btn" onclick="goTo('squads')">← All Squads</button>
+    </div>`;
 }
 
 // ── TRAIT ──
@@ -2617,8 +2736,8 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   savePageContent,loadPageContent,addLink,removeLink,addGItem,
   resetAll,undoEvt,changePw,openDisplay,closeDisplay,showSlide,
   lTab,saveMindsetLinks,addLinkSection,removeLinkSection,pTab,loadPageContent,
-  focusSquad,saveAnnouncement,saveCountdown,toggleMode,
-  saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,toggleMode,
+  goToSquad,renderSquadDetail,focusSquad,saveAnnouncement,saveCountdown,toggleMode,
+  saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,
   saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,
   renderWheel,renderTraitDough,renderSotm};
 Object.entries(_fns).forEach(([k,v])=>{ window[k]=v; window['_real_'+k]=v; });
