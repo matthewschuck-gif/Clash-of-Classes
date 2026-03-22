@@ -1460,11 +1460,13 @@ import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebase
 window.goTo = function(id){
   window.__currentPage = id;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  const el=document.getElementById('page-'+id);
+  var el=document.getElementById('page-'+id);
   if(el) el.classList.add('active');
-  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.id==='tab-'+id));
-  document.querySelectorAll('.mob-tab').forEach(t=>t.classList.toggle('active',t.id==='mobtab-'+id));
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active',t.id==='tab-'+id);});
+  document.querySelectorAll('.mob-tab').forEach(function(t){t.classList.toggle('active',t.id==='mobtab-'+id);});
   window.scrollTo(0,0);
+  // If module already loaded, call the full version to trigger renders
+  if(window.__moduleReady && window.__real_goTo) window.__real_goTo(id);
 };
 window.openLogin = function(){
   const m=document.getElementById('loginModal'); if(!m) return;
@@ -1482,6 +1484,7 @@ window.tryLogin = function(){
 };
 window.requireAdmin = function(fn){ if(window._authed) fn(); else { window._pendingFn=fn; window.openLogin(); } };
 window.setTrait = function(m){ window._pendingTrait=m; };
+window.goToSquad = function(sq){ window.goTo('squad-'+sq); };
 
 // Build nav immediately so tabs appear and work before Firebase loads
 (function(){
@@ -1733,19 +1736,25 @@ function buildNav(){
 
 function goTo(id){
   currentPage=id;
+  window.__currentPage=id;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const el=document.getElementById('page-'+id);
   if(el) el.classList.add('active');
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.id==='tab-'+id));
   document.querySelectorAll('.mob-tab').forEach(t=>t.classList.toggle('active',t.id==='mobtab-'+id));
   window.scrollTo(0,0);
-  if(id==='trait') renderTrait();
-  if(id==='mindset') renderMindset();
-  if(id==='mayhem') renderMayhem();
-  if(id==='champs') renderChamps();
-  if(id==='wheel') renderWheel();
-  if(id==='traitdough') renderTraitDough();
-  if(id==='sotm') renderSotm();
+  // Page-specific renders
+  if(id==='trait')       renderTrait();
+  else if(id==='mindset')     renderMindset();
+  else if(id==='mayhem')      renderMayhem();
+  else if(id==='champs')      renderChamps();
+  else if(id==='wheel')       renderWheel();
+  else if(id==='traitdough')  renderTraitDough();
+  else if(id==='sotm')        renderSotm();
+  else if(id.startsWith('squad-')){
+    const sq=id.replace('squad-','');
+    renderSquadDetail(sq);
+  }
 }
 
 // ── NEW FEATURE FUNCTIONS ──
@@ -2741,9 +2750,10 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,
   renderWheel,renderTraitDough,renderSotm};
 Object.entries(_fns).forEach(([k,v])=>{ window[k]=v; window['_real_'+k]=v; });
+window.__real_goTo = goTo;
 window.__moduleReady=true;
-// Now that all functions are live, render whatever page the user is on
-goTo(currentPage);
+// Now that all functions are live, re-render whatever page the user navigated to
+goTo(window.__currentPage || currentPage);
 </script>
 </body>
 </html>
