@@ -625,10 +625,25 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <div class="nav-wordmark">Clash <span>of</span> Classes<br><small style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:2px;color:var(--text3);font-weight:400">Ephrata Middle School</small></div>
     </div>
     <div class="nav-tabs" id="navTabs"></div>
+    <button class="mode-toggle" id="modeToggle" onclick="toggleMode()" title="Toggle light/dark mode">🌙</button>
     <button class="nav-admin" onclick="openLogin()">⚙ Admin</button>
   </div>
   <div class="nav-mobile-row" id="mobileNav"></div>
 </nav>
+
+<!-- ANNOUNCEMENT BAR -->
+<div class="announcement-bar" id="annBar">
+  <span class="ann-label">📢 Announcement</span>
+  <span class="ann-text" id="annText"></span>
+  <button class="ann-dismiss" onclick="document.getElementById('annBar').style.display='none'">×</button>
+</div>
+
+<!-- TRAIT BANNER -->
+<div class="trait-banner" id="traitBanner" onclick="goTo('trait')">
+  <span class="trait-banner-label">This Month's Trait</span>
+  <span class="trait-banner-name" id="traitBannerName">Loading…</span>
+  <span class="trait-banner-arrow">→ View Look-Fors</span>
+</div>
 
 <!-- ═══ PAGES ═══ -->
 
@@ -657,11 +672,16 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
     <div class="stat-card"><div class="stat-num" id="statWeek">—</div><div class="stat-label">Current Week</div></div>
   </div>
 
+  <!-- COUNTDOWN -->
+  <div class="countdown-strip" id="countdownStrip" style="margin-top:24px"></div>
+
   <div class="pillars-grid" style="margin-top:40px">
-    <div class="pillar-card">
-      <span class="pillar-icon">🎓</span>
-      <div class="pillar-title">Develop LRG Traits</div>
-      <div class="pillar-text" id="pillar1Text">Each month we focus on a Life Ready Graduate skill — from Growth Mindset to Resilience. Students learn, reflect, and put these skills into real action through competitions and daily school life.</div>
+    <div class="pillar-card" id="traitPillar" style="cursor:pointer;border-top:3px solid var(--purple)" onclick="goTo('trait')">
+      <span class="pillar-icon">⭐</span>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);margin-bottom:4px">This Month's Trait</div>
+      <div class="pillar-title" id="traitPillarName">Loading…</div>
+      <div class="pillar-text" id="traitPillarDesc" style="margin-bottom:8px"></div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--purple-lt)">View Look-Fors →</div>
     </div>
     <div class="pillar-card">
       <span class="pillar-icon">🤝</span>
@@ -742,7 +762,10 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <h1 class="page-title">Live <span>Tracker</span></h1>
       <div class="page-subtitle">Real-time squad standings</div>
     </div>
-    <button class="btn btn-purple" onclick="openDisplay()">📺 TV Display Mode</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-purple" onclick="openDisplay()">📺 TV Display Mode</button>
+      <button class="btn" onclick="window.print()" style="color:var(--text2)">🖨 Print Standings</button>
+    </div>
   </div>
   <div class="score-strip" id="scoreStrip">
     <div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text3);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px">Connecting to Firebase…</div>
@@ -773,6 +796,26 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         <div id="metricsDisplay"></div>
       </div>
     </div>
+  </div>
+
+  <!-- POLL -->
+  <div id="pollSection" style="display:none;margin-top:32px"></div>
+
+  <!-- SNAPSHOTS -->
+  <div style="margin-top:32px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div><div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:2px">📸 Monthly Snapshots</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">End-of-month standings archive</div></div>
+      <button class="btn btn-sm" onclick="requireAdmin(takeSnapshot)" style="color:var(--purple-lt);border-color:rgba(157,95,204,0.3)">Save Snapshot</button>
+    </div>
+    <div id="snapshotList"></div>
+  </div>
+
+  <!-- TIMELINE -->
+  <div style="margin-top:32px">
+    <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Points Over Time</div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px">Cumulative standings after each event</div>
+    <div id="timelineChart" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;overflow-x:auto"></div>
   </div>
 </div>
 
@@ -929,6 +972,10 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
           <div style="display:flex;justify-content:space-between;padding:3px 0"><span style="color:var(--text3)">May</span><span>EHS Future Teachers</span></div>
         </div>
       </div>
+      <div class="tally-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;margin-bottom:16px">
+        <div class="tally-title" style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:14px">💵 Trait Dough Tally</div>
+        <div id="tallyRows"><div style="color:var(--text3);font-size:13px">No tally data yet.</div></div>
+      </div>
       <div class="link-card" id="traitdoughLinks"><div class="link-card-title">🔗 Resources</div><div style="color:var(--text3);font-size:12px">Loading...</div></div>
     </div>
   </div>
@@ -1001,6 +1048,16 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   <div class="page-hero">
     <h1 class="page-title">Staff <span>Resources</span></h1>
     <div class="page-subtitle">Everything you need to run Clash of Classes</div>
+  </div>
+  <div style="margin-bottom:36px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:2px">📌 Quick Links</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Pinned resources for staff</div>
+      </div>
+      <button class="btn btn-purple btn-sm" onclick="requireAdmin(()=>{openAdmin();aTab('settings');})">+ Manage</button>
+    </div>
+    <div id="staffQuickLinks" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px"></div>
   </div>
   <div class="staff-guide-grid">
     <div class="guide-card">
@@ -1147,8 +1204,17 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         </div>
       </div>
       <div class="fr"><label>Week Label</label><input type="text" id="weekLabel" placeholder="e.g. Week of March 17"></div>
-      <div class="fmsg" id="metOk">✓ Metrics saved!</div>
-      <button class="btn-submit" onclick="saveMetrics()">Save Weekly Metrics</button>
+      <div class="fr" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
+        <label>💵 Trait Dough Tally — Total Bills Turned In</label>
+        <div class="g4">
+          <div><span class="sq-lbl" style="color:var(--sq-black)">Black</span><input class="sq-in" type="number" id="tallyBLACK" min="0" placeholder="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-gold)">Gold</span><input class="sq-in" type="number" id="tallyGOLD" min="0" placeholder="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-grey)">Grey</span><input class="sq-in" type="number" id="tallyGREY" min="0" placeholder="0"></div>
+          <div><span class="sq-lbl" style="color:var(--sq-purple)">Purple</span><input class="sq-in" type="number" id="tallyPURPLE" min="0" placeholder="0"></div>
+        </div>
+      </div>
+      <div class="fmsg" id="metOk">✓ Saved!</div>
+      <button class="btn-submit" onclick="saveMetrics()">Save Metrics &amp; Tally</button>
     </div>
 
     <!-- PAGES -->
@@ -1280,6 +1346,37 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         <button class="btn-submit" onclick="saveAnnouncement()">Save Announcement</button>
       </div>
 
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">💬 Squad Mottos</div>
+        <div class="g2">
+          <div class="fr"><label style="color:var(--sq-black)">Black Motto</label><input type="text" id="motBLACK" placeholder="e.g. Stay Sharp"></div>
+          <div class="fr"><label style="color:var(--sq-gold)">Gold Motto</label><input type="text" id="motGOLD" placeholder="e.g. Gold Standard"></div>
+          <div class="fr"><label style="color:var(--sq-grey)">Grey Motto</label><input type="text" id="motGREY" placeholder="e.g. Rise Up"></div>
+          <div class="fr"><label style="color:var(--sq-purple)">Purple Motto</label><input type="text" id="motPURPLE" placeholder="e.g. Purple Reign"></div>
+        </div>
+        <div class="fmsg" id="motOk">✓ Saved!</div>
+        <button class="btn-submit" onclick="saveMottos()">Save Mottos</button>
+      </div>
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">🗳 Event Poll</div>
+        <div class="fr"><label>Question</label><input type="text" id="pollQ" placeholder="e.g. What event should we do next?"></div>
+        <div class="fr"><label>Options (one per line, max 5)</label><textarea id="pollOpts" rows="4" placeholder="Tug of War&#10;Trivia&#10;Relay Race"></textarea></div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:10px;cursor:pointer"><input type="checkbox" id="pollActive"> Activate poll (shows on Tracker page)</label>
+        <div class="fmsg" id="pollOk">✓ Saved!</div>
+        <button class="btn-submit" onclick="savePoll()">Save Poll</button>
+      </div>
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">📌 Staff Quick Links</div>
+        <div class="g2">
+          <div class="fr"><label>Label</label><input type="text" id="slLabel" placeholder="e.g. Lesson Plans Drive"></div>
+          <div class="fr"><label>Icon Emoji</label><input type="text" id="slIcon" placeholder="📁" maxlength="2"></div>
+        </div>
+        <div class="fr"><label>URL</label><input type="url" id="slUrl" placeholder="https://…"></div>
+        <div class="fr"><label>Description (optional)</label><input type="text" id="slDesc" placeholder="e.g. All monthly lesson plans"></div>
+        <div class="fmsg" id="slOk">✓ Added!</div>
+        <button class="btn-submit" onclick="addStaffLink()">Add Link</button>
+        <div style="margin-top:16px" id="slList"></div>
+      </div>
       <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
         <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">⏱ Countdown Event</div>
         <div class="fr"><label>Event Label</label><input type="text" id="cdLabel" placeholder="e.g. Championship Day"></div>
@@ -1485,6 +1582,10 @@ const DEF = {
     mindsetBody: 'The Mountaineer Mindset program provides structured monthly lesson plans aligned with each month\'s LRG trait. Each plan is designed for classroom use and connects the Clash of Classes theme to academic and social-emotional learning.\n\nSelect a month and grade level below to access the lesson plan directly from Google Drive.',
   },
   history: [], password: 'ephrata2026', nextId: 100,
+  mottos: { BLACK:'', GOLD:'', GREY:'', PURPLE:'' },
+  poll: { question:'', options:[], votes:{}, active:false },
+  snapshots: [],
+  staffLinks: [],
 };
 
 
@@ -1525,6 +1626,10 @@ onValue(DB,(snap)=>{
     if(!D.announcement) D.announcement='';
     if(!D.traitDoughTally) D.traitDoughTally={BLACK:0,GOLD:0,GREY:0,PURPLE:0};
     if(!D.countdownEvents) D.countdownEvents=[{label:'Last Day of School',date:'2026-06-04'}];
+    if(!D.mottos) D.mottos={BLACK:'',GOLD:'',GREY:'',PURPLE:''};
+    if(!D.poll) D.poll={question:'',options:[],votes:{},active:false};
+    if(!Array.isArray(D.snapshots)) D.snapshots=[];
+    if(!Array.isArray(D.staffLinks)) D.staffLinks=[];
     ['mindset','wheel','traitdough','sotm','mayhem','champs'].forEach(k=>{ if(!Array.isArray(D.links[k])) D.links[k]=[]; });
     if(D.links.wheel.length===0){D.links.wheel=[{label:'Wheel Demo Video',url:'https://drive.google.com/file/d/1cPO_FGUmweW91kBiQ5rmHOuN-jREN7jQ/view?usp=sharing',id:1},{label:'Wheel Presentation',url:'https://docs.google.com/presentation/d/1GV3jLRh4v_-bLNgHiTio-yk7yyVCv_BFnm7k3DNjLxc/edit?usp=sharing',id:2}];}
     if(!D.pageContent) D.pageContent={...DEF.pageContent};
@@ -1709,6 +1814,7 @@ function renderAll(){
   renderGallery();
   renderHomeText();
   renderTraitBanner(); renderAnnouncement(); renderCountdown(); renderTally(); renderTimeline();
+  renderTraitPillar(); renderPoll(); renderStaffLinks(); renderSnapshots();
   document.getElementById('statEvents').textContent=(D.events||[]).length;
   document.getElementById('statWeek').textContent=D.metrics.weekLabel||'—';
   if(currentPage==='trait') renderTrait();
@@ -1975,8 +2081,10 @@ async function saveMetrics(){
   D.metrics.weekLabel=document.getElementById('weekLabel').value.trim();
   if(!D.traitDoughTally) D.traitDoughTally={BLACK:0,GOLD:0,GREY:0,PURPLE:0};
   SQUADS.forEach(sq=>{ const v=document.getElementById('tally'+sq); if(v&&v.value!=='') D.traitDoughTally[sq]=parseInt(v.value)||0; });
+  if(!D.traitDoughTally) D.traitDoughTally={BLACK:0,GOLD:0,GREY:0,PURPLE:0};
+  SQUADS.forEach(sq=>{ const v=document.getElementById('tally'+sq); if(v&&v.value!=='') D.traitDoughTally[sq]=parseInt(v.value)||0; });
   D.history.unshift({type:'metrics',label:D.metrics.weekLabel,time:new Date().toISOString()});
-  await save(); flash('metOk'); renderTally();
+  await save(); flash('metOk'); renderTally(); renderTally();
 }
 
 async function savePageContent(){
@@ -2193,6 +2301,11 @@ function aTab(name){
     const evt=(D.countdownEvents||[])[0];
     const cl=document.getElementById('cdLabel'); if(cl) cl.value=evt?evt.label:'';
     const cd=document.getElementById('cdDate'); if(cd) cd.value=evt?evt.date:'';
+    SQUADS.forEach(sq=>{ const el=document.getElementById('mot'+sq); if(el) el.value=(D.mottos&&D.mottos[sq])||''; });
+    const pq2=document.getElementById('pollQ'); if(pq2) pq2.value=D.poll?.question||'';
+    const po2=document.getElementById('pollOpts'); if(po2) po2.value=(D.poll?.options||[]).join('\n');
+    const pa2=document.getElementById('pollActive'); if(pa2) pa2.checked=D.poll?.active||false;
+    renderStaffLinksList();
   }
   if(name==='metrics'){
     SQUADS.forEach(sq=>{
@@ -2369,13 +2482,144 @@ async function removeLinkSection(section,i){
 // (old addLink and removeLink kept for backward compat)
 
 // Expose globals — direct assignment (module scope, safe after load)
+function toggleMode(){
+  const light=document.body.classList.toggle('light-mode');
+  const btn=document.getElementById('modeToggle');
+  if(btn) btn.textContent=light?'🌞':'🌙';
+  localStorage.setItem('coc-mode',light?'light':'dark');
+}
+(function(){
+  if(localStorage.getItem('coc-mode')==='light'){
+    document.body.classList.add('light-mode');
+    const btn=document.getElementById('modeToggle');
+    if(btn) btn.textContent='🌞';
+  }
+})();
+
+function renderTraitPillar(){
+  const curMonth=new Date().toLocaleString('en-US',{month:'long'});
+  const t=TRAITS.find(x=>x.month===curMonth)||TRAITS[6];
+  const n=document.getElementById('traitPillarName');
+  const d=document.getElementById('traitPillarDesc');
+  if(n) n.textContent=t.trait;
+  if(d) d.textContent=t.desc.replace(/^"(.*)"$/,'$1');
+}
+
+function renderPoll(){
+  const el=document.getElementById('pollSection'); if(!el) return;
+  const poll=D.poll||{};
+  if(!poll.active||!poll.question){ el.style.display='none'; return; }
+  el.style.display='block';
+  const totalVotes=Object.values(poll.votes||{}).reduce((s,v)=>s+v,0);
+  const myVote=localStorage.getItem('coc-poll-'+poll.question);
+  el.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--purple);border-radius:12px;padding:24px;margin-bottom:28px">'
+    +'<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);margin-bottom:8px">Staff Poll</div>'
+    +`<div style="font-family:Fraunces,serif;font-size:20px;font-weight:700;margin-bottom:16px">${poll.question}</div>`
+    +'<div style="display:flex;flex-direction:column;gap:8px">'
+    +(poll.options||[]).map((opt,i)=>{
+      const votes=(poll.votes&&poll.votes[i])||0;
+      const pct=totalVotes?Math.round(votes/totalVotes*100):0;
+      const voted=myVote===String(i);
+      return `<button onclick="castVote(${i})" style="text-align:left;background:${voted?'var(--purple-dim)':'var(--surface2)'};border:1px solid ${voted?'var(--purple-lt)':'var(--border)'};border-radius:8px;padding:10px 14px;cursor:pointer;position:relative;overflow:hidden">`
+        +`<div style="position:absolute;left:0;top:0;height:100%;width:${pct}%;background:rgba(109,43,159,0.15)"></div>`
+        +`<div style="position:relative;display:flex;justify-content:space-between;align-items:center">`
+        +`<span style="font-size:14px;font-weight:600;color:${voted?'var(--purple-lt)':'var(--text)'}">${opt}</span>`
+        +`<span style="font-family:DM Mono,monospace;font-size:11px;color:var(--text3)">${pct}% (${votes})</span>`
+        +'</div></button>';
+    }).join('')
+    +'</div>'
+    +`<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--text3);margin-top:10px">${totalVotes} vote${totalVotes!==1?'s':''} total</div>`
+    +'</div>';
+}
+
+async function castVote(optIndex){
+  const poll=D.poll||{}; if(!poll.active) return;
+  const key='coc-poll-'+poll.question;
+  const prev=localStorage.getItem(key);
+  if(!D.poll.votes) D.poll.votes={};
+  if(prev!==null) D.poll.votes[prev]=Math.max(0,(D.poll.votes[prev]||1)-1);
+  D.poll.votes[optIndex]=(D.poll.votes[optIndex]||0)+1;
+  localStorage.setItem(key,String(optIndex));
+  await save(); renderPoll();
+}
+
+async function takeSnapshot(){
+  if(!confirm('Save a snapshot of current standings?')) return;
+  const snap={date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),standings:Object.fromEntries(SQUADS.map(sq=>[sq,grand(sq)])),rank:ranked()};
+  if(!Array.isArray(D.snapshots)) D.snapshots=[];
+  D.snapshots.unshift(snap);
+  if(D.snapshots.length>12) D.snapshots=D.snapshots.slice(0,12);
+  await save(); renderSnapshots();
+}
+
+function renderSnapshots(){
+  const el=document.getElementById('snapshotList'); if(!el) return;
+  const snaps=D.snapshots||[];
+  if(!snaps.length){ el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px">No snapshots yet — save one at the end of each month.</div>'; return; }
+  el.innerHTML=snaps.map(snap=>'<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px">'
+    +`<div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text3);margin-bottom:10px">${snap.date}</div>`
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    +(snap.rank||SQUADS).map((sq,i)=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;text-align:center"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text3)">#${i+1}</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:${SQ_HEX[sq]}">${sq}</div><div style="font-family:'Fraunces',serif;font-size:16px;font-weight:900">${(snap.standings[sq]||0).toLocaleString()}</div></div>`).join('')
+    +'</div></div>').join('');
+}
+
+function renderStaffLinks(){
+  const el=document.getElementById('staffQuickLinks'); if(!el) return;
+  const links=D.staffLinks||[];
+  if(!links.length){ el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px">No quick links yet — add via Admin → Settings</div>'; return; }
+  el.innerHTML=links.map((l,i)=>`<a href="${l.url}" target="_blank" style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;text-decoration:none" onmouseover="this.style.borderColor='var(--purple-lt)'" onmouseout="this.style.borderColor='var(--border)'"><span style="font-size:20px">${l.icon||'🔗'}</span><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--text)">${l.label}</div>${l.desc?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${l.desc}</div>`:''}</div><span style="color:var(--purple-lt);font-size:12px">↗</span></a>`).join('');
+}
+
+async function addStaffLink(){
+  const label=document.getElementById('slLabel')?.value.trim();
+  const url=document.getElementById('slUrl')?.value.trim();
+  const icon=document.getElementById('slIcon')?.value.trim()||'🔗';
+  const desc=document.getElementById('slDesc')?.value.trim();
+  if(!label||!url) return;
+  if(!Array.isArray(D.staffLinks)) D.staffLinks=[];
+  D.staffLinks.push({label,url,icon,desc,id:Date.now()});
+  await save(); flash('slOk'); renderStaffLinks(); renderStaffLinksList();
+  ['slLabel','slUrl','slDesc'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+}
+
+async function removeStaffLink(i){
+  D.staffLinks.splice(i,1);
+  await save(); renderStaffLinks(); renderStaffLinksList();
+}
+
+function renderStaffLinksList(){
+  const el=document.getElementById('slList'); if(!el) return;
+  const links=D.staffLinks||[];
+  if(!links.length){ el.innerHTML='<p style="color:var(--text3);font-size:13px">No links yet.</p>'; return; }
+  el.innerHTML=links.map((l,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)"><span>${l.icon||'🔗'}</span><div style="flex:1;font-size:13px;color:var(--text2)">${l.label}</div><button onclick="removeStaffLink(${i})" style="background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:11px;padding:3px 8px;border-radius:4px" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='var(--text3)'">Remove</button></div>`).join('');
+}
+
+async function saveMottos(){
+  if(!D.mottos) D.mottos={BLACK:'',GOLD:'',GREY:'',PURPLE:''};
+  SQUADS.forEach(sq=>{ const el=document.getElementById('mot'+sq); if(el) D.mottos[sq]=el.value.trim(); });
+  await save(); flash('motOk'); renderSquads();
+}
+
+async function savePoll(){
+  const q=document.getElementById('pollQ')?.value.trim();
+  const optsRaw=document.getElementById('pollOpts')?.value||'';
+  const opts=optsRaw.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,5);
+  const active=document.getElementById('pollActive')?.checked||false;
+  if(!q||!opts.length) return;
+  const reset=!D.poll||D.poll.question!==q;
+  D.poll={question:q,options:opts,votes:reset?{}:(D.poll.votes||{}),active};
+  await save(); flash('pollOk'); renderPoll();
+}
+
 const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePhoto,
   __scrollMindset:scrollMindset,previewPhoto,openLogin,tryLogin,close1,
   requireAdmin,openAddEvent,openAdmin,aTab,addEvent,saveMetrics,
   savePageContent,loadPageContent,addLink,removeLink,addGItem,
   resetAll,undoEvt,changePw,openDisplay,closeDisplay,showSlide,
   lTab,saveMindsetLinks,addLinkSection,removeLinkSection,pTab,loadPageContent,
-  focusSquad,saveAnnouncement,saveCountdown,
+  focusSquad,saveAnnouncement,saveCountdown,toggleMode,
+  saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,toggleMode,
+  saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,
   renderWheel,renderTraitDough,renderSotm};
 Object.entries(_fns).forEach(([k,v])=>{ window[k]=v; window['_real_'+k]=v; });
 window.__moduleReady=true;
