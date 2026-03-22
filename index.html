@@ -1304,6 +1304,7 @@ import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebase
 
 // ── EARLY GLOBALS: exposed before Firebase so UI works instantly ──
 window.goTo = function(id){
+  window.__currentPage = id;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const el=document.getElementById('page-'+id);
   if(el) el.classList.add('active');
@@ -1489,7 +1490,7 @@ const DEF = {
 
 let D = JSON.parse(JSON.stringify(DEF));
 let authed=false, pendingFn=null, fbReady=false;
-let currentPage='home', currentTrait='March', currentGTab='photos';
+let currentPage=window.__currentPage||'home', currentTrait='March', currentGTab='photos';
 
 async function save(){ try{ await set(DB,D); }catch(e){ console.error(e); } }
 
@@ -2265,6 +2266,8 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   renderWheel,renderTraitDough,renderSotm};
 Object.entries(_fns).forEach(([k,v])=>{ window[k]=v; window['_real_'+k]=v; });
 window.__moduleReady=true;
+// Now that all functions are live, render whatever page the user is on
+goTo(currentPage);
 </script>
 </body>
 </html>
