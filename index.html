@@ -770,8 +770,8 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   </div>
 
   <div class="about-strip" id="aboutStrip" style="margin-top:40px">
-    <div class="stat-card"><div class="stat-num">4</div><div class="stat-label">Color Squads</div></div>
-    <div class="stat-card"><div class="stat-num">9</div><div class="stat-label">LRG Traits</div></div>
+    <div class="stat-card"><div class="stat-num" id="homeStat1Num">4</div><div class="stat-label" id="homeStat1Lbl">Color Squads</div></div>
+    <div class="stat-card"><div class="stat-num" id="homeStat2Num">9</div><div class="stat-label" id="homeStat2Lbl">LRG Traits</div></div>
     <div class="stat-card"><div class="stat-num" id="statEvents">—</div><div class="stat-label">Events This Year</div></div>
     <div class="stat-card"><div class="stat-num" id="statWeek">—</div><div class="stat-label">Current Week</div></div>
   </div>
@@ -1481,11 +1481,24 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         <div style="margin-top:16px" id="slList"></div>
       </div>
       <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
-        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">⏱ Countdown Event</div>
-        <div class="fr"><label>Event Label</label><input type="text" id="cdLabel" placeholder="e.g. Championship Day"></div>
-        <div class="fr"><label>Date</label><input type="date" id="cdDate"></div>
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">📊 Home Stat Boxes</div>
+        <div class="g2">
+          <div class="fr"><label>Stat 1 — Number</label><input type="text" id="hStat1Num" placeholder="e.g. 4"></div>
+          <div class="fr"><label>Stat 1 — Label</label><input type="text" id="hStat1Lbl" placeholder="e.g. Color Squads"></div>
+          <div class="fr"><label>Stat 2 — Number</label><input type="text" id="hStat2Num" placeholder="e.g. 9"></div>
+          <div class="fr"><label>Stat 2 — Label</label><input type="text" id="hStat2Lbl" placeholder="e.g. LRG Traits"></div>
+        </div>
+        <div class="fmsg" id="hStatOk">✓ Saved!</div>
+        <button class="btn-submit" onclick="saveHomeStats()">Save Stat Boxes</button>
+      </div>
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">⏱ Countdown Dates</div>
+        <div class="fr"><label>School Start Date</label><input type="date" id="cdSchoolStart"></div>
+        <div class="fr"><label>Last Day of School</label><input type="date" id="cdLastDay"></div>
+        <div class="fr"><label>Next Event Label</label><input type="text" id="cdLabel" placeholder="e.g. Championship Day"></div>
+        <div class="fr"><label>Next Event Date</label><input type="date" id="cdDate"></div>
         <div class="fmsg" id="cdOk">✓ Saved!</div>
-        <button class="btn-submit" onclick="saveCountdown()">Save Countdown Event</button>
+        <button class="btn-submit" onclick="saveCountdown()">Save Countdown</button>
       </div>
       <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">🔑 Change Password</div>
       <div class="fr"><label>New Admin Password</label><input type="password" id="newPw" placeholder="New password (min 4 chars)"></div>
@@ -1500,7 +1513,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, onValue, set, goOnline } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
 // ── EARLY GLOBALS: exposed before Firebase so UI works instantly ──
 window.goTo = function(id){
@@ -1697,6 +1710,11 @@ const DEF = {
   },
   squadDesc: { BLACK:'', GOLD:'', GREY:'', PURPLE:'' },
   poll: { question:'', options:[], votes:{}, active:false },
+  announcement: '',
+  countdownEvents: [ { label:'Last Day of School', date:'2026-06-04' } ],
+  homeStats: { stat1num:'4', stat1lbl:'Color Squads', stat2num:'9', stat2lbl:'LRG Traits' },
+  lastDay: '2026-06-04',
+  schoolStart: '2025-09-02',
   snapshots: [],
   staffLinks: [],
   sotmData: {
@@ -1742,6 +1760,17 @@ const fbTimeout = setTimeout(()=>{
     renderAll();
   }
 }, 5000);
+
+// ── FIREBASE KEEP-ALIVE ──
+// Re-render when tab becomes visible again after sleep/idle
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState==='visible' && fbReady) renderAll();
+});
+
+// Keep connection alive: goOnline every 25s (prevents idle disconnect)
+setInterval(function(){
+  if(fbReady){ try{ goOnline(getDatabase()); }catch(e){} }
+}, 25000);
 
 onValue(DB,(snap)=>{
   clearTimeout(fbTimeout);
@@ -1862,17 +1891,33 @@ function renderAnnouncement(){
 function renderCountdown(){
   const el=document.getElementById('countdownStrip'); if(!el) return;
   const now=new Date(); now.setHours(0,0,0,0);
-  const schoolStart=new Date('2025-09-02');
-  const lastDay=new Date('2026-06-04');
+  const startStr=D.schoolStart||DEF.schoolStart||'2025-09-02';
+  const endStr=D.lastDay||DEF.lastDay||'2026-06-04';
+  const schoolStart=new Date(startStr+'T00:00:00');
+  const lastDay=new Date(endStr+'T00:00:00');
   const daysSinceStart=Math.max(0,Math.floor((now-schoolStart)/864e5));
   const daysToEnd=Math.max(0,Math.floor((lastDay-now)/864e5));
-  const events=(D.countdownEvents||DEF.countdownEvents||[]);
-  const nextEvt=events.find(e=>new Date(e.date+'T00:00:00')>=now);
+  const events=D.countdownEvents||DEF.countdownEvents||[];
+  const nextEvt=events.find(function(e){ return new Date(e.date+'T00:00:00')>=now; });
   const daysToNext=nextEvt?Math.max(0,Math.floor((new Date(nextEvt.date+'T00:00:00')-now)/864e5)):null;
-  el.innerHTML=`
-    <div class="countdown-card"><div class="countdown-num">${daysSinceStart}</div><div class="countdown-lbl">Days of School</div><div class="countdown-sub">Since Sep 2, 2025</div></div>
-    ${daysToNext!==null?`<div class="countdown-card" style="border-top-color:var(--purple-lt)"><div class="countdown-num" style="color:var(--purple-lt)">${daysToNext}</div><div class="countdown-lbl">Days Until</div><div class="countdown-sub">${nextEvt.label}</div></div>`:'<div class="countdown-card"><div class="countdown-num">—</div><div class="countdown-lbl">Next Event</div><div class="countdown-sub">Add in Admin → Settings</div></div>'}
-    <div class="countdown-card" style="border-top-color:#4ade80"><div class="countdown-num" style="color:#4ade80">${daysToEnd}</div><div class="countdown-lbl">Days Left</div><div class="countdown-sub">Until June 4, 2026</div></div>`;
+  // Update stat boxes
+  const hs=D.homeStats||DEF.homeStats||{};
+  const s1n=document.getElementById('homeStat1Num'); if(s1n) s1n.textContent=hs.stat1num||'4';
+  const s1l=document.getElementById('homeStat1Lbl'); if(s1l) s1l.textContent=hs.stat1lbl||'Color Squads';
+  const s2n=document.getElementById('homeStat2Num'); if(s2n) s2n.textContent=hs.stat2num||'9';
+  const s2l=document.getElementById('homeStat2Lbl'); if(s2l) s2l.textContent=hs.stat2lbl||'LRG Traits';
+  // Build countdown cards without nested template literals
+  var card1='<div class="countdown-card"><div class="countdown-num">'+daysSinceStart+'</div>'
+    +'<div class="countdown-lbl">Days of School</div>'
+    +'<div class="countdown-sub">Since '+startStr+'</div></div>';
+  var card2=daysToNext!==null
+    ?'<div class="countdown-card" style="border-top-color:var(--purple-lt)"><div class="countdown-num" style="color:var(--purple-lt)">'+daysToNext+'</div>'
+      +'<div class="countdown-lbl">Days Until</div><div class="countdown-sub">'+nextEvt.label+'</div></div>'
+    :'<div class="countdown-card"><div class="countdown-num">—</div>'
+      +'<div class="countdown-lbl">Next Event</div><div class="countdown-sub">Add in Admin — Settings</div></div>';
+  var card3='<div class="countdown-card" style="border-top-color:#4ade80"><div class="countdown-num" style="color:#4ade80">'+daysToEnd+'</div>'
+    +'<div class="countdown-lbl">Days Left</div><div class="countdown-sub">Until '+endStr+'</div></div>';
+  el.innerHTML=card1+card2+card3;
 }
 
 function renderTally(){
@@ -1939,9 +1984,21 @@ async function saveAnnouncement(){
 async function saveCountdown(){
   const label=document.getElementById('cdLabel')?.value.trim();
   const date=document.getElementById('cdDate')?.value;
-  if(!label||!date) return;
-  D.countdownEvents=[{label,date}];
+  const schoolStart=document.getElementById('cdSchoolStart')?.value;
+  const lastDay=document.getElementById('cdLastDay')?.value;
+  if(label&&date) D.countdownEvents=[{label,date}];
+  if(schoolStart) D.schoolStart=schoolStart;
+  if(lastDay) D.lastDay=lastDay;
   await save(); flash('cdOk'); renderCountdown();
+}
+
+async function saveHomeStats(){
+  if(!D.homeStats) D.homeStats={};
+  D.homeStats.stat1num=document.getElementById('hStat1Num')?.value.trim()||'4';
+  D.homeStats.stat1lbl=document.getElementById('hStat1Lbl')?.value.trim()||'Color Squads';
+  D.homeStats.stat2num=document.getElementById('hStat2Num')?.value.trim()||'9';
+  D.homeStats.stat2lbl=document.getElementById('hStat2Lbl')?.value.trim()||'LRG Traits';
+  await save(); flash('hStatOk'); renderCountdown();
 }
 
 // ── RENDER ALL ──
@@ -2846,6 +2903,13 @@ function aTab(name){
     const evt=(D.countdownEvents||[])[0];
     const cl=document.getElementById('cdLabel'); if(cl) cl.value=evt?evt.label:'';
     const cd=document.getElementById('cdDate'); if(cd) cd.value=evt?evt.date:'';
+    const css2=document.getElementById('cdSchoolStart'); if(css2) css2.value=D.schoolStart||DEF.schoolStart||'2025-09-02';
+    const cld2=document.getElementById('cdLastDay'); if(cld2) cld2.value=D.lastDay||DEF.lastDay||'2026-06-04';
+    const hs2=D.homeStats||DEF.homeStats||{};
+    const hs1n=document.getElementById('hStat1Num'); if(hs1n) hs1n.value=hs2.stat1num||'4';
+    const hs1l=document.getElementById('hStat1Lbl'); if(hs1l) hs1l.value=hs2.stat1lbl||'Color Squads';
+    const hs2n=document.getElementById('hStat2Num'); if(hs2n) hs2n.value=hs2.stat2num||'9';
+    const hs2l=document.getElementById('hStat2Lbl'); if(hs2l) hs2l.value=hs2.stat2lbl||'LRG Traits';
     SQUADS.forEach(sq=>{ const el=document.getElementById('mot'+sq); if(el) el.value=(D.mottos&&D.mottos[sq])||''; });
     const pq2=document.getElementById('pollQ'); if(pq2) pq2.value=D.poll?.question||'';
     const po2=document.getElementById('pollOpts'); if(po2) po2.value=(D.poll?.options||[]).join('\n');
@@ -3192,8 +3256,8 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   savePageContent,loadPageContent,addLink,removeLink,addGItem,
   resetAll,undoEvt,changePw,openDisplay,closeDisplay,showSlide,
   lTab,saveMindsetLinks,addLinkSection,removeLinkSection,pTab,loadPageContent,
-  goToSquad,renderSquadDetail,openSquadEditor,closeSquadEditor,addSquadBox,saveSquadPage,previewSquadImg,clearSquadImg,saveAnnouncement,saveCountdown,toggleMode,
-  saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,
+  goToSquad,renderSquadDetail,openSquadEditor,closeSquadEditor,addSquadBox,saveSquadPage,previewSquadImg,clearSquadImg,saveAnnouncement,saveCountdown,saveFooter,toggleMode,
+  saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,saveHomeStats,
   renderWheel,renderTraitDough,renderSotm};
 Object.entries(_fns).forEach(([k,v])=>{ window[k]=v; window['_real_'+k]=v; });
 window.__real_goTo = goTo;
