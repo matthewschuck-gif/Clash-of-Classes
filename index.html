@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- CoC v2.1 -->
+<!-- CoC v2.2 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -804,8 +804,8 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
     </div>
   </div>
   <footer style="margin-top:60px">
-    <div class="footer-brand">Clash <em>of</em> Classes</div>
-    <div class="footer-sub">Ephrata Middle School · Mountaineers · #490e6f · #ffe100</div>
+    <div class="footer-brand" id="footerBrand">Clash <em>of</em> Classes</div>
+    <div class="footer-sub" id="footerSub">Ephrata Middle School · Mountaineers · #490e6f · #ffe100</div>
   </footer>
 </div>
 
@@ -1443,6 +1443,13 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
     <!-- SETTINGS -->
     <div class="a-panel" id="ap-settings">
       <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">🔻 Footer</div>
+        <div class="fr"><label>Brand Line</label><input type="text" id="footerBrandInput" placeholder="Clash of Classes"></div>
+        <div class="fr"><label>Sub Line</label><input type="text" id="footerSubInput" placeholder="Ephrata Middle School · …"></div>
+        <div class="fmsg" id="footerOk">✓ Saved!</div>
+        <button class="btn-submit" onclick="saveFooter()">Save Footer</button>
+      </div>
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
         <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">📢 Announcement Bar</div>
         <div class="fr"><label>Message (leave blank to hide)</label><input type="text" id="annInput" placeholder="e.g. Wheel spin this Friday at lunch!"></div>
         <div class="fmsg" id="annOk">✓ Saved!</div>
@@ -1711,6 +1718,7 @@ const DEF = {
   squadDesc: { BLACK:'', GOLD:'', GREY:'', PURPLE:'' },
   poll: { question:'', options:[], votes:{}, active:false },
   announcement: '',
+  footer: { brand:'Clash of Classes', sub:'Ephrata Middle School · Mountaineers · #490e6f · #ffe100' },
   countdownEvents: [ { label:'Last Day of School', date:'2026-06-04' } ],
   homeStats: { stat1num:'4', stat1lbl:'Color Squads', stat2num:'9', stat2lbl:'LRG Traits' },
   lastDay: '2026-06-04',
@@ -1786,6 +1794,7 @@ onValue(DB,(snap)=>{
     ['photos','quotes','spotlights','calendar'].forEach(k=>{ if(!Array.isArray(D.gallery[k])) D.gallery[k]=[]; });
     if(!D.links) D.links={mindset:[],mayhem:[],champs:[]};
     if(!D.announcement) D.announcement='';
+    if(!D.footer) D.footer={brand:'Clash of Classes',sub:'Ephrata Middle School · Mountaineers · #490e6f · #ffe100'};
     if(!D.traitDoughTally) D.traitDoughTally={BLACK:0,GOLD:0,GREY:0,PURPLE:0};
     if(!D.countdownEvents) D.countdownEvents=[{label:'Last Day of School',date:'2026-06-04'}];
     if(!D.mottos) D.mottos={BLACK:'',GOLD:'',GREY:'',PURPLE:''};
@@ -1872,6 +1881,21 @@ function goTo(id){
 }
 
 // ── NEW FEATURE FUNCTIONS ──
+function renderFooter(){
+  const f=D.footer||DEF.footer||{};
+  const brand=document.getElementById('footerBrand');
+  const sub=document.getElementById('footerSub');
+  if(brand) brand.innerHTML=f.brand||'Clash <em>of</em> Classes';
+  if(sub) sub.textContent=f.sub||'Ephrata Middle School';
+}
+
+async function saveFooter(){
+  if(!D.footer) D.footer={};
+  D.footer.brand=document.getElementById('footerBrandInput')?.value.trim()||'Clash of Classes';
+  D.footer.sub=document.getElementById('footerSubInput')?.value.trim()||'Ephrata Middle School';
+  await save(); flash('footerOk'); renderFooter();
+}
+
 function renderTraitBanner(){
   const curMonth=new Date().toLocaleString('en-US',{month:'long'});
   const t=TRAITS.find(x=>x.month===curMonth)||TRAITS[6];
@@ -2010,7 +2034,7 @@ function renderAll(){
   renderSquads();
   renderGallery();
   renderHomeText();
-  renderTraitBanner(); renderAnnouncement(); renderCountdown(); renderTally(); renderTimeline();
+  renderTraitBanner(); renderAnnouncement(); renderCountdown(); renderTally(); renderTimeline(); renderFooter();
   renderTraitPillar(); renderPoll(); renderStaffLinks(); renderSnapshots();
   document.getElementById('statEvents').textContent=(D.events||[]).length;
   document.getElementById('statWeek').textContent=D.metrics.weekLabel||'—';
@@ -2900,6 +2924,9 @@ function aTab(name){
   if(name==='pages'){ pTab(window._currentPageTab||'home'); }
   if(name==='settings'){
     const ai=document.getElementById('annInput'); if(ai) ai.value=D.announcement||'';
+    const ftr=D.footer||DEF.footer||{};
+    const fbi=document.getElementById('footerBrandInput'); if(fbi) fbi.value=ftr.brand||'';
+    const fsi=document.getElementById('footerSubInput'); if(fsi) fsi.value=ftr.sub||'';
     const evt=(D.countdownEvents||[])[0];
     const cl=document.getElementById('cdLabel'); if(cl) cl.value=evt?evt.label:'';
     const cd=document.getElementById('cdDate'); if(cd) cd.value=evt?evt.date:'';
