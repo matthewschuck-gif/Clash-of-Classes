@@ -194,13 +194,21 @@ body::before {
 }
 .nav-wordmark span { color:var(--gold-soft); }
 
-.nav-tabs { display:flex; flex:1; gap:2px; overflow-x:auto; scrollbar-width:none; }
+.nav-tabs-wrap { flex:1; position:relative; overflow:hidden; }
+.nav-tabs-wrap::after {
+  content:'›'; position:absolute; right:0; top:50%; transform:translateY(-50%);
+  height:100%; width:36px; display:flex; align-items:center; justify-content:flex-end;
+  background:linear-gradient(to right, transparent, var(--bg2) 60%);
+  color:var(--text3); font-size:18px; pointer-events:none;
+  opacity:1; transition:opacity 0.2s;
+}
+.nav-tabs { display:flex; flex:1; gap:2px; overflow-x:auto; scrollbar-width:none; padding-right:28px; }
 .nav-tabs::-webkit-scrollbar { display:none; }
 
 .tab {
-  display:flex; align-items:center; gap:4px;
-  padding:0 10px; height:58px; border:none; background:none;
-  font-family:'DM Sans',sans-serif; font-size:12px; font-weight:600;
+  display:flex; align-items:center; gap:6px;
+  padding:0 14px; height:58px; border:none; background:none;
+  font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600;
   color:var(--text3); cursor:pointer; white-space:nowrap;
   border-bottom:3px solid transparent; transition:all 0.2s;
   position:relative; flex-shrink:0;
@@ -728,7 +736,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <div class="nav-e">E</div>
       <div class="nav-wordmark">Clash <span>of</span> Classes<br><small style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:2px;color:var(--text3);font-weight:400">Ephrata Middle School</small></div>
     </div>
-    <div class="nav-tabs" id="navTabs"></div>
+    <div class="nav-tabs-wrap"><div class="nav-tabs" id="navTabs"></div></div>
     <button class="mode-toggle" id="modeToggle" onclick="toggleMode()" title="Toggle light/dark mode">🌙</button>
     <button class="nav-admin" onclick="openLogin()">⚙ Admin</button>
   </div>
@@ -1581,18 +1589,18 @@ const SQ_HEX = { BLACK:'#c5c9d1', GOLD:'#ffe100', GREY:'#99a8bb', PURPLE:'#bb8ef
 const SQ_CSS = { BLACK:'var(--sq-black)', GOLD:'var(--sq-gold)', GREY:'var(--sq-grey)', PURPLE:'var(--sq-purple)' };
 
 const PAGES_DEF = [
-  { id:'home',       icon:'🏠', label:'Home'      },
-  { id:'trait',      icon:'⭐', label:'Trait'     },
-  { id:'squads',     icon:'👥', label:'Squads'    },
-  { id:'tracker',    icon:'📊', label:'Tracker'   },
-  { id:'mindset',    icon:'📚', label:'Mindset'   },
-  { id:'wheel',      icon:'🎡', label:'Wheel'     },
-  { id:'traitdough', icon:'💵', label:'T. Dough'  },
-  { id:'sotm',       icon:'🌟', label:'SotM'      },
-  { id:'mayhem',     icon:'⚡', label:'Mayhem'    },
-  { id:'champs',     icon:'🏆', label:'Champs'    },
-  { id:'gallery',    icon:'📸', label:'Gallery'   },
-  { id:'staff',      icon:'👤', label:'Staff'     },
+  { id:'home',       icon:'🏠', label:'Home'           },
+  { id:'trait',      icon:'⭐', label:'Trait'          },
+  { id:'squads',     icon:'👥', label:'Squads'         },
+  { id:'tracker',    icon:'📊', label:'Tracker'        },
+  { id:'mindset',    icon:'📚', label:'Mindset'        },
+  { id:'wheel',      icon:'🎡', label:'Wheel'          },
+  { id:'traitdough', icon:'💵', label:'Trait Dough'    },
+  { id:'sotm',       icon:'🌟', label:'Student of Month' },
+  { id:'mayhem',     icon:'⚡', label:'Mayhem'         },
+  { id:'champs',     icon:'🏆', label:'Champs'         },
+  { id:'gallery',    icon:'📸', label:'Gallery'        },
+  { id:'staff',      icon:'👤', label:'Staff'          },
 ];
 
 const TRAITS = [
