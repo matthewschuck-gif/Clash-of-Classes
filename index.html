@@ -169,6 +169,12 @@ body::before {
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border2);
 }
+body.light-mode .nav {
+  background: rgba(245,243,240,0.97);
+}
+body.light-mode .nav-accent {
+  opacity: 0.7;
+}
 
 .nav-accent { height:3px; background:linear-gradient(90deg,var(--purple),var(--purple-lt),var(--gold),var(--purple-lt),var(--purple)); }
 
@@ -217,6 +223,8 @@ body::before {
   position:relative; flex-shrink:0;
 }
 .tab:hover { color:var(--text2); background:rgba(255,255,255,0.03); }
+body.light-mode .tab:hover { background:rgba(0,0,0,0.04); }
+body.light-mode .tab.active { color:var(--text); border-bottom-color:var(--gold-soft); }
 .tab.active { color:var(--text); border-bottom-color:var(--gold); }
 .tab .tab-icon { font-size:15px; }
 
