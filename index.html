@@ -2053,69 +2053,94 @@ function goToSquad(sq){
 }
 
 function renderSquadDetail(sq){
-  const el=document.getElementById('sqd-'+sq); if(!el) return;
-  const r=ranked();
-  const rank=r.indexOf(sq)+1;
-  const sp=(D.squadPages&&D.squadPages[sq])||{motto:'',image:'',desc:'',boxes:[]};
-  const motto=sp.motto||(D.mottos&&D.mottos[sq])||'';
-  const hex=SQ_HEX[sq];
-  const evtPts=evtTotal(sq), metPts=metTotal(sq), total=grand(sq);
-  const recentEvts=(D.events||[]).slice(-8).reverse();
-  const boxes=sp.boxes||[];
-  const eventsHTML=recentEvts.length?recentEvts.map(ev=>{
-    const maxPts=Math.max(...SQUADS.map(s=>ev.pts[s]||0));
-    const isWin=(ev.pts[sq]||0)===maxPts&&maxPts>0;
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border)">'
-      +'<div><div style="font-size:14px;font-weight:600;color:var(--text)">'+ev.name+(isWin?' 🏆':'')+'</div>'
-      +'<div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace">'+(ev.date||'')+'</div></div>'
-      +'<div style="font-family:Fraunces,serif;font-size:22px;font-weight:900;color:'+(isWin?hex:'var(--text2)')+'">+'+(ev.pts[sq]||0).toLocaleString()+'</div></div>';
-  }).join(''):'<div style="padding:24px;text-align:center;color:var(--text3);font-size:11px">No events yet</div>';
+  var el=document.getElementById('sqd-'+sq); if(!el) return;
+  var r=ranked();
+  var rank=r.indexOf(sq)+1;
+  var sp=(D.squadPages&&D.squadPages[sq])||{motto:'',image:'',desc:'',boxes:[]};
+  var motto=sp.motto||(D.mottos&&D.mottos[sq])||'';
+  var hex=SQ_HEX[sq];
+  var evtPts=evtTotal(sq), metPts=metTotal(sq), total=grand(sq);
+  var recentEvts=(D.events||[]).slice(-8).reverse();
+  var boxes=sp.boxes||[];
 
-  el.innerHTML=`
-    <div style="padding:48px 0 32px;border-bottom:1px solid var(--border);margin-bottom:32px;position:relative">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-        <button onclick="goTo('squads')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;display:flex;align-items:center;gap:6px">← All Squads</button>
-        <button class="btn btn-sm btn-purple" onclick="requireAdmin(function(){openSquadEditor('${sq}');})">✏ Edit Page</button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr auto;gap:32px;align-items:flex-end;flex-wrap:wrap">
-        <div>
-          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:${hex};opacity:0.7;margin-bottom:8px">Rank #${rank} of 4</div>
-          <div style="font-family:'Fraunces',serif;font-size:clamp(48px,8vw,80px);font-weight:900;color:${hex};line-height:1">${sq}</div>
-          ${motto?`<div style="font-family:'Fraunces',serif;font-size:18px;font-style:italic;color:var(--text2);margin-top:10px">"${motto}"</div>`:''}
-          ${sp.desc?`<div style="font-size:15px;color:var(--text2);line-height:1.7;margin-top:12px;max-width:600px">${sp.desc}</div>`:''}
-        </div>
-        <div style="text-align:right">
-          <div style="font-family:'Fraunces',serif;font-size:clamp(48px,7vw,72px);font-weight:900;color:${hex};line-height:1">${total.toLocaleString()}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text3)">Total Points</div>
-        </div>
-      </div>
-      <div style="position:absolute;bottom:0;left:0;height:3px;width:100%;background:linear-gradient(90deg,${hex},transparent)"></div>
-    </div>
+  // Build events HTML
+  var eventsHTML='';
+  if(recentEvts.length){
+    recentEvts.forEach(function(ev){
+      var maxPts=Math.max.apply(null,SQUADS.map(function(s){return ev.pts[s]||0;}));
+      var isWin=(ev.pts[sq]||0)===maxPts&&maxPts>0;
+      eventsHTML+='<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border)">'
+        +'<div><div style="font-size:14px;font-weight:600;color:var(--text)">'+ev.name+(isWin?' 🏆':'')+'</div>'
+        +'<div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace">'+(ev.date||'')+'</div></div>'
+        +'<div style="font-family:Fraunces,serif;font-size:22px;font-weight:900;color:'+(isWin?hex:'var(--text2)')+'">+'+(ev.pts[sq]||0).toLocaleString()+'</div>'
+        +'</div>';
+    });
+  } else {
+    eventsHTML='<div style="padding:24px;text-align:center;color:var(--text3);font-size:11px">No events yet</div>';
+  }
 
-    ${sp.image?`<div style="margin-bottom:32px;border-radius:12px;overflow:hidden;max-height:320px"><img src="${sp.image}" style="width:100%;height:320px;object-fit:cover;display:block" onerror="this.parentElement.style.display='none'"></div>`:''}
+  // Build boxes HTML
+  var boxesHTML='';
+  if(boxes.length){
+    boxesHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:32px">';
+    boxes.forEach(function(box){
+      boxesHTML+='<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid '+hex+';border-radius:12px;padding:20px">'
+        +'<div style="font-family:Fraunces,serif;font-size:16px;font-weight:700;color:'+hex+';margin-bottom:8px">'+box.title+'</div>'
+        +'<div style="font-size:14px;color:var(--text2);line-height:1.6">'+box.content+'</div>'
+        +'</div>';
+    });
+    boxesHTML+='</div>';
+  }
 
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px">
-      <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid ${hex};border-radius:12px;padding:20px;text-align:center">
-        <div style="font-family:'Fraunces',serif;font-size:36px;font-weight:900;color:${hex}">${evtPts.toLocaleString()}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-top:4px">Event Points</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid ${hex};border-radius:12px;padding:20px;text-align:center">
-        <div style="font-family:'Fraunces',serif;font-size:36px;font-weight:900;color:${hex}">${metPts.toLocaleString()}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-top:4px">Metric Points</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid ${hex};border-radius:12px;padding:20px;text-align:center">
-        <div style="font-family:'Fraunces',serif;font-size:36px;font-weight:900;color:${hex}">#${rank}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-top:4px">Current Rank</div>
-      </div>
-    </div>
+  // Build image HTML
+  var imageHTML='';
+  if(sp.image){
+    imageHTML='<div style="margin-bottom:32px;border-radius:12px;overflow:hidden;max-height:320px">'
+      +'<img src="'+sp.image+'" style="width:100%;height:320px;object-fit:cover;display:block" onerror="this.parentElement.style.display=\'none\'">'
+      +'</div>';
+  }
 
-    ${boxes.length?`
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:32px">
-      ${boxes.map(box=>`<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${hex};border-radius:12px;padding:20px">
-        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:${hex};margin-bottom:8px">${box.title}</div>
-        <div style="font-size:14px;color:var(--text2);line-height:1.6">${box.content}</div>
-      </div>`).join('')}
-    </div>`:''}
+  // Build hero section
+  var mottoHTML=motto?'<div style="font-family:Fraunces,serif;font-size:18px;font-style:italic;color:var(--text2);margin-top:10px">"'+motto+'"</div>':'';
+  var descHTML=sp.desc?'<div style="font-size:15px;color:var(--text2);line-height:1.7;margin-top:12px;max-width:600px">'+sp.desc+'</div>':'';
+
+  el.innerHTML=''
+    +'<div style="padding:48px 0 32px;border-bottom:1px solid var(--border);margin-bottom:32px;position:relative">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">'
+    +'<button onclick="goTo(\'squads\')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-family:DM Mono,monospace;font-size:11px;letter-spacing:2px;display:flex;align-items:center;gap:6px">← All Squads</button>'
+    +'<button class="btn btn-sm btn-purple" onclick="requireAdmin(function(){openSquadEditor(\''+sq+'\');})">✏ Edit Page</button>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr auto;gap:32px;align-items:flex-end">'
+    +'<div>'
+    +'<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:'+hex+';opacity:0.7;margin-bottom:8px">Rank #'+rank+' of 4</div>'
+    +'<div style="font-family:Fraunces,serif;font-size:clamp(48px,8vw,80px);font-weight:900;color:'+hex+';line-height:1">'+sq+'</div>'
+    +mottoHTML+descHTML
+    +'</div>'
+    +'<div style="text-align:right">'
+    +'<div style="font-family:Fraunces,serif;font-size:clamp(48px,7vw,72px);font-weight:900;color:'+hex+';line-height:1">'+total.toLocaleString()+'</div>'
+    +'<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text3)">Total Points</div>'
+    +'</div></div>'
+    +'<div style="position:absolute;bottom:0;left:0;height:3px;width:100%;background:linear-gradient(90deg,'+hex+',transparent)"></div>'
+    +'</div>'
+    +imageHTML
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px">'
+    +'<div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid '+hex+';border-radius:12px;padding:20px;text-align:center">'
+    +'<div style="font-family:Fraunces,serif;font-size:36px;font-weight:900;color:'+hex+'">'+evtPts.toLocaleString()+'</div>'
+    +'<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-top:4px">Event Points</div></div>'
+    +'<div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid '+hex+';border-radius:12px;padding:20px;text-align:center">'
+    +'<div style="font-family:Fraunces,serif;font-size:36px;font-weight:900;color:'+hex+'">'+metPts.toLocaleString()+'</div>'
+    +'<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-top:4px">Metric Points</div></div>'
+    +'<div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid '+hex+';border-radius:12px;padding:20px;text-align:center">'
+    +'<div style="font-family:Fraunces,serif;font-size:36px;font-weight:900;color:'+hex+'">#'+rank+'</div>'
+    +'<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-top:4px">Current Rank</div></div>'
+    +'</div>'
+    +boxesHTML
+    +'<div style="font-family:Fraunces,serif;font-size:20px;font-weight:700;margin-bottom:16px">Recent Events</div>'
+    +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">'+eventsHTML+'</div>'
+    +'<div style="margin-top:32px;display:flex;gap:12px;flex-wrap:wrap">'
+    +'<button class="btn btn-purple" onclick="goTo(\'tracker\')">📊 View Full Tracker</button>'
+    +'<button class="btn" onclick="goTo(\'squads\')">← All Squads</button>'
+    +'</div>';
 }
 
 // ── SQUAD PAGE EDITOR ──
@@ -2133,50 +2158,83 @@ function openSquadEditor(sq){
     document.body.appendChild(overlay);
   }
 
-  // Build boxes HTML
-  var boxesHTML=boxes.map(function(box,i){
-    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px" id="sqbox-'+i+'">'
-      +'<div class="fr"><label>Box Title</label><input type="text" id="sqbox-'+i+'-title" value="'+(box.title||'').replace(/"/g,'&quot;')+'" placeholder="e.g. Our Goals"></div>'
-      +'<div class="fr"><label>Box Content</label><textarea id="sqbox-'+i+'-content" rows="3" placeholder="Content...">'+(box.content||'').replace(/</g,'&lt;')+'</textarea></div>'
-      +'<button onclick="this.closest('[id^=sqbox]').remove()" style="background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:11px;padding:4px 10px;border-radius:4px">Remove Box</button>'
-      +'</div>';
-  }).join('');
+  const modal=document.createElement('div');
+  modal.className='modal';
+  modal.style.maxWidth='680px';
 
-  var imgPreviewStyle=sp.image?'block':'none';
-  var imgSrc=sp.image||'';
-  var imgUrl=(sp.image&&!sp.image.startsWith('data:'))?sp.image:'';
-  var mottoVal=(sp.motto||'').replace(/"/g,'&quot;');
-  var descVal=(sp.desc||'').replace(/</g,'&lt;');
+  function fr(labelText, input){
+    const w=document.createElement('div'); w.className='fr';
+    const l=document.createElement('label'); l.textContent=labelText;
+    w.appendChild(l); w.appendChild(input); return w;
+  }
 
-  overlay.innerHTML=''
-    +'<div class="modal" style="max-width:680px">'
-    +'<button class="modal-close" onclick="closeSquadEditor()">✕</button>'
-    +'<h2 style="color:'+hex+'">'+sq+' Squad Page</h2>'
-    +'<div class="fr"><label>Motto</label>'
-    +'<input type="text" id="sqEdit-motto" value="'+mottoVal+'" placeholder="e.g. Stay Sharp">'
-    +'</div>'
-    +'<div class="fr"><label>Squad Description</label>'
-    +'<textarea id="sqEdit-desc" rows="3" placeholder="A few sentences about this squad...">'+descVal+'</textarea>'
-    +'</div>'
-    +'<div class="fr">'
-    +'<label>Squad Image — Upload File</label>'
-    +'<input type="file" id="sqEdit-file" accept="image/*" onchange="previewSquadImg(this)" style="padding:8px">'
-    +'<div id="sqEdit-preview" style="margin-top:8px;display:'+imgPreviewStyle+'">'
-    +'<img id="sqEdit-previewImg" src="'+imgSrc+'" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--border2)">'
-    +'<button onclick="clearSquadImg()" style="display:block;margin-top:6px;background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:11px;padding:4px 10px;border-radius:4px">Remove Image</button>'
-    +'</div>'
-    +'<div style="font-size:11px;color:var(--text3);margin-top:4px">— or paste an image URL —</div>'
-    +'<input type="url" id="sqEdit-url" placeholder="https://…" value="'+imgUrl+'" style="margin-top:6px">'
-    +'</div>'
-    +'<div style="margin:20px 0 12px;display:flex;align-items:center;justify-content:space-between">'
-    +'<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Custom Info Boxes</div>'
-    +'<button onclick="addSquadBox()" class="btn btn-sm btn-purple">+ Add Box</button>'
-    +'</div>'
-    +'<div id="sqEdit-boxes">'+boxesHTML+'</div>'
-    +'<div class="fmsg" id="sqEditOk">✓ Saved!</div>'
-    +'<button class="btn-submit" onclick="saveSquadPage(''+sq+'')">Save Squad Page</button>'
-    +'</div>';
+  const closeBtn=document.createElement('button');
+  closeBtn.className='modal-close'; closeBtn.textContent='✕'; closeBtn.onclick=closeSquadEditor;
 
+  const h2=document.createElement('h2'); h2.style.color=hex; h2.textContent=sq+' Squad Page';
+
+  const mottoIn=document.createElement('input');
+  mottoIn.type='text'; mottoIn.id='sqEdit-motto'; mottoIn.value=sp.motto||''; mottoIn.placeholder='e.g. Stay Sharp';
+
+  const descIn=document.createElement('textarea');
+  descIn.id='sqEdit-desc'; descIn.rows=3; descIn.placeholder='A few sentences about this squad...'; descIn.textContent=sp.desc||'';
+
+  const fileIn=document.createElement('input');
+  fileIn.type='file'; fileIn.id='sqEdit-file'; fileIn.accept='image/*'; fileIn.style.padding='8px';
+  fileIn.onchange=function(){ previewSquadImg(this); };
+
+  const prevDiv=document.createElement('div'); prevDiv.id='sqEdit-preview'; prevDiv.style.cssText='margin-top:8px;display:'+(sp.image?'block':'none');
+  const prevImg=document.createElement('img'); prevImg.id='sqEdit-previewImg'; prevImg.src=sp.image||''; prevImg.style.cssText='max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--border2)';
+  const remBtn=document.createElement('button'); remBtn.textContent='Remove Image'; remBtn.onclick=clearSquadImg;
+  remBtn.style.cssText='display:block;margin-top:6px;background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:11px;padding:4px 10px;border-radius:4px';
+  prevDiv.appendChild(prevImg); prevDiv.appendChild(remBtn);
+
+  const orDiv=document.createElement('div'); orDiv.style.cssText='font-size:11px;color:var(--text3);margin-top:4px'; orDiv.textContent='— or paste an image URL —';
+  const urlIn=document.createElement('input'); urlIn.type='url'; urlIn.id='sqEdit-url'; urlIn.placeholder='https://…'; urlIn.style.marginTop='6px';
+  urlIn.value=(sp.image&&!sp.image.startsWith('data:'))?sp.image:'';
+
+  const imgWrap=document.createElement('div'); imgWrap.className='fr';
+  const imgLbl=document.createElement('label'); imgLbl.textContent='Squad Image — Upload File';
+  imgWrap.appendChild(imgLbl); imgWrap.appendChild(fileIn); imgWrap.appendChild(prevDiv); imgWrap.appendChild(orDiv); imgWrap.appendChild(urlIn);
+
+  const boxHdr=document.createElement('div'); boxHdr.style.cssText='margin:20px 0 12px;display:flex;align-items:center;justify-content:space-between';
+  const boxLbl=document.createElement('div'); boxLbl.style.cssText='font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)'; boxLbl.textContent='Custom Info Boxes';
+  const addBtn=document.createElement('button'); addBtn.className='btn btn-sm btn-purple'; addBtn.textContent='+ Add Box'; addBtn.onclick=addSquadBox;
+  boxHdr.appendChild(boxLbl); boxHdr.appendChild(addBtn);
+
+  const boxCon=document.createElement('div'); boxCon.id='sqEdit-boxes';
+  boxes.forEach(function(box,i){
+    const w=document.createElement('div'); w.id='sqbox-'+i; w.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px';
+    const tw=document.createElement('div'); tw.className='fr';
+    const tl=document.createElement('label'); tl.textContent='Box Title';
+    const ti=document.createElement('input'); ti.type='text'; ti.id='sqbox-'+i+'-title'; ti.value=box.title||''; ti.placeholder='e.g. Our Goals';
+    tw.appendChild(tl); tw.appendChild(ti);
+    const xw=document.createElement('div'); xw.className='fr';
+    const xl=document.createElement('label'); xl.textContent='Box Content';
+    const xa=document.createElement('textarea'); xa.id='sqbox-'+i+'-content'; xa.rows=3; xa.placeholder='Content...'; xa.textContent=box.content||'';
+    xw.appendChild(xl); xw.appendChild(xa);
+    const rb=document.createElement('button'); rb.textContent='Remove Box'; rb.onclick=function(){ w.remove(); };
+    rb.style.cssText='background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:11px;padding:4px 10px;border-radius:4px';
+    w.appendChild(tw); w.appendChild(xw); w.appendChild(rb);
+    boxCon.appendChild(w);
+  });
+
+  const okMsg=document.createElement('div'); okMsg.className='fmsg'; okMsg.id='sqEditOk'; okMsg.textContent='✓ Saved!';
+  const saveBtn=document.createElement('button'); saveBtn.className='btn-submit'; saveBtn.textContent='Save Squad Page';
+  saveBtn.onclick=function(){ saveSquadPage(sq); };
+
+  modal.appendChild(closeBtn);
+  modal.appendChild(h2);
+  modal.appendChild(fr('Motto', mottoIn));
+  modal.appendChild(fr('Squad Description', descIn));
+  modal.appendChild(imgWrap);
+  modal.appendChild(boxHdr);
+  modal.appendChild(boxCon);
+  modal.appendChild(okMsg);
+  modal.appendChild(saveBtn);
+
+  overlay.innerHTML='';
+  overlay.appendChild(modal);
   overlay.classList.add('open');
 }
 
@@ -2206,16 +2264,24 @@ function clearSquadImg(){
 
 let _sqBoxCount=0;
 function addSquadBox(){
-  const container=document.getElementById('sqEdit-boxes');
+  const container=document.getElementById('sqEdit-boxes'); if(!container) return;
   const i=Date.now();
-  const div=document.createElement('div');
-  div.id='sqbox-new-'+i;
-  div.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px';
-  div.innerHTML=''
-    +'<div class="fr"><label>Box Title</label><input type="text" id="sqbox-new-'+i+'-title" placeholder="e.g. Our Goals"></div>'
-    +'<div class="fr"><label>Box Content</label><textarea id="sqbox-new-'+i+'-content" rows="3" placeholder="Content for this box..."></textarea></div>'
-    +'<button onclick="this.closest('[id^=sqbox]').remove()" style="background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:11px;padding:4px 10px;border-radius:4px">Remove Box</button>';
-  container.appendChild(div);
+  const wrap=document.createElement('div');
+  wrap.id='sqbox-new-'+i;
+  wrap.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px';
+  const tw=document.createElement('div'); tw.className='fr';
+  const tl=document.createElement('label'); tl.textContent='Box Title';
+  const ti=document.createElement('input'); ti.type='text'; ti.id='sqbox-new-'+i+'-title'; ti.placeholder='e.g. Our Goals';
+  tw.appendChild(tl); tw.appendChild(ti);
+  const xw=document.createElement('div'); xw.className='fr';
+  const xl=document.createElement('label'); xl.textContent='Box Content';
+  const xa=document.createElement('textarea'); xa.id='sqbox-new-'+i+'-content'; xa.rows=3; xa.placeholder='Content for this box...';
+  xw.appendChild(xl); xw.appendChild(xa);
+  const rb=document.createElement('button'); rb.textContent='Remove Box';
+  rb.style.cssText='background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:11px;padding:4px 10px;border-radius:4px';
+  rb.onclick=function(){ wrap.remove(); };
+  wrap.appendChild(tw); wrap.appendChild(xw); wrap.appendChild(rb);
+  container.appendChild(wrap);
 }
 
 async function saveSquadPage(sq){
@@ -3057,8 +3123,26 @@ function renderSnapshots(){
 function renderStaffLinks(){
   const el=document.getElementById('staffQuickLinks'); if(!el) return;
   const links=D.staffLinks||[];
-  if(!links.length){ el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px">No quick links yet — add via Admin → Settings</div>'; return; }
-  el.innerHTML=links.map((l,i)=>'<a href="'+l.url+'" target="_blank" style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;text-decoration:none" onmouseover="this.style.borderColor='var(--purple-lt)'" onmouseout="this.style.borderColor='var(--border)'"><span style="font-size:20px">'+(l.icon||'🔗')+'</span><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--text)">'+l.label+'</div>'+(l.desc?'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+l.desc+'</div>':'')+'</div><span style="color:var(--purple-lt);font-size:12px">↗</span></a>').join('');
+  if(!links.length){
+    el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px">No quick links yet — add via Admin → Settings</div>';
+    return;
+  }
+  el.innerHTML='';
+  links.forEach(function(l){
+    const a=document.createElement('a');
+    a.href=l.url; a.target='_blank';
+    a.style.cssText='display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;text-decoration:none;transition:border-color 0.2s';
+    a.onmouseover=function(){ this.style.borderColor='var(--purple-lt)'; };
+    a.onmouseout=function(){ this.style.borderColor='var(--border)'; };
+    const icon=document.createElement('span'); icon.style.fontSize='20px'; icon.textContent=l.icon||'🔗';
+    const info=document.createElement('div'); info.style.flex='1';
+    const name=document.createElement('div'); name.style.cssText='font-size:14px;font-weight:600;color:var(--text)'; name.textContent=l.label;
+    info.appendChild(name);
+    if(l.desc){ const d=document.createElement('div'); d.style.cssText='font-size:11px;color:var(--text3);margin-top:2px'; d.textContent=l.desc; info.appendChild(d); }
+    const arr=document.createElement('span'); arr.style.cssText='color:var(--purple-lt);font-size:12px'; arr.textContent='↗';
+    a.appendChild(icon); a.appendChild(info); a.appendChild(arr);
+    el.appendChild(a);
+  });
 }
 
 async function addStaffLink(){
