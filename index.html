@@ -1582,6 +1582,21 @@ window._updateNavArrows = function(){
 };
 window.setTrait = function(m){ window._pendingTrait=m; };
 window.goToSquad = function(sq){ window.goTo('squad-'+sq); };
+// toggleMode works immediately — no Firebase needed
+window.toggleMode = function(){
+  var light=document.body.classList.toggle('light-mode');
+  var btn=document.getElementById('modeToggle');
+  if(btn) btn.textContent=light?'🌞':'🌙';
+  localStorage.setItem('coc-mode',light?'light':'dark');
+};
+// Apply saved mode on load
+(function(){
+  if(localStorage.getItem('coc-mode')==='light'){
+    document.body.classList.add('light-mode');
+    var btn=document.getElementById('modeToggle');
+    if(btn) btn.textContent='🌞';
+  }
+})();
 
 // Build nav immediately so tabs appear and work before Firebase loads
 (function(){
@@ -3162,13 +3177,6 @@ function toggleMode(){
   if(btn) btn.textContent=light?'🌞':'🌙';
   localStorage.setItem('coc-mode',light?'light':'dark');
 }
-(function(){
-  if(localStorage.getItem('coc-mode')==='light'){
-    document.body.classList.add('light-mode');
-    const btn=document.getElementById('modeToggle');
-    if(btn) btn.textContent='🌞';
-  }
-})();
 
 function renderTraitPillar(){
   const curMonth=new Date().toLocaleString('en-US',{month:'long'});
