@@ -5,6 +5,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Clash of Classes — Ephrata Middle School</title>
+<meta name="description" content="Clash of Classes is a squad competition program at Ephrata Middle School built around Life Ready Graduate traits, community, and fun. Track live standings, monthly traits, and events.">
+<meta name="keywords" content="Clash of Classes, Ephrata Middle School, EMS, Life Ready Graduate, LRG, squad competition, Mountaineers, EASD">
+<meta name="author" content="Ephrata Middle School">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://clashofclasses.org/">
+<meta property="og:title" content="Clash of Classes — Ephrata Middle School">
+<meta property="og:description" content="Live squad standings, monthly LRG traits, and events for Ephrata Middle School's Clash of Classes program.">
+<meta property="og:url" content="https://clashofclasses.org/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Clash of Classes — EMS">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700;900&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -62,6 +72,61 @@ body.light-mode {
   --text3:     #8a7a6a;
 }
 body.light-mode::before { display:none; }
+
+/* ── MODE TOGGLE ── */
+.mode-toggle {
+  background:none; border:1px solid var(--border2);
+  border-radius:6px; padding:6px 10px; cursor:pointer;
+  font-size:15px; color:var(--text2); transition:all 0.2s;
+  flex-shrink:0; margin-left:8px;
+}
+.mode-toggle:hover { background:var(--surface); color:var(--text); }
+
+/* ── TRAIT BANNER ── */
+.trait-banner {
+  background:linear-gradient(90deg,rgba(109,43,159,0.25),rgba(109,43,159,0.1));
+  border-bottom:1px solid rgba(157,95,204,0.2);
+  padding:7px 24px; display:flex; align-items:center; gap:10px;
+  font-size:12px; cursor:pointer; transition:background 0.2s;
+}
+.trait-banner:hover { background:linear-gradient(90deg,rgba(109,43,159,0.35),rgba(109,43,159,0.15)); }
+.trait-banner-label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:3px; text-transform:uppercase; color:var(--purple-lt); flex-shrink:0; }
+.trait-banner-name { font-family:'Fraunces',serif; font-size:14px; font-weight:700; color:var(--text); flex:1; }
+.trait-banner-arrow { color:var(--text3); font-size:11px; }
+
+/* ── ANNOUNCEMENT BAR ── */
+.announcement-bar {
+  background:rgba(255,225,0,0.08); border-bottom:1px solid rgba(255,225,0,0.12);
+  padding:7px 24px; display:none; align-items:center; gap:10px;
+}
+.announcement-bar.has-msg { display:flex; }
+.ann-label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:3px; text-transform:uppercase; color:var(--gold-soft); flex-shrink:0; }
+.ann-text { font-size:13px; color:var(--text); flex:1; }
+.ann-dismiss { background:none; border:none; color:var(--text3); cursor:pointer; font-size:16px; padding:0 4px; }
+
+/* ── COUNTDOWN ── */
+.countdown-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:28px; }
+.countdown-card { background:var(--surface); border:1px solid var(--border); border-top:3px solid var(--purple); border-radius:10px; padding:18px; text-align:center; }
+.countdown-num { font-family:'Fraunces',serif; font-size:42px; font-weight:900; color:var(--gold-soft); line-height:1; }
+.countdown-lbl { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-top:4px; }
+.countdown-sub { font-size:11px; color:var(--text3); margin-top:2px; }
+
+/* ── TALLY ── */
+.tally-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.tally-sq-name { font-family:'Fraunces',serif; font-size:14px; font-weight:700; min-width:64px; }
+.tally-bar-wrap { flex:1; height:8px; background:rgba(255,255,255,0.05); border-radius:4px; overflow:hidden; }
+.tally-bar { height:100%; border-radius:4px; transition:width 0.6s ease; }
+.tally-count { font-family:'DM Mono',monospace; font-size:12px; color:var(--text3); min-width:40px; text-align:right; }
+
+/* ── PRINT ── */
+@media print {
+  .nav,.trait-banner,.announcement-bar,.home-cta,.btn,.page:not(.active),
+  #tvView,.overlay,.nav-admin,footer { display:none !important; }
+  .page.active { display:block !important; padding:0 !important; }
+  body { background:#fff !important; color:#000 !important; }
+  .score-strip { grid-template-columns:repeat(4,1fr) !important; }
+  .strip-sq { background:#f5f5f5 !important; border:1px solid #ccc !important; break-inside:avoid; }
+}
 
 /* Squad detail page tint */
 [id^="page-squad-"].active {
@@ -931,7 +996,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 <!-- WHEEL -->
 <div class="page" id="page-wheel">
   <div class="page-hero" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
-    <div><h1 class="page-title">The <span>Wheel</span></h1><div class="page-subtitle" id="wheelSub">Spin to earn bonus squad points</div></div>
+    <div><h1 class="page-title">The <span>Wheel</span></h1><div class="page-subtitle" id="wheelSubtitle">Spin to earn bonus squad points</div></div>
     <button class="btn btn-purple" onclick="requireAdmin(function(){openAdmin();aTab('pages');})">&#9998; Edit Page</button>
   </div>
   <div class="content-page-layout">
@@ -984,7 +1049,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 <!-- TRAIT DOUGH -->
 <div class="page" id="page-traitdough">
   <div class="page-hero" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
-    <div><h1 class="page-title">Trait <span>Dough</span></h1><div class="page-subtitle" id="traitdoughSub">EMS schoolwide token economy system</div></div>
+    <div><h1 class="page-title">Trait <span>Dough</span></h1><div class="page-subtitle" id="traitdoughSubtitle">EMS schoolwide token economy system</div></div>
     <button class="btn btn-purple" onclick="requireAdmin(function(){openAdmin();aTab('pages');})">&#9998; Edit Page</button>
   </div>
   <div class="content-page-layout">
@@ -1028,43 +1093,19 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 <!-- STUDENT OF THE MONTH -->
 <div class="page" id="page-sotm">
   <div class="page-hero" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
-    <div><h1 class="page-title">Student <span>of the Month</span></h1><div class="page-subtitle" id="sotmSub">A designed experience celebrating LRG traits</div></div>
+    <div><h1 class="page-title">Student <span>of the Month</span></h1><div class="page-subtitle" id="sotmSubtitle">A designed experience celebrating LRG traits</div></div>
     <button class="btn btn-purple" onclick="requireAdmin(function(){openAdmin();aTab('pages');})">&#9998; Edit Page</button>
   </div>
   <div class="content-page-layout">
     <div class="content-body">
-      <div class="rich-text" id="sotmBody"><p>Student of the Month is a designed recognition experience. Each month, 24 students are selected — 2 per squad — for exemplifying the elevated Life Ready Graduate trait of that month. Selected students are invited to a special community experience.</p></div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0">
-        <div class="card card-gold"><div style="font-size:20px;margin-bottom:6px">👥</div><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin-bottom:4px">Who is Selected</div><div style="font-size:12px;color:var(--text2);line-height:1.5">24 students/month — 2 per squad — chosen by team vote for the trait of the month.</div></div>
-        <div class="card card-gold"><div style="font-size:20px;margin-bottom:6px">📅</div><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin-bottom:4px">When</div><div style="font-size:12px;color:var(--text2);line-height:1.5">End of each month. Experience held 2:10–2:55 PM in the EMS Media Center.</div></div>
-        <div class="card card-gold"><div style="font-size:20px;margin-bottom:6px">⭐</div><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin-bottom:4px">Points</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Each selection earns 5 points for that squad on the live tracker.</div></div>
-      </div>
+      <div class="rich-text" id="sotmBody"></div>
+      <div id="sotmCards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0"></div>
       <div style="font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:var(--text);margin:20px 0 12px">Community Partners by Month</div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-        <div style="display:grid;grid-template-columns:90px 1fr 1fr;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border);padding:8px 14px"><div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Month</div><div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Trait</div><div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Partners</div></div>
-        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">September</div><div style="font-size:11px;color:var(--text2)">Continual Learning</div><div style="font-size:11px;color:var(--text2)">Thaddeus Stevens, Ephrata Fair</div></div>
-        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">October</div><div style="font-size:11px;color:var(--text2)">Critical Thinking</div><div style="font-size:11px;color:var(--text2)">Meadow Valley Electric, Refreshing Mountain</div></div>
-        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">November</div><div style="font-size:11px;color:var(--text2)">Creativity &amp; Innovation</div><div style="font-size:11px;color:var(--text2)">Astro Machine Works, NAHS, Mainspring, Cafeteria</div></div>
-        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">December</div><div style="font-size:11px;color:var(--text2)">Honesty &amp; Integrity</div><div style="font-size:11px;color:var(--text2)">Pioneer Fire Co., Ephrata Police, Art of Recycle</div></div>
-        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">January</div><div style="font-size:11px;color:var(--text2)">Personal Accountability</div><div style="font-size:11px;color:var(--text2)">Borough Mayor, NL Chamber, Lawn Bros</div></div>
-        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">February</div><div style="font-size:11px;color:var(--text2)">Collaboration</div><div style="font-size:11px;color:var(--text2)">EASD Athletics, PA National Guard, Kel Lee Entertainment</div></div>
-        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">March</div><div style="font-size:11px;color:var(--text2)">Communication &amp; Empathy</div><div style="font-size:11px;color:var(--text2)">Ephrata Review, EHS LEO Club, Senior Helpers</div></div>
-        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px;border-bottom:1px solid var(--border)"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">April</div><div style="font-size:11px;color:var(--text2)">Healthy Living</div><div style="font-size:11px;color:var(--text2)">GEARS, EHS Yoga, Hotworx, WellSpan</div></div>
-        <div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px"><div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">May</div><div style="font-size:11px;color:var(--text2)">Adaptability</div><div style="font-size:11px;color:var(--text2)">EHS Future Teachers, 6th Grade Tours, Escape Room</div></div>
-      </div>
+      <div id="sotmPartnersTable" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden"></div>
       <div id="sotmEmbeds" style="margin-top:20px"></div>
     </div>
     <div class="content-sidebar">
-      <div class="card card-gold" style="margin-bottom:14px">
-        <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:10px">📊 By the Numbers</div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.9">
-          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Selected/month</span><strong>24 students</strong></div>
-          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Per squad</span><strong>2 students</strong></div>
-          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Points earned</span><strong>5 pts/student</strong></div>
-          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Time</span><strong>2:10–2:55 PM</strong></div>
-          <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Location</span><strong>EMS Media Center</strong></div>
-        </div>
-      </div>
+      <div id="sotmStatsSidebar" class="card card-gold" style="margin-bottom:14px"></div>
       <div class="link-card" id="sotmLinks"><div class="link-card-title">🔗 Resources</div><div style="color:var(--text3);font-size:12px">Loading...</div></div>
     </div>
   </div>
@@ -1285,6 +1326,10 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         <button class="a-tab" onclick="pTab('sotm')">🌟 SotM</button>
         <button class="a-tab" onclick="pTab('mayhem')">⚡ Mayhem</button>
         <button class="a-tab" onclick="pTab('champs')">🏆 Champs</button>
+        <button class="a-tab" onclick="pTab('sq-BLACK')" style="color:var(--sq-black)">⬛ Black</button>
+        <button class="a-tab" onclick="pTab('sq-GOLD')" style="color:var(--sq-gold)">🟡 Gold</button>
+        <button class="a-tab" onclick="pTab('sq-GREY')" style="color:var(--sq-grey)">⬜ Grey</button>
+        <button class="a-tab" onclick="pTab('sq-PURPLE')" style="color:var(--sq-purple)">🟣 Purple</button>
       </div>
       <div id="pageEditorFields"></div>
       <div class="fmsg" id="pageOk">✓ Saved!</div>
@@ -1644,9 +1689,36 @@ const DEF = {
   },
   history: [], password: 'ephrata2026', nextId: 100,
   mottos: { BLACK:'', GOLD:'', GREY:'', PURPLE:'' },
+  squadPages: {
+    BLACK:  { motto:'', image:'', desc:'', boxes:[] },
+    GOLD:   { motto:'', image:'', desc:'', boxes:[] },
+    GREY:   { motto:'', image:'', desc:'', boxes:[] },
+    PURPLE: { motto:'', image:'', desc:'', boxes:[] },
+  },
+  squadDesc: { BLACK:'', GOLD:'', GREY:'', PURPLE:'' },
   poll: { question:'', options:[], votes:{}, active:false },
   snapshots: [],
   staffLinks: [],
+  sotmData: {
+    subtitle: 'A designed experience celebrating LRG traits',
+    body: '',
+    card1title: 'Who is Selected', card1text: '24 students/month — 2 per squad — chosen by team vote for the trait of the month.',
+    card2title: 'When',            card2text: 'End of each month. Experience held 2:10–2:55 PM in the EMS Media Center.',
+    card3title: 'Points',          card3text: 'Each selection earns 5 points for that squad on the live tracker.',
+    statStudents: '24 students', statPerSquad: '2 students', statPoints: '5 pts/student',
+    statTime: '2:10–2:55 PM', statLocation: 'EMS Media Center',
+    partners: [
+      {month:'September', trait:'Continual Learning',       partners:'Thaddeus Stevens, Ephrata Fair'},
+      {month:'October',   trait:'Critical Thinking',        partners:'Meadow Valley Electric, Refreshing Mountain'},
+      {month:'November',  trait:'Creativity & Innovation',  partners:'Astro Machine Works, NAHS, Mainspring, Cafeteria'},
+      {month:'December',  trait:'Honesty & Integrity',      partners:'Pioneer Fire Co., Ephrata Police, Art of Recycle'},
+      {month:'January',   trait:'Personal Accountability',  partners:'Borough Mayor, NL Chamber, Lawn Bros'},
+      {month:'February',  trait:'Collaboration',            partners:'EASD Athletics, PA National Guard, Kel Lee Entertainment'},
+      {month:'March',     trait:'Communication & Empathy',  partners:'Ephrata Review, EHS LEO Club, Senior Helpers'},
+      {month:'April',     trait:'Healthy Living',           partners:'GEARS, EHS Yoga, Hotworx, WellSpan'},
+      {month:'May',       trait:'Adaptability',             partners:'EHS Future Teachers, 6th Grade Tours, Escape Room'},
+    ],
+  },
 };
 
 
@@ -1688,9 +1760,19 @@ onValue(DB,(snap)=>{
     if(!D.traitDoughTally) D.traitDoughTally={BLACK:0,GOLD:0,GREY:0,PURPLE:0};
     if(!D.countdownEvents) D.countdownEvents=[{label:'Last Day of School',date:'2026-06-04'}];
     if(!D.mottos) D.mottos={BLACK:'',GOLD:'',GREY:'',PURPLE:''};
+    if(!D.squadPages) D.squadPages={BLACK:{motto:'',image:'',desc:'',boxes:[]},GOLD:{motto:'',image:'',desc:'',boxes:[]},GREY:{motto:'',image:'',desc:'',boxes:[]},PURPLE:{motto:'',image:'',desc:'',boxes:[]}};
+    SQUADS.forEach(sq=>{
+      if(!D.squadPages[sq]) D.squadPages[sq]={motto:'',image:'',desc:'',boxes:[]};
+      if(!Array.isArray(D.squadPages[sq].boxes)) D.squadPages[sq].boxes=[];
+      // Sync motto from squadPages back to mottos for squad cards
+      if(D.squadPages[sq].motto) D.mottos[sq]=D.squadPages[sq].motto;
+    });
+    if(!D.squadDesc) D.squadDesc={BLACK:'',GOLD:'',GREY:'',PURPLE:''};
     if(!D.poll) D.poll={question:'',options:[],votes:{},active:false};
     if(!Array.isArray(D.snapshots)) D.snapshots=[];
     if(!Array.isArray(D.staffLinks)) D.staffLinks=[];
+    if(!D.sotmData) D.sotmData=JSON.parse(JSON.stringify(DEF.sotmData));
+    if(!Array.isArray(D.sotmData.partners)) D.sotmData.partners=DEF.sotmData.partners.slice();
     ['mindset','wheel','traitdough','sotm','mayhem','champs'].forEach(k=>{ if(!Array.isArray(D.links[k])) D.links[k]=[]; });
     if(D.links.wheel.length===0){D.links.wheel=[{label:'Wheel Demo Video',url:'https://drive.google.com/file/d/1cPO_FGUmweW91kBiQ5rmHOuN-jREN7jQ/view?usp=sharing',id:1},{label:'Wheel Presentation',url:'https://docs.google.com/presentation/d/1GV3jLRh4v_-bLNgHiTio-yk7yyVCv_BFnm7k3DNjLxc/edit?usp=sharing',id:2}];}
     if(!D.pageContent) D.pageContent={...DEF.pageContent};
@@ -1744,18 +1826,20 @@ function goTo(id){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.id==='tab-'+id));
   document.querySelectorAll('.mob-tab').forEach(t=>t.classList.toggle('active',t.id==='mobtab-'+id));
   window.scrollTo(0,0);
-  // Page-specific renders
-  if(id==='trait')       renderTrait();
+  // Page-specific renders — every page gets its render called
+  if(id==='trait')            renderTrait();
   else if(id==='mindset')     renderMindset();
   else if(id==='mayhem')      renderMayhem();
   else if(id==='champs')      renderChamps();
   else if(id==='wheel')       renderWheel();
   else if(id==='traitdough')  renderTraitDough();
   else if(id==='sotm')        renderSotm();
-  else if(id.startsWith('squad-')){
-    const sq=id.replace('squad-','');
-    renderSquadDetail(sq);
-  }
+  else if(id==='squads')      renderSquads();
+  else if(id==='gallery')     renderGallery();
+  else if(id==='tracker'){ renderStrip(); renderTable(); renderMetrics(); renderTimeline(); renderSnapshots(); renderPoll(); }
+  else if(id==='home'){ renderMini(); renderHomeText(); renderTraitPillar(); renderCountdown(); renderAnnouncement(); }
+  else if(id==='staff'){ renderStaffLinks(); }
+  else if(id.startsWith('squad-')){ renderSquadDetail(id.replace('squad-','')); }
 }
 
 // ── NEW FEATURE FUNCTIONS ──
@@ -1972,19 +2056,33 @@ function renderSquadDetail(sq){
   const el=document.getElementById('sqd-'+sq); if(!el) return;
   const r=ranked();
   const rank=r.indexOf(sq)+1;
-  const motto=(D.mottos&&D.mottos[sq])||'';
+  const sp=(D.squadPages&&D.squadPages[sq])||{motto:'',image:'',desc:'',boxes:[]};
+  const motto=sp.motto||(D.mottos&&D.mottos[sq])||'';
   const hex=SQ_HEX[sq];
   const evtPts=evtTotal(sq), metPts=metTotal(sq), total=grand(sq);
-  // Recent events for this squad
   const recentEvts=(D.events||[]).slice(-8).reverse();
+  const boxes=sp.boxes||[];
+  const eventsHTML=recentEvts.length?recentEvts.map(ev=>{
+    const maxPts=Math.max(...SQUADS.map(s=>ev.pts[s]||0));
+    const isWin=(ev.pts[sq]||0)===maxPts&&maxPts>0;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border)">'
+      +'<div><div style="font-size:14px;font-weight:600;color:var(--text)">'+ev.name+(isWin?' 🏆':'')+'</div>'
+      +'<div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace">'+(ev.date||'')+'</div></div>'
+      +'<div style="font-family:Fraunces,serif;font-size:22px;font-weight:900;color:'+(isWin?hex:'var(--text2)')+'">+'+(ev.pts[sq]||0).toLocaleString()+'</div></div>';
+  }).join(''):'<div style="padding:24px;text-align:center;color:var(--text3);font-size:11px">No events yet</div>';
+
   el.innerHTML=`
-    <div style="padding:48px 0 32px;border-bottom:1px solid var(--border);margin-bottom:40px;position:relative">
-      <button onclick="goTo('squads')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;margin-bottom:20px;display:flex;align-items:center;gap:6px">← Back to Squads</button>
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px">
+    <div style="padding:48px 0 32px;border-bottom:1px solid var(--border);margin-bottom:32px;position:relative">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <button onclick="goTo('squads')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;display:flex;align-items:center;gap:6px">← All Squads</button>
+        <button class="btn btn-sm btn-purple" onclick="requireAdmin(function(){openSquadEditor('${sq}');})">✏ Edit Page</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:32px;align-items:flex-end;flex-wrap:wrap">
         <div>
           <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:${hex};opacity:0.7;margin-bottom:8px">Rank #${rank} of 4</div>
           <div style="font-family:'Fraunces',serif;font-size:clamp(48px,8vw,80px);font-weight:900;color:${hex};line-height:1">${sq}</div>
-          ${motto?`<div style="font-family:'Fraunces',serif;font-size:18px;font-style:italic;color:var(--text2);margin-top:8px">"${motto}"</div>`:''}
+          ${motto?`<div style="font-family:'Fraunces',serif;font-size:18px;font-style:italic;color:var(--text2);margin-top:10px">"${motto}"</div>`:''}
+          ${sp.desc?`<div style="font-size:15px;color:var(--text2);line-height:1.7;margin-top:12px;max-width:600px">${sp.desc}</div>`:''}
         </div>
         <div style="text-align:right">
           <div style="font-family:'Fraunces',serif;font-size:clamp(48px,7vw,72px);font-weight:900;color:${hex};line-height:1">${total.toLocaleString()}</div>
@@ -1994,7 +2092,9 @@ function renderSquadDetail(sq){
       <div style="position:absolute;bottom:0;left:0;height:3px;width:100%;background:linear-gradient(90deg,${hex},transparent)"></div>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:40px">
+    ${sp.image?`<div style="margin-bottom:32px;border-radius:12px;overflow:hidden;max-height:320px"><img src="${sp.image}" style="width:100%;height:320px;object-fit:cover;display:block" onerror="this.parentElement.style.display='none'"></div>`:''}
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px">
       <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid ${hex};border-radius:12px;padding:20px;text-align:center">
         <div style="font-family:'Fraunces',serif;font-size:36px;font-weight:900;color:${hex}">${evtPts.toLocaleString()}</div>
         <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-top:4px">Event Points</div>
@@ -2009,26 +2109,161 @@ function renderSquadDetail(sq){
       </div>
     </div>
 
-    <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:16px">Recent Events</div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-      ${recentEvts.map(ev=>{
-        const maxPts=Math.max(...SQUADS.map(s=>ev.pts[s]||0));
-        const isWin=(ev.pts[sq]||0)===maxPts&&maxPts>0;
-        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border)">
-          <div>
-            <div style="font-size:14px;font-weight:600;color:var(--text)">${ev.name}${isWin?' 🏆':''}</div>
-            <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">${ev.date||''}</div>
-          </div>
-          <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:900;color:${isWin?hex:'var(--text2)'}">+${(ev.pts[sq]||0).toLocaleString()}</div>
-        </div>`;
-      }).join('')}
-    </div>
-
-    <div style="margin-top:32px;display:flex;gap:12px;flex-wrap:wrap">
-      <button class="btn btn-purple" onclick="goTo('tracker')">📊 View Full Tracker</button>
-      <button class="btn" onclick="goTo('squads')">← All Squads</button>
-    </div>`;
+    ${boxes.length?`
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:32px">
+      ${boxes.map(box=>`<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${hex};border-radius:12px;padding:20px">
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:${hex};margin-bottom:8px">${box.title}</div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.6">${box.content}</div>
+      </div>`).join('')}
+    </div>`:''}
 }
+
+// ── SQUAD PAGE EDITOR ──
+function openSquadEditor(sq){
+  const sp=(D.squadPages&&D.squadPages[sq])||{motto:'',image:'',desc:'',boxes:[]};
+  const hex=SQ_HEX[sq];
+  const boxes=sp.boxes||[];
+
+  let overlay=document.getElementById('squadEditorOverlay');
+  if(!overlay){
+    overlay=document.createElement('div');
+    overlay.id='squadEditorOverlay';
+    overlay.className='overlay';
+    overlay.addEventListener('click',function(e){ if(e.target===overlay) closeSquadEditor(); });
+    document.body.appendChild(overlay);
+  }
+
+  // Build boxes HTML
+  var boxesHTML=boxes.map(function(box,i){
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px" id="sqbox-'+i+'">'
+      +'<div class="fr"><label>Box Title</label><input type="text" id="sqbox-'+i+'-title" value="'+(box.title||'').replace(/"/g,'&quot;')+'" placeholder="e.g. Our Goals"></div>'
+      +'<div class="fr"><label>Box Content</label><textarea id="sqbox-'+i+'-content" rows="3" placeholder="Content...">'+(box.content||'').replace(/</g,'&lt;')+'</textarea></div>'
+      +'<button onclick="this.closest('[id^=sqbox]').remove()" style="background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:11px;padding:4px 10px;border-radius:4px">Remove Box</button>'
+      +'</div>';
+  }).join('');
+
+  var imgPreviewStyle=sp.image?'block':'none';
+  var imgSrc=sp.image||'';
+  var imgUrl=(sp.image&&!sp.image.startsWith('data:'))?sp.image:'';
+  var mottoVal=(sp.motto||'').replace(/"/g,'&quot;');
+  var descVal=(sp.desc||'').replace(/</g,'&lt;');
+
+  overlay.innerHTML=''
+    +'<div class="modal" style="max-width:680px">'
+    +'<button class="modal-close" onclick="closeSquadEditor()">✕</button>'
+    +'<h2 style="color:'+hex+'">'+sq+' Squad Page</h2>'
+    +'<div class="fr"><label>Motto</label>'
+    +'<input type="text" id="sqEdit-motto" value="'+mottoVal+'" placeholder="e.g. Stay Sharp">'
+    +'</div>'
+    +'<div class="fr"><label>Squad Description</label>'
+    +'<textarea id="sqEdit-desc" rows="3" placeholder="A few sentences about this squad...">'+descVal+'</textarea>'
+    +'</div>'
+    +'<div class="fr">'
+    +'<label>Squad Image — Upload File</label>'
+    +'<input type="file" id="sqEdit-file" accept="image/*" onchange="previewSquadImg(this)" style="padding:8px">'
+    +'<div id="sqEdit-preview" style="margin-top:8px;display:'+imgPreviewStyle+'">'
+    +'<img id="sqEdit-previewImg" src="'+imgSrc+'" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--border2)">'
+    +'<button onclick="clearSquadImg()" style="display:block;margin-top:6px;background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:11px;padding:4px 10px;border-radius:4px">Remove Image</button>'
+    +'</div>'
+    +'<div style="font-size:11px;color:var(--text3);margin-top:4px">— or paste an image URL —</div>'
+    +'<input type="url" id="sqEdit-url" placeholder="https://…" value="'+imgUrl+'" style="margin-top:6px">'
+    +'</div>'
+    +'<div style="margin:20px 0 12px;display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Custom Info Boxes</div>'
+    +'<button onclick="addSquadBox()" class="btn btn-sm btn-purple">+ Add Box</button>'
+    +'</div>'
+    +'<div id="sqEdit-boxes">'+boxesHTML+'</div>'
+    +'<div class="fmsg" id="sqEditOk">✓ Saved!</div>'
+    +'<button class="btn-submit" onclick="saveSquadPage(''+sq+'')">Save Squad Page</button>'
+    +'</div>';
+
+  overlay.classList.add('open');
+}
+
+function closeSquadEditor(){
+  const o=document.getElementById('squadEditorOverlay');
+  if(o) o.classList.remove('open');
+}
+
+function previewSquadImg(input){
+  if(input.files&&input.files[0]){
+    const reader=new FileReader();
+    reader.onload=function(e){
+      document.getElementById('sqEdit-preview').style.display='block';
+      document.getElementById('sqEdit-previewImg').src=e.target.result;
+      document.getElementById('sqEdit-url').value='';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function clearSquadImg(){
+  document.getElementById('sqEdit-preview').style.display='none';
+  document.getElementById('sqEdit-previewImg').src='';
+  document.getElementById('sqEdit-file').value='';
+  document.getElementById('sqEdit-url').value='';
+}
+
+let _sqBoxCount=0;
+function addSquadBox(){
+  const container=document.getElementById('sqEdit-boxes');
+  const i=Date.now();
+  const div=document.createElement('div');
+  div.id='sqbox-new-'+i;
+  div.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px';
+  div.innerHTML=''
+    +'<div class="fr"><label>Box Title</label><input type="text" id="sqbox-new-'+i+'-title" placeholder="e.g. Our Goals"></div>'
+    +'<div class="fr"><label>Box Content</label><textarea id="sqbox-new-'+i+'-content" rows="3" placeholder="Content for this box..."></textarea></div>'
+    +'<button onclick="this.closest('[id^=sqbox]').remove()" style="background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:11px;padding:4px 10px;border-radius:4px">Remove Box</button>';
+  container.appendChild(div);
+}
+
+async function saveSquadPage(sq){
+  if(!D.squadPages) D.squadPages={BLACK:{motto:'',image:'',desc:'',boxes:[]},GOLD:{motto:'',image:'',desc:'',boxes:[]},GREY:{motto:'',image:'',desc:'',boxes:[]},PURPLE:{motto:'',image:'',desc:'',boxes:[]}};
+  if(!D.squadPages[sq]) D.squadPages[sq]={motto:'',image:'',desc:'',boxes:[]};
+
+  D.squadPages[sq].motto=document.getElementById('sqEdit-motto')?.value.trim()||'';
+  D.squadPages[sq].desc=document.getElementById('sqEdit-desc')?.value.trim()||'';
+
+  // Image — file upload takes priority over URL
+  const fileInput=document.getElementById('sqEdit-file');
+  const urlInput=document.getElementById('sqEdit-url')?.value.trim()||'';
+  const previewImg=document.getElementById('sqEdit-previewImg');
+
+  if(fileInput?.files?.length&&previewImg?.src?.startsWith('data:')){
+    D.squadPages[sq].image=previewImg.src;
+  } else if(urlInput){
+    D.squadPages[sq].image=urlInput;
+  } else if(!previewImg?.src){
+    D.squadPages[sq].image='';
+  }
+
+  // Collect boxes from editor
+  const boxes=[];
+  document.getElementById('sqEdit-boxes').querySelectorAll('[id^="sqbox-"]').forEach(boxEl=>{
+    const id=boxEl.id;
+    const titleEl=boxEl.querySelector('[id$="-title"]');
+    const contentEl=boxEl.querySelector('[id$="-content"]');
+    if(titleEl&&contentEl){
+      const title=titleEl.value.trim();
+      const content=contentEl.value.trim();
+      if(title||content) boxes.push({title,content});
+    }
+  });
+  D.squadPages[sq].boxes=boxes;
+
+  // Sync motto back to D.mottos for squad cards
+  if(!D.mottos) D.mottos={BLACK:'',GOLD:'',GREY:'',PURPLE:''};
+  D.mottos[sq]=D.squadPages[sq].motto;
+
+  await save();
+  const ok=document.getElementById('sqEditOk');
+  if(ok){ ok.className='fmsg ok'; setTimeout(()=>ok.className='fmsg',2500); }
+  closeSquadEditor();
+  renderSquadDetail(sq);
+  renderSquads();
+}
+
 
 // ── TRAIT ──
 function renderTrait(){
@@ -2149,16 +2384,64 @@ function renderTraitDough(){
 }
 
 function renderSotm(){
-  const pc=D.pageContent||{};
-  const sub=document.getElementById('sotmSubtitle'); if(sub) sub.textContent=pc.sotmSubtitle||DEF.pageContent.sotmSubtitle;
+  const sd=D.sotmData||DEF.sotmData;
+
+  // Subtitle
+  const sub=document.getElementById('sotmSubtitle');
+  if(sub) sub.textContent=sd.subtitle||DEF.sotmData.subtitle;
+
+  // Body
   const body=document.getElementById('sotmBody');
-  if(body&&pc.sotmBody) body.innerHTML=`<p>${pc.sotmBody.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
+  if(body){
+    const txt=sd.body||'Student of the Month is a designed recognition experience at Ephrata Middle School. Each month, students are selected for exemplifying the elevated Life Ready Graduate trait of that month. Selected students are invited to a special community experience.';
+    body.innerHTML=`<p>${txt.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
+  }
+
+  // 3 info cards
+  const cards=document.getElementById('sotmCards');
+  if(cards) cards.innerHTML=[
+    {icon:'👥', title:sd.card1title||DEF.sotmData.card1title, text:sd.card1text||DEF.sotmData.card1text},
+    {icon:'📅', title:sd.card2title||DEF.sotmData.card2title, text:sd.card2text||DEF.sotmData.card2text},
+    {icon:'⭐', title:sd.card3title||DEF.sotmData.card3title, text:sd.card3text||DEF.sotmData.card3text},
+  ].map(card=>`<div class="card card-gold">
+    <div style="font-size:20px;margin-bottom:6px">${card.icon}</div>
+    <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin-bottom:4px">${card.title}</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.5">${card.text}</div>
+  </div>`).join('');
+
+  // Partners table
+  const pt=document.getElementById('sotmPartnersTable');
+  if(pt){
+    const partners=sd.partners||DEF.sotmData.partners;
+    pt.innerHTML=`<div style="display:grid;grid-template-columns:90px 1fr 1fr;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border);padding:8px 14px">
+      <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Month</div>
+      <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Trait</div>
+      <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Partners</div>
+    </div>`+partners.map((p,i)=>`<div style="display:grid;grid-template-columns:90px 1fr 1fr;padding:9px 14px;${i<partners.length-1?'border-bottom:1px solid var(--border)':''}">
+      <div style="font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--gold-soft)">${p.month}</div>
+      <div style="font-size:11px;color:var(--text2)">${p.trait}</div>
+      <div style="font-size:11px;color:var(--text2)">${p.partners}</div>
+    </div>`).join('');
+  }
+
+  // By the Numbers sidebar
+  const stats=document.getElementById('sotmStatsSidebar');
+  if(stats) stats.innerHTML=`
+    <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:10px">📊 By the Numbers</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.9">
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Selected/month</span><strong>${sd.statStudents||DEF.sotmData.statStudents}</strong></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Per squad</span><strong>${sd.statPerSquad||DEF.sotmData.statPerSquad}</strong></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Points earned</span><strong>${sd.statPoints||DEF.sotmData.statPoints}</strong></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Time</span><strong>${sd.statTime||DEF.sotmData.statTime}</strong></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Location</span><strong>${sd.statLocation||DEF.sotmData.statLocation}</strong></div>
+    </div>`;
+
+  // Links
   const links=D.links.sotm||[];
   const el=document.getElementById('sotmLinks');
   if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map(l=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via Admin → Links.</div>'}`;
 }
 
-// ── GALLERY ──
 function renderGallery(){
   const g=D.gallery;
   const empty=(icon,msg)=>`<div class="empty-state"><span class="empty-icon">${icon}</span><div class="empty-msg">${msg}</div></div>`;
@@ -2240,15 +2523,42 @@ async function savePageContent(){
     D.pageContent.traitdoughSubtitle=g('peTDSub');
     D.pageContent.traitdoughBody=g('peTDBody');
   } else if(page==='sotm'){
-    D.pageContent.sotmSubtitle=g('peSotmSub');
-    D.pageContent.sotmBody=g('peSotmBody');
+    if(!D.sotmData) D.sotmData=JSON.parse(JSON.stringify(DEF.sotmData));
+    D.sotmData.subtitle=g('peSotmSub');
+    D.sotmData.body=g('peSotmBody');
+    D.sotmData.card1title=g('peSotmC1T'); D.sotmData.card1text=g('peSotmC1X');
+    D.sotmData.card2title=g('peSotmC2T'); D.sotmData.card2text=g('peSotmC2X');
+    D.sotmData.card3title=g('peSotmC3T'); D.sotmData.card3text=g('peSotmC3X');
+    D.sotmData.statStudents=g('peSotmSt1'); D.sotmData.statPerSquad=g('peSotmSt2');
+    D.sotmData.statPoints=g('peSotmSt3'); D.sotmData.statTime=g('peSotmSt4');
+    D.sotmData.statLocation=g('peSotmSt5');
+    const rawP=g('peSotmPartners');
+    D.sotmData.partners=rawP.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+      const pts=l.split('|'); return {month:pts[0]||'',trait:pts[1]||'',partners:pts[2]||''};
+    });
+  }
+  if(page.startsWith('sq-')){
+    const sq=page.replace('sq-','');
+    if(!D.mottos) D.mottos={BLACK:'',GOLD:'',GREY:'',PURPLE:''};
+    if(!D.squadPages) D.squadPages={BLACK:{motto:'',image:'',desc:'',boxes:[]},GOLD:{motto:'',image:'',desc:'',boxes:[]},GREY:{motto:'',image:'',desc:'',boxes:[]},PURPLE:{motto:'',image:'',desc:'',boxes:[]}};
+    SQUADS.forEach(sq=>{
+      if(!D.squadPages[sq]) D.squadPages[sq]={motto:'',image:'',desc:'',boxes:[]};
+      if(!Array.isArray(D.squadPages[sq].boxes)) D.squadPages[sq].boxes=[];
+      // Sync motto from squadPages back to mottos for squad cards
+      if(D.squadPages[sq].motto) D.mottos[sq]=D.squadPages[sq].motto;
+    });
+    if(!D.squadDesc) D.squadDesc={BLACK:'',GOLD:'',GREY:'',PURPLE:''};
+    if(!D.squadDesc) D.squadDesc={BLACK:'',GOLD:'',GREY:'',PURPLE:''};
+    D.mottos[sq]=document.getElementById('peSqMotto')?.value.trim()||'';
+    D.squadDesc[sq]=document.getElementById('peSqDesc')?.value.trim()||'';
   }
   await save(); flash('pageOk');
+  renderSquads();
 }
 
 function pTab(page){
   window._currentPageTab=page;
-  const tabs=['home','mindset','wheel','traitdough','sotm','mayhem','champs'];
+  const tabs=['home','mindset','wheel','traitdough','sotm','mayhem','champs','sq-BLACK','sq-GOLD','sq-GREY','sq-PURPLE'];
   document.querySelectorAll('#ap-pages .a-tab').forEach((b,i)=>b.classList.toggle('on',tabs[i]===page));
   const pc=D.pageContent||DEF.pageContent;
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
@@ -2270,9 +2580,31 @@ function pTab(page){
       <div class="fr"><label>Page Subtitle</label><input type="text" id="peTDSub" value="${esc(pc.traitdoughSubtitle)}"></div>
       <div class="fr"><label>Body Text (leave blank for default)</label><textarea id="peTDBody" rows="8">${esc(pc.traitdoughBody)}</textarea></div>`;
   } else if(page==='sotm'){
+    const sd=D.sotmData||DEF.sotmData;
+    const partners=(sd.partners||DEF.sotmData.partners).map(p=>`${p.month}|${p.trait}|${p.partners}`).join('\n');
     f.innerHTML=`
-      <div class="fr"><label>Page Subtitle</label><input type="text" id="peSotmSub" value="${esc(pc.sotmSubtitle)}"></div>
-      <div class="fr"><label>Body Text (leave blank for default)</label><textarea id="peSotmBody" rows="6">${esc(pc.sotmBody)}</textarea></div>`;
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peSotmSub" value="${esc(sd.subtitle||'')}"></div>
+      <div class="fr"><label>Intro Body Text</label><textarea id="peSotmBody" rows="4">${esc(sd.body||'')}</textarea></div>
+      <div style="margin:14px 0 8px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Info Cards</div>
+      <div class="g2">
+        <div class="fr"><label>Card 1 Title</label><input type="text" id="peSotmC1T" value="${esc(sd.card1title||'')}"></div>
+        <div class="fr"><label>Card 1 Text</label><textarea id="peSotmC1X" rows="2">${esc(sd.card1text||'')}</textarea></div>
+        <div class="fr"><label>Card 2 Title</label><input type="text" id="peSotmC2T" value="${esc(sd.card2title||'')}"></div>
+        <div class="fr"><label>Card 2 Text</label><textarea id="peSotmC2X" rows="2">${esc(sd.card2text||'')}</textarea></div>
+        <div class="fr"><label>Card 3 Title</label><input type="text" id="peSotmC3T" value="${esc(sd.card3title||'')}"></div>
+        <div class="fr"><label>Card 3 Text</label><textarea id="peSotmC3X" rows="2">${esc(sd.card3text||'')}</textarea></div>
+      </div>
+      <div style="margin:14px 0 8px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">By the Numbers Sidebar</div>
+      <div class="g2">
+        <div class="fr"><label>Selected/month</label><input type="text" id="peSotmSt1" value="${esc(sd.statStudents||'')}"></div>
+        <div class="fr"><label>Per squad</label><input type="text" id="peSotmSt2" value="${esc(sd.statPerSquad||'')}"></div>
+        <div class="fr"><label>Points earned</label><input type="text" id="peSotmSt3" value="${esc(sd.statPoints||'')}"></div>
+        <div class="fr"><label>Time</label><input type="text" id="peSotmSt4" value="${esc(sd.statTime||'')}"></div>
+        <div class="fr" style="grid-column:1/-1"><label>Location</label><input type="text" id="peSotmSt5" value="${esc(sd.statLocation||'')}"></div>
+      </div>
+      <div style="margin:14px 0 8px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Community Partners Table</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px">One row per line: <strong>Month|Trait|Partners</strong></div>
+      <div class="fr"><textarea id="peSotmPartners" rows="12" style="font-family:'DM Mono',monospace;font-size:12px">${esc(partners)}</textarea></div>`;
   } else if(page==='mayhem'){
     f.innerHTML=`
       <div class="fr"><label>Page Subtitle</label><input type="text" id="peMayhemSub" value="${esc(pc.mayhemSubtitle)}"></div>
@@ -2281,6 +2613,24 @@ function pTab(page){
     f.innerHTML=`
       <div class="fr"><label>Page Subtitle</label><input type="text" id="peChampsSub" value="${esc(pc.champsSubtitle)}"></div>
       <div class="fr"><label>Body Text</label><textarea id="peChampsBody" rows="8">${esc(pc.champsBody)}</textarea></div>`;
+  } else if(page.startsWith('sq-')){
+    const sq=page.replace('sq-','');
+    const hex=SQ_HEX[sq];
+    const motto=(D.mottos&&D.mottos[sq])||'';
+    const desc=(D.squadDesc&&D.squadDesc[sq])||'';
+    f.innerHTML=`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <div style="width:16px;height:16px;border-radius:4px;background:${hex}"></div>
+        <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:${hex}">${sq} Squad</div>
+      </div>
+      <div class="fr"><label>Squad Motto</label>
+        <input type="text" id="peSqMotto" value="${esc(motto)}" placeholder="e.g. Stay Sharp, Rise Up…">
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Shows on the squad card and squad detail page</div>
+      </div>
+      <div class="fr"><label>Squad Description</label>
+        <textarea id="peSqDesc" rows="5" placeholder="Describe this squad — their spirit, strengths, or anything you want featured on their page.">${esc(desc)}</textarea>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Shows on the squad's dedicated page</div>
+      </div>`;
   }
 }
 function loadPageContent(){ pTab(window._currentPageTab||'home'); }
@@ -2639,25 +2989,26 @@ function renderPoll(){
   const poll=D.poll||{};
   if(!poll.active||!poll.question){ el.style.display='none'; return; }
   el.style.display='block';
-  const totalVotes=Object.values(poll.votes||{}).reduce((s,v)=>s+v,0);
+  const totalVotes=Object.values(poll.votes||{}).reduce(function(s,v){return s+v;},0);
   const myVote=localStorage.getItem('coc-poll-'+poll.question);
+  var optionsHTML=(poll.options||[]).map(function(opt,i){
+    const votes=(poll.votes&&poll.votes[i])||0;
+    const pct=totalVotes?Math.round(votes/totalVotes*100):0;
+    const voted=myVote===String(i);
+    return '<button onclick="castVote('+i+')" style="text-align:left;background:'+(voted?'var(--purple-dim)':'var(--surface2)')
+      +';border:1px solid '+(voted?'var(--purple-lt)':'var(--border)')
+      +';border-radius:8px;padding:10px 14px;cursor:pointer;position:relative;overflow:hidden;width:100%;margin-bottom:6px">'
+      +'<div style="position:absolute;left:0;top:0;height:100%;width:'+pct+'%;background:rgba(109,43,159,0.15)"></div>'
+      +'<div style="position:relative;display:flex;justify-content:space-between;align-items:center">'
+      +'<span style="font-size:14px;font-weight:600;color:'+(voted?'var(--purple-lt)':'var(--text)')+'">'+opt+'</span>'
+      +'<span style="font-family:DM Mono,monospace;font-size:11px;color:var(--text3)">'+pct+'% ('+votes+')</span>'
+      +'</div></button>';
+  }).join('');
   el.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--purple);border-radius:12px;padding:24px;margin-bottom:28px">'
     +'<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);margin-bottom:8px">Staff Poll</div>'
-    +`<div style="font-family:Fraunces,serif;font-size:20px;font-weight:700;margin-bottom:16px">${poll.question}</div>`
-    +'<div style="display:flex;flex-direction:column;gap:8px">'
-    +(poll.options||[]).map((opt,i)=>{
-      const votes=(poll.votes&&poll.votes[i])||0;
-      const pct=totalVotes?Math.round(votes/totalVotes*100):0;
-      const voted=myVote===String(i);
-      return `<button onclick="castVote(${i})" style="text-align:left;background:${voted?'var(--purple-dim)':'var(--surface2)'};border:1px solid ${voted?'var(--purple-lt)':'var(--border)'};border-radius:8px;padding:10px 14px;cursor:pointer;position:relative;overflow:hidden">`
-        +`<div style="position:absolute;left:0;top:0;height:100%;width:${pct}%;background:rgba(109,43,159,0.15)"></div>`
-        +`<div style="position:relative;display:flex;justify-content:space-between;align-items:center">`
-        +`<span style="font-size:14px;font-weight:600;color:${voted?'var(--purple-lt)':'var(--text)'}">${opt}</span>`
-        +`<span style="font-family:DM Mono,monospace;font-size:11px;color:var(--text3)">${pct}% (${votes})</span>`
-        +'</div></button>';
-    }).join('')
-    +'</div>'
-    +`<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--text3);margin-top:10px">${totalVotes} vote${totalVotes!==1?'s':''} total</div>`
+    +'<div style="font-family:Fraunces,serif;font-size:20px;font-weight:700;margin-bottom:16px">'+poll.question+'</div>'
+    +'<div style="display:flex;flex-direction:column">'+optionsHTML+'</div>'
+    +'<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--text3);margin-top:10px">'+totalVotes+' vote'+(totalVotes!==1?'s':'')+' total</div>'
     +'</div>';
 }
 
@@ -2684,19 +3035,30 @@ async function takeSnapshot(){
 function renderSnapshots(){
   const el=document.getElementById('snapshotList'); if(!el) return;
   const snaps=D.snapshots||[];
-  if(!snaps.length){ el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px">No snapshots yet — save one at the end of each month.</div>'; return; }
-  el.innerHTML=snaps.map(snap=>'<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px">'
-    +`<div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text3);margin-bottom:10px">${snap.date}</div>`
-    +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
-    +(snap.rank||SQUADS).map((sq,i)=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;text-align:center"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text3)">#${i+1}</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:${SQ_HEX[sq]}">${sq}</div><div style="font-family:'Fraunces',serif;font-size:16px;font-weight:900">${(snap.standings[sq]||0).toLocaleString()}</div></div>`).join('')
-    +'</div></div>').join('');
+  if(!snaps.length){
+    el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px">No snapshots yet — save one at the end of each month.</div>';
+    return;
+  }
+  el.innerHTML=snaps.map(function(snap){
+    var sqRows=(snap.rank||SQUADS).map(function(sq,i){
+      return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;text-align:center">'
+        +'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--text3)">#'+(i+1)+'</div>'
+        +'<div style="font-family:Fraunces,serif;font-size:14px;font-weight:700;color:'+SQ_HEX[sq]+'">'+sq+'</div>'
+        +'<div style="font-family:Fraunces,serif;font-size:16px;font-weight:900">'+((snap.standings[sq]||0).toLocaleString())+'</div>'
+        +'</div>';
+    }).join('');
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px">'
+      +'<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text3);margin-bottom:10px">'+snap.date+'</div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap">'+sqRows+'</div>'
+      +'</div>';
+  }).join('');
 }
 
 function renderStaffLinks(){
   const el=document.getElementById('staffQuickLinks'); if(!el) return;
   const links=D.staffLinks||[];
   if(!links.length){ el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px">No quick links yet — add via Admin → Settings</div>'; return; }
-  el.innerHTML=links.map((l,i)=>`<a href="${l.url}" target="_blank" style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;text-decoration:none" onmouseover="this.style.borderColor='var(--purple-lt)'" onmouseout="this.style.borderColor='var(--border)'"><span style="font-size:20px">${l.icon||'🔗'}</span><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--text)">${l.label}</div>${l.desc?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${l.desc}</div>`:''}</div><span style="color:var(--purple-lt);font-size:12px">↗</span></a>`).join('');
+  el.innerHTML=links.map((l,i)=>'<a href="'+l.url+'" target="_blank" style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;text-decoration:none" onmouseover="this.style.borderColor='var(--purple-lt)'" onmouseout="this.style.borderColor='var(--border)'"><span style="font-size:20px">'+(l.icon||'🔗')+'</span><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--text)">'+l.label+'</div>'+(l.desc?'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+l.desc+'</div>':'')+'</div><span style="color:var(--purple-lt);font-size:12px">↗</span></a>').join('');
 }
 
 async function addStaffLink(){
@@ -2720,7 +3082,7 @@ function renderStaffLinksList(){
   const el=document.getElementById('slList'); if(!el) return;
   const links=D.staffLinks||[];
   if(!links.length){ el.innerHTML='<p style="color:var(--text3);font-size:13px">No links yet.</p>'; return; }
-  el.innerHTML=links.map((l,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)"><span>${l.icon||'🔗'}</span><div style="flex:1;font-size:13px;color:var(--text2)">${l.label}</div><button onclick="removeStaffLink(${i})" style="background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:11px;padding:3px 8px;border-radius:4px" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='var(--text3)'">Remove</button></div>`).join('');
+  el.innerHTML=links.map((l,i)=>'<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)"><span>'+(l.icon||'🔗')+'</span><div style="flex:1;font-size:13px;color:var(--text2)">'+l.label+'</div><button onclick="removeStaffLink('+i+')" style="background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:11px;padding:3px 8px;border-radius:4px">Remove</button></div>').join('');
 }
 
 async function saveMottos(){
@@ -2746,7 +3108,7 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   savePageContent,loadPageContent,addLink,removeLink,addGItem,
   resetAll,undoEvt,changePw,openDisplay,closeDisplay,showSlide,
   lTab,saveMindsetLinks,addLinkSection,removeLinkSection,pTab,loadPageContent,
-  goToSquad,renderSquadDetail,saveAnnouncement,saveCountdown,toggleMode,
+  goToSquad,renderSquadDetail,openSquadEditor,closeSquadEditor,addSquadBox,saveSquadPage,previewSquadImg,clearSquadImg,saveAnnouncement,saveCountdown,toggleMode,
   saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,
   renderWheel,renderTraitDough,renderSotm};
 Object.entries(_fns).forEach(([k,v])=>{ window[k]=v; window['_real_'+k]=v; });
