@@ -194,15 +194,18 @@ body::before {
 }
 .nav-wordmark span { color:var(--gold-soft); }
 
-.nav-tabs-wrap { flex:1; position:relative; overflow:hidden; }
-.nav-tabs-wrap::after {
-  content:'›'; position:absolute; right:0; top:50%; transform:translateY(-50%);
-  height:100%; width:36px; display:flex; align-items:center; justify-content:flex-end;
-  background:linear-gradient(to right, transparent, var(--bg2) 60%);
-  color:var(--text3); font-size:18px; pointer-events:none;
-  opacity:1; transition:opacity 0.2s;
+.nav-tabs-wrap { flex:1; position:relative; overflow:hidden; display:flex; align-items:center; }
+.nav-scroll-btn {
+  position:absolute; top:0; height:100%; width:32px; z-index:10;
+  background:none; border:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; color:var(--text2); transition:opacity 0.2s;
 }
-.nav-tabs { display:flex; flex:1; gap:2px; overflow-x:auto; scrollbar-width:none; padding-right:28px; }
+.nav-scroll-btn:hover { color:var(--text); }
+.nav-scroll-btn.left  { left:0;  background:linear-gradient(to right, var(--bg2) 40%, transparent); }
+.nav-scroll-btn.right { right:0; background:linear-gradient(to left,  var(--bg2) 40%, transparent); }
+.nav-scroll-btn.hidden { opacity:0; pointer-events:none; }
+.nav-tabs { display:flex; flex:1; gap:2px; overflow-x:auto; scrollbar-width:none; padding:0 28px; }
 .nav-tabs::-webkit-scrollbar { display:none; }
 
 .tab {
@@ -736,7 +739,11 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <div class="nav-e">E</div>
       <div class="nav-wordmark">Clash <span>of</span> Classes<br><small style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:2px;color:var(--text3);font-weight:400">Ephrata Middle School</small></div>
     </div>
-    <div class="nav-tabs-wrap"><div class="nav-tabs" id="navTabs"></div></div>
+    <div class="nav-tabs-wrap" id="navTabsWrap">
+      <button class="nav-scroll-btn left hidden" id="navScrollLeft" onclick="navScroll(-1)" title="Scroll left">‹</button>
+      <div class="nav-tabs" id="navTabs"></div>
+      <button class="nav-scroll-btn right" id="navScrollRight" onclick="navScroll(1)" title="Scroll right">›</button>
+    </div>
     <button class="mode-toggle" id="modeToggle" onclick="toggleMode()" title="Toggle light/dark mode">🌙</button>
     <button class="nav-admin" onclick="openLogin()">⚙ Admin</button>
   </div>
@@ -1557,6 +1564,22 @@ window.tryLogin = function(){
   } else { const e=document.getElementById('loginErr'); if(e) e.style.display='block'; }
 };
 window.requireAdmin = function(fn){ if(window._authed) fn(); else { window._pendingFn=fn; window.openLogin(); } };
+window.navScroll = function(dir){
+  var el=document.getElementById('navTabs');
+  if(!el) return;
+  el.scrollBy({left:dir*200,behavior:'smooth'});
+  setTimeout(window._updateNavArrows, 250);
+};
+window._updateNavArrows = function(){
+  var el=document.getElementById('navTabs');
+  var lBtn=document.getElementById('navScrollLeft');
+  var rBtn=document.getElementById('navScrollRight');
+  if(!el||!lBtn||!rBtn) return;
+  var atStart=el.scrollLeft<=4;
+  var atEnd=el.scrollLeft+el.clientWidth>=el.scrollWidth-4;
+  lBtn.classList.toggle('hidden',atStart);
+  rBtn.classList.toggle('hidden',atEnd);
+};
 window.setTrait = function(m){ window._pendingTrait=m; };
 window.goToSquad = function(sq){ window.goTo('squad-'+sq); };
 
@@ -1861,6 +1884,13 @@ function buildNav(){
   const mob=document.getElementById('mobileNav');
   tabs.innerHTML=PAGES_DEF.map(p=>`<button class="tab ${p.id===currentPage?'active':''}" id="tab-${p.id}" onclick="goTo('${p.id}')"><span class="tab-icon">${p.icon}</span>${p.label}</button>`).join('');
   mob.innerHTML=PAGES_DEF.map(p=>`<button class="mob-tab ${p.id===currentPage?'active':''}" id="mobtab-${p.id}" onclick="goTo('${p.id}')">${p.icon} ${p.label}</button>`).join('');
+  // Wire scroll listener for arrow visibility
+  const nt=document.getElementById('navTabs');
+  if(nt&&!nt._scrollWired){
+    nt.addEventListener('scroll',function(){ if(window._updateNavArrows) window._updateNavArrows(); });
+    nt._scrollWired=true;
+  }
+  setTimeout(function(){ if(window._updateNavArrows) window._updateNavArrows(); },100);
 }
 
 function goTo(id){
