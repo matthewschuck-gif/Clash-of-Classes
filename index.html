@@ -4451,7 +4451,7 @@ function renderAdminPhotoList(containerId, section){
 function renderPhotoGallery(containerId, photos){
   const el=document.getElementById(containerId); if(!el) return;
   if(!photos||!photos.length){
-    el.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px;font-family:'DM Mono',monospace">No photos yet</div>';
+    el.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px;font-family:monospace">No photos yet</div>';
     return;
   }
   el.innerHTML=photos.map(p=>`
