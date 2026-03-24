@@ -803,8 +803,9 @@ body.light-mode .tab.active { color:var(--text); border-bottom-color:var(--gold-
 .modal-close:hover { color:var(--text); }
 .modal h2 { font-family:'Fraunces',serif; font-size:24px; font-weight:900; margin-bottom:24px; }
 
-.admin-tabs { display:flex; gap:4px; margin-bottom:24px; flex-wrap:wrap; background:var(--surface); border-radius:8px; padding:4px; }
-.a-tab { flex:1; min-width:60px; background:none; border:none; color:var(--text3); font-family:'DM Sans',sans-serif; font-size:12px; font-weight:600; padding:7px 8px; cursor:pointer; border-radius:6px; transition:all 0.2s; text-align:center; }
+.admin-tabs { display:flex; gap:4px; margin-bottom:24px; background:var(--surface); border-radius:8px; padding:4px; overflow-x:auto; scrollbar-width:none; flex-wrap:nowrap; }
+.admin-tabs::-webkit-scrollbar { display:none; }
+.a-tab { flex-shrink:0; background:none; border:none; color:var(--text3); font-family:'DM Sans',sans-serif; font-size:12px; font-weight:600; padding:7px 10px; cursor:pointer; border-radius:6px; transition:all 0.2s; text-align:center; white-space:nowrap; }
 .a-tab.on { background:var(--bg2); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,0.3); }
 
 .a-panel { display:none; }
