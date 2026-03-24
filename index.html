@@ -75,6 +75,60 @@ body.light-mode {
 }
 body.light-mode::before { display:none; }
 
+/* ── MILESTONE BANNER ── */
+#milestoneBanner {
+  position:fixed; top:70px; left:50%; transform:translateX(-50%) translateY(-120px);
+  z-index:8000; background:var(--gold); color:#1a1a00;
+  padding:14px 32px; border-radius:12px; font-family:'Fraunces',serif;
+  font-size:20px; font-weight:900; box-shadow:0 8px 32px rgba(0,0,0,0.4);
+  transition:transform 0.5s cubic-bezier(0.34,1.56,0.64,1); pointer-events:none;
+  white-space:nowrap;
+}
+#milestoneBanner.show { transform:translateX(-50%) translateY(0); }
+
+/* ── LIVE HERO STRIP ── */
+.hero-score-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:20px; }
+.hero-sq-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:12px 14px; text-align:center;
+  transition:border-color 0.3s;
+}
+.hero-sq-card.rank-1 { border-color:var(--gold-soft); background:rgba(232,200,64,0.06); }
+.hero-sq-num { font-family:'Fraunces',serif; font-size:24px; font-weight:900; line-height:1; }
+.hero-sq-lbl { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-top:3px; }
+.hero-sq-rank { font-family:'DM Mono',monospace; font-size:9px; color:var(--text3); }
+
+/* ── TRAIT TRACKER ── */
+.trait-tracker { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+@media(max-width:600px){ .trait-tracker { grid-template-columns:1fr 1fr; } }
+.trait-track-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:14px; display:flex; align-items:center; gap:10px;
+}
+.trait-track-card.done { border-color:rgba(74,222,128,0.4); background:rgba(74,222,128,0.05); }
+.trait-track-card.current { border-color:var(--gold-soft); background:rgba(232,200,64,0.06); }
+.trait-track-icon { font-size:20px; flex-shrink:0; }
+.trait-track-info { flex:1; }
+.trait-track-month { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); }
+.trait-track-name { font-family:'Fraunces',serif; font-size:13px; font-weight:700; margin-top:2px; }
+.trait-track-badge { font-family:'DM Mono',monospace; font-size:9px; padding:2px 7px; border-radius:10px; }
+.trait-track-badge.done { background:rgba(74,222,128,0.15); color:#4ade80; }
+.trait-track-badge.current { background:rgba(232,200,64,0.15); color:var(--gold-soft); }
+.trait-track-badge.upcoming { background:rgba(255,255,255,0.06); color:var(--text3); }
+
+/* ── UNDO BUTTON ── */
+.undo-last-btn {
+  background:none; border:1px solid var(--border); border-radius:8px;
+  padding:8px 14px; color:var(--text3); cursor:pointer; font-size:12px;
+  font-family:'DM Mono',monospace; transition:all 0.2s;
+}
+.undo-last-btn:hover { border-color:#f87171; color:#f87171; }
+
+/* ── SEASON THEME ── */
+.season-theme-swatch { width:28px; height:28px; border-radius:50%; border:2px solid var(--border); cursor:pointer; display:inline-block; transition:transform 0.2s; }
+.season-theme-swatch:hover { transform:scale(1.2); }
+.season-theme-swatch.active { border-color:var(--text); transform:scale(1.15); }
+
 /* ── TICKER TAPE ── */
 #tickerView { position:fixed;inset:0;z-index:901;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;overflow:hidden; }
 #tickerView.active { display:flex; }
@@ -879,7 +933,8 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         <button class="btn" onclick="goTo('squads')">👥 Meet the Squads</button>
       </div>
     </div>
-    <div class="mini-board" id="miniBoard">
+    <div id="heroScoreStrip" class="hero-score-strip"></div>
+    <div class="mini-board" id="miniBoard" style="display:none">
       <div style="text-align:center;padding:20px;color:var(--text3);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px">Connecting…</div>
     </div>
   </div>
@@ -971,6 +1026,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
     </div>
   </div>
 
+  <div id="traitTrackerSection" style="margin-bottom:32px"></div>
   <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:16px">Monthly Focus — Select a Trait</div>
   <div class="month-tabs" id="monthTabs"></div>
   <div class="trait-display">
@@ -999,6 +1055,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <button class="btn btn-purple" onclick="openDisplay()">📺 TV Display Mode</button>
       <button class="btn" onclick="openTicker()" style="color:var(--gold-soft);border-color:rgba(232,200,64,0.3)">📡 Ticker Tape</button>
       <button class="btn" onclick="window.print()" style="color:var(--text2)">🖨 Print Standings</button>
+      <button class="undo-last-btn" onclick="undoLastEvent()" title="Undo most recent event">↩ Undo Last Event</button>
       <button class="btn share-btn" onclick="copyPageUrl()" id="shareTrackerBtn">🔗 Copy Link</button>
       <button class="btn share-btn" onclick="showEmbedCode()" id="embedBtn">{'</>'} Embed Widget</button>
       <button class="btn share-btn" onclick="exportCSV()">⬇ Export CSV</button>
@@ -1098,43 +1155,711 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 
 <!-- MOUNTAINEER MAYHEM -->
 <div class="page" id="page-mayhem">
-  <div class="page-hero">
-    <h1 class="page-title">Mountaineer <span>Mayhem</span></h1>
-    <div class="page-subtitle" id="mayhemSubtitle">Special events & competitions</div>
+  <div class="page-hero" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
+    <div>
+      <h1 class="page-title">Mountaineer <span>Mayhem</span></h1>
+      <div class="page-subtitle" id="mayhemSubtitle">Special events &amp; competitions — March 13</div>
+    </div>
+    <button class="btn btn-purple" onclick="requireAdmin(function(){openAdmin();aTab('mayhem');})">&#9998; Edit Page</button>
   </div>
-  <div class="content-page-layout">
-    <div class="content-body">
-      <div class="rich-text" id="mayhemBody">
-        <p>Welcome to Mountaineer Mayhem — add details about this event using the admin panel.</p>
-      </div>
+
+  <!-- WINNER BANNER -->
+  <div id="mayhemWinnerBanner" style="display:none;background:linear-gradient(135deg,rgba(255,225,0,0.15),rgba(109,43,159,0.15));border:2px solid var(--gold-soft);border-radius:14px;padding:24px 28px;margin-bottom:28px;text-align:center">
+    <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--gold-soft);margin-bottom:8px">🏆 Mountaineer Mayhem 2026 Champion</div>
+    <div id="mayhemWinnerRoom" style="font-family:'Fraunces',serif;font-size:38px;font-weight:900;color:var(--gold-soft);line-height:1;margin-bottom:6px"></div>
+    <div id="mayhemWinnerNote" style="font-size:13px;color:var(--text2)"></div>
+  </div>
+
+  <!-- OVERVIEW CARDS -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:32px">
+    <div class="card card-accent" style="border-top:3px solid var(--purple)">
+      <div style="font-size:22px;margin-bottom:6px">📅</div>
+      <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--purple-lt);margin-bottom:4px">Date</div>
+      <div style="font-size:13px;color:var(--text2)" id="mayhemDate">March 13, 2026</div>
     </div>
-    <div class="content-sidebar">
-      <div class="link-card" id="mayhemLinks">
-        <div class="link-card-title">🔗 Resources & Links</div>
-        <div style="color:var(--text3);font-size:13px">Add links via the admin panel.</div>
-      </div>
+    <div class="card card-accent" style="border-top:3px solid var(--gold-soft)">
+      <div style="font-size:22px;margin-bottom:6px">🏟</div>
+      <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:4px">Location</div>
+      <div style="font-size:13px;color:var(--text2)" id="mayhemLocation">New Gymnasium</div>
     </div>
+    <div class="card card-accent" style="border-top:3px solid #4ade80">
+      <div style="font-size:22px;margin-bottom:6px">⚡</div>
+      <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:#4ade80;margin-bottom:4px">Events</div>
+      <div style="font-size:13px;color:var(--text2)" id="mayhemEventCount">9 Competitions + Bonus</div>
+    </div>
+  </div>
+
+  <!-- INTRO BODY -->
+  <div class="rich-text" id="mayhemBody" style="margin-bottom:28px"></div>
+
+  <!-- SCHEDULE -->
+  <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Day Schedule</div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px" id="mayhemSchedLabel">March 13 — both grade levels</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:32px">
+    <div style="display:grid;grid-template-columns:110px 1fr;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border);padding:8px 16px">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Time</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Activity</div>
+    </div>
+    <div style="display:grid;grid-template-columns:110px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">7:50 – 8:10</div><div style="font-size:13px;color:var(--text2)">Arrival &amp; Announcements — Homeroom ext. review of event rules &amp; participant tags distributed</div></div>
+    <div style="display:grid;grid-template-columns:110px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">8:11 – 8:30</div><div style="font-size:13px;color:var(--text2)">Directions &amp; assignments for Mayhem — create team signs &amp; chants</div></div>
+    <div style="display:grid;grid-template-columns:110px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">8:30 – 8:40</div><div style="font-size:13px;color:var(--text2)"><strong>7th Grade</strong> — dismiss via RA Hallway to New Gym, sit in assigned section &nbsp;|&nbsp; <strong>8th Grade</strong> — dismiss to Old Gym/Lobby area, enter New Gym from Old Gym side</div></div>
+    <div style="display:grid;grid-template-columns:110px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">8:40 – 8:55</div><div style="font-size:13px;color:var(--text2)">Welcome &amp; Opening — projector, live points display, students to on-deck area</div></div>
+    <div style="display:grid;grid-template-columns:110px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">8:55 – 9:05</div><div style="font-size:13px;color:var(--text2)"><strong>Event 1:</strong> Hungry Hungry Hippos</div></div>
+    <div style="display:grid;grid-template-columns:110px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">9:10 – 9:20</div><div style="font-size:13px;color:var(--text2)"><strong>Event 2:</strong> Teacher Pop Darts</div></div>
+    <div style="display:grid;grid-template-columns:110px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">9:25 – 9:35</div><div style="font-size:13px;color:var(--text2)"><strong>Event 3:</strong> Noodle Knockdown</div></div>
+    <div style="display:grid;grid-template-columns:110px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">9:35 – 9:45</div><div style="font-size:13px;color:var(--text2)">Sort it Right (filler activity between events)</div></div>
+    <div style="display:grid;grid-template-columns:110px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">9:45 – 9:55</div><div style="font-size:13px;color:var(--text2)"><strong>Event 4:</strong> Ping Pong Ball Pass</div></div>
+    <div style="display:grid;grid-template-columns:110px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">10:00 – 10:15</div><div style="font-size:13px;color:var(--text2)"><strong>Event 5:</strong> Pack It Up (Hold It Relay)</div></div>
+    <div style="display:grid;grid-template-columns:110px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">Between events</div><div style="font-size:13px;color:var(--text2)"><strong>Chuck a Chicken</strong> — audience filler; 1 rep per homeroom throws from bleacher seat</div></div>
+    <div style="display:grid;grid-template-columns:110px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">10:25 – 10:35</div><div style="font-size:13px;color:var(--text2)"><strong>Event 7:</strong> Tower Toss</div></div>
+    <div style="display:grid;grid-template-columns:110px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">10:40 – 10:50</div><div style="font-size:13px;color:var(--text2)"><strong>Event 8:</strong> Basketball Knockout</div></div>
+    <div style="display:grid;grid-template-columns:110px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">10:50 – 10:55</div><div style="font-size:13px;color:var(--text2)"><strong>Lucky Chance</strong> — spin to win up to 50 squad points</div></div>
+    <div style="display:grid;grid-template-columns:110px 1fr;padding:9px 16px"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">11:00</div><div style="font-size:13px;color:var(--text2)">Dismiss — 7th Grade to Lunch, 8th Grade transition to homeroom</div></div>
+  </div>
+
+  <!-- EVENTS DETAIL -->
+  <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Events &amp; Rules</div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px">Point structures and setup</div>
+  <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px">
+
+    <!-- Event 1 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);background:rgba(109,43,159,0.1);padding:3px 8px;border-radius:10px">Event 1</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Hungry Hungry Hippos</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">Teams (MOUNTS format) compete around the center volleyball court. Scooters, gator balls, buckets, cones, cardboard, and a 4-minute timer. One grade level at a time. 6–8 participants per homeroom.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">Points: 1 point per ball collected</div>
+    </div>
+
+    <!-- Event 2 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);background:rgba(109,43,159,0.1);padding:3px 8px;border-radius:10px">Event 2</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Teacher Pop Darts</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">One teacher per team throws from the purple bleacher side toward the basketball key. Target faces the crowd. Floor must be mopped before event. Each team gets 2 attempts. 1 teacher per team, one grade level at a time.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">Points: 10 / 8 / 6 / 4 / 2 / 1 per standing dart. Grade level winner earns 5 bonus points.</div>
+    </div>
+
+    <!-- Event 3 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);background:rgba(109,43,159,0.1);padding:3px 8px;border-radius:10px">Event 3</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Noodle Knockdown</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">1 contestant per homeroom. Players balance a cup on the end of a pool noodle and try to knock opponents' cups off. Players may only contact opponents' noodle or cup — no body contact. Only the noodle should be used (no hands or body). Each player competes in a small group and must win to advance. The grade-level winners from 7th and 8th grade face off in the center circle.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">Points: Round 1 eliminated = 2 pts · Round 2 eliminated = 5 pts · Runner-up = 8 pts · Final winner = 12 pts</div>
+    </div>
+
+    <!-- Event 4 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);background:rgba(109,43,159,0.1);padding:3px 8px;border-radius:10px">Event 4</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Ping Pong Ball Pass</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">6 contestants per homeroom. Teams pass ping pong balls cup-to-cup down the line and into a bucket. Players may only rotate or pivot while holding the ball in their cup — the ball must be passed, not dumped. Dropped balls restart at the beginning. 2-minute round, grade levels separate. Equipment: buckets, ping pong balls, cups, cones.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">Points: 1 point per ball in the bucket at end of round</div>
+    </div>
+
+    <!-- Event 5 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);background:rgba(109,43,159,0.1);padding:3px 8px;border-radius:10px">Event 5</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Pack It Up (Hold It Relay)</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">4 contestants per homeroom. Runners relay items one at a time to a designated "holder" at half court. Dropped items are lost. After time expires, the holder must keep all items secured for 10 additional seconds — only those items count. 2-minute round, one grade level at a time. Top 6 teams earn points. Equipment: random balls and objects.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">Points: 2 points per item held for 10 seconds after time</div>
+    </div>
+
+    <!-- Event 6 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);background:rgba(109,43,159,0.1);padding:3px 8px;border-radius:10px">Event 6</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Tower Toss</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">Relay-style. Boxes on the volleyball sideline. 6 participants per squad (3 from 7th, 3 from 8th). 7 boxes per squad marked with colored tape. Cap time of 6 minutes.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">Points: First to complete = 50 pts · Completed within time = 25 pts</div>
+    </div>
+
+    <!-- Event 7 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);background:rgba(109,43,159,0.1);padding:3px 8px;border-radius:10px">Event 7</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Basketball Knockout</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">1 contestant per homeroom. Classic knockout — players must shoot from the 3-point line. If the player behind you makes their shot before you, you're eliminated. No interfering with other players. Each grade level runs their own game simultaneously at each end. Play continues until one player remains.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">Points: 7th — 15/12/10/9/8/7/6/5/4/3/2/1 by elimination order · 8th — same scale</div>
+    </div>
+
+    <!-- Sort It Right -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);background:rgba(109,43,159,0.1);padding:3px 8px;border-radius:10px">Filler · Teams</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Sort It Right</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">1 contestant per team (one from each MOUNTS team — M, O, U, N, T, S). Players sort mixed-color rings onto pegs so all matching colors end up on the same stick. Only one ring can move at a time. Players start with the same scrambled pattern — first 3 to finish earn points for their squad.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">Points: 1st = 10 pts · 2nd = 7 pts · 3rd = 5 pts</div>
+    </div>
+
+    <!-- Chuck a Chicken -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--gold-soft);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-soft);background:rgba(232,200,64,0.08);padding:3px 8px;border-radius:10px">Audience Filler · Homeroom</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Chuck a Chicken</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">1 contestant per homeroom. Between events, each homeroom rep stands and a rubber chicken is brought to them. They throw it from their bleacher location into a bucket on the floor. Must throw from where seated — cannot move closer. Must land in the bucket to count.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">Points: 10 pts per successful bucket landing</div>
+    </div>
+
+    <!-- Lucky Chance -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--gold-soft);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-soft);background:rgba(232,200,64,0.08);padding:3px 8px;border-radius:10px">Bonus · Squads</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Lucky Chance</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">Near the end of the event, squads spin for a Lucky Chance — teams can win up to 50 squad points based on the outcome. No individual contestant required; entire squads participate as a group.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">Points: Win up to 50 squad points</div>
+    </div>
+  </div>
+
+  <!-- EXPECTATIONS -->
+  <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Expectations</div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px">For all participants and audience members</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:32px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple-lt);border-radius:10px;padding:18px">
+      <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--purple-lt);margin-bottom:10px">👥 Audience</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.8" id="mayhemAudienceExpect">Stay in your designated seating area · Support classmates with positive cheering — be loud but not screaming · Leave all personal items in homeroom (backpacks, phones, water bottles — except medical) · Get permission before leaving for restroom or water</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid #4ade80;border-radius:10px;padding:18px">
+      <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:#4ade80;margin-bottom:10px">🏃 Participants</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.8" id="mayhemParticipantExpect">When your event is "Up Next," report to the On-Deck Area · Participate with good sportsmanship — play honest and fair (Honesty, Integrity &amp; Responsibility — LRG Dispositions) · After each event, report to your high school helper/score keeper</div>
+    </div>
+  </div>
+
+  <!-- HOMEROOM RESULTS TABLE -->
+  <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Homeroom Results</div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px">Final scores by homeroom — room numbers only</div>
+
+  <!-- 7th Grade -->
+  <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--purple-lt);margin-bottom:10px">7th Grade Homerooms</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:600px">
+      <thead>
+        <tr style="background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border)">
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 14px;text-align:left">Room</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Hippos</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Darts</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Noodle</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Ping Pong</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Pack Up</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Sort</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Bball</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Bonus</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-soft);padding:10px 14px;text-align:center">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);background:rgba(255,225,0,0.04)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--gold-soft)">Room 71 🥈</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">21</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">12</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">5</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">6</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">18</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">10</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">12</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">84</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 72</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">21</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">12</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">12</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">10</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">1</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">58</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 73</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">21</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">12</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">14</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">10</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">10</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">10</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">79</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 74</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">21</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">12</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">19</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">10</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">4</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">68</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 75</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">20</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">7</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">3</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">20</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">3</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">18</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">73</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 76</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">20</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">7</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">8</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">16</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">3</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">6</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">60</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 77</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">20</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">7</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">17</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">3</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">3</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">52</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 78</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">20</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">7</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">12</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">17</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">3</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">5</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">66</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 96</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">20</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">12</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">13</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">5</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">9</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">61</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 97</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">20</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">12</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">5</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">8</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">5</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">52</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 98</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">20</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">12</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">18</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">5</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">8</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">65</td></tr>
+        <tr><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 99</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">20</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">12</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">6</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">15</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">5</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">7</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">10</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">67</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 8th Grade -->
+  <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--purple-lt);margin-bottom:10px">8th Grade Homerooms</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:32px;overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:600px">
+      <thead>
+        <tr style="background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border)">
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 14px;text-align:left">Room</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Hippos</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Darts</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Noodle</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Ping Pong</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Pack Up</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Sort</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Bball</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Bonus</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-soft);padding:10px 14px;text-align:center">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 81</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">9</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">9</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">6</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">12</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">10</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">1</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">49</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 82</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">9</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">9</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">5</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">24</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">14</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">10</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">7</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">78</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 83</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">9</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">9</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">27</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">12</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">10</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">8</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">50 (77*)</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 84</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">9</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">9</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">—</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">17</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">10</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">4</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">51</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 85</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">15</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">16</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">5</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">—</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">13</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">5</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">3</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">57</td></tr>
+        <tr style="border-bottom:1px solid var(--border);background:rgba(255,225,0,0.06)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--gold-soft)">Room 86 🏆</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">15</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">16</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">—</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">14</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">5</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">10</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">62 (89*)</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 87</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">15</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">6</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">3</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">16</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">5</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">12</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">59</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 88</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">15</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">6</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">3</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">13</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">5</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">6</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">50 (57*)</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 90</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">21</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">6</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">3</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">15</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">3</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">9</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">59</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 91</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">21</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">6</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">—</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">17</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">3</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">5</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">54 (57*)</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 93</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">21</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">6</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">—</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">7</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">3</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">2</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">10</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">51</td></tr>
+        <tr><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Room 94</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">21</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">6</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">12</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">—</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">10</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">3</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">15</td><td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">0</td><td style="padding:9px 14px;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft)">67</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:32px">* Scores marked with asterisk reflect totals from the original document that differed from event-by-event sum — shown as recorded.</div>
+
+  <!-- SIGN-UP INFO -->
+  <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Participation Guide</div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px">Number of participants per event</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:32px">
+    <div style="display:grid;grid-template-columns:1fr 100px 1fr;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border);padding:8px 16px">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Event</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Unit</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Participants</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 100px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-size:13px;color:var(--text)">Hungry Hungry Hippos</div><div style="font-size:12px;color:var(--text3)">Teams</div><div style="font-size:13px;color:var(--text2)">2 per homeroom = 8 per team</div></div>
+    <div style="display:grid;grid-template-columns:1fr 100px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-size:13px;color:var(--text)">Teacher Pop Darts</div><div style="font-size:12px;color:var(--text3)">Teams</div><div style="font-size:13px;color:var(--text2)">1 teacher per team</div></div>
+    <div style="display:grid;grid-template-columns:1fr 100px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-size:13px;color:var(--text)">Noodle Knockdown</div><div style="font-size:12px;color:var(--text3)">Homeroom</div><div style="font-size:13px;color:var(--text2)">6 per homeroom</div></div>
+    <div style="display:grid;grid-template-columns:1fr 100px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-size:13px;color:var(--text)">Ping Pong Ball Pass</div><div style="font-size:12px;color:var(--text3)">Homeroom</div><div style="font-size:13px;color:var(--text2)">6 per homeroom</div></div>
+    <div style="display:grid;grid-template-columns:1fr 100px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-size:13px;color:var(--text)">Pack It Up</div><div style="font-size:12px;color:var(--text3)">Homeroom</div><div style="font-size:13px;color:var(--text2)">4 per homeroom</div></div>
+    <div style="display:grid;grid-template-columns:1fr 100px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-size:13px;color:var(--text)">Tower Toss</div><div style="font-size:12px;color:var(--text3)">Squad</div><div style="font-size:13px;color:var(--text2)">6 per squad (3× 7th, 3× 8th)</div></div>
+    <div style="display:grid;grid-template-columns:1fr 100px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-size:13px;color:var(--text)">Basketball Knockout</div><div style="font-size:12px;color:var(--text3)">Homeroom</div><div style="font-size:13px;color:var(--text2)">1 per homeroom</div></div>
+    <div style="display:grid;grid-template-columns:1fr 100px 1fr;padding:9px 16px;border-bottom:1px solid var(--border)"><div style="font-size:13px;color:var(--text)">Sort it Right (filler)</div><div style="font-size:12px;color:var(--text3)">Teams</div><div style="font-size:13px;color:var(--text2)">1 per team</div></div>
+    <div style="display:grid;grid-template-columns:1fr 100px 1fr;padding:9px 16px"><div style="font-size:13px;color:var(--text)">Chuck a Chicken (bonus)</div><div style="font-size:12px;color:var(--text3)">Homeroom</div><div style="font-size:13px;color:var(--text2)">1 per homeroom — selected homeroom drawn by lot</div></div>
+  </div>
+
+  <!-- PHOTO GALLERY -->
+  <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">📸 Mayhem Photos</div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px" id="mayhemPhotoLabel">Photos from Mountaineer Mayhem 2026</div>
+  <div id="mayhemPhotoGallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:32px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px;font-family:'DM Mono',monospace">No photos yet</div>
+  </div>
+
+  <div class="link-card" id="mayhemLinks">
+    <div class="link-card-title">🔗 Resources &amp; Links</div>
+    <div style="color:var(--text3);font-size:13px">Add links via the admin panel.</div>
   </div>
 </div>
 
 <!-- CHAMPIONSHIPS -->
 <div class="page" id="page-champs">
-  <div class="page-hero">
-    <h1 class="page-title">CoC <span>Championships</span></h1>
-    <div class="page-subtitle" id="champsSubtitle">End-of-year championship event</div>
+  <div class="page-hero" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
+    <div>
+      <h1 class="page-title">CoC <span>Championships</span></h1>
+      <div class="page-subtitle" id="champsSubtitle">End-of-year championship event</div>
+    </div>
+    <button class="btn btn-purple" onclick="requireAdmin(function(){openAdmin();aTab('champs');})">&#9998; Edit Page</button>
   </div>
-  <div class="content-page-layout">
-    <div class="content-body">
-      <div class="rich-text" id="champsBody">
-        <p>Welcome to the Clash of Classes Championships — add details about this event using the admin panel.</p>
+
+  <!-- WINNER BANNER -->
+  <div id="champsWinnerBanner" style="display:none;background:linear-gradient(135deg,rgba(255,225,0,0.15),rgba(109,43,159,0.15));border:2px solid var(--gold-soft);border-radius:14px;padding:24px 28px;margin-bottom:28px;text-align:center">
+    <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--gold-soft);margin-bottom:8px">🏆 CoC Championships Champion</div>
+    <div id="champsWinnerText" style="font-family:'Fraunces',serif;font-size:38px;font-weight:900;color:var(--gold-soft);line-height:1;margin-bottom:6px"></div>
+    <div id="champsWinnerNote" style="font-size:13px;color:var(--text2)"></div>
+  </div>
+
+  <!-- OVERVIEW CARDS -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:32px">
+    <div class="card card-accent" style="border-top:3px solid var(--purple)">
+      <div style="font-size:22px;margin-bottom:6px">📅</div>
+      <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--purple-lt);margin-bottom:4px">Date</div>
+      <div style="font-size:13px;color:var(--text2)" id="champsDate">June 3, 2025</div>
+    </div>
+    <div class="card card-accent" style="border-top:3px solid var(--gold-soft)">
+      <div style="font-size:22px;margin-bottom:6px">🏟</div>
+      <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:4px">Location</div>
+      <div style="font-size:13px;color:var(--text2)" id="champsLocation">Turf Field &amp; Outdoor Stations</div>
+    </div>
+    <div class="card card-accent" style="border-top:3px solid #4ade80">
+      <div style="font-size:22px;margin-bottom:6px">⚡</div>
+      <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:#4ade80;margin-bottom:4px">Format</div>
+      <div style="font-size:13px;color:var(--text2)" id="champsFormat">3 Stations + Kickball Tournament</div>
+    </div>
+  </div>
+
+  <!-- INTRO BODY -->
+  <div class="rich-text" id="champsBody" style="margin-bottom:28px"></div>
+
+  <!-- SCHEDULE SECTION -->
+  <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Day Schedule</div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px" id="champsSchedLabel">Full day overview by grade level</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px">
+    <!-- 8th Grade Schedule -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:12px;overflow:hidden">
+      <div style="background:rgba(109,43,159,0.1);padding:10px 16px;font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--purple-lt)">8th Grade</div>
+      <div style="padding:0">
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">7:50–8:30</div><div style="font-size:12px;color:var(--text2)">Extended Homeroom — review Pinball Dodgeball rules, sign up relay teams, plan kickball positions</div></div>
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">8:30–8:40</div><div style="font-size:12px;color:var(--text2)">Transition to outdoor stations</div></div>
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">8:40–10:50</div><div style="font-size:12px;color:var(--text2)">Stations rotation: Relay Races · Pinball Dodgeball · Fun Fair (snack, obstacle course, yard games)</div></div>
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">10:55–11:10</div><div style="font-size:12px;color:var(--text2)">Transition inside</div></div>
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">11:10–12:00</div><div style="font-size:12px;color:var(--text2)">Inside: BINGO (provided boards &amp; prizes)</div></div>
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">12:00–12:30</div><div style="font-size:12px;color:var(--text2)">Lunch</div></div>
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">12:40–12:50</div><div style="font-size:12px;color:var(--text2)">Transition to turf field</div></div>
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">12:55–2:35</div><div style="font-size:12px;color:var(--text2)">Kickball Tournament — turf field</div></div>
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">2:35–2:55</div><div style="font-size:12px;color:var(--text2)">Return inside for dismissal</div></div>
       </div>
     </div>
-    <div class="content-sidebar">
-      <div class="link-card" id="champsLinks">
-        <div class="link-card-title">🔗 Resources & Links</div>
-        <div style="color:var(--text3);font-size:13px">Add links via the admin panel.</div>
+    <!-- 7th Grade Schedule -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--gold-soft);border-radius:12px;overflow:hidden">
+      <div style="background:rgba(232,200,64,0.08);padding:10px 16px;font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft)">7th Grade</div>
+      <div style="padding:0">
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">7:50–8:30</div><div style="font-size:12px;color:var(--text2)">Extended Homeroom — review Pinball Dodgeball rules, sign up relay teams, plan kickball positions</div></div>
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">8:30–8:40</div><div style="font-size:12px;color:var(--text2)">Transition to turf field</div></div>
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">8:40–10:50</div><div style="font-size:12px;color:var(--text2)">Kickball Tournament — turf field (each team takes a corner)</div></div>
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">10:50–11:10</div><div style="font-size:12px;color:var(--text2)">Transition inside</div></div>
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">11:10–11:40</div><div style="font-size:12px;color:var(--text2)">Lunch</div></div>
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">11:45–12:30</div><div style="font-size:12px;color:var(--text2)">Inside: BINGO (provided boards &amp; prizes)</div></div>
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">12:40–12:50</div><div style="font-size:12px;color:var(--text2)">Transition to stations</div></div>
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">12:55–2:35</div><div style="font-size:12px;color:var(--text2)">Stations rotation: Relay Races · Pinball Dodgeball · Fun Fair</div></div>
+        <div style="display:grid;grid-template-columns:110px 1fr;padding:8px 16px"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">2:35–2:55</div><div style="font-size:12px;color:var(--text2)">Return inside for dismissal</div></div>
       </div>
     </div>
+  </div>
+
+  <!-- STATION ROTATIONS -->
+  <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Station Rotation Order</div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px">Each block is 40 minutes · Teams rotate through all 3 stations</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px;overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:500px">
+      <thead>
+        <tr style="background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border)">
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 14px;text-align:left">Team</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Block 1</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Block 2</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Block 3</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Team M</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Relay Races</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Pinball Dodgeball</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Fun Fair</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Team O</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Pinball Dodgeball</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Fun Fair</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Relay Races</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Team U</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Fun Fair</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Relay Races</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Pinball Dodgeball</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Team N</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Relay Races</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Pinball Dodgeball</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Fun Fair</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Team T</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Pinball Dodgeball</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Fun Fair</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Relay Races</td></tr>
+        <tr><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Team S</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Fun Fair</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Relay Races</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Pinball Dodgeball</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- EVENTS DETAIL -->
+  <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Events &amp; Rules</div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px">Full rules for each championship activity</div>
+  <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px">
+
+    <!-- Pinball Dodgeball -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);background:rgba(109,43,159,0.1);padding:3px 8px;border-radius:10px">Station 1 · Homeroom vs Homeroom</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Pinball Dodgeball</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px">Six cones with tennis balls are spaced across each team's end of the field. 8–12 sponge balls are placed on the center line. Homerooms compete against each other. First team to knock ALL of the opponent's tennis balls off the cones wins. If time runs out (10 min), the team with the most tennis balls still on their cones wins.</div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Rules</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.8">Only 1 player may guard each tennis ball · Hit opponents below the waist only (ducking = anywhere) · Players hit must sit out until a teammate catches a fly ball · Dropping the ball = considered hit · Can't cross the center line</div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">Location: Grassy area by the Ephrata Soccer Wall · Winners play winners · Losers play losers</div>
+    </div>
+
+    <!-- Relay Races -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);background:rgba(109,43,159,0.1);padding:3px 8px;border-radius:10px">Station 2 · Homeroom Teams</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Relay Races</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px">6 participants per homeroom per race. Each homeroom member should participate in at least one relay. Four relay types are run in rotation.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+          <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--purple-lt);margin-bottom:6px">🥄 Egg &amp; Spoon Race</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6">Race around the cone and pass the spoon and egg to the next person. Must keep the egg on the spoon without using your hand — drop it and you go back to start.</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+          <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--purple-lt);margin-bottom:6px">🤸 Wheelbarrow Race</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6">Pairs: one person holds the ankles, the other walks on their hands. Go to the cone, switch spots, come back. First team to the finish line wins.</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+          <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--purple-lt);margin-bottom:6px">🧩 Puzzle Relay</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6">Each player races to grab one puzzle piece from the bucket at the cone. Once all pieces are collected, the team works together to assemble the puzzle. First team to correctly complete it wins.</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+          <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--purple-lt);margin-bottom:6px">💧 H2O Haul</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6">One bucket is filled with water. Use a sponge to transfer water to the empty bucket at the finish line, then tag the next teammate. First team to reach the fill line wins.</div>
+        </div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">Location: Grass area before the track</div>
+    </div>
+
+    <!-- Kickball -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);background:rgba(109,43,159,0.1);padding:3px 8px;border-radius:10px">Main Event · Team Tournament</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Kickball Tournament</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px">Each team plays a homeroom-vs-homeroom tournament. Preliminary rounds determine the team champion — winners face winners, with the team championship final as the last game. Losers may play each other if a field is available. Turf field, each team takes a corner.</div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Key Rules</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.8">Pitchers pitch from the mound, slow/moderate speed, must accommodate kicker requests · All kicks by foot · Out = 3 strikes or 4 fouls · Ball may hit runners at shoulder and below · No leading off or stealing · No deliberate collision with defenders · Overthrow = runner may advance at own risk · Umpire rulings are final</div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">Location: Turf Field · Format: Preliminary rounds + Team Championship final</div>
+    </div>
+
+    <!-- Fun Fair -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--gold-soft);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-soft);background:rgba(232,200,64,0.08);padding:3px 8px;border-radius:10px">Station 3 · Whole Team</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Fun Fair</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">Each student gets a ticket when entering the Fun Fair area. Options include: snack &amp; drink, obstacle course, Gaga Pit, yard games, four-square, or any other open game.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">Location: Softball parking lot area</div>
+    </div>
+
+    <!-- BINGO -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--gold-soft);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-soft);background:rgba(232,200,64,0.08);padding:3px 8px;border-radius:10px">Inside Activity · All Homerooms</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">BINGO</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">Classroom BINGO using provided boards and prizes. Numbers are called using the linked caller tool. Takes place inside homeroom.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">8th Grade: 11:10–12:00 · 7th Grade: 11:45–12:30</div>
+    </div>
+
+  </div>
+
+  <!-- KICKBALL TOURNAMENT BRACKETS -->
+  <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Kickball Tournament Brackets</div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px">Preliminary round matchups — rooms only (no names)</div>
+
+  <!-- 7th Grade Kickball -->
+  <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--gold-soft);margin-bottom:10px">7th Grade Kickball (8:45–10:35 on turf)</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:500px">
+      <thead>
+        <tr style="background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border)">
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 14px;text-align:left">Team</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">8:45–9:15</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">9:25–9:55</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">10:05–10:35</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Team M</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Room 73 vs Room 72</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Room 74 vs Room 71</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Winner vs Winner</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Team O</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Room 78 vs Room 76</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Room 75 vs Room 77</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Winner vs Winner</td></tr>
+        <tr><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Team U</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Room 96 vs Room 98</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Room 97 vs Room 99</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Winner vs Winner</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 8th Grade Kickball -->
+  <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--purple-lt);margin-bottom:10px">8th Grade Kickball (12:55–2:35 on turf)</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:32px;overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:500px">
+      <thead>
+        <tr style="background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border)">
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 14px;text-align:left">Team</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">12:55–1:25</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">1:30–2:00</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">2:05–2:35</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Team N</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Homeroom A vs B</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Homeroom C vs D</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Winner vs Winner</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Team T</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Homeroom E vs F</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Homeroom G vs H</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Winner vs Winner</td></tr>
+        <tr><td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--purple-lt)">Team S</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Homeroom I vs J</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Homeroom K vs L</td><td style="padding:9px 8px;text-align:center;font-size:12px;color:var(--text2)">Winner vs Winner</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:32px" id="champsTableNote">8th grade homeroom bracket matchups are set by event coordinators — see your clipboard for specific assignments. Losers are welcome to play each other if a field is open.</div>
+
+  <!-- PHOTO GALLERY SECTION -->
+  <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">📸 Championship Photos</div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px" id="champsPhotoLabel">Photos from the championship event</div>
+  <div id="champsPhotoGallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:32px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px;font-family:'DM Mono',monospace">No photos yet</div>
+  </div>
+
+  <!-- LINKS -->
+  <div class="link-card" id="champsLinks">
+    <div class="link-card-title">🔗 Resources &amp; Links</div>
+    <div style="color:var(--text3);font-size:13px">Add links via the admin panel.</div>
+  </div>
+</div>
+
+<!-- KICKOFF -->
+<div class="page" id="page-kickoff">
+  <div class="page-hero" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
+    <div>
+      <h1 class="page-title">CoC <span>Kick Off</span></h1>
+      <div class="page-subtitle" id="kickoffSubtitle">Season kick-off event — October 23 Half Day</div>
+    </div>
+    <button class="btn btn-purple" onclick="requireAdmin(function(){openAdmin();aTab('kickoff');})">&#9998; Edit Page</button>
+  </div>
+
+  <!-- WINNER BANNER -->
+  <div id="kickoffWinnerBanner" style="display:none;background:linear-gradient(135deg,rgba(255,225,0,0.15),rgba(109,43,159,0.15));border:2px solid var(--gold-soft);border-radius:14px;padding:24px 28px;margin-bottom:28px;text-align:center">
+    <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--gold-soft);margin-bottom:8px">🏆 Kick Off Champion</div>
+    <div id="kickoffWinnerText" style="font-family:'Fraunces',serif;font-size:38px;font-weight:900;color:var(--gold-soft);line-height:1;margin-bottom:6px"></div>
+    <div id="kickoffWinnerNote" style="font-size:13px;color:var(--text2)"></div>
+  </div>
+
+  <!-- OVERVIEW CARDS -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:32px">
+    <div class="card card-accent" style="border-top:3px solid var(--purple)">
+      <div style="font-size:22px;margin-bottom:6px">📅</div>
+      <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--purple-lt);margin-bottom:4px">Date</div>
+      <div style="font-size:13px;color:var(--text2)" id="kickoffDate">October 23 — Half Day</div>
+    </div>
+    <div class="card card-accent" style="border-top:3px solid var(--gold-soft)">
+      <div style="font-size:22px;margin-bottom:6px">🏟</div>
+      <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:4px">Location</div>
+      <div style="font-size:13px;color:var(--text2)" id="kickoffLocation">Assembly + Color Squad Rooms</div>
+    </div>
+    <div class="card card-accent" style="border-top:3px solid #4ade80">
+      <div style="font-size:22px;margin-bottom:6px">⚡</div>
+      <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:#4ade80;margin-bottom:4px">Format</div>
+      <div style="font-size:13px;color:var(--text2)" id="kickoffFormat">Assembly + 3 Squad Activities</div>
+    </div>
+  </div>
+
+  <!-- INTRO BODY -->
+  <div class="rich-text" id="kickoffBody" style="margin-bottom:28px"></div>
+
+  <!-- SCHEDULE -->
+  <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Day Schedule</div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px" id="kickoffSchedLabel">October 23 — both grade levels</div>
+
+  <!-- DUAL SCHEDULE CARDS -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px">
+    <!-- 7th Grade -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--gold-soft);border-radius:12px;overflow:hidden">
+      <div style="background:rgba(232,200,64,0.08);padding:10px 16px;font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft)">7th Grade</div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">8:05–8:10</div><div style="font-size:12px;color:var(--text2)">Homeroom — submit attendance</div></div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">8:10–9:00</div><div style="font-size:12px;color:var(--text2)">Assembly — walk with homeroom, split into Color Squad seating</div></div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">9:05–9:10</div><div style="font-size:12px;color:var(--text2)">Return to homeroom to collect belongings</div></div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">9:11–9:14</div><div style="font-size:12px;color:var(--text2)">Transition to Color Squad rooms</div></div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">9:15–9:46</div><div style="font-size:12px;color:var(--text2)">Activity 1 — Human Bingo &amp; Line Up Challenges*</div></div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">9:50–10:20</div><div style="font-size:12px;color:var(--text2)">Lunch</div></div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">10:27–11:08</div><div style="font-size:12px;color:var(--text2)">Activity 2 — Scattergories</div></div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">11:08–11:49</div><div style="font-size:12px;color:var(--text2)">Activity 3 — Color Squad Trivia</div></div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">11:51–11:55</div><div style="font-size:12px;color:var(--text2)">Dismissal from Color Squad room</div></div>
+    </div>
+    <!-- 8th Grade -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:12px;overflow:hidden">
+      <div style="background:rgba(109,43,159,0.1);padding:10px 16px;font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--purple-lt)">8th Grade</div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">8:05–8:10</div><div style="font-size:12px;color:var(--text2)">Homeroom — submit attendance</div></div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">8:10–9:00</div><div style="font-size:12px;color:var(--text2)">Assembly — walk with homeroom, split into Color Squad seating</div></div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">9:05–9:10</div><div style="font-size:12px;color:var(--text2)">Return to homeroom to collect belongings</div></div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">9:11–9:14</div><div style="font-size:12px;color:var(--text2)">Transition to Color Squad rooms</div></div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">9:15–9:46</div><div style="font-size:12px;color:var(--text2)">Activity 1 — Human Bingo &amp; Line Up Challenges*</div></div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">9:48–10:28</div><div style="font-size:12px;color:var(--text2)">Activity 2 — Scattergories</div></div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">10:30–11:00</div><div style="font-size:12px;color:var(--text2)">Lunch</div></div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px;border-bottom:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt)">11:07–11:49</div><div style="font-size:12px;color:var(--text2)">Activity 3 — Color Squad Trivia</div></div>
+      <div style="display:grid;grid-template-columns:90px 1fr;padding:8px 16px"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-soft)">11:51–11:55</div><div style="font-size:12px;color:var(--text2)">Dismissal from Color Squad room</div></div>
+    </div>
+  </div>
+  <div style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:32px">* Activity 1 time may be shortened if the assembly runs long. If short on time, skip or shorten "What Changed?" or "Line Up Challenge #1".</div>
+
+  <!-- ACTIVITIES -->
+  <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Activities</div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px">Three squad activities — worksheets provided day-of</div>
+  <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px">
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);background:rgba(109,43,159,0.1);padding:3px 8px;border-radius:10px">Activity 1</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Human Bingo + What Changed? + Line Up Challenges</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">Students learn their teammates' names and get to know each other. Randomly seat students as they enter so they don't only sit with friends they already know. Hand out one Human Bingo worksheet per student — they must talk to teammates to fill in as many spaces as possible before the timer runs out. No passing papers; players must write the name of the teammate they speak with. The "What Changed?" and Line Up Challenges are follow-up activities — skip or shorten if time is tight.</div>
+      <div style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace">Also during Activity 1: count how many students are wearing their Color Squad t-shirt and submit via the T-shirt Google Form.</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);background:rgba(109,43,159,0.1);padding:3px 8px;border-radius:10px">Activity 2</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Scattergories</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">Split the Color Squad into six groups based on their placement in the Line Up Challenge. Give each group one copy of the Scattergories Recording Sheet. Use the linked slideshow to generate categories and play as many rounds as time allows. Keep score as you go.</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);background:rgba(109,43,159,0.1);padding:3px 8px;border-radius:10px">Activity 3</div>
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700">Color Squad Trivia</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">Split the Color Squad into six groups. Give each group one copy of the Trivia Recording Sheet. Students may only record answers in pen — teachers may not help. Four rounds, four questions per round, 30 seconds per question. Score at the end of each round. At the end, submit only the score from the highest-scoring team via the Trivia Google Form.</div>
+    </div>
+
+  </div>
+
+  <!-- COLOR SQUAD ROOM LOCATIONS -->
+  <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Color Squad Room Locations</div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px">Where each squad meets for activities — room numbers only</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:32px;overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:560px">
+      <thead>
+        <tr style="background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border)">
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 14px;text-align:left">Squad</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Team M</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Team O</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Team U</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Team N</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Team T</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px;text-align:center">Team S</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--sq-black)">⬛ Black</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 72</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 78</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 97</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 94</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 87</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 82</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--sq-gold)">🟡 Gold</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 74</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 77</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 98</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 93</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 86</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 81</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--sq-grey)">⬜ Grey</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 71</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 75</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 96</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 90</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 88</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 83</td>
+        </tr>
+        <tr>
+          <td style="padding:9px 14px;font-family:'Fraunces',serif;font-weight:700;color:var(--sq-purple)">🟣 Purple</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 73</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 76</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 99</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 91</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 85</td>
+          <td style="padding:9px 8px;text-align:center;font-size:13px;color:var(--text2)">Room 84</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:32px" id="kickoffTableNote">Posters in hallways will help students find their Color Squad room locations. Students dismiss from their Color Squad room at end of day.</div>
+
+  <!-- PHOTO GALLERY -->
+  <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">📸 Kick Off Photos</div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px" id="kickoffPhotoLabel">Photos from the Kick Off event</div>
+  <div id="kickoffPhotoGallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:32px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px;font-family:'DM Mono',monospace">No photos yet</div>
+  </div>
+
+  <div class="link-card" id="kickoffLinks">
+    <div class="link-card-title">🔗 Resources &amp; Links</div>
+    <div style="color:var(--text3);font-size:13px">Add links via the admin panel.</div>
   </div>
 </div>
 
@@ -1440,6 +2165,9 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <button class="a-tab on" onclick="aTab('points')">Points</button>
       <button class="a-tab" onclick="aTab('metrics')">Metrics</button>
       <button class="a-tab" onclick="aTab('pages')">Pages</button>
+      <button class="a-tab" onclick="aTab('mayhem')">⚡ Mayhem</button>
+      <button class="a-tab" onclick="aTab('champs')">🏆 Champs</button>
+      <button class="a-tab" onclick="aTab('kickoff')">🚀 Kick Off</button>
       <button class="a-tab" onclick="aTab('links')">Links</button>
       <button class="a-tab" onclick="aTab('gallery')">Gallery</button>
       <button class="a-tab" onclick="aTab('scores')">Scores</button>
@@ -1452,6 +2180,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <div class="fr"><label>Event / Category Name</label><input type="text" id="evtName" placeholder="e.g. April Trivia, Tug of War…"></div>
       <div class="g2">
         <div class="fr"><label>Type</label><select id="evtType"><option value="event">🏆 Competition / Event</option><option value="other">📌 Other</option></select></div>
+        <div class="fr"><label>Point Multiplier</label><select id="evtMultiplier"><option value="1">1× Normal</option><option value="2">2× Double Points</option><option value="3">3× Triple Points</option><option value="0.5">½× Half Points</option></select></div>
         <div class="fr"><label>Date</label><input type="date" id="evtDate"></div>
       </div>
       <div class="fr"><label>Points per Squad</label>
@@ -1531,6 +2260,118 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <button class="btn-submit" onclick="savePageContent()">Save</button>
     </div>
 
+
+    <!-- MAYHEM EDITOR (dedicated shortcut tab) -->
+    <div class="a-panel" id="ap-mayhem">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-soft);margin-bottom:12px;background:rgba(255,225,0,0.08);padding:8px 12px;border-radius:6px">⚡ Mountaineer Mayhem — Quick Edit</div>
+      <div class="g2">
+        <div class="fr"><label>Page Subtitle</label><input type="text" id="peMayhemSub2" placeholder="Special events &amp; competitions — March 13"></div>
+        <div class="fr"><label>Schedule Label</label><input type="text" id="peMayhemSchedLabel2" placeholder="March 13 — both grade levels"></div>
+      </div>
+      <div class="g2">
+        <div class="fr"><label>Date Card</label><input type="text" id="peMayhemDate2" placeholder="March 13, 2026"></div>
+        <div class="fr"><label>Location Card</label><input type="text" id="peMayhemLocation2" placeholder="New Gymnasium"></div>
+      </div>
+      <div class="fr"><label>Events Count Card</label><input type="text" id="peMayhemEventCount2" placeholder="9 Competitions + Bonus"></div>
+      <div class="fr"><label>Intro Body Text</label><textarea id="peMayhemBody2" rows="3" placeholder="Welcome text for the Mayhem page..."></textarea></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin-bottom:10px">🏆 Winner Banner</div>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:10px">Leave winner blank to hide the banner.</p>
+        <div class="g2">
+          <div class="fr"><label>Winner (Room Number)</label><input type="text" id="peMayhemWinner2" placeholder="e.g. Room 86"></div>
+          <div class="fr"><label>Runner-Up (Room Number)</label><input type="text" id="peMayhemRunnerUp2" placeholder="e.g. Room 71"></div>
+        </div>
+        <div class="fr"><label>Winner Banner Note</label><input type="text" id="peMayhemWinnerNote2" placeholder="e.g. 🥈 Runner-Up: Room 71"></div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--purple-lt);margin-bottom:10px">👥 Expectations</div>
+        <div class="fr"><label>Audience Expectations</label><textarea id="peMayhemAudience2" rows="3" placeholder="Stay in designated seating area..."></textarea></div>
+        <div class="fr"><label>Participant Expectations</label><textarea id="peMayhemParticipant2" rows="3" placeholder="When your event is Up Next..."></textarea></div>
+      </div>
+      <div class="fr"><label>Score Table Footnote</label><input type="text" id="peMayhemTableNote2" placeholder="* Asterisk note..."></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin-bottom:10px">📸 Photo Gallery</div>
+        <div class="fr"><label>Gallery Label</label><input type="text" id="peMayhemPhotoLabel" placeholder="Photos from Mountaineer Mayhem 2026"></div>
+        <div class="fr"><label>Add Photo URL</label><input type="url" id="peMayhemPhotoUrl" placeholder="https://..."></div>
+        <div class="fr"><label>Photo Caption (optional)</label><input type="text" id="peMayhemPhotoCaption" placeholder="e.g. Noodle Knockdown finals"></div>
+        <button class="btn-submit" style="background:var(--surface2);color:var(--purple-lt);margin-bottom:8px" onclick="addPagePhoto('mayhem')">Add Photo</button>
+        <div id="mayhemPhotoList" style="margin-top:8px"></div>
+      </div>
+      <div class="fmsg" id="mayhemEditorOk">✓ Saved!</div>
+      <button class="btn-submit" onclick="saveMayhemContent()">Save Mayhem Page</button>
+    </div>
+
+
+    <!-- CHAMPS EDITOR (dedicated tab) -->
+    <div class="a-panel" id="ap-champs">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--purple-lt);margin-bottom:12px;background:rgba(109,43,159,0.08);padding:8px 12px;border-radius:6px">🏆 Championships Page — Quick Edit</div>
+      <div class="g2">
+        <div class="fr"><label>Page Subtitle</label><input type="text" id="peChampsSubQ" placeholder="End-of-year championship event"></div>
+        <div class="fr"><label>Schedule Label</label><input type="text" id="peChampsSchedLabel" placeholder="Full day overview by grade level"></div>
+      </div>
+      <div class="g2">
+        <div class="fr"><label>Date Card</label><input type="text" id="peChampsDateQ" placeholder="June 3, 2025"></div>
+        <div class="fr"><label>Location Card</label><input type="text" id="peChampsLocationQ" placeholder="Turf Field & Outdoor Stations"></div>
+      </div>
+      <div class="fr"><label>Format Card</label><input type="text" id="peChampsFormatQ" placeholder="3 Stations + Kickball Tournament"></div>
+      <div class="fr"><label>Intro Body Text</label><textarea id="peChampsBodyQ" rows="4" placeholder="Welcome text for the Championships page..."></textarea></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin-bottom:10px">🏆 Winner Banner</div>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:10px">Leave winner blank to hide the banner.</p>
+        <div class="g2">
+          <div class="fr"><label>Winner</label><input type="text" id="peChampsWinnerQ" placeholder="e.g. Gold Squad"></div>
+          <div class="fr"><label>Winner Note</label><input type="text" id="peChampsWinnerNoteQ" placeholder="e.g. Championship 2025"></div>
+        </div>
+      </div>
+      <div class="fr"><label>Table Footnote</label><input type="text" id="peChampsTableNoteQ" placeholder="Notes about brackets or matchups..."></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin-bottom:10px">📸 Photo Gallery</div>
+        <div class="fr"><label>Gallery Label</label><input type="text" id="peChampsPhotoLabel" placeholder="Photos from the championship event"></div>
+        <div class="fr"><label>Add Photo URL</label><input type="url" id="peChampsPhotoUrl" placeholder="https://..."></div>
+        <div class="fr"><label>Photo Caption (optional)</label><input type="text" id="peChampsPhotoCaption" placeholder="e.g. Kickball Finals"></div>
+        <button class="btn-submit" style="background:var(--surface2);color:var(--purple-lt);margin-bottom:8px" onclick="addPagePhoto('champs')">Add Photo</button>
+        <div id="champsPhotoList" style="margin-top:8px"></div>
+      </div>
+      <div class="fmsg" id="champsEditorOk">✓ Saved!</div>
+      <button class="btn-submit" onclick="saveChampsContent()">Save Championships Page</button>
+    </div>
+
+    <!-- KICKOFF EDITOR (dedicated tab) -->
+    <div class="a-panel" id="ap-kickoff">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-soft);margin-bottom:12px;background:rgba(255,225,0,0.08);padding:8px 12px;border-radius:6px">🚀 Kick Off Page — Quick Edit</div>
+      <div class="g2">
+        <div class="fr"><label>Page Subtitle</label><input type="text" id="peKickoffSub" placeholder="Season kick-off event"></div>
+        <div class="fr"><label>Schedule Label</label><input type="text" id="peKickoffSchedLabel" placeholder="Schedule details coming soon"></div>
+      </div>
+      <div class="g2">
+        <div class="fr"><label>Date Card</label><input type="text" id="peKickoffDate" placeholder="TBD"></div>
+        <div class="fr"><label>Location Card</label><input type="text" id="peKickoffLocation" placeholder="TBD"></div>
+      </div>
+      <div class="fr"><label>Format Card</label><input type="text" id="peKickoffFormat" placeholder="TBD"></div>
+      <div class="fr"><label>Intro Body Text</label><textarea id="peKickoffBody" rows="4" placeholder="Welcome text for the Kick Off page..."></textarea></div>
+      <div class="fr"><label>Schedule Details</label><textarea id="peKickoffSchedule" rows="6" placeholder="Day schedule — use blank lines to separate sections..."></textarea></div>
+      <div class="fr"><label>Events &amp; Activities</label><textarea id="peKickoffEvents" rows="6" placeholder="Event descriptions..."></textarea></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin-bottom:10px">🏆 Winner Banner</div>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:10px">Leave winner blank to hide the banner.</p>
+        <div class="g2">
+          <div class="fr"><label>Winner</label><input type="text" id="peKickoffWinner" placeholder="e.g. Gold Squad"></div>
+          <div class="fr"><label>Winner Note</label><input type="text" id="peKickoffWinnerNote" placeholder="e.g. Kick Off 2025"></div>
+        </div>
+      </div>
+      <div class="fr"><label>Room Locations Table Footnote</label><input type="text" id="peKickoffTableNote" placeholder="Posters in hallways will help students find their room..."></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin-bottom:10px">📸 Photo Gallery</div>
+        <div class="fr"><label>Gallery Label</label><input type="text" id="peKickoffPhotoLabel" placeholder="Photos from the Kick Off event"></div>
+        <div class="fr"><label>Add Photo URL</label><input type="url" id="peKickoffPhotoUrl" placeholder="https://..."></div>
+        <div class="fr"><label>Photo Caption (optional)</label><input type="text" id="peKickoffPhotoCaption" placeholder="e.g. Opening Ceremony"></div>
+        <button class="btn-submit" style="background:var(--surface2);color:var(--purple-lt);margin-bottom:8px" onclick="addPagePhoto('kickoff')">Add Photo</button>
+        <div id="kickoffPhotoList" style="margin-top:8px"></div>
+      </div>
+      <div class="fmsg" id="kickoffEditorOk">✓ Saved!</div>
+      <button class="btn-submit" onclick="saveKickoffContent()">Save Kick Off Page</button>
+    </div>
+
     <!-- LINKS -->
     <div class="a-panel" id="ap-links">
       <!-- Sub-tabs for link sections -->
@@ -1539,6 +2380,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         <button class="a-tab" onclick="lTab('wheel')">🎡 Wheel</button>
         <button class="a-tab" onclick="lTab('traitdough')">💵 Trait Dough</button>
         <button class="a-tab" onclick="lTab('sotm')">🌟 SotM</button>
+        <button class="a-tab" onclick="lTab('kickoff')">🚀 Kick Off</button>
         <button class="a-tab" onclick="lTab('mayhem')">⚡ Mayhem</button>
         <button class="a-tab" onclick="lTab('champs')">🏆 Champs</button>
       </div>
@@ -1579,6 +2421,13 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         <div class="fmsg" id="linkOk-mayhem">✓ Added!</div>
         <button class="btn-submit" onclick="addLinkSection('mayhem')">Add Link</button>
         <div style="margin-top:16px" id="linksList-mayhem"></div>
+      </div>
+      <div class="l-panel" id="lp-kickoff">
+        <div class="fr"><label>Link Label</label><input type="text" id="linkLabel-kickoff" placeholder="e.g. Kick Off Schedule"></div>
+        <div class="fr"><label>URL</label><input type="url" id="linkUrl-kickoff" placeholder="https://…"></div>
+        <div class="fmsg" id="linkOk-kickoff">✓ Added!</div>
+        <button class="btn-submit" onclick="addLinkSection('kickoff')">Add Link</button>
+        <div style="margin-top:16px" id="linksList-kickoff"></div>
       </div>
       <div class="l-panel" id="lp-champs">
         <div class="fr"><label>Link Label</label><input type="text" id="linkLabel-champs" placeholder="e.g. Championship Bracket"></div>
@@ -1642,6 +2491,32 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 
     <!-- SETTINGS -->
     <div class="a-panel" id="ap-settings">
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">🎨 Squad Colors</div>
+        <div class="g2">
+          <div class="fr"><label style="color:var(--sq-black)">Black</label><input type="color" id="sqColorBLACK" value="#c5c9d1" style="width:50px;height:36px;padding:2px;border-radius:6px;cursor:pointer"></div>
+          <div class="fr"><label style="color:var(--sq-gold)">Gold</label><input type="color" id="sqColorGOLD" value="#ffe100" style="width:50px;height:36px;padding:2px;border-radius:6px;cursor:pointer"></div>
+          <div class="fr"><label style="color:var(--sq-grey)">Grey</label><input type="color" id="sqColorGREY" value="#99a8bb" style="width:50px;height:36px;padding:2px;border-radius:6px;cursor:pointer"></div>
+          <div class="fr"><label style="color:var(--sq-purple)">Purple</label><input type="color" id="sqColorPURPLE" value="#bb8ef5" style="width:50px;height:36px;padding:2px;border-radius:6px;cursor:pointer"></div>
+        </div>
+        <div class="fmsg" id="sqColorOk">✓ Saved!</div>
+        <button class="btn-submit" onclick="saveSquadColors()">Save Colors</button>
+      </div>
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">🌈 Season Theme</div>
+        <div id="themeSwatches" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px"></div>
+        <div class="g2">
+          <div class="fr"><label>Custom Primary</label><input type="color" id="customThemePrimary" value="#6d2b9f" style="width:50px;height:36px;padding:2px;border-radius:6px;cursor:pointer"></div>
+          <div class="fr"><label>Custom Accent</label><input type="color" id="customThemeAccent" value="#e8c840" style="width:50px;height:36px;padding:2px;border-radius:6px;cursor:pointer"></div>
+        </div>
+        <div class="fmsg" id="themeOk">✓ Applied!</div>
+        <button class="btn-submit" onclick="saveCustomTheme()">Apply Custom Theme</button>
+      </div>
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">🏆 Trophy Certificate</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:10px">Generate a printable certificate for the current #1 squad.</p>
+        <button class="btn-submit" onclick="printCertificate()">🖨 Print Certificate</button>
+      </div>
       <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
         <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">🔻 Footer</div>
         <div class="fr"><label>Brand Line</label><input type="text" id="footerBrandInput" placeholder="Clash of Classes"></div>
@@ -1821,7 +2696,7 @@ window.toggleMode = function(){
     {id:'squads',icon:'👥',label:'Squads'},{id:'tracker',icon:'📊',label:'Tracker'},
     {id:'mindset',icon:'📚',label:'Mindset'},{id:'wheel',icon:'🎡',label:'Wheel'},
     {id:'traitdough',icon:'💵',label:'Trait Dough'},{id:'sotm',icon:'🌟',label:'Student of Month'},
-    {id:'mayhem',icon:'⚡',label:'Mayhem'},{id:'champs',icon:'🏆',label:'Champs'},
+    {id:'kickoff',icon:'🚀',label:'Kick Off'},{id:'mayhem',icon:'⚡',label:'Mayhem'},{id:'champs',icon:'🏆',label:'Champs'},
     {id:'gallery',icon:'📸',label:'Gallery'},{id:'staff',icon:'👤',label:'Staff'},
   ];
   var tabs=document.getElementById('navTabs');
@@ -1851,6 +2726,7 @@ const PAGES_DEF = [
   { id:'wheel',      icon:'🎡', label:'Wheel'          },
   { id:'traitdough', icon:'💵', label:'Trait Dough'    },
   { id:'sotm',       icon:'🌟', label:'Student of Month' },
+  { id:'kickoff',    icon:'🚀', label:'Kick Off'       },
   { id:'mayhem',     icon:'⚡', label:'Mayhem'         },
   { id:'champs',     icon:'🏆', label:'Champs'         },
   { id:'gallery',    icon:'📸', label:'Gallery'        },
@@ -1957,16 +2833,47 @@ const DEF = {
   events: SEED_EVENTS,
   metrics: { attendance:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, referral:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, grades:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, weekLabel:'' },
   gallery: { photos:[], quotes:[], spotlights:[], calendar:[] },
-  links: { mindset:[], wheel:[], traitdough:[], sotm:[], mayhem:[], champs:[] },
+  links: { mindset:[], wheel:[], traitdough:[], sotm:[], kickoff:[], mayhem:[], champs:[] },
+  photos: { mayhem:[], champs:[], kickoff:[] },
   pageContent: {
     homeDesc: 'One school. Four squads. A program built by EMS staff to develop Life Ready Graduate traits, build community, and have fun together every month.',
     pillar1: 'Each month we focus on a Life Ready Graduate skill — from Growth Mindset to Resilience. Students learn, reflect, and put these skills into real action through competitions and daily school life.',
     pillar2: 'Students and staff across 7th and 8th grade are mixed together into four color squads — Black, Gold, Grey, and Purple. Every event is a new chance to connect with people outside the classroom.',
     pillar3: 'From Mummy Wrap to Lip Sync Battles to Championship events — Clash of Classes brings real energy and joy to school. We believe school should be engaging, memorable, and something students look forward to.',
-    mayhemBody: 'Welcome to Mountaineer Mayhem — add details about this event using the admin panel.',
-    mayhemSubtitle: 'Special events & competitions',
-    champsBody: 'Welcome to the Clash of Classes Championships — add details about this event using the admin panel.',
+    mayhemBody: '',
+    mayhemSubtitle: 'Special events & competitions — March 13',
+    mayhemDate: 'March 13, 2026',
+    mayhemLocation: 'New Gymnasium',
+    mayhemEventCount: '9 Competitions + Bonus',
+    mayhemSchedLabel: 'March 13 — both grade levels',
+    mayhemWinner: 'Room 86',
+    mayhemRunnerUp: 'Room 71',
+    mayhemWinnerNote: '🥈 Runner-Up: Room 71',
+    mayhemAudienceExpect: 'Stay in your designated seating area · Support classmates with positive cheering — be loud but not screaming · Leave all personal items in homeroom · Get permission before leaving',
+    mayhemParticipantExpect: 'When your event is "Up Next," report to the On-Deck Area · Participate with good sportsmanship — play honest and fair · After each event, report to your high school helper/score keeper',
+    mayhemTableNote: '* Scores marked with asterisk reflect totals from the original document that differed from event-by-event sum — shown as recorded.',
+    champsBody: '',
     champsSubtitle: 'End-of-year championship event',
+    champsDate: 'June 3, 2025',
+    champsLocation: 'Turf Field & Outdoor Stations',
+    champsFormat: '3 Stations + Kickball Tournament',
+    champsSchedLabel: 'Full day overview by grade level',
+    champsWinner: '',
+    champsWinnerNote: '',
+    champsTableNote: '8th grade homeroom bracket matchups are set by event coordinators — see clipboard for specific assignments.',
+    champsPhotoLabel: 'Photos from the championship event',
+    kickoffSubtitle: 'Season kick-off event — October 23 Half Day',
+    kickoffDate: 'October 23 — Half Day',
+    kickoffLocation: 'Assembly + Color Squad Rooms',
+    kickoffFormat: 'Assembly + 3 Squad Activities',
+    kickoffSchedLabel: 'October 23 — both grade levels',
+    kickoffBody: '',
+    kickoffSchedule: '',
+    kickoffEvents: '',
+    kickoffWinner: '',
+    kickoffWinnerNote: '',
+    kickoffTableNote: 'Posters in hallways will help students find their Color Squad room locations. Students dismiss from their Color Squad room at end of day.',
+    kickoffPhotoLabel: 'Photos from the Kick Off event',
     mindsetBody: 'The Mountaineer Mindset program provides structured monthly lesson plans aligned with each month\'s LRG trait. Each plan is designed for classroom use and connects the Clash of Classes theme to academic and social-emotional learning.\n\nSelect a month and grade level below to access the lesson plan directly from Google Drive.',
   },
   history: [], password: 'ephrata2026', nextId: 100,
@@ -1980,6 +2887,10 @@ const DEF = {
   squadDesc: { BLACK:'', GOLD:'', GREY:'', PURPLE:'' },
   poll: { question:'', options:[], votes:{}, active:false },
   announcement: '',
+  squadColors: { BLACK:'#c5c9d1', GOLD:'#ffe100', GREY:'#99a8bb', PURPLE:'#bb8ef5' },
+  eventMultipliers: {},
+  seasonTheme: { primary:'#6d2b9f', accent:'#ffe100', name:'Default' },
+  traitsDone: [],
   weekChallenge: { title:'', body:'', active:false },
   traitSpotlights: [],
   tvCustomSlide: { active:false, image:'', message:'' },
@@ -2062,6 +2973,13 @@ onValue(DB,(snap)=>{
     ['photos','quotes','spotlights','calendar'].forEach(k=>{ if(!Array.isArray(D.gallery[k])) D.gallery[k]=[]; });
     if(!D.links) D.links={mindset:[],mayhem:[],champs:[]};
     if(!D.announcement) D.announcement='';
+    if(!D.squadColors) D.squadColors={BLACK:'#c5c9d1',GOLD:'#ffe100',GREY:'#99a8bb',PURPLE:'#bb8ef5'};
+    if(!D.eventMultipliers) D.eventMultipliers={};
+    if(!D.seasonTheme) D.seasonTheme={primary:'#6d2b9f',accent:'#ffe100',name:'Default'};
+    if(!Array.isArray(D.traitsDone)) D.traitsDone=[];
+    // Apply custom squad colors
+    Object.keys(D.squadColors).forEach(function(sq){ SQ_HEX[sq]=D.squadColors[sq]; });
+    applySeasonTheme(D.seasonTheme);
     if(!D.weekChallenge) D.weekChallenge={title:'',body:'',active:false};
     if(!Array.isArray(D.traitSpotlights)) D.traitSpotlights=[];
     if(!D.tvCustomSlide) D.tvCustomSlide={active:false,image:'',message:''};
@@ -2084,7 +3002,9 @@ onValue(DB,(snap)=>{
     if(!Array.isArray(D.staffLinks)) D.staffLinks=[];
     if(!D.sotmData) D.sotmData=JSON.parse(JSON.stringify(DEF.sotmData));
     if(!Array.isArray(D.sotmData.partners)) D.sotmData.partners=DEF.sotmData.partners.slice();
-    ['mindset','wheel','traitdough','sotm','mayhem','champs'].forEach(k=>{ if(!Array.isArray(D.links[k])) D.links[k]=[]; });
+    ['mindset','wheel','traitdough','sotm','kickoff','mayhem','champs'].forEach(k=>{ if(!Array.isArray(D.links[k])) D.links[k]=[]; });
+  if(!D.photos) D.photos={};
+  ['mayhem','champs','kickoff'].forEach(k=>{ if(!Array.isArray(D.photos[k])) D.photos[k]=[]; });
     if(D.links.wheel.length===0){D.links.wheel=[{label:'Wheel Demo Video',url:'https://drive.google.com/file/d/1cPO_FGUmweW91kBiQ5rmHOuN-jREN7jQ/view?usp=sharing',id:1},{label:'Wheel Presentation',url:'https://docs.google.com/presentation/d/1GV3jLRh4v_-bLNgHiTio-yk7yyVCv_BFnm7k3DNjLxc/edit?usp=sharing',id:2}];}
     if(!D.pageContent) D.pageContent={...DEF.pageContent};
     Object.keys(DEF.pageContent).forEach(k=>{ if(!D.pageContent[k]) D.pageContent[k]=DEF.pageContent[k]; });
@@ -2145,17 +3065,18 @@ function goTo(id){
   document.querySelectorAll('.mob-tab').forEach(t=>t.classList.toggle('active',t.id==='mobtab-'+id));
   window.scrollTo(0,0);
   // Page-specific renders — every page gets its render called
-  if(id==='trait')            renderTrait();
+  if(id==='trait'){ renderTrait(); renderTraitTracker(); }
   else if(id==='mindset')     renderMindset();
   else if(id==='mayhem')      renderMayhem();
   else if(id==='champs')      renderChamps();
+  else if(id==='kickoff')     renderKickoff();
   else if(id==='wheel')       renderWheel();
   else if(id==='traitdough')  renderTraitDough();
   else if(id==='sotm')        renderSotm();
   else if(id==='squads')      renderSquads();
   else if(id==='gallery')     renderGallery();
   else if(id==='tracker'){ renderStrip(); renderTable(); renderMetrics(); renderTimeline(); renderSnapshots(); renderPoll(); renderCatChart(); renderSeasonCal(); }
-  else if(id==='home'){ renderMini(); renderHomeText(); renderTraitPillar(); renderCountdown(); renderAnnouncement(); }
+  else if(id==='home'){ renderMini(); renderHomeText(); renderTraitPillar(); renderCountdown(); renderAnnouncement(); renderHeroStrip(); }
   else if(id==='staff'){ renderStaffLinks(); }
   else if(id.startsWith('squad-')){ renderSquadDetail(id.replace('squad-','')); }
 }
@@ -2581,6 +3502,213 @@ function getTVSlideCount(){
   return 3+(D.tvCustomSlide&&D.tvCustomSlide.active?1:0);
 }
 
+// ══ APPLY SEASON THEME ══
+function applySeasonTheme(theme){
+  if(!theme||!theme.primary) return;
+  document.documentElement.style.setProperty('--purple', theme.primary);
+  var r=parseInt(theme.primary.slice(1,3),16);
+  var g=parseInt(theme.primary.slice(3,5),16);
+  var b=parseInt(theme.primary.slice(5,7),16);
+  document.documentElement.style.setProperty('--purple-lt',
+    'rgb('+Math.min(255,r+50)+','+Math.min(255,g+50)+','+Math.min(255,b+50)+')');
+  document.documentElement.style.setProperty('--purple-dim',
+    'rgba('+r+','+g+','+b+',0.15)');
+  if(theme.accent) document.documentElement.style.setProperty('--gold-soft', theme.accent);
+}
+
+// ══ HERO SCORE STRIP ══
+function renderHeroStrip(){
+  var el=document.getElementById('heroScoreStrip'); if(!el) return;
+  var r=ranked(), mx=maxGrand();
+  el.innerHTML=r.map(function(sq,i){
+    return '<div class="hero-sq-card'+(i===0?' rank-1':'')+'">'
+      +'<div class="hero-sq-rank">'+(i===0?'👑 ':'')+'#'+(i+1)+'</div>'
+      +'<div class="hero-sq-num" style="color:'+SQ_HEX[sq]+'">'+grand(sq).toLocaleString()+'</div>'
+      +'<div class="hero-sq-lbl" style="color:'+SQ_HEX[sq]+'">'+sq+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+// ══ MILESTONE CHECK ══
+var _milestoneSeen={};
+function checkMilestone(){
+  SQUADS.forEach(function(sq){
+    var pts=grand(sq);
+    var milestones=[100,250,500,750,1000,1500,2000,2500,3000];
+    milestones.forEach(function(m){
+      var key=sq+'-'+m;
+      if(pts>=m && !_milestoneSeen[key]){
+        _milestoneSeen[key]=true;
+        if(pts<m+50) showMilestoneBanner(sq+' Squad hits '+m.toLocaleString()+' pts! 🎉');
+      }
+    });
+  });
+}
+function showMilestoneBanner(msg){
+  var el=document.getElementById('milestoneBanner'); if(!el) return;
+  el.textContent=msg;
+  el.classList.add('show');
+  setTimeout(function(){ el.classList.remove('show'); }, 3500);
+}
+
+// ══ TRAIT COMPLETION TRACKER ══
+function renderTraitTracker(){
+  var el=document.getElementById('traitTrackerSection'); if(!el) return;
+  var curMonth=new Date().toLocaleString('en-US',{month:'long'});
+  var done=D.traitsDone||[];
+  var container=document.createElement('div');
+  var hdr=document.createElement('div'); hdr.style.marginBottom='16px';
+  var h=document.createElement('div'); h.style.cssText='font-family:Fraunces,serif;font-size:18px;font-weight:700;margin-bottom:4px'; h.textContent='Trait Progress';
+  var sub=document.createElement('div'); sub.style.cssText='font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)';
+  sub.textContent=done.length+' of 9 traits completed';
+  hdr.appendChild(h); hdr.appendChild(sub); container.appendChild(hdr);
+  var grid=document.createElement('div'); grid.className='trait-tracker';
+  TRAITS.forEach(function(t){
+    var isDone=done.includes(t.month);
+    var isCurrent=t.month===curMonth;
+    var card=document.createElement('div');
+    card.className='trait-track-card'+(isDone?' done':isCurrent?' current':'');
+    var icon=document.createElement('div'); icon.className='trait-track-icon'; icon.textContent=isDone?'✅':isCurrent?'⭐':'○';
+    var info=document.createElement('div'); info.className='trait-track-info';
+    var mth=document.createElement('div'); mth.className='trait-track-month'; mth.textContent=t.month;
+    var nm=document.createElement('div'); nm.className='trait-track-name'; nm.textContent=t.trait;
+    var badge=document.createElement('span');
+    badge.className='trait-track-badge '+(isDone?'done':isCurrent?'current':'upcoming');
+    badge.textContent=isDone?'Complete':isCurrent?'Current':'Upcoming';
+    info.appendChild(mth); info.appendChild(nm); info.appendChild(badge);
+    card.appendChild(icon); card.appendChild(info);
+    if(!isDone){
+      var btn=document.createElement('button');
+      btn.textContent='Mark Done';
+      btn.style.cssText='background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:10px;padding:3px 7px;border-radius:4px;flex-shrink:0';
+      btn.onclick=(function(month){ return function(){ requireAdmin(function(){ markTraitDone(month); }); }; })(t.month);
+      card.appendChild(btn);
+    } else {
+      var ubtn=document.createElement('button');
+      ubtn.textContent='Unmark';
+      ubtn.style.cssText='background:none;border:none;color:var(--text3);cursor:pointer;font-size:9px;padding:2px 6px;border-radius:4px;flex-shrink:0;opacity:0.5';
+      ubtn.onclick=(function(month){ return function(){ requireAdmin(function(){ unmarkTraitDone(month); }); }; })(t.month);
+      card.appendChild(ubtn);
+    }
+    grid.appendChild(card);
+  });
+  container.appendChild(grid);
+  el.innerHTML=''; el.appendChild(container);
+}
+
+async function markTraitDone(month){
+  if(!Array.isArray(D.traitsDone)) D.traitsDone=[];
+  if(!D.traitsDone.includes(month)) D.traitsDone.push(month);
+  await save(); renderTraitTracker();
+}
+
+async function unmarkTraitDone(month){
+  if(!Array.isArray(D.traitsDone)) return;
+  D.traitsDone=D.traitsDone.filter(function(m){ return m!==month; });
+  await save(); renderTraitTracker();
+}
+
+// ══ UNDO LAST EVENT ══
+async function undoLastEvent(){
+  var events=D.events||[];
+  if(!events.length){ alert('No events to undo.'); return; }
+  var last=events[events.length-1];
+  if(!confirm('Undo "'+last.name+'"?')) return;
+  D.events.pop();
+  D.history.unshift({type:'undo',name:last.name,time:new Date().toISOString()});
+  logActivity('Undid event: '+last.name);
+  await save(); renderAll();
+}
+
+// ══ SQUAD COLOR CUSTOMIZER ══
+async function saveSquadColors(){
+  if(!D.squadColors) D.squadColors={};
+  SQUADS.forEach(function(sq){
+    var el=document.getElementById('sqColor'+sq);
+    if(el) D.squadColors[sq]=el.value;
+  });
+  // Apply immediately
+  Object.keys(D.squadColors).forEach(function(sq){ SQ_HEX[sq]=D.squadColors[sq]; });
+  logActivity('Updated squad colors');
+  await save(); flash('sqColorOk'); renderAll();
+}
+
+// ══ SEASON THEME ══
+var SEASON_THEMES=[
+  {name:'Default',      primary:'#6d2b9f', accent:'#e8c840'},
+  {name:'Championship', primary:'#b8960c', accent:'#e8c840'},
+  {name:'Spring',       primary:'#166534', accent:'#4ade80'},
+  {name:'Winter',       primary:'#1e3a5f', accent:'#93c5fd'},
+  {name:'Spirit Week',  primary:'#9d174d', accent:'#f9a8d4'},
+  {name:'Playoffs',     primary:'#7c2d12', accent:'#fb923c'},
+];
+
+async function applyThemePreset(idx){
+  var theme=SEASON_THEMES[idx];
+  D.seasonTheme=theme;
+  applySeasonTheme(theme);
+  logActivity('Changed season theme to: '+theme.name);
+  await save(); flash('themeOk');
+  renderSeasonThemeSwatches();
+}
+
+async function saveCustomTheme(){
+  var p=document.getElementById('customThemePrimary')?.value||'#6d2b9f';
+  var a=document.getElementById('customThemeAccent')?.value||'#e8c840';
+  D.seasonTheme={name:'Custom',primary:p,accent:a};
+  applySeasonTheme(D.seasonTheme);
+  logActivity('Applied custom season theme');
+  await save(); flash('themeOk');
+  renderSeasonThemeSwatches();
+}
+
+function renderSeasonThemeSwatches(){
+  var el=document.getElementById('themeSwatches'); if(!el) return;
+  var cur=(D.seasonTheme&&D.seasonTheme.name)||'Default';
+  el.innerHTML=SEASON_THEMES.map(function(t,i){
+    return '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="applyThemePreset('+i+')">'
+      +'<div class="season-theme-swatch'+(cur===t.name?' active':'')+'" style="background:'+t.primary+';border-color:'+(cur===t.name?'#fff':'var(--border)')+'"></div>'
+      +'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--text3);text-align:center">'+t.name+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+// ══ PRINT TROPHY CERTIFICATE ══
+function printCertificate(){
+  var r=ranked();
+  var winner=r[0];
+  var curMonth=new Date().toLocaleString('en-US',{month:'long',year:'numeric'});
+  var win=window.open('','_blank','');
+  win.document.write('<!DOCTYPE html><html><head><title>Clash of Classes — Certificate</title>'
+    +'<style>'
+    +'@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;1,900&family=DM+Sans:wght@400;600&display=swap");'
+    +'body{margin:0;padding:0;background:#fff;font-family:"DM Sans",sans-serif}'
+    +'.cert{width:850px;margin:40px auto;border:8px solid '+SQ_HEX[winner]+';border-radius:16px;padding:60px;text-align:center;position:relative}'
+    +'.cert-accent{height:12px;background:'+SQ_HEX[winner]+';margin:-60px -60px 48px}'
+    +'.cert-eyebrow{font-family:"DM Mono",monospace;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#999;margin-bottom:16px}'
+    +'.cert-title{font-family:"Fraunces",serif;font-size:56px;font-weight:900;color:'+SQ_HEX[winner]+';line-height:1;margin-bottom:8px}'
+    +'.cert-body{font-size:18px;color:#333;margin:20px 0;line-height:1.6}'
+    +'.cert-pts{font-family:"Fraunces",serif;font-size:40px;font-weight:700;color:'+SQ_HEX[winner]+'}'
+    +'.cert-footer{font-family:"DM Mono",monospace;font-size:11px;color:#ccc;margin-top:40px;letter-spacing:2px}'
+    +'button{margin-top:20px;padding:10px 24px;background:'+SQ_HEX[winner]+';color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer}'
+    +'@media print{button{display:none}}'
+    +'</style></head><body>'
+    +'<div class="cert">'
+    +'<div class="cert-accent"></div>'
+    +'<div class="cert-eyebrow">Ephrata Middle School · Clash of Classes</div>'
+    +'<div class="cert-title">🏆 '+winner+' Squad</div>'
+    +'<div style="font-family:Fraunces,serif;font-size:24px;font-style:italic;color:#666;margin:8px 0">Champions</div>'
+    +'<div class="cert-body">This certifies that <strong>'+winner+' Squad</strong> has earned the top position<br>in the Clash of Classes standings as of <strong>'+curMonth+'</strong>.</div>'
+    +'<div class="cert-pts">'+grand(winner).toLocaleString()+' points</div>'
+    +'<div style="margin:32px 0 16px;display:flex;justify-content:center;gap:24px">'
+    +r.map(function(sq,i){ return '<div><div style="font-weight:700;color:'+SQ_HEX[sq]+'">#'+(i+1)+' '+sq+'</div><div style="color:#999;font-size:14px">'+grand(sq).toLocaleString()+' pts</div></div>'; }).join('')
+    +'</div>'
+    +'<div class="cert-footer">clashofclasses.org · Printed '+new Date().toLocaleDateString()+'</div>'
+    +'</div><br><button onclick="window.print()">🖨 Print Certificate</button>'
+    +'</body></html>');
+  win.document.close();
+}
+
 function renderFooter(){
   const f=D.footer||DEF.footer||{};
   const brand=document.getElementById('footerBrand');
@@ -2735,7 +3863,9 @@ function renderAll(){
   renderGallery();
   renderHomeText();
   renderTraitBanner(); renderAnnouncement(); renderCountdown(); renderTally(); renderTimeline(); renderFooter();
-  renderNextEventBadge(); renderChallenge(); renderPotw(); renderTraitSpotlight(); checkConfetti(); renderCatChart(); renderSeasonCal();
+  renderNextEventBadge(); renderChallenge(); renderPotw(); renderTraitSpotlight();
+  checkConfetti(); checkMilestone(); renderCatChart(); renderSeasonCal();
+  renderHeroStrip(); renderTraitTracker();
   renderTraitPillar(); renderPoll(); renderStaffLinks(); renderSnapshots();
   document.getElementById('statEvents').textContent=(D.events||[]).length;
   document.getElementById('statWeek').textContent=D.metrics.weekLabel||'—';
@@ -2743,6 +3873,7 @@ function renderAll(){
   if(currentPage==='mindset') renderMindset();
   if(currentPage==='mayhem') renderMayhem();
   if(currentPage==='champs') renderChamps();
+  if(currentPage==='kickoff') renderKickoff();
   if(currentPage==='wheel') renderWheel();
   if(currentPage==='traitdough') renderTraitDough();
   if(currentPage==='sotm') renderSotm();
@@ -3193,10 +4324,225 @@ function renderMindset(){
 }
 
 // ── MAYHEM / CHAMPS ──
+
+
+
+// ── CHAMPS EDITOR ──
+function loadChampsEditor(){
+  const pc=D.pageContent||{};
+  const g2=function(id,val){ const el=document.getElementById(id); if(el) el.value=val||''; };
+  g2('peChampsSubQ', pc.champsSubtitle||DEF.pageContent.champsSubtitle);
+  g2('peChampsSchedLabel', pc.champsSchedLabel||'Full day overview by grade level');
+  g2('peChampsDateQ', pc.champsDate||'June 3, 2025');
+  g2('peChampsLocationQ', pc.champsLocation||'Turf Field & Outdoor Stations');
+  g2('peChampsFormatQ', pc.champsFormat||'3 Stations + Kickball Tournament');
+  g2('peChampsBodyQ', pc.champsBody||DEF.pageContent.champsBody);
+  g2('peChampsWinnerQ', pc.champsWinner||'');
+  g2('peChampsWinnerNoteQ', pc.champsWinnerNote||'');
+  g2('peChampsTableNoteQ', pc.champsTableNote||DEF.pageContent.champsTableNote);
+  g2('peChampsPhotoLabel', pc.champsPhotoLabel||'Photos from the championship event');
+  renderAdminPhotoList('champsPhotoList','champs');
+}
+
+async function saveChampsContent(){
+  if(!D.pageContent) D.pageContent={};
+  const g=function(id){ const el=document.getElementById(id); return el?el.value.trim():''; };
+  D.pageContent.champsSubtitle=g('peChampsSubQ')||D.pageContent.champsSubtitle;
+  D.pageContent.champsSchedLabel=g('peChampsSchedLabel')||D.pageContent.champsSchedLabel;
+  D.pageContent.champsDate=g('peChampsDateQ')||D.pageContent.champsDate;
+  D.pageContent.champsLocation=g('peChampsLocationQ')||D.pageContent.champsLocation;
+  D.pageContent.champsFormat=g('peChampsFormatQ')||D.pageContent.champsFormat;
+  D.pageContent.champsBody=g('peChampsBodyQ');
+  D.pageContent.champsWinner=g('peChampsWinnerQ');
+  D.pageContent.champsWinnerNote=g('peChampsWinnerNoteQ');
+  D.pageContent.champsTableNote=g('peChampsTableNoteQ');
+  D.pageContent.champsPhotoLabel=g('peChampsPhotoLabel');
+  await save();
+  const ok=document.getElementById('champsEditorOk');
+  if(ok){ ok.className='fmsg ok'; setTimeout(()=>ok.className='fmsg',2500); }
+  logActivity('Updated Championships page content');
+  renderChamps();
+}
+
+// ── KICKOFF EDITOR ──
+function loadKickoffEditor(){
+  const pc=D.pageContent||{};
+  const g2=function(id,val){ const el=document.getElementById(id); if(el) el.value=val||''; };
+  g2('peKickoffSub', pc.kickoffSubtitle||DEF.pageContent.kickoffSubtitle);
+  g2('peKickoffSchedLabel', pc.kickoffSchedLabel||'Schedule details coming soon');
+  g2('peKickoffDate', pc.kickoffDate||'TBD');
+  g2('peKickoffLocation', pc.kickoffLocation||'TBD');
+  g2('peKickoffFormat', pc.kickoffFormat||'TBD');
+  g2('peKickoffBody', pc.kickoffBody||'');
+  g2('peKickoffSchedule', pc.kickoffSchedule||'');
+  g2('peKickoffEvents', pc.kickoffEvents||'');
+  g2('peKickoffWinner', pc.kickoffWinner||'');
+  g2('peKickoffWinnerNote', pc.kickoffWinnerNote||'');
+  g2('peKickoffTableNote', pc.kickoffTableNote||DEF.pageContent.kickoffTableNote||'');
+  g2('peKickoffPhotoLabel', pc.kickoffPhotoLabel||'Photos from the Kick Off event');
+  renderAdminPhotoList('kickoffPhotoList','kickoff');
+}
+
+async function saveKickoffContent(){
+  if(!D.pageContent) D.pageContent={};
+  const g=function(id){ const el=document.getElementById(id); return el?el.value.trim():''; };
+  D.pageContent.kickoffSubtitle=g('peKickoffSub')||D.pageContent.kickoffSubtitle;
+  D.pageContent.kickoffSchedLabel=g('peKickoffSchedLabel')||D.pageContent.kickoffSchedLabel;
+  D.pageContent.kickoffDate=g('peKickoffDate')||D.pageContent.kickoffDate;
+  D.pageContent.kickoffLocation=g('peKickoffLocation')||D.pageContent.kickoffLocation;
+  D.pageContent.kickoffFormat=g('peKickoffFormat')||D.pageContent.kickoffFormat;
+  D.pageContent.kickoffBody=g('peKickoffBody');
+  D.pageContent.kickoffSchedule=g('peKickoffSchedule');
+  D.pageContent.kickoffEvents=g('peKickoffEvents');
+  D.pageContent.kickoffWinner=g('peKickoffWinner');
+  D.pageContent.kickoffWinnerNote=g('peKickoffWinnerNote');
+  D.pageContent.kickoffTableNote=g('peKickoffTableNote');
+  D.pageContent.kickoffPhotoLabel=g('peKickoffPhotoLabel');
+  await save();
+  const ok=document.getElementById('kickoffEditorOk');
+  if(ok){ ok.className='fmsg ok'; setTimeout(()=>ok.className='fmsg',2500); }
+  logActivity('Updated Kick Off page content');
+  renderKickoff();
+}
+
+// ── PHOTO MANAGEMENT ──
+async function addPagePhoto(section){
+  const urlEl=document.getElementById('pe'+section.charAt(0).toUpperCase()+section.slice(1)+'PhotoUrl');
+  const capEl=document.getElementById('pe'+section.charAt(0).toUpperCase()+section.slice(1)+'PhotoCaption');
+  if(!urlEl||!urlEl.value.trim()) return;
+  const url=urlEl.value.trim();
+  const caption=capEl?capEl.value.trim():'';
+  if(!D.photos) D.photos={};
+  if(!Array.isArray(D.photos[section])) D.photos[section]=[];
+  D.photos[section].push({url, caption, id:Date.now()});
+  urlEl.value=''; if(capEl) capEl.value='';
+  await save();
+  renderAdminPhotoList(section+'PhotoList', section);
+  if(section==='mayhem') renderMayhem();
+  if(section==='champs') renderChamps();
+  if(section==='kickoff') renderKickoff();
+  logActivity('Added photo to '+section);
+}
+
+async function removePagePhoto(section, idx){
+  if(!D.photos||!Array.isArray(D.photos[section])) return;
+  D.photos[section].splice(idx,1);
+  await save();
+  renderAdminPhotoList(section+'PhotoList', section);
+  if(section==='mayhem') renderMayhem();
+  if(section==='champs') renderChamps();
+  if(section==='kickoff') renderKickoff();
+}
+
+function renderAdminPhotoList(containerId, section){
+  const el=document.getElementById(containerId); if(!el) return;
+  const photos=(D.photos&&D.photos[section])||[];
+  if(!photos.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3)">No photos added yet.</div>'; return; }
+  el.innerHTML=photos.map((p,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <img src="${p.url}" style="width:40px;height:30px;object-fit:cover;border-radius:4px;flex-shrink:0">
+      <div style="flex:1;font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.caption||p.url}</div>
+      <button onclick="removePagePhoto('${section}',${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0;flex-shrink:0">×</button>
+    </div>`).join('');
+}
+
+// Also update Mayhem admin to include photo section
+// ── PHOTO GALLERY RENDERER ──
+function renderPhotoGallery(containerId, photos){
+  const el=document.getElementById(containerId); if(!el) return;
+  if(!photos||!photos.length){
+    el.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px;font-family:'DM Mono',monospace">No photos yet</div>';
+    return;
+  }
+  el.innerHTML=photos.map(p=>`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer" onclick="window.open('${p.url}','_blank')">
+      <img src="${p.url}" alt="${p.caption||''}" style="width:100%;aspect-ratio:4/3;object-fit:cover;display:block">
+      ${p.caption?`<div style="padding:8px 10px;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;border-top:1px solid var(--border)">${p.caption}</div>`:''}
+    </div>`).join('');
+}
+
+// ── MAYHEM EDITOR ──
+function loadMayhemEditor(){
+  const pc=D.pageContent||{};
+  const g2=function(id,val){ const el=document.getElementById(id); if(el) el.value=val||''; };
+  g2('peMayhemSub2', pc.mayhemSubtitle||DEF.pageContent.mayhemSubtitle);
+  g2('peMayhemSchedLabel2', pc.mayhemSchedLabel||'March 13 — both grade levels');
+  g2('peMayhemDate2', pc.mayhemDate||'March 13, 2026');
+  g2('peMayhemLocation2', pc.mayhemLocation||'New Gymnasium');
+  g2('peMayhemEventCount2', pc.mayhemEventCount||'9 Competitions + Bonus');
+  g2('peMayhemBody2', pc.mayhemBody||DEF.pageContent.mayhemBody);
+  g2('peMayhemWinner2', pc.mayhemWinner||'Room 86');
+  g2('peMayhemRunnerUp2', pc.mayhemRunnerUp||'Room 71');
+  g2('peMayhemWinnerNote2', pc.mayhemWinnerNote||'🥈 Runner-Up: Room 71');
+  g2('peMayhemAudience2', pc.mayhemAudienceExpect||'Stay in your designated seating area · Support classmates with positive cheering — be loud but not screaming · Leave all personal items in homeroom · Get permission before leaving');
+  g2('peMayhemParticipant2', pc.mayhemParticipantExpect||'When your event is "Up Next," report to the On-Deck Area · Participate with good sportsmanship — play honest and fair · After each event, report to your high school helper/score keeper');
+  g2('peMayhemTableNote2', pc.mayhemTableNote||'* Scores marked with asterisk reflect totals from the original document that differed from event-by-event sum — shown as recorded.');
+  g2('peMayhemPhotoLabel', pc.mayhemPhotoLabel||'Photos from Mountaineer Mayhem 2026');
+  renderAdminPhotoList('mayhemPhotoList','mayhem');
+}
+
+async function saveMayhemContent(){
+  if(!D.pageContent) D.pageContent={};
+  const g=function(id){ const el=document.getElementById(id); return el?el.value.trim():''; };
+  D.pageContent.mayhemSubtitle=g('peMayhemSub2')||D.pageContent.mayhemSubtitle;
+  D.pageContent.mayhemSchedLabel=g('peMayhemSchedLabel2')||D.pageContent.mayhemSchedLabel;
+  D.pageContent.mayhemDate=g('peMayhemDate2')||D.pageContent.mayhemDate;
+  D.pageContent.mayhemLocation=g('peMayhemLocation2')||D.pageContent.mayhemLocation;
+  D.pageContent.mayhemEventCount=g('peMayhemEventCount2')||D.pageContent.mayhemEventCount;
+  D.pageContent.mayhemBody=g('peMayhemBody2');
+  D.pageContent.mayhemWinner=g('peMayhemWinner2');
+  D.pageContent.mayhemRunnerUp=g('peMayhemRunnerUp2');
+  D.pageContent.mayhemWinnerNote=g('peMayhemWinnerNote2');
+  D.pageContent.mayhemAudienceExpect=g('peMayhemAudience2');
+  D.pageContent.mayhemParticipantExpect=g('peMayhemParticipant2');
+  D.pageContent.mayhemTableNote=g('peMayhemTableNote2');
+  await save();
+  const ok=document.getElementById('mayhemEditorOk');
+  if(ok){ ok.className='fmsg ok'; setTimeout(()=>ok.className='fmsg',2500); }
+  D.pageContent.mayhemPhotoLabel=g('peMayhemPhotoLabel')||D.pageContent.mayhemPhotoLabel;
+  logActivity('Updated Mayhem page content');
+  renderMayhem();
+}
+
 function renderMayhem(){
   const pc=D.pageContent||{};
+  // Subtitle & schedule label
   const sub=document.getElementById('mayhemSubtitle'); if(sub) sub.textContent=pc.mayhemSubtitle||DEF.pageContent.mayhemSubtitle;
-  const body=document.getElementById('mayhemBody'); if(body) body.innerHTML=`<p>${(pc.mayhemBody||DEF.pageContent.mayhemBody).replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
+  const sl=document.getElementById('mayhemSchedLabel'); if(sl) sl.textContent=pc.mayhemSchedLabel||'March 13 — both grade levels';
+  // Overview cards
+  const dateEl=document.getElementById('mayhemDate'); if(dateEl) dateEl.textContent=pc.mayhemDate||'March 13, 2026';
+  const locEl=document.getElementById('mayhemLocation'); if(locEl) locEl.textContent=pc.mayhemLocation||'New Gymnasium';
+  const cntEl=document.getElementById('mayhemEventCount'); if(cntEl) cntEl.textContent=pc.mayhemEventCount||'9 Competitions + Bonus';
+  // Body
+  const body=document.getElementById('mayhemBody');
+  if(body){
+    const bodyText=pc.mayhemBody||DEF.pageContent.mayhemBody;
+    body.innerHTML=bodyText?`<p>${bodyText.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`:'';
+  }
+  // Winner banner
+  const winner=pc.mayhemWinner||'Room 86';
+  const runnerUp=pc.mayhemRunnerUp||'Room 71';
+  const winnerNote=pc.mayhemWinnerNote||'🥈 Runner-Up: Room 71';
+  const banner=document.getElementById('mayhemWinnerBanner');
+  const winnerRoomEl=document.getElementById('mayhemWinnerRoom');
+  const winnerNoteEl=document.getElementById('mayhemWinnerNote');
+  if(banner){
+    banner.style.display=winner?'block':'none';
+    if(winnerRoomEl) winnerRoomEl.textContent=winner?'🏆 '+winner:'';
+    if(winnerNoteEl) winnerNoteEl.textContent=winnerNote||'';
+  }
+  // Expectations
+  const audEl=document.getElementById('mayhemAudienceExpect');
+  if(audEl&&pc.mayhemAudienceExpect) audEl.textContent=pc.mayhemAudienceExpect;
+  const parEl=document.getElementById('mayhemParticipantExpect');
+  if(parEl&&pc.mayhemParticipantExpect) parEl.textContent=pc.mayhemParticipantExpect;
+  // Table note
+  const noteEl=document.getElementById('mayhemTableNote');
+  if(noteEl&&pc.mayhemTableNote) noteEl.textContent=pc.mayhemTableNote;
+  // Photo label + gallery
+  const mpl=document.getElementById('mayhemPhotoLabel'); if(mpl&&pc.mayhemPhotoLabel) mpl.textContent=pc.mayhemPhotoLabel;
+  renderPhotoGallery('mayhemPhotoGallery', D.photos&&D.photos.mayhem);
+  // Links
   const links=D.links.mayhem||[];
   const el=document.getElementById('mayhemLinks');
   if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map((l,i)=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via the admin panel.</div>'}`;
@@ -3205,10 +4551,69 @@ function renderMayhem(){
 function renderChamps(){
   const pc=D.pageContent||{};
   const sub=document.getElementById('champsSubtitle'); if(sub) sub.textContent=pc.champsSubtitle||DEF.pageContent.champsSubtitle;
-  const body=document.getElementById('champsBody'); if(body) body.innerHTML=`<p>${(pc.champsBody||DEF.pageContent.champsBody).replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
+  const sl=document.getElementById('champsSchedLabel'); if(sl) sl.textContent=pc.champsSchedLabel||'Full day overview by grade level';
+  const dateEl=document.getElementById('champsDate'); if(dateEl) dateEl.textContent=pc.champsDate||'June 3, 2025';
+  const locEl=document.getElementById('champsLocation'); if(locEl) locEl.textContent=pc.champsLocation||'Turf Field & Outdoor Stations';
+  const fmtEl=document.getElementById('champsFormat'); if(fmtEl) fmtEl.textContent=pc.champsFormat||'3 Stations + Kickball Tournament';
+  const body=document.getElementById('champsBody');
+  if(body){
+    const bt=pc.champsBody||DEF.pageContent.champsBody;
+    body.innerHTML=bt?`<p>${bt.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`:'';
+  }
+  // Winner banner
+  const winner=pc.champsWinner||'';
+  const banner=document.getElementById('champsWinnerBanner');
+  if(banner){
+    banner.style.display=winner?'block':'none';
+    const wt=document.getElementById('champsWinnerText'); if(wt) wt.textContent=winner?'🏆 '+winner:'';
+    const wn=document.getElementById('champsWinnerNote'); if(wn) wn.textContent=pc.champsWinnerNote||'';
+  }
+  // Table note
+  const tn=document.getElementById('champsTableNote'); if(tn&&pc.champsTableNote) tn.textContent=pc.champsTableNote;
+  // Photo label
+  const pl=document.getElementById('champsPhotoLabel'); if(pl&&pc.champsPhotoLabel) pl.textContent=pc.champsPhotoLabel;
+  // Photo gallery
+  renderPhotoGallery('champsPhotoGallery', D.photos&&D.photos.champs);
+  // Links
   const links=D.links.champs||[];
   const el=document.getElementById('champsLinks');
-  if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map((l,i)=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via the admin panel.</div>'}`;
+  if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map(l=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via the admin panel.</div>'}`;
+}
+
+function renderKickoff(){
+  const pc=D.pageContent||{};
+  const sub=document.getElementById('kickoffSubtitle'); if(sub) sub.textContent=pc.kickoffSubtitle||DEF.pageContent.kickoffSubtitle;
+  const sl=document.getElementById('kickoffSchedLabel'); if(sl) sl.textContent=pc.kickoffSchedLabel||'Schedule details coming soon';
+  const dateEl=document.getElementById('kickoffDate'); if(dateEl) dateEl.textContent=pc.kickoffDate||'TBD';
+  const locEl=document.getElementById('kickoffLocation'); if(locEl) locEl.textContent=pc.kickoffLocation||'TBD';
+  const fmtEl=document.getElementById('kickoffFormat'); if(fmtEl) fmtEl.textContent=pc.kickoffFormat||'TBD';
+  const body=document.getElementById('kickoffBody');
+  if(body){
+    const bt=pc.kickoffBody||DEF.pageContent.kickoffBody;
+    body.innerHTML=bt?`<p>${bt.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`:'<p>Details for the Kick Off event will be added here. Use the admin panel to edit this page.</p>';
+  }
+  const schedBlock=document.getElementById('kickoffScheduleBlock');
+  if(schedBlock&&pc.kickoffSchedule) schedBlock.innerHTML=`<p>${pc.kickoffSchedule.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
+  const eventsBlock=document.getElementById('kickoffEventsBlock');
+  if(eventsBlock&&pc.kickoffEvents) eventsBlock.innerHTML=`<p>${pc.kickoffEvents.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
+  // Winner banner
+  const winner=pc.kickoffWinner||'';
+  const banner=document.getElementById('kickoffWinnerBanner');
+  if(banner){
+    banner.style.display=winner?'block':'none';
+    const wt=document.getElementById('kickoffWinnerText'); if(wt) wt.textContent=winner?'🏆 '+winner:'';
+    const wn=document.getElementById('kickoffWinnerNote'); if(wn) wn.textContent=pc.kickoffWinnerNote||'';
+  }
+  // Table note
+  const tn=document.getElementById('kickoffTableNote'); if(tn&&pc.kickoffTableNote) tn.textContent=pc.kickoffTableNote;
+  // Photo label
+  const pl=document.getElementById('kickoffPhotoLabel'); if(pl&&pc.kickoffPhotoLabel) pl.textContent=pc.kickoffPhotoLabel;
+  // Photo gallery
+  renderPhotoGallery('kickoffPhotoGallery', D.photos&&D.photos.kickoff);
+  // Links
+  const links=D.links.kickoff||[];
+  const el=document.getElementById('kickoffLinks');
+  if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map(l=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via the admin panel.</div>'}`;
 }
 
 function renderWheel(){
@@ -3324,11 +4729,15 @@ function gTab(t){
 async function addEvent(){
   const name=document.getElementById('evtName').value.trim(); if(!name) return;
   if(isDuplicateEvent(name) && !confirm('An event named "'+name+'" already exists. Add it anyway?')) return;
+  if(!D.nextId) D.nextId=100;
   const pts={}; SQUADS.forEach(sq=>pts[sq]=parseFloat(document.getElementById('pts'+sq).value)||0);
   if(!Array.isArray(D.events)) D.events=[];
-  D.events.push({id:D.nextId++,name,type:document.getElementById('evtType').value,date:document.getElementById('evtDate').value,note:document.getElementById('evtNote').value.trim(),pts});
-  D.history.unshift({type:'event',name,pts,time:new Date().toISOString()});
-  logActivity('Added event: '+name);
+  var multiplier=parseFloat(document.getElementById('evtMultiplier')?.value)||1;
+  var finalPts={}; SQUADS.forEach(function(sq){ finalPts[sq]=Math.round((pts[sq]||0)*multiplier); });
+  var evtName=name+(multiplier!==1?' ('+multiplier+'x)':'');
+  D.events.push({id:D.nextId++,name:evtName,type:document.getElementById('evtType').value,date:document.getElementById('evtDate').value,note:document.getElementById('evtNote').value.trim(),pts:finalPts,multiplier:multiplier});
+  D.history.unshift({type:'event',name:evtName,pts:finalPts,time:new Date().toISOString()});
+  logActivity('Added event: '+evtName+(multiplier!==1?' ['+multiplier+'x]':''));
   await save();
   flash('evtOk'); document.getElementById('evtName').value=''; document.getElementById('evtNote').value='';
   SQUADS.forEach(sq=>document.getElementById('pts'+sq).value=0);
@@ -3361,9 +4770,27 @@ async function savePageContent(){
   } else if(page==='mayhem'){
     D.pageContent.mayhemSubtitle=g('peMayhemSub');
     D.pageContent.mayhemBody=g('peMayhemBody');
+    D.pageContent.mayhemDate=g('peMayhemDate');
+    D.pageContent.mayhemLocation=g('peMayhemLocation');
+    D.pageContent.mayhemEventCount=g('peMayhemEventCount');
+    D.pageContent.mayhemSchedLabel=g('peMayhemSchedLabel');
+    D.pageContent.mayhemWinner=g('peMayhemWinner');
+    D.pageContent.mayhemRunnerUp=g('peMayhemRunnerUp');
+    D.pageContent.mayhemWinnerNote=g('peMayhemWinnerNote');
+    D.pageContent.mayhemAudienceExpect=g('peMayhemAudience');
+    D.pageContent.mayhemParticipantExpect=g('peMayhemParticipant');
+    D.pageContent.mayhemTableNote=g('peMayhemTableNote');
   } else if(page==='champs'){
     D.pageContent.champsSubtitle=g('peChampsSub');
     D.pageContent.champsBody=g('peChampsBody');
+    D.pageContent.champsDate=g('peChampsDate2');
+    D.pageContent.champsLocation=g('peChampsLocation2');
+    D.pageContent.champsFormat=g('peChampsFormat2');
+    D.pageContent.champsSchedLabel=g('peChampsSchedLabel2');
+    D.pageContent.champsWinner=g('peChampsWinner2');
+    D.pageContent.champsWinnerNote=g('peChampsWinnerNote2');
+    D.pageContent.champsTableNote=g('peChampsTableNote2');
+    D.pageContent.champsPhotoLabel=g('peChampsPhotoLabel2');
   } else if(page==='mindset'){
     D.pageContent.mindsetBody=g('peMindsetBody');
   } else if(page==='wheel'){
@@ -3457,12 +4884,51 @@ function pTab(page){
       <div class="fr"><textarea id="peSotmPartners" rows="12" style="font-family:'DM Mono',monospace;font-size:12px">${esc(partners)}</textarea></div>`;
   } else if(page==='mayhem'){
     f.innerHTML=`
-      <div class="fr"><label>Page Subtitle</label><input type="text" id="peMayhemSub" value="${esc(pc.mayhemSubtitle)}"></div>
-      <div class="fr"><label>Body Text</label><textarea id="peMayhemBody" rows="8">${esc(pc.mayhemBody)}</textarea></div>`;
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-soft);margin-bottom:12px;background:rgba(255,225,0,0.08);padding:8px 12px;border-radius:6px">⚡ Mayhem Page Editor — all fields editable</div>
+      <div class="g2">
+        <div class="fr"><label>Page Subtitle</label><input type="text" id="peMayhemSub" value="${esc(pc.mayhemSubtitle||DEF.pageContent.mayhemSubtitle)}"></div>
+        <div class="fr"><label>Schedule Label</label><input type="text" id="peMayhemSchedLabel" value="${esc(pc.mayhemSchedLabel||'March 13 — both grade levels')}"></div>
+      </div>
+      <div class="g2">
+        <div class="fr"><label>Date Card</label><input type="text" id="peMayhemDate" value="${esc(pc.mayhemDate||'March 13, 2026')}"></div>
+        <div class="fr"><label>Location Card</label><input type="text" id="peMayhemLocation" value="${esc(pc.mayhemLocation||'New Gymnasium')}"></div>
+      </div>
+      <div class="fr"><label>Events Count Card</label><input type="text" id="peMayhemEventCount" value="${esc(pc.mayhemEventCount||'9 Competitions + Bonus')}"></div>
+      <div class="fr"><label>Intro Body Text</label><textarea id="peMayhemBody" rows="4">${esc(pc.mayhemBody||DEF.pageContent.mayhemBody)}</textarea></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin-bottom:10px">🏆 Winner Banner</div>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:10px">Leave winner blank to hide the banner entirely.</p>
+        <div class="g2">
+          <div class="fr"><label>Winner (Room Number)</label><input type="text" id="peMayhemWinner" value="${esc(pc.mayhemWinner||'Room 86')}" placeholder="e.g. Room 86"></div>
+          <div class="fr"><label>Runner-Up (Room Number)</label><input type="text" id="peMayhemRunnerUp" value="${esc(pc.mayhemRunnerUp||'Room 71')}" placeholder="e.g. Room 71"></div>
+        </div>
+        <div class="fr"><label>Winner Banner Note</label><input type="text" id="peMayhemWinnerNote" value="${esc(pc.mayhemWinnerNote||'🥈 Runner-Up: Room 71')}" placeholder="e.g. 🥈 Runner-Up: Room 71"></div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--purple-lt);margin-bottom:10px">👥 Expectations</div>
+        <div class="fr"><label>Audience Expectations</label><textarea id="peMayhemAudience" rows="3">${esc(pc.mayhemAudienceExpect||'Stay in your designated seating area · Support classmates with positive cheering — be loud but not screaming · Leave all personal items in homeroom · Get permission before leaving')}</textarea></div>
+        <div class="fr"><label>Participant Expectations</label><textarea id="peMayhemParticipant" rows="3">${esc(pc.mayhemParticipantExpect||'When your event is "Up Next," report to the On-Deck Area · Participate with good sportsmanship — play honest and fair · After each event, report to your high school helper/score keeper')}</textarea></div>
+      </div>
+      <div class="fr"><label>Score Table Footnote</label><input type="text" id="peMayhemTableNote" value="${esc(pc.mayhemTableNote||'* Scores marked with asterisk reflect totals from the original document that differed from event-by-event sum — shown as recorded.')}"></div>`;
   } else if(page==='champs'){
     f.innerHTML=`
-      <div class="fr"><label>Page Subtitle</label><input type="text" id="peChampsSub" value="${esc(pc.champsSubtitle)}"></div>
-      <div class="fr"><label>Body Text</label><textarea id="peChampsBody" rows="8">${esc(pc.champsBody)}</textarea></div>`;
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--purple-lt);margin-bottom:12px;background:rgba(109,43,159,0.08);padding:8px 12px;border-radius:6px">🏆 Championships Page Editor</div>
+      <div class="g2">
+        <div class="fr"><label>Page Subtitle</label><input type="text" id="peChampsSub" value="${esc(pc.champsSubtitle||DEF.pageContent.champsSubtitle)}"></div>
+        <div class="fr"><label>Schedule Label</label><input type="text" id="peChampsSchedLabel2" value="${esc(pc.champsSchedLabel||'Full day overview by grade level')}"></div>
+      </div>
+      <div class="g2">
+        <div class="fr"><label>Date Card</label><input type="text" id="peChampsDate2" value="${esc(pc.champsDate||'June 3, 2025')}"></div>
+        <div class="fr"><label>Location Card</label><input type="text" id="peChampsLocation2" value="${esc(pc.champsLocation||'Turf Field & Outdoor Stations')}"></div>
+      </div>
+      <div class="fr"><label>Format Card</label><input type="text" id="peChampsFormat2" value="${esc(pc.champsFormat||'3 Stations + Kickball Tournament')}"></div>
+      <div class="fr"><label>Body Text</label><textarea id="peChampsBody" rows="5">${esc(pc.champsBody||DEF.pageContent.champsBody)}</textarea></div>
+      <div class="g2">
+        <div class="fr"><label>Winner (leave blank to hide banner)</label><input type="text" id="peChampsWinner2" value="${esc(pc.champsWinner||'')}"></div>
+        <div class="fr"><label>Winner Note</label><input type="text" id="peChampsWinnerNote2" value="${esc(pc.champsWinnerNote||'')}"></div>
+      </div>
+      <div class="fr"><label>Table Footnote</label><input type="text" id="peChampsTableNote2" value="${esc(pc.champsTableNote||DEF.pageContent.champsTableNote)}"></div>
+      <div class="fr"><label>Photo Gallery Label</label><input type="text" id="peChampsPhotoLabel2" value="${esc(pc.champsPhotoLabel||'Photos from the championship event')}"></div>`;
   } else if(page.startsWith('sq-')){
     const sq=page.replace('sq-','');
     const hex=SQ_HEX[sq];
@@ -3618,17 +5084,25 @@ function openAdmin(){ document.getElementById('adminModal').classList.add('open'
 function close1(id){ document.getElementById(id).classList.remove('open'); }
 
 function aTab(name){
-  const names=['points','metrics','pages','links','gallery','scores','history','settings'];
+  const names=['points','metrics','pages','mayhem','champs','kickoff','links','gallery','scores','history','settings'];
   document.querySelectorAll('#adminModal .a-tab').forEach((b,i)=>b.classList.toggle('on',names[i]===name));
   names.forEach(n=>{ const el=document.getElementById('ap-'+n); if(el) el.classList.toggle('on',n===name); });
   if(name==='scores') renderScoreSummary();
   if(name==='history'){ renderHistList(); renderActivityLog(); }
   if(name==='links'){ lTab('mindset'); }
   if(name==='pages'){ pTab(window._currentPageTab||'home'); }
+  if(name==='mayhem'){ loadMayhemEditor(); }
+  if(name==='champs'){ loadChampsEditor(); }
+  if(name==='kickoff'){ loadKickoffEditor(); }
   if(name==='settings'){
     const ai=document.getElementById('annInput'); if(ai) ai.value=D.announcement||'';
     const wc=D.weekChallenge||{};
     const tvs=D.tvCustomSlide||{};
+    const sqc=D.squadColors||DEF.squadColors||{};
+    SQUADS.forEach(function(sq){ const el=document.getElementById('sqColor'+sq); if(el) el.value=sqc[sq]||SQ_HEX[sq]; });
+    renderSeasonThemeSwatches();
+    const ctp=document.getElementById('customThemePrimary'); if(ctp) ctp.value=(D.seasonTheme&&D.seasonTheme.primary)||'#6d2b9f';
+    const cta=document.getElementById('customThemeAccent'); if(cta) cta.value=(D.seasonTheme&&D.seasonTheme.accent)||'#e8c840';
     const tvsImg=document.getElementById('tvSlideImg'); if(tvsImg) tvsImg.value=tvs.image||'';
     const tvsMsg=document.getElementById('tvSlideMsg'); if(tvsMsg) tvsMsg.value=tvs.message||'';
     const tvsAct=document.getElementById('tvSlideActive'); if(tvsAct) tvsAct.checked=tvs.active||false;
@@ -3760,7 +5234,7 @@ const GRADE_KEYS = ['7th','8th','ext'];
 const GRADE_LABELS = ['7th Grade','8th Grade','Extension'];
 
 function lTab(name){
-  const names=['mindset','wheel','traitdough','sotm','mayhem','champs'];
+  const names=['mindset','wheel','traitdough','sotm','kickoff','mayhem','champs'];
   document.querySelectorAll('#ap-links .a-tab').forEach((b,i)=>b.classList.toggle('on',names[i]===name));
   document.querySelectorAll('.l-panel').forEach(p=>p.classList.remove('on'));
   const el=document.getElementById('lp-'+name);
@@ -4002,6 +5476,7 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   goToSquad,renderSquadDetail,openSquadEditor,closeSquadEditor,addSquadBox,saveSquadPage,previewSquadImg,clearSquadImg,saveAnnouncement,saveCountdown,saveFooter,toggleMode,
   saveWeekChallenge,savePhotoOfWeek,copyPageUrl,showEmbedCode,copyEmbed,exportCSV,renderActivityLog,
   saveSpotlights,saveTVSlide,openTicker,closeTicker,openBulkEntry,addBulkRow,saveBulkEvents,
+  saveSquadColors,applyThemePreset,saveCustomTheme,printCertificate,undoLastEvent,markTraitDone,unmarkTraitDone,
   generateEmailDigest,copyEmailDigest,printSubGuide,showEventBreakdown,
   saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,saveHomeStats,
   renderWheel,renderTraitDough,renderSotm};
@@ -4022,6 +5497,7 @@ goTo(window.__currentPage || currentPage);
   </div>
 </div>
 
+<div id="milestoneBanner"></div>
 <canvas id="confettiCanvas" style="display:none"></canvas>
 </body>
 </html>
