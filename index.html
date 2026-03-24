@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-<!-- CoC v2.2 -->
+<!-- CoC v2.3 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Clash of Classes — Ephrata Middle School</title>
 <meta name="description" content="Clash of Classes is a squad competition program at Ephrata Middle School built around Life Ready Graduate traits, community, and fun. Track live standings, monthly traits, and events.">
@@ -72,6 +74,95 @@ body.light-mode {
   --text3:     #8a7a6a;
 }
 body.light-mode::before { display:none; }
+
+/* ── TICKER TAPE ── */
+#tickerView { position:fixed;inset:0;z-index:901;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;overflow:hidden; }
+#tickerView.active { display:flex; }
+.ticker-scores { display:flex;gap:0;width:100%;border-bottom:3px solid rgba(255,255,255,0.1); }
+.ticker-sq { flex:1;text-align:center;padding:20px 10px; }
+.ticker-sq-name { font-family:'DM Mono',monospace;font-size:18px;letter-spacing:6px;text-transform:uppercase; }
+.ticker-sq-pts { font-family:'Fraunces',serif;font-size:clamp(60px,10vw,120px);font-weight:900;line-height:1; }
+.ticker-sq-rank { font-family:'DM Mono',monospace;font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px; }
+.ticker-tape-wrap { width:100%;overflow:hidden;padding:28px 0;border-top:1px solid rgba(255,255,255,0.08); }
+.ticker-tape { display:flex;gap:0;animation:tickerScroll 30s linear infinite;white-space:nowrap;width:max-content; }
+@keyframes tickerScroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+.ticker-item { font-family:'Fraunces',serif;font-size:22px;font-weight:700;padding:0 48px;color:rgba(255,255,255,0.7); }
+.ticker-divider { font-family:'DM Mono',monospace;font-size:14px;color:rgba(255,255,255,0.2);padding:0 16px; }
+.ticker-trait { font-family:'DM Mono',monospace;font-size:13px;letter-spacing:4px;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:12px; }
+.ticker-countdown { font-family:'Fraunces',serif;font-size:clamp(28px,4vw,48px);font-weight:700;color:#4ade80;letter-spacing:2px; }
+.ticker-cd-label { font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:6px; }
+.ticker-exit { position:absolute;top:16px;right:20px;background:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.4);cursor:pointer;padding:8px 16px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px; }
+
+/* ── CATEGORY CHART ── */
+.cat-chart { background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px; }
+.cat-row { display:grid;grid-template-columns:140px 1fr 1fr 1fr 1fr;gap:8px;align-items:center;margin-bottom:8px; }
+.cat-lbl { font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3); }
+.cat-bar-wrap { height:28px;background:rgba(255,255,255,0.04);border-radius:4px;overflow:hidden;position:relative; }
+.cat-bar-fill { height:100%;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:#fff;transition:width 0.6s ease; }
+
+/* ── SEASON CALENDAR ── */
+.season-cal { background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden; }
+.cal-month-hdr { display:grid;grid-template-columns:repeat(7,1fr);background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border); }
+.cal-day-name { font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);text-align:center;padding:8px 0; }
+.cal-grid { display:grid;grid-template-columns:repeat(7,1fr); }
+.cal-cell { min-height:60px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:4px;position:relative; }
+.cal-cell-num { font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:2px; }
+.cal-cell-today { background:rgba(109,43,159,0.1); }
+.cal-event-dot { font-size:10px;font-weight:600;padding:1px 4px;border-radius:3px;margin-bottom:1px;color:#fff;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+
+/* ── PER-EVENT BREAKDOWN ── */
+.evt-breakdown { background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:12px; }
+.evt-bd-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px; }
+.evt-bd-card { text-align:center;padding:16px;background:var(--surface2);border-radius:10px;border-top:3px solid; }
+.evt-bd-pts { font-family:'Fraunces',serif;font-size:32px;font-weight:900; }
+.evt-bd-sq { font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-top:4px; }
+
+/* ── TRAIT SPOTLIGHT ── */
+.spotlight-card { background:linear-gradient(135deg,rgba(109,43,159,0.15),rgba(109,43,159,0.05));border:1px solid rgba(157,95,204,0.2);border-radius:12px;padding:24px;margin-bottom:28px; }
+.spotlight-quote { font-family:'Fraunces',serif;font-size:18px;font-style:italic;line-height:1.6;color:var(--text);margin-bottom:10px; }
+.spotlight-attr { font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--purple-lt); }
+
+/* ── CONFETTI ── */
+#confettiCanvas { position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999; }
+
+/* ── NEXT EVENT BADGE ── */
+.next-event-badge {
+  display:inline-flex; align-items:center; gap:8px;
+  background:var(--gold-dim); border:1px solid rgba(255,225,0,0.2);
+  border-radius:20px; padding:6px 14px; margin-top:12px;
+  font-family:'DM Mono',monospace; font-size:11px; letter-spacing:1px;
+  color:var(--gold-soft);
+}
+.next-event-badge .badge-dot { width:7px;height:7px;border-radius:50%;background:var(--gold-soft);animation:pulse 1.5s infinite; }
+
+/* ── WEEK CHALLENGE CARD ── */
+.challenge-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-left:4px solid var(--purple); border-radius:12px;
+  padding:20px 24px; margin-bottom:28px;
+}
+.challenge-label { font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);margin-bottom:6px; }
+.challenge-title { font-family:'Fraunces',serif;font-size:18px;font-weight:700;margin-bottom:4px; }
+.challenge-body { font-size:14px;color:var(--text2);line-height:1.6; }
+
+/* ── PHOTO OF THE WEEK ── */
+.potw-card {
+  border-radius:12px;overflow:hidden;margin-bottom:28px;
+  position:relative;background:var(--surface);border:1px solid var(--border);
+}
+.potw-img { width:100%;max-height:300px;object-fit:cover;display:block; }
+.potw-caption { padding:12px 16px;font-size:13px;color:var(--text2);font-style:italic; }
+
+/* ── SHARE / EMBED ── */
+.share-bar { display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px; }
+.share-btn { display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:12px;color:var(--text2);cursor:pointer;transition:all 0.2s;font-family:'DM Mono',monospace;letter-spacing:1px; }
+.share-btn:hover { border-color:var(--purple-lt);color:var(--text); }
+.share-btn.copied { border-color:#4ade80;color:#4ade80; }
+
+/* ── ACTIVITY LOG ── */
+.log-entry { display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px; }
+.log-time { color:var(--text3);font-family:'DM Mono',monospace;font-size:10px;flex-shrink:0;width:120px; }
+.log-msg { color:var(--text2); }
 
 /* ── MODE TOGGLE ── */
 .mode-toggle {
@@ -781,6 +872,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <div class="home-eyebrow">Ephrata Middle School · Mountaineers</div>
       <h1 class="home-h1">Clash <em>of</em> Classes</h1>
       <p class="home-lead" id="homeDesc">One school. Four squads. A program built by EMS staff to develop Life Ready Graduate traits, build community, and have fun together every month.</p>
+      <div id="nextEventBadge"></div>
       <div class="home-cta">
         <button class="btn btn-gold" onclick="goTo('tracker')">📊 Live Tracker</button>
         <button class="btn btn-purple" onclick="goTo('trait')">⭐ This Month's Trait</button>
@@ -801,6 +893,15 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 
   <!-- COUNTDOWN -->
   <div class="countdown-strip" id="countdownStrip" style="margin-top:24px"></div>
+
+  <!-- PHOTO OF THE WEEK -->
+  <div id="potwSection" style="display:none;margin-top:28px"></div>
+
+  <!-- WEEKLY CHALLENGE -->
+  <div id="challengeSection" style="display:none;margin-top:28px"></div>
+
+  <!-- TRAIT SPOTLIGHT -->
+  <div id="traitSpotlightSection" style="display:none;margin-top:28px"></div>
 
   <div class="pillars-grid" style="margin-top:40px;grid-template-columns:repeat(4,1fr)">
     <div class="pillar-card" id="traitPillar" style="cursor:pointer;border-top:3px solid var(--purple)" onclick="goTo('trait')">
@@ -896,7 +997,11 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-purple" onclick="openDisplay()">📺 TV Display Mode</button>
+      <button class="btn" onclick="openTicker()" style="color:var(--gold-soft);border-color:rgba(232,200,64,0.3)">📡 Ticker Tape</button>
       <button class="btn" onclick="window.print()" style="color:var(--text2)">🖨 Print Standings</button>
+      <button class="btn share-btn" onclick="copyPageUrl()" id="shareTrackerBtn">🔗 Copy Link</button>
+      <button class="btn share-btn" onclick="showEmbedCode()" id="embedBtn">{'</>'} Embed Widget</button>
+      <button class="btn share-btn" onclick="exportCSV()">⬇ Export CSV</button>
     </div>
   </div>
   <div class="score-strip" id="scoreStrip">
@@ -949,6 +1054,23 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
     <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px">Cumulative standings after each event</div>
     <div id="timelineChart" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;overflow-x:auto"></div>
   </div>
+
+  <!-- CATEGORY BREAKDOWN -->
+  <div style="margin-top:32px">
+    <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Points by Category</div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px">Events vs Metrics vs Trait Dough</div>
+    <div id="catChart" class="cat-chart"></div>
+  </div>
+
+  <!-- SEASON CALENDAR -->
+  <div style="margin-top:32px">
+    <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Season Calendar</div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:16px">Events plotted by date</div>
+    <div id="seasonCal"></div>
+  </div>
+
+  <!-- PER-EVENT BREAKDOWN -->
+  <div id="evtBreakdown" style="display:none;margin-top:20px"></div>
 </div>
 
 <!-- MOUNTAINEER MINDSET -->
@@ -1193,6 +1315,17 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <button class="btn btn-purple btn-full" style="margin-top:16px" onclick="openLogin()">Open Admin Panel →</button>
     </div>
     <div class="guide-card">
+      <div class="guide-title">📄 Sub Guide & Email</div>
+      <div class="guide-steps">
+        <div class="guide-step"><div class="step-num">1</div><div class="step-text">Click <strong>Print Sub Guide</strong> to get a one-page printable overview with current standings, this month's trait, and upcoming events</div></div>
+        <div class="guide-step"><div class="step-num">2</div><div class="step-text">Click <strong>Generate Email Digest</strong> to format this week's scores and metrics into a ready-to-send staff email</div></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+        <button class="btn btn-purple" onclick="printSubGuide()">🖨 Print Sub Guide</button>
+        <button class="btn" onclick="generateEmailDigest()">📧 Email Digest</button>
+      </div>
+    </div>
+    <div class="guide-card">
       <div class="guide-title">📅 Weekly Metrics</div>
       <div class="guide-steps">
         <div class="guide-step"><div class="step-num">1</div><div class="step-text">Pull attendance % for each squad from your system</div></div>
@@ -1249,6 +1382,42 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   <div class="tv-nav" id="tvNav"></div>
 </div>
 
+<!-- ═══ TICKER TAPE ═══ -->
+<div id="tickerView">
+  <button class="ticker-exit" onclick="closeTicker()">✕ Exit</button>
+  <div id="tickerScores" class="ticker-scores"></div>
+  <div style="text-align:center;padding:20px 0">
+    <div class="ticker-cd-label" id="tickerCdLabel"></div>
+    <div class="ticker-countdown" id="tickerClock"></div>
+  </div>
+  <div class="ticker-tape-wrap"><div class="ticker-tape" id="tickerTape"></div></div>
+</div>
+
+<!-- ═══ EMAIL DIGEST MODAL ═══ -->
+<div class="overlay" id="emailDigestModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:640px">
+    <button class="modal-close" onclick="document.getElementById('emailDigestModal').classList.remove('open')">✕</button>
+    <h2>📧 Staff Email Digest</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Copy and paste into your email client.</p>
+    <textarea id="emailDigestText" rows="16" readonly style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);resize:vertical"></textarea>
+    <button class="btn-submit" style="margin-top:12px" onclick="copyEmailDigest()">Copy to Clipboard</button>
+    <div class="fmsg" id="emailCopied">✓ Copied!</div>
+  </div>
+</div>
+
+<!-- ═══ BULK POINTS MODAL ═══ -->
+<div class="overlay" id="bulkModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:700px">
+    <button class="modal-close" onclick="document.getElementById('bulkModal').classList.remove('open')">✕</button>
+    <h2>⚡ Bulk Point Entry</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Add multiple events at once. Each row is one event.</p>
+    <div id="bulkRows"></div>
+    <button class="btn" onclick="addBulkRow()" style="margin-bottom:16px;color:var(--purple-lt)">+ Add Row</button>
+    <div class="fmsg" id="bulkOk">✓ All events saved!</div>
+    <button class="btn-submit" onclick="saveBulkEvents()">Save All Events</button>
+  </div>
+</div>
+
 <!-- ═══ LOGIN MODAL ═══ -->
 <div class="overlay" id="loginModal">
   <div class="modal" style="max-width:380px">
@@ -1295,7 +1464,10 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       </div>
       <div class="fr"><label>Note (optional)</label><input type="text" id="evtNote" placeholder="e.g. Black 1st, Gold 2nd"></div>
       <div class="fmsg" id="evtOk">✓ Event added!</div>
-      <button class="btn-submit" onclick="addEvent()">Add Event</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-submit" onclick="addEvent()">Add Event</button>
+        <button class="btn-submit" style="background:var(--surface2);color:var(--purple-lt)" onclick="openBulkEntry()">⚡ Bulk Entry</button>
+      </div>
     </div>
 
     <!-- METRICS -->
@@ -1461,7 +1633,12 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
     </div>
 
     <!-- HISTORY -->
-    <div class="a-panel" id="ap-history"><div class="hist-list" id="histList"></div></div>
+    <div class="a-panel" id="ap-history">
+      <div style="margin-bottom:20px">
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;margin-bottom:10px">📋 Activity Log</div>
+        <div id="activityLog" style="max-height:200px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:20px"></div>
+      </div>
+      <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;margin-bottom:12px">📜 Event History</div><div class="hist-list" id="histList"></div></div>
 
     <!-- SETTINGS -->
     <div class="a-panel" id="ap-settings">
@@ -1471,6 +1648,37 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         <div class="fr"><label>Sub Line</label><input type="text" id="footerSubInput" placeholder="Ephrata Middle School · …"></div>
         <div class="fmsg" id="footerOk">✓ Saved!</div>
         <button class="btn-submit" onclick="saveFooter()">Save Footer</button>
+      </div>
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">💬 Trait Spotlights</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:10px">One per line: <strong>Quote | Attribution</strong></div>
+        <div class="fr"><textarea id="spotlightsInput" rows="5" placeholder="A student helped a classmate without being asked. | 7th Grade Team"></textarea></div>
+        <div class="fmsg" id="spotlightsOk">✓ Saved!</div>
+        <button class="btn-submit" onclick="saveSpotlights()">Save Spotlights</button>
+      </div>
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">⚡ Weekly Challenge</div>
+        <div class="fr"><label>Title</label><input type="text" id="wcTitle" placeholder="e.g. Most Improved Attendance"></div>
+        <div class="fr"><label>Description</label><textarea id="wcBody" rows="2" placeholder="Details about this week's challenge…"></textarea></div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:10px;cursor:pointer"><input type="checkbox" id="wcActive"> Show on home page</label>
+        <div class="fmsg" id="wcOk">✓ Saved!</div>
+        <button class="btn-submit" onclick="saveWeekChallenge()">Save Challenge</button>
+      </div>
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">📸 Photo of the Week</div>
+        <div class="fr"><label>Image URL</label><input type="url" id="potwUrl" placeholder="https://…"></div>
+        <div class="fr"><label>Caption (optional)</label><input type="text" id="potwCaption" placeholder="e.g. Black Squad wins the relay race!"></div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:10px;cursor:pointer"><input type="checkbox" id="potwActive"> Show on home page</label>
+        <div class="fmsg" id="potwOk">✓ Saved!</div>
+        <button class="btn-submit" onclick="savePhotoOfWeek()">Save Photo</button>
+      </div>
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">📺 Custom TV Slide</div>
+        <div class="fr"><label>Image URL (optional)</label><input type="url" id="tvSlideImg" placeholder="https://…"></div>
+        <div class="fr"><label>Message</label><textarea id="tvSlideMsg" rows="2" placeholder="Great job this week Mountaineers!"></textarea></div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:10px;cursor:pointer"><input type="checkbox" id="tvSlideActive"> Add as slide in TV rotation</label>
+        <div class="fmsg" id="tvSlideOk">✓ Saved!</div>
+        <button class="btn-submit" onclick="saveTVSlide()">Save TV Slide</button>
       </div>
       <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
         <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">📢 Announcement Bar</div>
@@ -1772,6 +1980,12 @@ const DEF = {
   squadDesc: { BLACK:'', GOLD:'', GREY:'', PURPLE:'' },
   poll: { question:'', options:[], votes:{}, active:false },
   announcement: '',
+  weekChallenge: { title:'', body:'', active:false },
+  traitSpotlights: [],
+  tvCustomSlide: { active:false, image:'', message:'' },
+  bulkEvents: [],
+  photoOfWeek: { url:'', caption:'', active:false },
+  activityLog: [],
   footer: { brand:'Clash of Classes', sub:'Ephrata Middle School · Mountaineers · #490e6f · #ffe100' },
   countdownEvents: [ { label:'Last Day of School', date:'2026-06-04' } ],
   homeStats: { stat1num:'4', stat1lbl:'Color Squads', stat2num:'9', stat2lbl:'LRG Traits' },
@@ -1848,6 +2062,11 @@ onValue(DB,(snap)=>{
     ['photos','quotes','spotlights','calendar'].forEach(k=>{ if(!Array.isArray(D.gallery[k])) D.gallery[k]=[]; });
     if(!D.links) D.links={mindset:[],mayhem:[],champs:[]};
     if(!D.announcement) D.announcement='';
+    if(!D.weekChallenge) D.weekChallenge={title:'',body:'',active:false};
+    if(!Array.isArray(D.traitSpotlights)) D.traitSpotlights=[];
+    if(!D.tvCustomSlide) D.tvCustomSlide={active:false,image:'',message:''};
+    if(!D.photoOfWeek) D.photoOfWeek={url:'',caption:'',active:false};
+    if(!Array.isArray(D.activityLog)) D.activityLog=[];
     if(!D.footer) D.footer={brand:'Clash of Classes',sub:'Ephrata Middle School · Mountaineers · #490e6f · #ffe100'};
     if(!D.traitDoughTally) D.traitDoughTally={BLACK:0,GOLD:0,GREY:0,PURPLE:0};
     if(!D.countdownEvents) D.countdownEvents=[{label:'Last Day of School',date:'2026-06-04'}];
@@ -1935,13 +2154,433 @@ function goTo(id){
   else if(id==='sotm')        renderSotm();
   else if(id==='squads')      renderSquads();
   else if(id==='gallery')     renderGallery();
-  else if(id==='tracker'){ renderStrip(); renderTable(); renderMetrics(); renderTimeline(); renderSnapshots(); renderPoll(); }
+  else if(id==='tracker'){ renderStrip(); renderTable(); renderMetrics(); renderTimeline(); renderSnapshots(); renderPoll(); renderCatChart(); renderSeasonCal(); }
   else if(id==='home'){ renderMini(); renderHomeText(); renderTraitPillar(); renderCountdown(); renderAnnouncement(); }
   else if(id==='staff'){ renderStaffLinks(); }
   else if(id.startsWith('squad-')){ renderSquadDetail(id.replace('squad-','')); }
 }
 
 // ── NEW FEATURE FUNCTIONS ──
+// ── CONFETTI ──
+var _lastLeader=null;
+function checkConfetti(){
+  var leader=ranked()[0];
+  if(_lastLeader&&_lastLeader!==leader) fireConfetti(SQ_HEX[leader]);
+  _lastLeader=leader;
+}
+function fireConfetti(color){
+  var canvas=document.getElementById('confettiCanvas'); if(!canvas) return;
+  canvas.style.display='block'; canvas.width=window.innerWidth; canvas.height=window.innerHeight;
+  var ctx=canvas.getContext('2d');
+  var pieces=[];
+  var colors=[color,'#ffe100','#ffffff','#9d5fcc','#e8c840'];
+  for(var i=0;i<120;i++) pieces.push({x:Math.random()*canvas.width,y:-20-Math.random()*80,w:8+Math.random()*8,h:4+Math.random()*4,color:colors[Math.floor(Math.random()*colors.length)],rot:Math.random()*360,vx:(Math.random()-0.5)*4,vy:2+Math.random()*4,vr:(Math.random()-0.5)*8});
+  var frame=0;
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(function(p){
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle=p.color; ctx.globalAlpha=Math.max(0,1-frame/80);
+      ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore();
+      p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr; p.vy+=0.08;
+    });
+    frame++;
+    if(frame<90) requestAnimationFrame(draw);
+    else{ ctx.clearRect(0,0,canvas.width,canvas.height); canvas.style.display='none'; }
+  }
+  draw();
+}
+
+// ── NEXT EVENT BADGE ──
+function renderNextEventBadge(){
+  var el=document.getElementById('nextEventBadge'); if(!el) return;
+  var now=new Date(); now.setHours(0,0,0,0);
+  var events=D.countdownEvents||DEF.countdownEvents||[];
+  var next=events.find(function(e){ return new Date(e.date+'T00:00:00')>=now; });
+  if(!next){ el.innerHTML=''; return; }
+  var days=Math.max(0,Math.floor((new Date(next.date+'T00:00:00')-now)/864e5));
+  el.innerHTML='<div class="next-event-badge"><span class="badge-dot"></span>'+(days===0?'Today: ':'In '+days+' day'+(days===1?'':'s')+': ')+'<strong>'+next.label+'</strong></div>';
+}
+
+// ── WEEKLY CHALLENGE ──
+function renderChallenge(){
+  var el=document.getElementById('challengeSection'); if(!el) return;
+  var wc=D.weekChallenge||{};
+  if(!wc.active||!wc.title){ el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML='<div class="challenge-card"><div class="challenge-label">⚡ This Week&#39;s Challenge</div><div class="challenge-title">'+wc.title+'</div>'+(wc.body?'<div class="challenge-body">'+wc.body+'</div>':'')+'</div>';
+}
+
+// ── PHOTO OF THE WEEK ──
+function renderPotw(){
+  var el=document.getElementById('potwSection'); if(!el) return;
+  var pw=D.photoOfWeek||{};
+  if(!pw.active||!pw.url){ el.style.display='none'; return; }
+  el.style.display='block';
+  var wrap=document.createElement('div'); wrap.className='potw-card';
+  var img=document.createElement('img'); img.className='potw-img'; img.src=pw.url; img.alt='Photo of the Week';
+  img.onerror=function(){ wrap.style.display='none'; };
+  wrap.appendChild(img);
+  if(pw.caption){ var cap=document.createElement('div'); cap.className='potw-caption'; cap.textContent=pw.caption; wrap.appendChild(cap); }
+  el.innerHTML=''; el.appendChild(wrap);
+}
+
+// ── COPY / SHARE ──
+function copyPageUrl(){
+  var url=window.location.href.split('?')[0];
+  navigator.clipboard.writeText(url).then(function(){
+    var btn=document.getElementById('shareTrackerBtn');
+    if(btn){ btn.textContent='✓ Copied!'; btn.classList.add('copied'); setTimeout(function(){ btn.textContent='🔗 Copy Link'; btn.classList.remove('copied'); },2000); }
+  });
+}
+function showEmbedCode(){
+  var base=window.location.href.split('?')[0];
+  var code='<iframe src="'+base+'?embed=1" width="100%" height="200" frameborder="0" style="border-radius:12px"></iframe>';
+  var ta=document.getElementById('embedCode'); if(ta) ta.value=code;
+  document.getElementById('embedOverlay').classList.add('open');
+}
+function copyEmbed(){
+  var ta=document.getElementById('embedCode');
+  if(ta) navigator.clipboard.writeText(ta.value).then(function(){ flash('embedCopied'); });
+}
+
+// ── EXPORT CSV ──
+function exportCSV(){
+  var events=D.events||[];
+  var header=['Event','Type','Date','Note'].concat(SQUADS).join(',');
+  var rows=events.map(function(ev){
+    return ['"'+(ev.name||'').replace(/"/g,'""')+'"',ev.type||'',ev.date||'','"'+(ev.note||'').replace(/"/g,'""')+'"'].concat(SQUADS.map(function(sq){ return ev.pts[sq]||0; })).join(',');
+  });
+  rows.push(['TOTAL','','',''].concat(SQUADS.map(function(sq){ return grand(sq); })).join(','));
+  var csv=[header].concat(rows).join('\n');
+  var blob=new Blob([csv],{type:'text/csv'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='clash-of-classes-events.csv'; a.click();
+}
+
+// ── ACTIVITY LOG ──
+function logActivity(action){
+  if(!Array.isArray(D.activityLog)) D.activityLog=[];
+  D.activityLog.unshift({action:action,time:new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),ts:Date.now()});
+  if(D.activityLog.length>50) D.activityLog=D.activityLog.slice(0,50);
+}
+function renderActivityLog(){
+  var el=document.getElementById('activityLog'); if(!el) return;
+  var log=D.activityLog||[];
+  if(!log.length){ el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:12px">No activity yet.</div>'; return; }
+  el.innerHTML=log.map(function(entry){ return '<div class="log-entry"><span class="log-time">'+entry.time+'</span><span class="log-msg">'+entry.action+'</span></div>'; }).join('');
+}
+
+// ── DUPLICATE CHECK ──
+function isDuplicateEvent(name){
+  return (D.events||[]).some(function(ev){ return ev.name.toLowerCase().trim()===name.toLowerCase().trim(); });
+}
+
+// ── SAVE CHALLENGE ──
+async function saveWeekChallenge(){
+  if(!D.weekChallenge) D.weekChallenge={};
+  D.weekChallenge.title=document.getElementById('wcTitle')?.value.trim()||'';
+  D.weekChallenge.body=document.getElementById('wcBody')?.value.trim()||'';
+  D.weekChallenge.active=document.getElementById('wcActive')?.checked||false;
+  logActivity('Updated weekly challenge: '+D.weekChallenge.title);
+  await save(); flash('wcOk'); renderChallenge();
+}
+
+// ── SAVE PHOTO OF WEEK ──
+async function savePhotoOfWeek(){
+  if(!D.photoOfWeek) D.photoOfWeek={};
+  D.photoOfWeek.url=document.getElementById('potwUrl')?.value.trim()||'';
+  D.photoOfWeek.caption=document.getElementById('potwCaption')?.value.trim()||'';
+  D.photoOfWeek.active=document.getElementById('potwActive')?.checked||false;
+  logActivity('Updated photo of the week');
+  await save(); flash('potwOk'); renderPotw();
+}
+
+// ══════════════════════════════════════════
+// TRAIT SPOTLIGHT
+// ══════════════════════════════════════════
+function renderTraitSpotlight(){
+  var el=document.getElementById('traitSpotlightSection'); if(!el) return;
+  var spots=D.traitSpotlights||[];
+  if(!spots.length){ el.style.display='none'; return; }
+  el.style.display='block';
+  var idx=Math.floor(Date.now()/60000)%spots.length;
+  var s=spots[idx]||spots[0];
+  el.innerHTML='<div class="spotlight-card">'
+    +'<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--purple-lt);margin-bottom:10px">Trait in Action</div>'
+    +'<div class="spotlight-quote">&ldquo;'+s.quote+'&rdquo;</div>'
+    +(s.attr?'<div class="spotlight-attr">— '+s.attr+'</div>':'')
+    +'</div>';
+}
+
+// ══════════════════════════════════════════
+// TICKER TAPE
+// ══════════════════════════════════════════
+var tickerClockInterval=null;
+function openTicker(){
+  document.getElementById('tickerView').classList.add('active');
+  buildTicker();
+  startTickerClock();
+}
+function closeTicker(){
+  document.getElementById('tickerView').classList.remove('active');
+  clearInterval(tickerClockInterval);
+}
+function buildTicker(){
+  var r=ranked();
+  document.getElementById('tickerScores').innerHTML=r.map(function(sq,i){
+    return '<div class="ticker-sq" style="background:'+SQ_HEX[sq]+'18;border-right:1px solid rgba(255,255,255,0.06)">'
+      +'<div class="ticker-sq-rank">#'+(i+1)+(i===0?' 👑':'')+' </div>'
+      +'<div class="ticker-sq-pts" style="color:'+SQ_HEX[sq]+'">'+grand(sq).toLocaleString()+'</div>'
+      +'<div class="ticker-sq-name" style="color:'+SQ_HEX[sq]+'">'+sq+'</div>'
+      +'</div>';
+  }).join('');
+  var curMonth=new Date().toLocaleString('en-US',{month:'long'});
+  var t=TRAITS.find(function(x){ return x.month===curMonth; })||TRAITS[6];
+  var items=r.map(function(sq,i){ return '<span class="ticker-item" style="color:'+SQ_HEX[sq]+'">#'+(i+1)+' '+sq+' — '+grand(sq).toLocaleString()+' pts</span><span class="ticker-divider">·</span>'; }).join('')
+    +'<span class="ticker-item" style="color:rgba(255,255,255,0.5)">This Month: '+t.trait+'</span><span class="ticker-divider">·</span>';
+  document.getElementById('tickerTape').innerHTML=items+items;
+}
+function startTickerClock(){
+  clearInterval(tickerClockInterval);
+  function updateClock(){
+    var now=new Date();
+    var events=D.countdownEvents||[];
+    var next=events.find(function(e){ return new Date(e.date+'T00:00:00')>=new Date(now.toDateString()); });
+    if(next){
+      var target=new Date(next.date+'T00:00:00');
+      var diff=target-now;
+      if(diff>0){
+        var d=Math.floor(diff/864e5);
+        var h=Math.floor((diff%864e5)/36e5);
+        var m=Math.floor((diff%36e5)/6e4);
+        var s=Math.floor((diff%6e4)/1e3);
+        document.getElementById('tickerCdLabel').textContent='Until '+next.label;
+        document.getElementById('tickerClock').textContent=(d>0?d+'d ':'')+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+      }
+    } else {
+      document.getElementById('tickerCdLabel').textContent='';
+      document.getElementById('tickerClock').textContent=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    }
+  }
+  updateClock();
+  tickerClockInterval=setInterval(updateClock,1000);
+}
+
+// ══════════════════════════════════════════
+// CATEGORY BREAKDOWN CHART
+// ══════════════════════════════════════════
+function renderCatChart(){
+  var el=document.getElementById('catChart'); if(!el) return;
+  var cats=[
+    {label:'Event Points', vals:Object.fromEntries(SQUADS.map(function(sq){ return [sq,evtTotal(sq)]; }))},
+    {label:'Metric Points', vals:Object.fromEntries(SQUADS.map(function(sq){ return [sq,metTotal(sq)]; }))},
+    {label:'Trait Dough', vals:Object.fromEntries(SQUADS.map(function(sq){ return [sq,(D.traitDoughTally&&D.traitDoughTally[sq])||0]; }))},
+  ];
+  var hdr='<div class="cat-row" style="margin-bottom:4px"><div class="cat-lbl"></div>'
+    +SQUADS.map(function(sq){ return '<div class="cat-lbl" style="color:'+SQ_HEX[sq]+';text-align:center">'+sq+'</div>'; }).join('')+'</div>';
+  var rows=cats.map(function(cat){
+    var vals=SQUADS.map(function(sq){ return cat.vals[sq]||0; });
+    var mx=Math.max.apply(null,vals.concat([1]));
+    return '<div class="cat-row">'
+      +'<div class="cat-lbl">'+cat.label+'</div>'
+      +SQUADS.map(function(sq){
+        var v=cat.vals[sq]||0;
+        var pct=Math.round(v/mx*100);
+        return '<div class="cat-bar-wrap"><div class="cat-bar-fill" style="width:'+pct+'%;background:'+SQ_HEX[sq]+'">'+( v>0?v:'')+'</div></div>';
+      }).join('')+'</div>';
+  }).join('');
+  el.innerHTML=hdr+rows;
+}
+
+// ══════════════════════════════════════════
+// SEASON CALENDAR
+// ══════════════════════════════════════════
+function renderSeasonCal(){
+  var el=document.getElementById('seasonCal'); if(!el) return;
+  var events=D.events||[];
+  var now=new Date();
+  var year=now.getFullYear();
+  var month=now.getMonth();
+  var firstDay=new Date(year,month,1).getDay();
+  var daysInMonth=new Date(year,month+1,0).getDate();
+  var monthStr=now.toLocaleString('en-US',{month:'long',year:'numeric'});
+
+  var evtByDate={};
+  events.forEach(function(ev){
+    if(!ev.date) return;
+    var d=ev.date.substring(0,7);
+    var key=ev.date;
+    if(!evtByDate[key]) evtByDate[key]=[];
+    evtByDate[key].push(ev);
+  });
+
+  var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var hdr='<div style="font-family:DM Mono,monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px">'+monthStr+'</div>';
+  var dayNames='<div class="cal-month-hdr">'+days.map(function(d){ return '<div class="cal-day-name">'+d+'</div>'; }).join('')+'</div>';
+  var cells='';
+  for(var i=0;i<firstDay;i++) cells+='<div class="cal-cell"></div>';
+  for(var d=1;d<=daysInMonth;d++){
+    var dateKey=year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var isToday=d===now.getDate();
+    var dayEvts=evtByDate[dateKey]||[];
+    cells+='<div class="cal-cell'+(isToday?' cal-cell-today':'')+'">'
+      +'<div class="cal-cell-num">'+d+'</div>'
+      +dayEvts.map(function(ev){
+        var winner=ranked()[0];
+        var color=SQ_HEX[winner]||'var(--purple)';
+        return '<div class="cal-event-dot" style="background:'+color+'" title="'+ev.name+'">'+ev.name+'</div>';
+      }).join('')
+      +'</div>';
+  }
+  el.innerHTML='<div class="season-cal">'+hdr+dayNames+'<div class="cal-grid">'+cells+'</div></div>';
+}
+
+// ══════════════════════════════════════════
+// PER-EVENT BREAKDOWN
+// ══════════════════════════════════════════
+function showEventBreakdown(evtId){
+  var ev=(D.events||[]).find(function(e){ return e.id===evtId; });
+  var el=document.getElementById('evtBreakdown'); if(!el) return;
+  if(!ev){ el.style.display='none'; return; }
+  var r=ranked();
+  el.style.display='block';
+  el.innerHTML='<div class="evt-breakdown">'
+    +'<div style="font-family:Fraunces,serif;font-size:18px;font-weight:700;margin-bottom:4px">'+ev.name+'</div>'
+    +'<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text3);margin-bottom:16px">'+(ev.date||'')+(ev.note?' · '+ev.note:'')+'</div>'
+    +'<div class="evt-bd-grid">'
+    +SQUADS.map(function(sq){
+      var pts=ev.pts[sq]||0;
+      var maxPts=Math.max.apply(null,SQUADS.map(function(s){ return ev.pts[s]||0; }));
+      var isWin=pts===maxPts&&maxPts>0;
+      return '<div class="evt-bd-card" style="border-top-color:'+SQ_HEX[sq]+'">'
+        +'<div class="evt-bd-pts" style="color:'+SQ_HEX[sq]+'">'+(isWin?'🏆 ':'')+pts+'</div>'
+        +'<div class="evt-bd-sq" style="color:'+SQ_HEX[sq]+'">'+sq+'</div>'
+        +'</div>';
+    }).join('')
+    +'</div></div>';
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ══════════════════════════════════════════
+// SUB GUIDE
+// ══════════════════════════════════════════
+function printSubGuide(){
+  var r=ranked();
+  var curMonth=new Date().toLocaleString('en-US',{month:'long'});
+  var t=TRAITS.find(function(x){ return x.month===curMonth; })||TRAITS[6];
+  var events=D.countdownEvents||[];
+  var now=new Date(); now.setHours(0,0,0,0);
+  var next=events.find(function(e){ return new Date(e.date+'T00:00:00')>=now; });
+  var win=document.open('','_blank','');
+  win.document.write('<!DOCTYPE html><html><head><title>Clash of Classes — Sub Guide</title>'
+    +'<style>body{font-family:Georgia,serif;max-width:750px;margin:40px auto;color:#1a1a1a;line-height:1.5}'
+    +'h1{font-size:28px;margin-bottom:4px}h2{font-size:16px;border-bottom:2px solid #6d2b9f;padding-bottom:4px;margin-top:24px;color:#6d2b9f}'
+    +'.sq-row{display:flex;justify-content:space-between;padding:8px 12px;margin-bottom:6px;border-radius:6px;background:#f5f5f5}'
+    +'.sq-name{font-weight:700;font-size:16px}.sq-pts{font-size:20px;font-weight:900}'
+    +'footer{margin-top:40px;font-size:11px;color:#999;border-top:1px solid #ccc;padding-top:12px}'
+    +'@media print{button{display:none}}</style></head><body>'
+    +'<h1>Clash of Classes</h1>'
+    +'<div style="font-size:13px;color:#666">Ephrata Middle School · Substitute Teacher Guide · Printed '+new Date().toLocaleDateString()+'</div>'
+    +'<h2>What is Clash of Classes?</h2>'
+    +'<p>Clash of Classes is a school-wide squad competition where 7th and 8th grade students are placed into four color squads. Each month focuses on a Life Ready Graduate (LRG) trait. Squads earn points through events, weekly metrics, and Trait Dough.</p>'
+    +'<h2>Current Standings</h2>'
+    +r.map(function(sq,i){ return '<div class="sq-row"><span class="sq-name" style="color:'+SQ_HEX[sq]+'">#'+(i+1)+' '+sq+' Squad</span><span class="sq-pts">'+grand(sq).toLocaleString()+' pts</span></div>'; }).join('')
+    +'<h2>Trait of the Month: '+t.trait+'</h2>'
+    +'<p>'+t.desc+'</p>'
+    +(next?'<h2>Next Upcoming Event</h2><p><strong>'+next.label+'</strong> on '+next.date+'</p>':'')
+    +'<h2>As a Sub, You Should Know</h2>'
+    +'<ul><li>Respect squad pride — students are proud of their squads.</li>'
+    +'<li>The program is run by EMS staff. For questions, see the main office.</li>'
+    +'<li>Live standings: <strong>clashofclasses.org</strong></li></ul>'
+    +'<footer>Generated from clashofclasses.org · '+new Date().toLocaleString()+'</footer>'
+    +'<br><button onclick="window.print()">🖨 Print</button>'
+    +'</body></html>');
+  win.document.close();
+}
+
+// ══════════════════════════════════════════
+// EMAIL DIGEST
+// ══════════════════════════════════════════
+function generateEmailDigest(){
+  var r=ranked();
+  var curMonth=new Date().toLocaleString('en-US',{month:'long'});
+  var t=TRAITS.find(function(x){ return x.month===curMonth; })||TRAITS[6];
+  var recentEvts=(D.events||[]).slice(-5).reverse();
+  var NL='\n';
+  var text='CLASH OF CLASSES — STAFF DIGEST'+NL
+    +new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})+NL
+    +'clashofclasses.org'+NL+NL
+    +'=== CURRENT STANDINGS ==='+NL
+    +r.map(function(sq,i){ return '#'+(i+1)+' '+sq+' Squad — '+grand(sq).toLocaleString()+' pts'; }).join(NL)+NL+NL
+    +'=== TRAIT OF THE MONTH: '+t.trait.toUpperCase()+' ==='+NL
+    +t.desc+NL+NL
+    +'=== RECENT EVENTS ==='+NL
+    +(recentEvts.length?recentEvts.map(function(ev){ return ev.name+' ('+ev.date+'): '+SQUADS.map(function(sq){ return sq+' '+ev.pts[sq]; }).join(' | '); }).join(NL):'No events yet')+NL+NL
+    +'=== WEEKLY METRICS ('+D.metrics.weekLabel+') ==='+NL
+    +SQUADS.map(function(sq){ return sq+': Att '+Math.round(D.metrics.attendance[sq]||0)+'% | Referral '+Math.round(D.metrics.referral[sq]||0)+'% | Grades '+Math.round(D.metrics.grades[sq]||0)+'%'; }).join(NL)+NL+NL
+    +'Visit clashofclasses.org for live updates.'+NL+'— EMS Clash of Classes Team';
+  document.getElementById('emailDigestText').value=text;
+  document.getElementById('emailDigestModal').classList.add('open');
+}
+function copyEmailDigest(){
+  var ta=document.getElementById('emailDigestText');
+  if(ta) navigator.clipboard.writeText(ta.value).then(function(){ flash('emailCopied'); });
+}
+
+// ══════════════════════════════════════════
+// BULK POINT ENTRY
+// ══════════════════════════════════════════
+function openBulkEntry(){
+  document.getElementById('bulkModal').classList.add('open');
+  var rows=document.getElementById('bulkRows');
+  rows.innerHTML='';
+  addBulkRow(); addBulkRow(); addBulkRow();
+}
+function addBulkRow(){
+  var rows=document.getElementById('bulkRows');
+  var i=Date.now()+Math.random();
+  var row=document.createElement('div');
+  row.style.cssText='display:grid;grid-template-columns:1fr 80px 70px 70px 70px 70px 32px;gap:6px;margin-bottom:8px;align-items:center';
+  row.innerHTML='<input type="text" placeholder="Event name" style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px;color:var(--text)">'
+    +SQUADS.map(function(sq){ return '<input type="number" min="0" placeholder="'+sq[0]+sq.slice(1).toLowerCase()+'" style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px;color:'+SQ_HEX[sq]+';text-align:center">'; }).join('')
+    +'<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0">×</button>';
+  rows.appendChild(row);
+}
+async function saveBulkEvents(){
+  var rows=document.getElementById('bulkRows').children;
+  var added=0;
+  for(var i=0;i<rows.length;i++){
+    var inputs=rows[i].querySelectorAll('input');
+    var name=inputs[0].value.trim(); if(!name) continue;
+    var pts={};
+    SQUADS.forEach(function(sq,j){ pts[sq]=parseFloat(inputs[j+1].value)||0; });
+    if(!Array.isArray(D.events)) D.events=[];
+    D.events.push({id:D.nextId++,name:name,type:'event',date:new Date().toISOString().split('T')[0],note:'',pts:pts});
+    D.history.unshift({type:'event',name:name,pts:pts,time:new Date().toISOString()});
+    logActivity('Bulk: added event '+name); added++;
+  }
+  if(added>0){ await save(); flash('bulkOk'); renderAll(); }
+}
+
+// ══════════════════════════════════════════
+// CUSTOM TV SLIDE
+// ══════════════════════════════════════════
+async function saveTVSlide(){
+  if(!D.tvCustomSlide) D.tvCustomSlide={};
+  D.tvCustomSlide.active=document.getElementById('tvSlideActive')?.checked||false;
+  D.tvCustomSlide.image=document.getElementById('tvSlideImg')?.value.trim()||'';
+  D.tvCustomSlide.message=document.getElementById('tvSlideMsg')?.value.trim()||'';
+  await save(); flash('tvSlideOk');
+  logActivity('Updated custom TV slide');
+}
+
+// ══════════════════════════════════════════
+// TV SLIDE COUNT helper — patch buildTV
+// ══════════════════════════════════════════
+function getTVSlideCount(){
+  return 3+(D.tvCustomSlide&&D.tvCustomSlide.active?1:0);
+}
+
 function renderFooter(){
   const f=D.footer||DEF.footer||{};
   const brand=document.getElementById('footerBrand');
@@ -2096,6 +2735,7 @@ function renderAll(){
   renderGallery();
   renderHomeText();
   renderTraitBanner(); renderAnnouncement(); renderCountdown(); renderTally(); renderTimeline(); renderFooter();
+  renderNextEventBadge(); renderChallenge(); renderPotw(); renderTraitSpotlight(); checkConfetti(); renderCatChart(); renderSeasonCal();
   renderTraitPillar(); renderPoll(); renderStaffLinks(); renderSnapshots();
   document.getElementById('statEvents').textContent=(D.events||[]).length;
   document.getElementById('statWeek').textContent=D.metrics.weekLabel||'—';
@@ -2146,7 +2786,7 @@ function renderTable(){
     const vals=SQUADS.map(sq=>ev.pts[sq]||0), mx=Math.max(...vals);
     const pill=ev.type==='event'?'<span class="type-pill pill-event">Event</span>':'<span class="type-pill pill-other">Other</span>';
     const note=ev.note?`<br><span style="font-size:11px;color:var(--text3)">${ev.note}</span>`:'';
-    return `<tr><td>${ev.name}${pill}${note}</td>${SQUADS.map(sq=>`<td class="td-${sq}${(ev.pts[sq]||0)===mx&&mx>0?' td-win':''}">${ev.pts[sq]||0}</td>`).join('')}</tr>`;
+    return `<tr style="cursor:pointer" onclick="showEventBreakdown(${ev.id})"><td>${ev.name}${pill}${note}</td>${SQUADS.map(sq=>`<td class="td-${sq}${(ev.pts[sq]||0)===mx&&mx>0?' td-win':''}">${ev.pts[sq]||0}</td>`).join('')}</tr>`;
   }).join('');
   const tots=SQUADS.map(sq=>`<td class="td-${sq}">${grand(sq).toLocaleString()}</td>`).join('');
   const mets=SQUADS.map(sq=>`<td style="color:var(--text3)">+${metTotal(sq)}</td>`).join('');
@@ -2683,10 +3323,12 @@ function gTab(t){
 // ── ADMIN ACTIONS ──
 async function addEvent(){
   const name=document.getElementById('evtName').value.trim(); if(!name) return;
+  if(isDuplicateEvent(name) && !confirm('An event named "'+name+'" already exists. Add it anyway?')) return;
   const pts={}; SQUADS.forEach(sq=>pts[sq]=parseFloat(document.getElementById('pts'+sq).value)||0);
   if(!Array.isArray(D.events)) D.events=[];
   D.events.push({id:D.nextId++,name,type:document.getElementById('evtType').value,date:document.getElementById('evtDate').value,note:document.getElementById('evtNote').value.trim(),pts});
   D.history.unshift({type:'event',name,pts,time:new Date().toISOString()});
+  logActivity('Added event: '+name);
   await save();
   flash('evtOk'); document.getElementById('evtName').value=''; document.getElementById('evtNote').value='';
   SQUADS.forEach(sq=>document.getElementById('pts'+sq).value=0);
@@ -2980,11 +3622,25 @@ function aTab(name){
   document.querySelectorAll('#adminModal .a-tab').forEach((b,i)=>b.classList.toggle('on',names[i]===name));
   names.forEach(n=>{ const el=document.getElementById('ap-'+n); if(el) el.classList.toggle('on',n===name); });
   if(name==='scores') renderScoreSummary();
-  if(name==='history') renderHistList();
+  if(name==='history'){ renderHistList(); renderActivityLog(); }
   if(name==='links'){ lTab('mindset'); }
   if(name==='pages'){ pTab(window._currentPageTab||'home'); }
   if(name==='settings'){
     const ai=document.getElementById('annInput'); if(ai) ai.value=D.announcement||'';
+    const wc=D.weekChallenge||{};
+    const tvs=D.tvCustomSlide||{};
+    const tvsImg=document.getElementById('tvSlideImg'); if(tvsImg) tvsImg.value=tvs.image||'';
+    const tvsMsg=document.getElementById('tvSlideMsg'); if(tvsMsg) tvsMsg.value=tvs.message||'';
+    const tvsAct=document.getElementById('tvSlideActive'); if(tvsAct) tvsAct.checked=tvs.active||false;
+    const spotIn=document.getElementById('spotlightsInput');
+    if(spotIn) spotIn.value=(D.traitSpotlights||[]).map(function(s){ return s.quote+(s.attr?' | '+s.attr:''); }).join('\n');
+    const wct=document.getElementById('wcTitle'); if(wct) wct.value=wc.title||'';
+    const wcb=document.getElementById('wcBody'); if(wcb) wcb.value=wc.body||'';
+    const wca=document.getElementById('wcActive'); if(wca) wca.checked=wc.active||false;
+    const pw=D.photoOfWeek||{};
+    const pwu=document.getElementById('potwUrl'); if(pwu) pwu.value=pw.url||'';
+    const pwc=document.getElementById('potwCaption'); if(pwc) pwc.value=pw.caption||'';
+    const pwa=document.getElementById('potwActive'); if(pwa) pwa.checked=pw.active||false;
     const ftr=D.footer||DEF.footer||{};
     const fbi=document.getElementById('footerBrandInput'); if(fbi) fbi.value=ftr.brand||'';
     const fsi=document.getElementById('footerSubInput'); if(fsi) fsi.value=ftr.sub||'';
@@ -3331,6 +3987,12 @@ async function savePoll(){
   await save(); flash('pollOk'); renderPoll();
 }
 
+async function saveSpotlights(){
+  var raw=document.getElementById('spotlightsInput')?.value||'';
+  D.traitSpotlights=raw.split('\n').map(function(l){ l=l.trim(); if(!l) return null; var parts=l.split('|'); return {quote:parts[0].trim(),attr:(parts[1]||'').trim()}; }).filter(Boolean);
+  await save(); flash('spotlightsOk'); renderTraitSpotlight();
+}
+
 const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePhoto,
   __scrollMindset:scrollMindset,previewPhoto,openLogin,tryLogin,close1,
   requireAdmin,openAddEvent,openAdmin,aTab,addEvent,saveMetrics,
@@ -3338,6 +4000,9 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   resetAll,undoEvt,changePw,openDisplay,closeDisplay,showSlide,
   lTab,saveMindsetLinks,addLinkSection,removeLinkSection,pTab,loadPageContent,
   goToSquad,renderSquadDetail,openSquadEditor,closeSquadEditor,addSquadBox,saveSquadPage,previewSquadImg,clearSquadImg,saveAnnouncement,saveCountdown,saveFooter,toggleMode,
+  saveWeekChallenge,savePhotoOfWeek,copyPageUrl,showEmbedCode,copyEmbed,exportCSV,renderActivityLog,
+  saveSpotlights,saveTVSlide,openTicker,closeTicker,openBulkEntry,addBulkRow,saveBulkEvents,
+  generateEmailDigest,copyEmailDigest,printSubGuide,showEventBreakdown,
   saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,saveHomeStats,
   renderWheel,renderTraitDough,renderSotm};
 Object.entries(_fns).forEach(([k,v])=>{ window[k]=v; window['_real_'+k]=v; });
@@ -3346,5 +4011,17 @@ window.__moduleReady=true;
 // Now that all functions are live, re-render whatever page the user navigated to
 goTo(window.__currentPage || currentPage);
 </script>
+<div class="overlay" id="embedOverlay" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:560px">
+    <button class="modal-close" onclick="document.getElementById('embedOverlay').classList.remove('open')">✕</button>
+    <h2>Embed Leaderboard</h2>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:16px">Paste this into any Google Site, Notion page, or website to show a live score widget.</p>
+    <textarea id="embedCode" rows="4" readonly style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);resize:none"></textarea>
+    <button class="btn-submit" style="margin-top:12px" onclick="copyEmbed()">Copy Embed Code</button>
+    <div class="fmsg" id="embedCopied">✓ Copied!</div>
+  </div>
+</div>
+
+<canvas id="confettiCanvas" style="display:none"></canvas>
 </body>
 </html>
