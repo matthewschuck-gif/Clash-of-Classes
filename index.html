@@ -1040,8 +1040,9 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 <div class="page" id="page-squads">
   <div class="page-hero">
     <h1 class="page-title">The Four <span>Squads</span></h1>
-    <div class="page-subtitle">Everyone Belongs</div>
+    <div class="page-subtitle" id="squadsSubtitle">Everyone Belongs</div>
   </div>
+  <div id="squadsStreakBar" style="margin-bottom:16px"></div>
   <div class="squads-grid" id="squadsGrid"></div>
 </div>
 
@@ -1050,7 +1051,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   <div class="page-hero" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
     <div>
       <h1 class="page-title">Live <span>Tracker</span></h1>
-      <div class="page-subtitle">Real-time squad standings</div>
+      <div class="page-subtitle" id="trackerSubtitle">Real-time squad standings</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-purple" onclick="openDisplay()">📺 TV Display Mode</button>
@@ -1060,10 +1061,14 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <button class="btn share-btn" onclick="copyPageUrl()" id="shareTrackerBtn">🔗 Copy Link</button>
       <button class="btn share-btn" onclick="showEmbedCode()" id="embedBtn">{'</>'} Embed Widget</button>
       <button class="btn share-btn" onclick="exportCSV()">⬇ Export CSV</button>
+      <button class="btn share-btn" onclick="openHeadToHead()" style="color:var(--purple-lt);border-color:rgba(157,95,204,0.3)">⚔ Head-to-Head</button>
     </div>
   </div>
   <div class="score-strip" id="scoreStrip">
-    <div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text3);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px">Connecting to Firebase…</div>
+    <div class="skeleton skel-card" style="height:80px;flex:1;min-width:140px"></div>
+    <div class="skeleton skel-card" style="height:80px;flex:1;min-width:140px"></div>
+    <div class="skeleton skel-card" style="height:80px;flex:1;min-width:140px"></div>
+    <div class="skeleton skel-card" style="height:80px;flex:1;min-width:140px"></div>
   </div>
   <div class="tracker-layout">
     <div class="events-card">
@@ -1074,10 +1079,13 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <table class="evt-table">
         <thead><tr>
           <th>Event</th>
+          <th style="color:var(--text3);font-size:11px;font-weight:500;white-space:nowrap">Date</th>
           <th class="th-BLACK">Black</th><th class="th-GOLD">Gold</th>
           <th class="th-GREY">Grey</th><th class="th-PURPLE">Purple</th>
         </tr></thead>
-        <tbody id="evtBody"></tbody>
+        <tbody id="evtBody">
+          <tr><td colspan="6" style="padding:8px 0"><div class="skeleton skel-row"></div><div class="skeleton skel-row"></div><div class="skeleton skel-row" style="width:80%"></div></td></tr>
+        </tbody>
         <tbody id="sheetBody"></tbody>
         <tfoot id="evtFoot"></tfoot>
       </table>
@@ -1873,13 +1881,13 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   <div class="content-page-layout">
     <div class="content-body">
       <div class="rich-text" id="wheelBody"><p>The Wheel is one of the most exciting parts of Clash of Classes — a high-stakes multi-ring challenge where students earn bonus points for their squad.</p></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:24px 0">
-        <div class="card card-accent"><div style="font-size:22px;margin-bottom:8px">💵</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:5px">Trait Dough Drawing</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Every Friday, 5 names are drawn from the Trait Dough bin. Those students come to the lobby to spin.</div></div>
-        <div class="card card-accent"><div style="font-size:22px;margin-bottom:8px">🏆</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:5px">Competition Winners</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Winning a Clash of Classes competition can earn your squad Wheel spins as part of the prize.</div></div>
-        <div class="card card-accent"><div style="font-size:22px;margin-bottom:8px">🌟</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:5px">Student of the Month</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Students recognized as Student of the Month may earn a Wheel spin as part of their celebration.</div></div>
-        <div class="card card-accent"><div style="font-size:22px;margin-bottom:8px">⚡</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:5px">Surprise Moments</div><div style="font-size:12px;color:var(--text2);line-height:1.5">Surprise spins happen at lunch, assemblies, and faculty meetings for staff. You never know when!</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:24px 0" id="wheelEarnCards">
+        <div class="card card-accent"><div style="font-size:22px;margin-bottom:8px">💵</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:5px" id="wheelEarn1Title">Trait Dough Drawing</div><div style="font-size:12px;color:var(--text2);line-height:1.5" id="wheelEarn1Text">Every Friday, 5 names are drawn from the Trait Dough bin. Those students come to the lobby to spin.</div></div>
+        <div class="card card-accent"><div style="font-size:22px;margin-bottom:8px">🏆</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:5px" id="wheelEarn2Title">Competition Winners</div><div style="font-size:12px;color:var(--text2);line-height:1.5" id="wheelEarn2Text">Winning a Clash of Classes competition can earn your squad Wheel spins as part of the prize.</div></div>
+        <div class="card card-accent"><div style="font-size:22px;margin-bottom:8px">🌟</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:5px" id="wheelEarn3Title">Student of the Month</div><div style="font-size:12px;color:var(--text2);line-height:1.5" id="wheelEarn3Text">Students recognized as Student of the Month may earn a Wheel spin as part of their celebration.</div></div>
+        <div class="card card-accent"><div style="font-size:22px;margin-bottom:8px">⚡</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:5px" id="wheelEarn4Title">Surprise Moments</div><div style="font-size:12px;color:var(--text2);line-height:1.5" id="wheelEarn4Text">Surprise spins happen at lunch, assemblies, and faculty meetings for staff. You never know when!</div></div>
       </div>
-      <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:var(--text);margin:24px 0 12px">How the Wheel Works</div>
+      <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:var(--text);margin:24px 0 12px" id="wheelHowTitle">How the Wheel Works</div>
       <div style="display:flex;align-items:center;justify-content:center;gap:0;overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px">
         <div style="background:rgba(157,95,204,0.12);border:2px solid var(--purple-lt);border-radius:8px;padding:12px 14px;text-align:center;min-width:86px;flex-shrink:0"><div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--purple-lt);text-transform:uppercase;margin-bottom:4px">Ring 1</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--text)">Outer</div><div style="font-size:10px;color:var(--text3);margin-top:2px">Start here</div></div>
         <div style="display:flex;flex-direction:column;align-items:center;padding:0 4px;flex-shrink:0;color:var(--gold-soft);font-size:14px">&#8595;<div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text3);white-space:nowrap">risk it</div></div>
@@ -1891,24 +1899,24 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         <div style="display:flex;flex-direction:column;align-items:center;padding:0 4px;flex-shrink:0;color:var(--gold-soft);font-size:14px">&#8595;<div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text3);white-space:nowrap">final</div></div>
         <div style="background:linear-gradient(135deg,rgba(255,225,0,0.15),rgba(157,95,204,0.15));border:2px solid var(--gold);border-radius:8px;padding:12px 14px;text-align:center;min-width:86px;flex-shrink:0"><div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:4px">Center!</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold)">100 pts</div><div style="font-size:10px;color:var(--text3);margin-top:2px">Squad color only</div></div>
       </div>
-      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px"><div style="width:28px;height:28px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;color:var(--purple-lt);flex-shrink:0;font-weight:700">1</div><div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">Start on the Outer Ring</div><div style="font-size:12px;color:var(--text2)">Every spinner begins on Ring 1. Give it a spin and see where it lands.</div></div></div>
-      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px"><div style="width:28px;height:28px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;color:var(--purple-lt);flex-shrink:0;font-weight:700">2</div><div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">Land on Number + Arrow? Bank It or Risk It</div><div style="font-size:12px;color:var(--text2)">Keep those points for your squad, or risk them and spin the next ring inward. You can risk up to 4 times total to reach the center.</div></div></div>
-      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px"><div style="width:28px;height:28px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;color:var(--purple-lt);flex-shrink:0;font-weight:700">3</div><div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">Center: Land on Your Squad Color = 100 Points!</div><div style="font-size:12px;color:var(--text2)">If you reach the center and land on your squad's color, your squad earns 100 points. Wrong color = nothing. Big risk, big reward.</div></div></div>
-      <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:12px">Special Spaces</div>
-      <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--sq-purple);border-radius:10px;padding:14px;margin-bottom:8px"><div style="font-family:'Fraunces',serif;font-size:16px;font-weight:900;color:var(--sq-purple);min-width:76px;flex-shrink:0">LOYALTY</div><div style="font-size:13px;color:var(--text2);line-height:1.5">You only earn points if you are in your squad's color section. Land on Loyalty on a different color = nothing.</div></div>
-      <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--sq-gold);border-radius:10px;padding:14px;margin-bottom:8px"><div style="font-family:'Fraunces',serif;font-size:16px;font-weight:900;color:var(--sq-gold);min-width:76px;flex-shrink:0">GIVE</div><div style="font-size:13px;color:var(--text2);line-height:1.5">You must give those points to another squad instead of keeping them.</div></div>
-      <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--sq-grey);border-radius:10px;padding:14px;margin-bottom:8px"><div style="font-family:'Fraunces',serif;font-size:16px;font-weight:900;color:var(--sq-grey);min-width:76px;flex-shrink:0">AUTO</div><div style="font-size:13px;color:var(--text2);line-height:1.5">You automatically advance to the next ring inward — no choice, you must spin again.</div></div>
+      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px"><div style="width:28px;height:28px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;color:var(--purple-lt);flex-shrink:0;font-weight:700">1</div><div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px" id="wheelStep1Title">Start on the Outer Ring</div><div style="font-size:12px;color:var(--text2)" id="wheelStep1Text">Every spinner begins on Ring 1. Give it a spin and see where it lands.</div></div></div>
+      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px"><div style="width:28px;height:28px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;color:var(--purple-lt);flex-shrink:0;font-weight:700">2</div><div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px" id="wheelStep2Title">Land on Number + Arrow? Bank It or Risk It</div><div style="font-size:12px;color:var(--text2)" id="wheelStep2Text">Keep those points for your squad, or risk them and spin the next ring inward. You can risk up to 4 times total to reach the center.</div></div></div>
+      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px"><div style="width:28px;height:28px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;color:var(--purple-lt);flex-shrink:0;font-weight:700">3</div><div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px" id="wheelStep3Title">Center: Land on Your Squad Color = 100 Points!</div><div style="font-size:12px;color:var(--text2)" id="wheelStep3Text">If you reach the center and land on your squad's color, your squad earns 100 points. Wrong color = nothing. Big risk, big reward.</div></div></div>
+      <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:12px" id="wheelSpecialTitle">Special Spaces</div>
+      <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--sq-purple);border-radius:10px;padding:14px;margin-bottom:8px"><div style="font-family:'Fraunces',serif;font-size:16px;font-weight:900;color:var(--sq-purple);min-width:76px;flex-shrink:0" id="wheelLoyaltyName">LOYALTY</div><div style="font-size:13px;color:var(--text2);line-height:1.5" id="wheelLoyaltyText">You only earn points if you are in your squad's color section. Land on Loyalty on a different color = nothing.</div></div>
+      <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--sq-gold);border-radius:10px;padding:14px;margin-bottom:8px"><div style="font-family:'Fraunces',serif;font-size:16px;font-weight:900;color:var(--sq-gold);min-width:76px;flex-shrink:0" id="wheelGiveName">GIVE</div><div style="font-size:13px;color:var(--text2);line-height:1.5" id="wheelGiveText">You must give those points to another squad instead of keeping them.</div></div>
+      <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--sq-grey);border-radius:10px;padding:14px;margin-bottom:8px"><div style="font-family:'Fraunces',serif;font-size:16px;font-weight:900;color:var(--sq-grey);min-width:76px;flex-shrink:0" id="wheelAutoName">AUTO</div><div style="font-size:13px;color:var(--text2);line-height:1.5" id="wheelAutoText">You automatically advance to the next ring inward — no choice, you must spin again.</div></div>
       <div id="wheelEmbeds" style="margin-top:20px"></div>
     </div>
     <div class="content-sidebar">
       <div class="card card-gold" style="margin-bottom:14px">
-        <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:10px">⚡ Quick Facts</div>
+        <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:10px" id="wheelQFTitle">⚡ Quick Facts</div>
         <div style="font-size:12px;color:var(--text2);line-height:1.9">
-          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">When</span><span>Every Friday</span></div>
-          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Where</span><span>School Lobby</span></div>
-          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">How many</span><span>5 students/week</span></div>
-          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Surprise spins</span><span>At lunch!</span></div>
-          <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Staff spins</span><span>Faculty meetings</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">When</span><span id="wheelQFWhen">Every Friday</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Where</span><span id="wheelQFWhere">School Lobby</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">How many</span><span id="wheelQFCount">5 students/week</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Surprise spins</span><span id="wheelQFSurprise">At lunch!</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Staff spins</span><span id="wheelQFStaff">Faculty meetings</span></div>
         </div>
         <button class="btn btn-purple btn-full" style="margin-top:12px" onclick="goTo('tracker')">View Live Tracker →</button>
       </div>
@@ -1938,18 +1946,18 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <div id="traitdoughEmbeds" style="margin-top:20px"></div>
     </div>
     <div class="content-sidebar">
-      <div class="card card-gold" style="margin-bottom:14px">
-        <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:10px">🌟 SotM Experiences</div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.8">
-          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Sept</span><span>Thaddeus Stevens</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Oct</span><span>Meadow Valley Electric</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Nov</span><span>Astro Machine Works</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Dec</span><span>Ephrata Borough Police</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Jan</span><span>Chamber of Commerce</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Feb</span><span>EASD Athletics / PA Guard</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Mar</span><span>Ephrata Review / LEO Club</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Apr</span><span>GEARS / WellSpan</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0"><span style="color:var(--text3)">May</span><span>EHS Future Teachers</span></div>
+      <div class="card card-gold" style="margin-bottom:14px" id="tdSotmCard">
+        <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft);margin-bottom:10px" id="tdSotmTitle">🌟 SotM Experiences</div>
+        <div id="tdSotmRows" style="font-size:12px;color:var(--text2);line-height:1.8">
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Sept</span><span id="tdSotmSept">Thaddeus Stevens</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Oct</span><span id="tdSotmOct">Meadow Valley Electric</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Nov</span><span id="tdSotmNov">Astro Machine Works</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Dec</span><span id="tdSotmDec">Ephrata Borough Police</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Jan</span><span id="tdSotmJan">Chamber of Commerce</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Feb</span><span id="tdSotmFeb">EASD Athletics / PA Guard</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Mar</span><span id="tdSotmMar">Ephrata Review / LEO Club</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Apr</span><span id="tdSotmApr">GEARS / WellSpan</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0"><span style="color:var(--text3)">May</span><span id="tdSotmMay">EHS Future Teachers</span></div>
         </div>
       </div>
       <div class="tally-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;margin-bottom:16px">
@@ -1971,7 +1979,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
     <div class="content-body">
       <div class="rich-text" id="sotmBody"></div>
       <div id="sotmCards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0"></div>
-      <div style="font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:var(--text);margin:20px 0 12px">Community Partners by Month</div>
+      <div style="font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:var(--text);margin:20px 0 12px" id="sotmPartnersHeader">Community Partners by Month</div>
       <div id="sotmPartnersTable" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden"></div>
       <div id="sotmEmbeds" style="margin-top:20px"></div>
     </div>
@@ -2000,14 +2008,24 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 <div class="page" id="page-gallery">
   <div class="page-hero">
     <h1 class="page-title">Gallery &amp; <span>Events</span></h1>
-    <div class="page-subtitle">Photos, voices, spotlights & upcoming events</div>
+    <div class="page-subtitle" id="gallerySubtitle">Photos, voices, spotlights &amp; upcoming events</div>
   </div>
   <div class="gallery-tabs">
     <button class="g-tab active" onclick="gTab('photos')">📸 Photos</button>
     <button class="g-tab" onclick="gTab('quotes')">💬 Student Voices</button>
     <button class="g-tab" onclick="gTab('calendar')">📅 Upcoming Events</button>
   </div>
-  <div class="gallery-section active" id="gs-photos"><div class="photo-grid" id="photosGrid"></div></div>
+  <div class="gallery-section active" id="gs-photos">
+    <div class="gallery-filter" id="galleryFilterBar">
+      <button class="gf-btn active" onclick="filterGallery('all')">All</button>
+      <button class="gf-btn" onclick="filterGallery('kickoff')">🚀 Kick Off</button>
+      <button class="gf-btn" onclick="filterGallery('mayhem')">⚡ Mayhem</button>
+      <button class="gf-btn" onclick="filterGallery('champs')">🏆 Champs</button>
+      <button class="gf-btn" onclick="filterGallery('wheel')">🎡 Wheel</button>
+      <button class="gf-btn" onclick="filterGallery('other')">📌 Other</button>
+    </div>
+    <div class="photo-grid" id="photosGrid"></div>
+  </div>
   <div class="gallery-section" id="gs-quotes"><div class="quotes-grid" id="quotesGrid"></div></div>
   
   <div class="gallery-section" id="gs-calendar"><div class="calendar-items" id="calGrid"></div></div>
@@ -2017,12 +2035,12 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 <div class="page" id="page-staff">
   <div class="page-hero">
     <h1 class="page-title">Staff <span>Resources</span></h1>
-    <div class="page-subtitle">Everything you need to run Clash of Classes</div>
+    <div class="page-subtitle" id="staffSubtitle">Everything you need to run Clash of Classes</div>
   </div>
   <div style="margin-bottom:36px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <div>
-        <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:2px">📌 Quick Links</div>
+        <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:2px" id="staffQLinksTitle">📌 Quick Links</div>
         <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Pinned resources for staff</div>
       </div>
       <button class="btn btn-purple btn-sm" onclick="requireAdmin(()=>{openAdmin();aTab('settings');})">+ Manage</button>
@@ -2162,6 +2180,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   <div class="modal">
     <button class="modal-close" onclick="close1('adminModal')">✕</button>
     <h2>Admin Panel</h2>
+    <div class="last-saved-bar" id="lastSavedTs"></div>
     <div class="admin-tabs">
       <button class="a-tab on" onclick="aTab('points')">Points</button>
       <button class="a-tab" onclick="aTab('metrics')">Metrics</button>
@@ -2251,6 +2270,8 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         <button class="a-tab" onclick="pTab('sotm')">🌟 SotM</button>
         <button class="a-tab" onclick="pTab('mayhem')">⚡ Mayhem</button>
         <button class="a-tab" onclick="pTab('champs')">🏆 Champs</button>
+        <button class="a-tab" onclick="pTab('gallery')">📸 Gallery</button>
+        <button class="a-tab" onclick="pTab('staff')">👤 Staff</button>
         <button class="a-tab" onclick="pTab('sq-BLACK')" style="color:var(--sq-black)">⬛ Black</button>
         <button class="a-tab" onclick="pTab('sq-GOLD')" style="color:var(--sq-gold)">🟡 Gold</button>
         <button class="a-tab" onclick="pTab('sq-GREY')" style="color:var(--sq-grey)">⬜ Grey</button>
@@ -2454,7 +2475,8 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
           <div id="gPhotoPreview" style="margin-top:8px;display:none"><img id="gPhotoPreviewImg" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid var(--border2)" /></div>
         </div>
         <div class="fr"><label>— or — Image URL</label><input type="url" id="gPhotoUrl" placeholder="https://… (leave blank if uploading file)"></div>
-        <div class="fr"><label>Caption</label><input type="text" id="gPhotoTitle" placeholder="e.g. Mummy Wrap 2025"></div>
+        <div class="fr"><label>Caption</label><input type="text" id="gPhotoTitle" placeholder="e.g. Noodle Knockdown finals"></div>
+        <div class="fr"><label>Event Tag (for filtering)</label><select id="gPhotoTag"><option value="">— No tag —</option><option value="kickoff">🚀 Kick Off</option><option value="mayhem">⚡ Mayhem</option><option value="champs">🏆 Championships</option><option value="wheel">🎡 Wheel</option><option value="other">📌 Other</option></select></div>
         <div class="fr"><label>Date</label><input type="date" id="gPhotoDate"></div>
         <div class="fmsg" id="gPhotoOk">✓ Photo added!</div>
         <button class="btn-submit" onclick="addGItem('photo')">Add Photo</button>
@@ -2607,12 +2629,19 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       </div>
       <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
         <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">⏱ Countdown Dates</div>
-        <div class="fr"><label>School Start Date</label><input type="date" id="cdSchoolStart"></div>
-        <div class="fr"><label>Last Day of School</label><input type="date" id="cdLastDay"></div>
-        <div class="fr"><label>Next Event Label</label><input type="text" id="cdLabel" placeholder="e.g. Championship Day"></div>
-        <div class="fr"><label>Next Event Date</label><input type="date" id="cdDate"></div>
+        <div class="g2">
+          <div class="fr"><label>School Start Date</label><input type="date" id="cdSchoolStart"></div>
+          <div class="fr"><label>Last Day of School</label><input type="date" id="cdLastDay"></div>
+        </div>
+        <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--text2);margin:12px 0 8px">Upcoming Events</div>
+        <div id="cdEventsList" style="margin-bottom:10px"></div>
+        <div style="display:grid;grid-template-columns:1fr auto 120px;gap:6px;align-items:end;margin-bottom:8px">
+          <div class="fr" style="margin:0"><label>Event Label</label><input type="text" id="cdLabel" placeholder="e.g. Championship Day"></div>
+          <div class="fr" style="margin:0"><label>Date</label><input type="date" id="cdDate"></div>
+          <button class="btn-submit" style="margin:0;height:36px;align-self:end" onclick="addCountdownEvent()">+ Add</button>
+        </div>
         <div class="fmsg" id="cdOk">✓ Saved!</div>
-        <button class="btn-submit" onclick="saveCountdown()">Save Countdown</button>
+        <button class="btn-submit" onclick="saveCountdown()">Save All</button>
       </div>
       <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">🔑 Change Password</div>
       <div class="fr"><label>New Admin Password</label><input type="password" id="newPw" placeholder="New password (min 4 chars)"></div>
@@ -2624,6 +2653,61 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   </div>
 </div>
 
+
+<!-- BACK TO TOP -->
+<button class="back-to-top" id="backToTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">↑</button>
+
+<!-- HEAD TO HEAD MODAL -->
+<div class="edit-evt-modal" id="h2hModal">
+  <div class="edit-evt-box" style="max-width:600px">
+    <button class="modal-close" onclick="close1('h2hModal')">✕</button>
+    <h2 style="margin-bottom:16px">⚔ Head-to-Head Comparison</h2>
+    <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-bottom:20px">
+      <select id="h2hSq1" onchange="renderH2H()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:14px;font-weight:700">
+        <option value="BLACK" style="color:var(--sq-black)">⬛ BLACK</option>
+        <option value="GOLD" style="color:var(--sq-gold)">🟡 GOLD</option>
+        <option value="GREY" style="color:var(--sq-grey)">⬜ GREY</option>
+        <option value="PURPLE" style="color:var(--sq-purple)">🟣 PURPLE</option>
+      </select>
+      <div style="font-family:'Fraunces',serif;font-weight:900;color:var(--text3)">vs</div>
+      <select id="h2hSq2" onchange="renderH2H()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:14px;font-weight:700">
+        <option value="BLACK" style="color:var(--sq-black)">⬛ BLACK</option>
+        <option value="GOLD" selected style="color:var(--sq-gold)">🟡 GOLD</option>
+        <option value="GREY" style="color:var(--sq-grey)">⬜ GREY</option>
+        <option value="PURPLE" style="color:var(--sq-purple)">🟣 PURPLE</option>
+      </select>
+    </div>
+    <div id="h2hOutput" style="max-height:60vh;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- EDIT EVENT MODAL -->
+<div class="edit-evt-modal" id="editEvtModal">
+  <div class="edit-evt-box">
+    <button class="modal-close" onclick="close1('editEvtModal')">✕</button>
+    <h2 style="margin-bottom:20px">Edit Event</h2>
+    <input type="hidden" id="editEvtId">
+    <div class="fr"><label>Event / Category Name</label><input type="text" id="editEvtName"></div>
+    <div class="g2">
+      <div class="fr"><label>Type</label><select id="editEvtType"><option value="event">🏆 Competition / Event</option><option value="other">📌 Other</option></select></div>
+      <div class="fr"><label>Date</label><input type="date" id="editEvtDate"></div>
+    </div>
+    <div class="fr"><label>Points per Squad</label>
+      <div class="g4">
+        <div><span class="sq-lbl" style="color:var(--sq-black)">Black</span><input class="sq-in" type="number" id="editPtsBLACK" value="0"></div>
+        <div><span class="sq-lbl" style="color:var(--sq-gold)">Gold</span><input class="sq-in" type="number" id="editPtsGOLD" value="0"></div>
+        <div><span class="sq-lbl" style="color:var(--sq-grey)">Grey</span><input class="sq-in" type="number" id="editPtsGREY" value="0"></div>
+        <div><span class="sq-lbl" style="color:var(--sq-purple)">Purple</span><input class="sq-in" type="number" id="editPtsPURPLE" value="0"></div>
+      </div>
+    </div>
+    <div class="fr"><label>Note (optional)</label><input type="text" id="editEvtNote" placeholder="e.g. Black 1st, Gold 2nd"></div>
+    <div class="fmsg" id="editEvtOk">✓ Event updated!</div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn-submit" onclick="saveEditEvent()">Save Changes</button>
+      <button class="btn-submit" style="background:rgba(248,113,113,0.15);color:#f87171;border:1px solid rgba(248,113,113,0.3)" onclick="deleteEditEvent()">Delete Event</button>
+    </div>
+  </div>
+</div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -2712,6 +2796,26 @@ const DB = ref(db,'coc');
 
 const params = new URLSearchParams(window.location.search);
 const ADMIN_URL = params.get('admin')==='true';
+
+// ── KEYBOARD SHORTCUTS ──
+document.addEventListener('keydown', function(e){
+  // Ctrl+K or / = open admin
+  if((e.ctrlKey && e.key==='k') || (e.key==='/' && document.activeElement.tagName!=='INPUT' && document.activeElement.tagName!=='TEXTAREA')){
+    e.preventDefault();
+    if(window.requireAdmin) window.requireAdmin(function(){ if(window.openAdmin) window.openAdmin(); });
+  }
+  // Escape = close any open modal
+  if(e.key==='Escape'){
+    document.querySelectorAll('.modal.open, .edit-evt-modal.open').forEach(function(m){ m.classList.remove('open'); });
+  }
+});
+
+// ── BACK TO TOP scroll handler ──
+window.addEventListener('scroll', function(){
+  const btt=document.getElementById('backToTopBtn'); if(!btt) return;
+  const longPages=['mayhem','champs','kickoff','tracker','mindset','wheel','traitdough','sotm','staff'];
+  if(longPages.includes(currentPage)) btt.classList.toggle('show', window.scrollY > 400);
+});
 
 // ── CONSTANTS ──
 const SQUADS = ['BLACK','GOLD','GREY','PURPLE'];
@@ -2855,6 +2959,12 @@ const DEF = {
     mayhemTableNote: '* Scores marked with asterisk reflect totals from the original document that differed from event-by-event sum — shown as recorded.',
     champsBody: '',
     champsSubtitle: 'End-of-year championship event',
+    gallerySubtitle: 'Photos, voices, spotlights & upcoming events',
+    squadsSubtitle: 'Everyone Belongs',
+    trackerSubtitle: 'Real-time squad standings',
+    squadsStreakNote: '',
+    staffSubtitle: 'Everything you need to run Clash of Classes',
+    staffQLinksTitle: '📌 Quick Links',
     champsDate: 'June 3, 2025',
     champsLocation: 'Turf Field & Outdoor Stations',
     champsFormat: '3 Stations + Kickball Tournament',
@@ -2876,6 +2986,48 @@ const DEF = {
     kickoffTableNote: 'Posters in hallways will help students find their Color Squad room locations. Students dismiss from their Color Squad room at end of day.',
     kickoffPhotoLabel: 'Photos from the Kick Off event',
     mindsetBody: 'The Mountaineer Mindset program provides structured monthly lesson plans aligned with each month\'s LRG trait. Each plan is designed for classroom use and connects the Clash of Classes theme to academic and social-emotional learning.\n\nSelect a month and grade level below to access the lesson plan directly from Google Drive.',
+    wheelSubtitle: 'Spin to earn bonus squad points',
+    wheelBody: 'The Wheel is one of the most exciting parts of Clash of Classes — a high-stakes multi-ring challenge where students earn bonus points for their squad.',
+    wheelEarn1Title: 'Trait Dough Drawing',
+    wheelEarn1Text: 'Every Friday, 5 names are drawn from the Trait Dough bin. Those students come to the lobby to spin.',
+    wheelEarn2Title: 'Competition Winners',
+    wheelEarn2Text: 'Winning a Clash of Classes competition can earn your squad Wheel spins as part of the prize.',
+    wheelEarn3Title: 'Student of the Month',
+    wheelEarn3Text: 'Students recognized as Student of the Month may earn a Wheel spin as part of their celebration.',
+    wheelEarn4Title: 'Surprise Moments',
+    wheelEarn4Text: 'Surprise spins happen at lunch, assemblies, and faculty meetings for staff. You never know when!',
+    wheelHowTitle: 'How the Wheel Works',
+    wheelStep1Title: 'Start on the Outer Ring',
+    wheelStep1Text: 'Every spinner begins on Ring 1. Give it a spin and see where it lands.',
+    wheelStep2Title: 'Land on Number + Arrow? Bank It or Risk It',
+    wheelStep2Text: 'Keep those points for your squad, or risk them and spin the next ring inward. You can risk up to 4 times total to reach the center.',
+    wheelStep3Title: 'Center: Land on Your Squad Color = 100 Points!',
+    wheelStep3Text: "If you reach the center and land on your squad's color, your squad earns 100 points. Wrong color = nothing. Big risk, big reward.",
+    wheelSpecialTitle: 'Special Spaces',
+    wheelLoyaltyName: 'LOYALTY',
+    wheelLoyaltyText: "You only earn points if you are in your squad's color section. Land on Loyalty on a different color = nothing.",
+    wheelGiveName: 'GIVE',
+    wheelGiveText: 'You must give those points to another squad instead of keeping them.',
+    wheelAutoName: 'AUTO',
+    wheelAutoText: 'You automatically advance to the next ring inward — no choice, you must spin again.',
+    wheelQFTitle: '⚡ Quick Facts',
+    wheelQFWhen: 'Every Friday',
+    wheelQFWhere: 'School Lobby',
+    wheelQFCount: '5 students/week',
+    wheelQFSurprise: 'At lunch!',
+    wheelQFStaff: 'Faculty meetings',
+    traitdoughSubtitle: 'EMS schoolwide token economy system',
+    traitdoughBody: '',
+    tdSotmTitle: '🌟 SotM Experiences',
+    tdSotmSept: 'Thaddeus Stevens',
+    tdSotmOct: 'Meadow Valley Electric',
+    tdSotmNov: 'Astro Machine Works',
+    tdSotmDec: 'Ephrata Borough Police',
+    tdSotmJan: 'Chamber of Commerce',
+    tdSotmFeb: 'EASD Athletics / PA Guard',
+    tdSotmMar: 'Ephrata Review / LEO Club',
+    tdSotmApr: 'GEARS / WellSpan',
+    tdSotmMay: 'EHS Future Teachers',
   },
   history: [], password: 'ephrata2026', nextId: 100,
   mottos: { BLACK:'', GOLD:'', GREY:'', PURPLE:'' },
@@ -2932,7 +3084,14 @@ let D = JSON.parse(JSON.stringify(DEF));
 let authed=false, pendingFn=null, fbReady=false;
 let currentPage=window.__currentPage||'home', currentTrait='March', currentGTab='photos';
 
-async function save(){ try{ await set(DB,D); }catch(e){ console.error(e); } }
+async function save(){
+  try{
+    await set(DB,D);
+    const ts=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    const el=document.getElementById('lastSavedTs');
+    if(el) el.textContent='Last saved: '+ts;
+  }catch(e){ console.error(e); }
+}
 
 // Fallback: if Firebase doesn't connect in 5 seconds, render with default data
 const fbTimeout = setTimeout(()=>{
@@ -3057,6 +3216,10 @@ function buildNav(){
 }
 
 function goTo(id){
+  // Show/hide back-to-top based on page
+  const longPages=['mayhem','champs','kickoff','tracker','mindset','wheel','traitdough','sotm','staff'];
+  const btt=document.getElementById('backToTopBtn');
+  if(btt) btt.classList.toggle('show', longPages.includes(id));
   currentPage=id;
   window.__currentPage=id;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -3169,14 +3332,17 @@ function copyEmbed(){
 // ── EXPORT CSV ──
 function exportCSV(){
   var events=D.events||[];
-  var header=['Event','Type','Date','Note'].concat(SQUADS).join(',');
+  var header=['Event','Type','Date','Note'].concat(SQUADS).concat(['Total']).join(',');
   var rows=events.map(function(ev){
-    return ['"'+(ev.name||'').replace(/"/g,'""')+'"',ev.type||'',ev.date||'','"'+(ev.note||'').replace(/"/g,'""')+'"'].concat(SQUADS.map(function(sq){ return ev.pts[sq]||0; })).join(',');
+    var total=SQUADS.reduce(function(s,sq){ return s+(ev.pts[sq]||0); },0);
+    return ['"'+(ev.name||'').replace(/"/g,'""')+'"',ev.type||'',ev.date||'','"'+(ev.note||'').replace(/"/g,'""')+'"'].concat(SQUADS.map(function(sq){ return ev.pts[sq]||0; })).concat([total]).join(',');
   });
-  rows.push(['TOTAL','','',''].concat(SQUADS.map(function(sq){ return grand(sq); })).join(','));
+  var grandTotal=SQUADS.reduce(function(s,sq){ return s+grand(sq); },0);
+  rows.push(['TOTAL','','',''].concat(SQUADS.map(function(sq){ return grand(sq); })).concat([grandTotal]).join(','));
   var csv=[header].concat(rows).join('\n');
   var blob=new Blob([csv],{type:'text/csv'});
-  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='clash-of-classes-events.csv'; a.click();
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='clash-of-classes-events-'+new Date().toISOString().split('T')[0]+'.csv'; a.click();
+  logActivity('Exported CSV');
 }
 
 // ── ACTIVITY LOG ──
@@ -3855,6 +4021,101 @@ async function saveHomeStats(){
 }
 
 // ── RENDER ALL ──
+// ── STREAK TRACKING ──
+function calcStreak(){
+  // Use snapshots to find who has been #1 most consecutively
+  const snaps=(D.snapshots||[]).slice().reverse(); // oldest first
+  if(snaps.length<2) return null;
+  let streak=0, streakSq=null, cur=0, curSq=null;
+  snaps.forEach(function(snap){
+    const r=Object.entries(snap.totals||{}).sort((a,b)=>b[1]-a[1]);
+    if(!r.length) return;
+    const top=r[0][0];
+    if(top===curSq){ cur++; } else { cur=1; curSq=top; }
+    if(cur>streak){ streak=cur; streakSq=top; }
+  });
+  // Also check current live standings
+  const live=ranked()[0];
+  const lastSnap=snaps[snaps.length-1];
+  const lastTop=lastSnap?Object.entries(lastSnap.totals||{}).sort((a,b)=>b[1]-a[1])[0]?.[0]:null;
+  if(live===lastTop){ cur++; } else { cur=1; curSq=live; }
+  if(cur>streak){ streak=cur; streakSq=live; }
+  return streak>=2?{squad:streakSq,count:streak}:null;
+}
+
+// ── HEAD TO HEAD COMPARISON ──
+function openHeadToHead(){
+  document.getElementById('h2hModal').classList.add('open');
+  renderH2H();
+}
+function renderH2H(){
+  const sq1=document.getElementById('h2hSq1')?.value||'BLACK';
+  const sq2=document.getElementById('h2hSq2')?.value||'GOLD';
+  const events=(D.events||[]).filter(ev=>ev.type==='event'||ev.type==='other');
+  let wins1=0,wins2=0,ties=0,total1=0,total2=0;
+  const rows=events.map(function(ev){
+    const p1=ev.pts[sq1]||0, p2=ev.pts[sq2]||0;
+    total1+=p1; total2+=p2;
+    if(p1>p2) wins1++; else if(p2>p1) wins2++; else if(p1>0) ties++;
+    const mx=Math.max(p1,p2,1);
+    const w1=Math.round(p1/mx*100), w2=Math.round(p2/mx*100);
+    return `<div style="margin-bottom:10px;padding:10px;background:var(--surface);border-radius:8px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text)">${ev.name}${ev.date?'<span style="color:var(--text3);font-size:10px;margin-left:6px;font-family:DM Mono,monospace">'+ev.date+'</span>':''}</div>
+      <div class="h2h-bar-wrap"><div class="h2h-bar" style="width:${w1}%;background:${SQ_HEX[sq1]}"></div><div class="h2h-val" style="color:${SQ_HEX[sq1]}">${p1}</div></div>
+      <div class="h2h-bar-wrap"><div class="h2h-bar" style="width:${w2}%;background:${SQ_HEX[sq2]}"></div><div class="h2h-val" style="color:${SQ_HEX[sq2]}">${p2}</div></div>
+    </div>`;
+  }).join('');
+  const out=document.getElementById('h2hOutput'); if(!out) return;
+  out.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px;text-align:center">
+    <div style="background:var(--surface);border-radius:10px;padding:12px"><div style="font-family:Fraunces,serif;font-size:24px;font-weight:900;color:${SQ_HEX[sq1]}">${wins1}</div><div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace">${sq1} WINS</div></div>
+    <div style="background:var(--surface);border-radius:10px;padding:12px"><div style="font-family:Fraunces,serif;font-size:24px;font-weight:900;color:var(--text3)">${ties}</div><div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace">TIES</div></div>
+    <div style="background:var(--surface);border-radius:10px;padding:12px"><div style="font-family:Fraunces,serif;font-size:24px;font-weight:900;color:${SQ_HEX[sq2]}">${wins2}</div><div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace">${sq2} WINS</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+    <div style="text-align:center;font-family:Fraunces,serif;font-size:18px;font-weight:700;color:${SQ_HEX[sq1]}">${total1.toLocaleString()} pts total</div>
+    <div style="text-align:center;font-family:Fraunces,serif;font-size:18px;font-weight:700;color:${SQ_HEX[sq2]}">${total2.toLocaleString()} pts total</div>
+  </div>
+  ${rows||'<div style="color:var(--text3);text-align:center;padding:24px;font-size:13px">No events yet.</div>'}`;
+}
+
+// ── GALLERY FILTER ──
+var _galleryFilter='all';
+function filterGallery(tag){
+  _galleryFilter=tag;
+  document.querySelectorAll('.gf-btn').forEach(function(b){ b.classList.toggle('active',b.textContent.toLowerCase().includes(tag==='all'?'all':tag)); });
+  renderGallery();
+}
+
+// ── COUNTDOWN EVENT UI ──
+function renderCountdownEventsList(){
+  const el=document.getElementById('cdEventsList'); if(!el) return;
+  const evts=D.countdownEvents||[];
+  if(!evts.length){ el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:4px 0">No events added yet.</div>'; return; }
+  el.innerHTML=evts.map(function(ev,i){
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:4px">'
+      +'<div><div style="font-size:13px;font-weight:600">'+ev.label+'</div><div style="font-family:DM Mono,monospace;font-size:10px;color:var(--text3)">'+ev.date+'</div></div>'
+      +'<button onclick="removeCountdownEvent('+i+')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0 4px">×</button>'
+      +'</div>';
+  }).join('');
+}
+
+async function addCountdownEvent(){
+  const label=document.getElementById('cdLabel')?.value.trim();
+  const date=document.getElementById('cdDate')?.value;
+  if(!label||!date) return;
+  if(!Array.isArray(D.countdownEvents)) D.countdownEvents=[];
+  D.countdownEvents.push({label,date});
+  D.countdownEvents.sort(function(a,b){ return a.date.localeCompare(b.date); });
+  document.getElementById('cdLabel').value=''; document.getElementById('cdDate').value='';
+  await save(); flash('cdOk'); renderCountdownEventsList(); renderCountdown();
+}
+
+async function removeCountdownEvent(idx){
+  if(!Array.isArray(D.countdownEvents)) return;
+  D.countdownEvents.splice(idx,1);
+  await save(); renderCountdownEventsList(); renderCountdown();
+}
+
 function renderAll(){
   renderMini();
   renderStrip();
@@ -3918,13 +4179,50 @@ function renderTable(){
     const vals=SQUADS.map(sq=>ev.pts[sq]||0), mx=Math.max(...vals);
     const pill=ev.type==='event'?'<span class="type-pill pill-event">Event</span>':'<span class="type-pill pill-other">Other</span>';
     const note=ev.note?`<br><span style="font-size:11px;color:var(--text3)">${ev.note}</span>`:'';
-    return `<tr style="cursor:pointer" onclick="showEventBreakdown(${ev.id})"><td>${ev.name}${pill}${note}</td>${SQUADS.map(sq=>`<td class="td-${sq}${(ev.pts[sq]||0)===mx&&mx>0?' td-win':''}">${ev.pts[sq]||0}</td>`).join('')}</tr>`;
+    const dateStr=ev.date?`<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);white-space:nowrap">${ev.date}</span>`:'<span style="color:var(--text3);font-size:10px">—</span>';
+    const editBtn=authed?`<button class="evt-edit-btn" onclick="event.stopPropagation();openEditEvent(${ev.id})" title="Edit event">✏</button>`:'';
+    return `<tr style="cursor:pointer" onclick="showEventBreakdown(${ev.id})"><td>${ev.name}${pill}${note}${editBtn}</td><td style="white-space:nowrap;padding:0 8px">${dateStr}</td>${SQUADS.map(sq=>`<td class="td-${sq}${(ev.pts[sq]||0)===mx&&mx>0?' td-win':''}">${ev.pts[sq]||0}</td>`).join('')}</tr>`;
   }).join('');
   const tots=SQUADS.map(sq=>`<td class="td-${sq}">${grand(sq).toLocaleString()}</td>`).join('');
   const mets=SQUADS.map(sq=>`<td style="color:var(--text3)">+${metTotal(sq)}</td>`).join('');
   const shTs=SQUADS.map(sq=>`<td style="color:#4ade80">+${sheetTotal(sq)}</td>`).join('');
   const shRow=sheetEvents.length?`<tr class="tfoot-sub"><td style="color:#4ade80">From Sheet</td>${shTs}</tr>`:'';
-  document.getElementById('evtFoot').innerHTML=`<tr class="tfoot-total"><td>Overall Total</td>${tots}</tr><tr class="tfoot-sub"><td>Metrics</td>${mets}</tr>${shRow}`;
+  document.getElementById('evtFoot').innerHTML=`<tr class="tfoot-total"><td>Overall Total</td><td></td>${tots}</tr><tr class="tfoot-sub"><td>Metrics</td><td></td>${mets}</tr>${shRow}`;
+}
+
+// ── EDIT EVENT ──
+function openEditEvent(id){
+  const ev=(D.events||[]).find(e=>e.id===id); if(!ev) return;
+  document.getElementById('editEvtId').value=id;
+  document.getElementById('editEvtName').value=ev.name;
+  document.getElementById('editEvtType').value=ev.type||'event';
+  document.getElementById('editEvtDate').value=ev.date||'';
+  document.getElementById('editEvtNote').value=ev.note||'';
+  SQUADS.forEach(sq=>document.getElementById('editPts'+sq).value=ev.pts[sq]||0);
+  document.getElementById('editEvtModal').classList.add('open');
+}
+
+async function saveEditEvent(){
+  const id=parseInt(document.getElementById('editEvtId').value);
+  const idx=(D.events||[]).findIndex(e=>e.id===id); if(idx===-1) return;
+  const name=document.getElementById('editEvtName').value.trim(); if(!name) return;
+  const pts={}; SQUADS.forEach(sq=>pts[sq]=parseFloat(document.getElementById('editPts'+sq).value)||0);
+  D.events[idx]={...D.events[idx], name, type:document.getElementById('editEvtType').value,
+    date:document.getElementById('editEvtDate').value, note:document.getElementById('editEvtNote').value.trim(), pts};
+  D.history.unshift({type:'edit',name,pts,time:new Date().toISOString()});
+  logActivity('Edited event: '+name);
+  await save(); flash('editEvtOk'); renderAll();
+  setTimeout(()=>close1('editEvtModal'),1200);
+}
+
+async function deleteEditEvent(){
+  const id=parseInt(document.getElementById('editEvtId').value);
+  const ev=(D.events||[]).find(e=>e.id===id); if(!ev) return;
+  if(!confirm('Delete "'+ev.name+'"? This cannot be undone.')) return;
+  D.events=D.events.filter(e=>e.id!==id);
+  D.history.unshift({type:'delete',name:ev.name,time:new Date().toISOString()});
+  logActivity('Deleted event: '+ev.name);
+  await save(); close1('editEvtModal'); renderAll();
 }
 
 function renderMetrics(){
@@ -3942,13 +4240,20 @@ function renderMetrics(){
 // ── SQUADS ──
 function renderSquads(){
   const r=ranked();
+  const pc=D.pageContent||{};
+  const sub=document.getElementById('squadsSubtitle'); if(sub) sub.textContent=pc.squadsSubtitle||DEF.pageContent.squadsSubtitle;
+  // Streak tracking
+  const streak=calcStreak();
+  const sBar=document.getElementById('squadsStreakBar');
+  if(sBar) sBar.innerHTML=streak?`<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(232,200,64,0.06);border:1px solid rgba(232,200,64,0.2);border-radius:10px;margin-bottom:4px"><span style="font-size:18px">🔥</span><div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft)">${streak.squad} Squad — ${streak.count}-event streak at #1</div><div style="font-size:12px;color:var(--text3)">Based on ${(D.snapshots||[]).length} saved snapshots + live data</div></div></div>`:'';
   document.getElementById('squadsGrid').innerHTML=SQUADS.map(sq=>{
     const rank=r.indexOf(sq)+1;
     const motto=(D.mottos&&D.mottos[sq])||'';
     return `<div class="squad-card sq-${sq}" onclick="goToSquad('${sq}')" style="cursor:pointer">
       <div class="squad-header">
         <div><div class="squad-name">${sq}</div>
-        <div class="squad-rank-chip">Rank #${rank} · ${grand(sq).toLocaleString()} pts</div></div>
+        <div class="squad-rank-chip">Rank #${rank} · ${grand(sq).toLocaleString()} pts</div>
+        ${streak&&streak.squad===sq?`<div class="streak-badge" style="margin-top:4px">🔥 ${streak.count} week streak</div>`:''}</div>
         <div class="squad-pts-big">${grand(sq).toLocaleString()}</div>
       </div>
       ${motto?`<div style="padding:0 24px 16px;font-size:14px;font-style:italic;color:var(--text2)">"${motto}"</div>`:''}
@@ -4407,11 +4712,31 @@ async function saveKickoffContent(){
 }
 
 // ── PHOTO MANAGEMENT ──
+
+// ── URL VALIDATION ──
+function isImageUrl(url){
+  if(!url) return false;
+  try{ new URL(url); } catch(e){ return false; }
+  // Accept any https URL (we can't always predict extension, e.g. Google Drive, CDN)
+  // But reject obviously non-image strings
+  if(!url.startsWith('http')) return false;
+  return true;
+}
+function validatePhotoUrl(url, errElId){
+  if(!isImageUrl(url)){
+    const el=document.getElementById(errElId);
+    if(el){ el.textContent='⚠ Please enter a valid https:// URL'; el.style.display='block'; setTimeout(()=>el.style.display='none',3000); }
+    return false;
+  }
+  return true;
+}
+
 async function addPagePhoto(section){
   const urlEl=document.getElementById('pe'+section.charAt(0).toUpperCase()+section.slice(1)+'PhotoUrl');
   const capEl=document.getElementById('pe'+section.charAt(0).toUpperCase()+section.slice(1)+'PhotoCaption');
   if(!urlEl||!urlEl.value.trim()) return;
   const url=urlEl.value.trim();
+  if(!isImageUrl(url)){ alert('Please enter a valid https:// URL for the photo.'); return; }
   const caption=capEl?capEl.value.trim():'';
   if(!D.photos) D.photos={};
   if(!Array.isArray(D.photos[section])) D.photos[section]=[];
@@ -4619,7 +4944,41 @@ function renderKickoff(){
 
 function renderWheel(){
   const pc=D.pageContent||{};
-  const sub=document.getElementById('wheelSubtitle'); if(sub) sub.textContent=pc.wheelSubtitle||DEF.pageContent.wheelSubtitle;
+  const s=function(id,val){ const el=document.getElementById(id); if(el&&val) el.textContent=val; };
+  s('wheelSubtitle', pc.wheelSubtitle||DEF.pageContent.wheelSubtitle);
+  // Earn cards
+  s('wheelEarn1Title', pc.wheelEarn1Title||'Trait Dough Drawing');
+  s('wheelEarn1Text',  pc.wheelEarn1Text||'Every Friday, 5 names are drawn from the Trait Dough bin. Those students come to the lobby to spin.');
+  s('wheelEarn2Title', pc.wheelEarn2Title||'Competition Winners');
+  s('wheelEarn2Text',  pc.wheelEarn2Text||'Winning a Clash of Classes competition can earn your squad Wheel spins as part of the prize.');
+  s('wheelEarn3Title', pc.wheelEarn3Title||'Student of the Month');
+  s('wheelEarn3Text',  pc.wheelEarn3Text||'Students recognized as Student of the Month may earn a Wheel spin as part of their celebration.');
+  s('wheelEarn4Title', pc.wheelEarn4Title||'Surprise Moments');
+  s('wheelEarn4Text',  pc.wheelEarn4Text||'Surprise spins happen at lunch, assemblies, and faculty meetings for staff. You never know when!');
+  // How it works
+  s('wheelHowTitle',  pc.wheelHowTitle||'How the Wheel Works');
+  s('wheelStep1Title',pc.wheelStep1Title||'Start on the Outer Ring');
+  s('wheelStep1Text', pc.wheelStep1Text||'Every spinner begins on Ring 1. Give it a spin and see where it lands.');
+  s('wheelStep2Title',pc.wheelStep2Title||'Land on Number + Arrow? Bank It or Risk It');
+  s('wheelStep2Text', pc.wheelStep2Text||'Keep those points for your squad, or risk them and spin the next ring inward. You can risk up to 4 times total to reach the center.');
+  s('wheelStep3Title',pc.wheelStep3Title||'Center: Land on Your Squad Color = 100 Points!');
+  s('wheelStep3Text', pc.wheelStep3Text||"If you reach the center and land on your squad's color, your squad earns 100 points. Wrong color = nothing. Big risk, big reward.");
+  // Special spaces
+  s('wheelSpecialTitle',pc.wheelSpecialTitle||'Special Spaces');
+  s('wheelLoyaltyName',pc.wheelLoyaltyName||'LOYALTY');
+  s('wheelLoyaltyText',pc.wheelLoyaltyText||"You only earn points if you are in your squad's color section. Land on Loyalty on a different color = nothing.");
+  s('wheelGiveName',  pc.wheelGiveName||'GIVE');
+  s('wheelGiveText',  pc.wheelGiveText||'You must give those points to another squad instead of keeping them.');
+  s('wheelAutoName',  pc.wheelAutoName||'AUTO');
+  s('wheelAutoText',  pc.wheelAutoText||'You automatically advance to the next ring inward — no choice, you must spin again.');
+  // Quick facts sidebar
+  s('wheelQFTitle',   pc.wheelQFTitle||'⚡ Quick Facts');
+  s('wheelQFWhen',    pc.wheelQFWhen||'Every Friday');
+  s('wheelQFWhere',   pc.wheelQFWhere||'School Lobby');
+  s('wheelQFCount',   pc.wheelQFCount||'5 students/week');
+  s('wheelQFSurprise',pc.wheelQFSurprise||'At lunch!');
+  s('wheelQFStaff',   pc.wheelQFStaff||'Faculty meetings');
+  // Body
   const body=document.getElementById('wheelBody');
   if(body&&pc.wheelBody) body.innerHTML=`<p>${pc.wheelBody.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
   const links=D.links.wheel||[];
@@ -4629,7 +4988,20 @@ function renderWheel(){
 
 function renderTraitDough(){
   const pc=D.pageContent||{};
-  const sub=document.getElementById('traitdoughSubtitle'); if(sub) sub.textContent=pc.traitdoughSubtitle||DEF.pageContent.traitdoughSubtitle;
+  const s=function(id,val){ const el=document.getElementById(id); if(el&&val) el.textContent=val; };
+  s('traitdoughSubtitle', pc.traitdoughSubtitle||DEF.pageContent.traitdoughSubtitle);
+  // SotM sidebar card
+  s('tdSotmTitle', pc.tdSotmTitle||'🌟 SotM Experiences');
+  s('tdSotmSept', pc.tdSotmSept||'Thaddeus Stevens');
+  s('tdSotmOct',  pc.tdSotmOct||'Meadow Valley Electric');
+  s('tdSotmNov',  pc.tdSotmNov||'Astro Machine Works');
+  s('tdSotmDec',  pc.tdSotmDec||'Ephrata Borough Police');
+  s('tdSotmJan',  pc.tdSotmJan||'Chamber of Commerce');
+  s('tdSotmFeb',  pc.tdSotmFeb||'EASD Athletics / PA Guard');
+  s('tdSotmMar',  pc.tdSotmMar||'Ephrata Review / LEO Club');
+  s('tdSotmApr',  pc.tdSotmApr||'GEARS / WellSpan');
+  s('tdSotmMay',  pc.tdSotmMay||'EHS Future Teachers');
+  // Body
   const body=document.getElementById('traitdoughBody');
   if(body&&pc.traitdoughBody) body.innerHTML=`<p>${pc.traitdoughBody.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
   const links=D.links.traitdough||[];
@@ -4664,6 +5036,7 @@ function renderSotm(){
   </div>`).join('');
 
   // Partners table
+  const ph=document.getElementById('sotmPartnersHeader'); if(ph&&sd.partnersHeader) ph.textContent=sd.partnersHeader;
   const pt=document.getElementById('sotmPartnersTable');
   if(pt){
     const partners=sd.partners||DEF.sotmData.partners;
@@ -4697,6 +5070,13 @@ function renderSotm(){
 }
 
 function renderGallery(){
+  const pc=D.pageContent||{};
+  const sub=document.getElementById('gallerySubtitle'); if(sub) sub.textContent=pc.gallerySubtitle||'Photos, voices, spotlights & upcoming events';
+  // Update filter button active states
+  document.querySelectorAll('.gf-btn').forEach(function(b){
+    const tag=b.getAttribute('onclick')?.match(/'([^']+)'/)?.[1]||'';
+    b.classList.toggle('active', tag===(_galleryFilter||'all'));
+  });
   const g=D.gallery;
   const empty=(icon,msg)=>`<div class="empty-state"><span class="empty-icon">${icon}</span><div class="empty-msg">${msg}</div></div>`;
 
@@ -4792,14 +5172,44 @@ async function savePageContent(){
     D.pageContent.champsWinnerNote=g('peChampsWinnerNote2');
     D.pageContent.champsTableNote=g('peChampsTableNote2');
     D.pageContent.champsPhotoLabel=g('peChampsPhotoLabel2');
+  } else if(page==='gallery'){
+    D.pageContent.gallerySubtitle=g('peGallerySub');
+    D.pageContent.squadsSubtitle=g('peSquadsSub');
+    D.pageContent.trackerSubtitle=g('peTrackerSub');
+    renderSquads(); renderStaffLinks();
+  } else if(page==='staff'){
+    D.pageContent.staffSubtitle=g('peStaffSub');
+    D.pageContent.staffQLinksTitle=g('peStaffQLT');
   } else if(page==='mindset'){
     D.pageContent.mindsetBody=g('peMindsetBody');
   } else if(page==='wheel'){
     D.pageContent.wheelSubtitle=g('peWheelSub');
     D.pageContent.wheelBody=g('peWheelBody');
+    D.pageContent.wheelEarn1Title=g('peWheelE1T'); D.pageContent.wheelEarn1Text=g('peWheelE1X');
+    D.pageContent.wheelEarn2Title=g('peWheelE2T'); D.pageContent.wheelEarn2Text=g('peWheelE2X');
+    D.pageContent.wheelEarn3Title=g('peWheelE3T'); D.pageContent.wheelEarn3Text=g('peWheelE3X');
+    D.pageContent.wheelEarn4Title=g('peWheelE4T'); D.pageContent.wheelEarn4Text=g('peWheelE4X');
+    D.pageContent.wheelHowTitle=g('peWheelHowT');
+    D.pageContent.wheelStep1Title=g('peWheelS1T'); D.pageContent.wheelStep1Text=g('peWheelS1X');
+    D.pageContent.wheelStep2Title=g('peWheelS2T'); D.pageContent.wheelStep2Text=g('peWheelS2X');
+    D.pageContent.wheelStep3Title=g('peWheelS3T'); D.pageContent.wheelStep3Text=g('peWheelS3X');
+    D.pageContent.wheelSpecialTitle=g('peWheelSpT');
+    D.pageContent.wheelLoyaltyName=g('peWheelLN'); D.pageContent.wheelLoyaltyText=g('peWheelLX');
+    D.pageContent.wheelGiveName=g('peWheelGN');   D.pageContent.wheelGiveText=g('peWheelGX');
+    D.pageContent.wheelAutoName=g('peWheelAN');   D.pageContent.wheelAutoText=g('peWheelAX');
+    D.pageContent.wheelQFTitle=g('peWheelQFT');
+    D.pageContent.wheelQFWhen=g('peWheelQFWhen');     D.pageContent.wheelQFWhere=g('peWheelQFWhere');
+    D.pageContent.wheelQFCount=g('peWheelQFCount');   D.pageContent.wheelQFSurprise=g('peWheelQFSurp');
+    D.pageContent.wheelQFStaff=g('peWheelQFStaff');
   } else if(page==='traitdough'){
     D.pageContent.traitdoughSubtitle=g('peTDSub');
     D.pageContent.traitdoughBody=g('peTDBody');
+    D.pageContent.tdSotmTitle=g('peTDSotmTitle');
+    D.pageContent.tdSotmSept=g('peTDSotmSept'); D.pageContent.tdSotmOct=g('peTDSotmOct');
+    D.pageContent.tdSotmNov=g('peTDSotmNov');   D.pageContent.tdSotmDec=g('peTDSotmDec');
+    D.pageContent.tdSotmJan=g('peTDSotmJan');   D.pageContent.tdSotmFeb=g('peTDSotmFeb');
+    D.pageContent.tdSotmMar=g('peTDSotmMar');   D.pageContent.tdSotmApr=g('peTDSotmApr');
+    D.pageContent.tdSotmMay=g('peTDSotmMay');
   } else if(page==='sotm'){
     if(!D.sotmData) D.sotmData=JSON.parse(JSON.stringify(DEF.sotmData));
     D.sotmData.subtitle=g('peSotmSub');
@@ -4810,6 +5220,7 @@ async function savePageContent(){
     D.sotmData.statStudents=g('peSotmSt1'); D.sotmData.statPerSquad=g('peSotmSt2');
     D.sotmData.statPoints=g('peSotmSt3'); D.sotmData.statTime=g('peSotmSt4');
     D.sotmData.statLocation=g('peSotmSt5');
+    D.sotmData.partnersHeader=g('peSotmPartnersHdr');
     const rawP=g('peSotmPartners');
     D.sotmData.partners=rawP.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
       const pts=l.split('|'); return {month:pts[0]||'',trait:pts[1]||'',partners:pts[2]||''};
@@ -4836,7 +5247,7 @@ async function savePageContent(){
 
 function pTab(page){
   window._currentPageTab=page;
-  const tabs=['home','mindset','wheel','traitdough','sotm','mayhem','champs','sq-BLACK','sq-GOLD','sq-GREY','sq-PURPLE'];
+  const tabs=['home','mindset','wheel','traitdough','sotm','mayhem','champs','gallery','staff','sq-BLACK','sq-GOLD','sq-GREY','sq-PURPLE'];
   document.querySelectorAll('#ap-pages .a-tab').forEach((b,i)=>b.classList.toggle('on',tabs[i]===page));
   const pc=D.pageContent||DEF.pageContent;
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
@@ -4851,12 +5262,87 @@ function pTab(page){
     f.innerHTML=`<div class="fr"><label>Intro Body Text</label><textarea id="peMindsetBody" rows="5">${esc(pc.mindsetBody)}</textarea></div>`;
   } else if(page==='wheel'){
     f.innerHTML=`
-      <div class="fr"><label>Page Subtitle</label><input type="text" id="peWheelSub" value="${esc(pc.wheelSubtitle)}"></div>
-      <div class="fr"><label>Body Text</label><textarea id="peWheelBody" rows="6">${esc(pc.wheelBody)}</textarea></div>`;
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peWheelSub" value="${esc(pc.wheelSubtitle||DEF.pageContent.wheelSubtitle)}"></div>
+      <div class="fr"><label>Body Text</label><textarea id="peWheelBody" rows="4">${esc(pc.wheelBody||DEF.pageContent.wheelBody)}</textarea></div>
+      <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin:12px 0 8px">How to Earn Spins — Card Titles &amp; Text</div>
+      <div class="g2">
+        <div class="fr"><label>Card 1 Title</label><input type="text" id="peWheelE1T" value="${esc(pc.wheelEarn1Title||'Trait Dough Drawing')}"></div>
+        <div class="fr"><label>Card 1 Text</label><input type="text" id="peWheelE1X" value="${esc(pc.wheelEarn1Text||'Every Friday, 5 names are drawn from the Trait Dough bin. Those students come to the lobby to spin.')}"></div>
+      </div>
+      <div class="g2">
+        <div class="fr"><label>Card 2 Title</label><input type="text" id="peWheelE2T" value="${esc(pc.wheelEarn2Title||'Competition Winners')}"></div>
+        <div class="fr"><label>Card 2 Text</label><input type="text" id="peWheelE2X" value="${esc(pc.wheelEarn2Text||'Winning a Clash of Classes competition can earn your squad Wheel spins as part of the prize.')}"></div>
+      </div>
+      <div class="g2">
+        <div class="fr"><label>Card 3 Title</label><input type="text" id="peWheelE3T" value="${esc(pc.wheelEarn3Title||'Student of the Month')}"></div>
+        <div class="fr"><label>Card 3 Text</label><input type="text" id="peWheelE3X" value="${esc(pc.wheelEarn3Text||'Students recognized as Student of the Month may earn a Wheel spin as part of their celebration.')}"></div>
+      </div>
+      <div class="g2">
+        <div class="fr"><label>Card 4 Title</label><input type="text" id="peWheelE4T" value="${esc(pc.wheelEarn4Title||'Surprise Moments')}"></div>
+        <div class="fr"><label>Card 4 Text</label><input type="text" id="peWheelE4X" value="${esc(pc.wheelEarn4Text||'Surprise spins happen at lunch, assemblies, and faculty meetings for staff. You never know when!')}"></div>
+      </div>
+      <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin:12px 0 8px">How It Works — Steps</div>
+      <div class="fr"><label>Section Title</label><input type="text" id="peWheelHowT" value="${esc(pc.wheelHowTitle||'How the Wheel Works')}"></div>
+      <div class="g2">
+        <div class="fr"><label>Step 1 Title</label><input type="text" id="peWheelS1T" value="${esc(pc.wheelStep1Title||'Start on the Outer Ring')}"></div>
+        <div class="fr"><label>Step 1 Text</label><input type="text" id="peWheelS1X" value="${esc(pc.wheelStep1Text||'Every spinner begins on Ring 1. Give it a spin and see where it lands.')}"></div>
+      </div>
+      <div class="g2">
+        <div class="fr"><label>Step 2 Title</label><input type="text" id="peWheelS2T" value="${esc(pc.wheelStep2Title||'Land on Number + Arrow? Bank It or Risk It')}"></div>
+        <div class="fr"><label>Step 2 Text</label><input type="text" id="peWheelS2X" value="${esc(pc.wheelStep2Text||'Keep those points for your squad, or risk them and spin the next ring inward.')}"></div>
+      </div>
+      <div class="g2">
+        <div class="fr"><label>Step 3 Title</label><input type="text" id="peWheelS3T" value="${esc(pc.wheelStep3Title||'Center: Land on Your Squad Color = 100 Points!')}"></div>
+        <div class="fr"><label>Step 3 Text</label><input type="text" id="peWheelS3X" value="${esc(pc.wheelStep3Text||'If you reach the center and land on your squad color, your squad earns 100 points.')}"></div>
+      </div>
+      <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin:12px 0 8px">Special Spaces</div>
+      <div class="fr"><label>Section Title</label><input type="text" id="peWheelSpT" value="${esc(pc.wheelSpecialTitle||'Special Spaces')}"></div>
+      <div class="g2">
+        <div class="fr"><label>Loyalty Name</label><input type="text" id="peWheelLN" value="${esc(pc.wheelLoyaltyName||'LOYALTY')}"></div>
+        <div class="fr"><label>Loyalty Text</label><input type="text" id="peWheelLX" value="${esc(pc.wheelLoyaltyText||"You only earn points if you are in your squad's color section.")}"></div>
+      </div>
+      <div class="g2">
+        <div class="fr"><label>Give Name</label><input type="text" id="peWheelGN" value="${esc(pc.wheelGiveName||'GIVE')}"></div>
+        <div class="fr"><label>Give Text</label><input type="text" id="peWheelGX" value="${esc(pc.wheelGiveText||'You must give those points to another squad instead of keeping them.')}"></div>
+      </div>
+      <div class="g2">
+        <div class="fr"><label>Auto Name</label><input type="text" id="peWheelAN" value="${esc(pc.wheelAutoName||'AUTO')}"></div>
+        <div class="fr"><label>Auto Text</label><input type="text" id="peWheelAX" value="${esc(pc.wheelAutoText||'You automatically advance to the next ring inward — no choice, you must spin again.')}"></div>
+      </div>
+      <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin:12px 0 8px">Sidebar — Quick Facts</div>
+      <div class="fr"><label>Card Title</label><input type="text" id="peWheelQFT" value="${esc(pc.wheelQFTitle||'⚡ Quick Facts')}"></div>
+      <div class="g2">
+        <div class="fr"><label>When</label><input type="text" id="peWheelQFWhen" value="${esc(pc.wheelQFWhen||'Every Friday')}"></div>
+        <div class="fr"><label>Where</label><input type="text" id="peWheelQFWhere" value="${esc(pc.wheelQFWhere||'School Lobby')}"></div>
+      </div>
+      <div class="g2">
+        <div class="fr"><label>How Many</label><input type="text" id="peWheelQFCount" value="${esc(pc.wheelQFCount||'5 students/week')}"></div>
+        <div class="fr"><label>Surprise Spins</label><input type="text" id="peWheelQFSurp" value="${esc(pc.wheelQFSurprise||'At lunch!')}"></div>
+      </div>
+      <div class="fr"><label>Staff Spins</label><input type="text" id="peWheelQFStaff" value="${esc(pc.wheelQFStaff||'Faculty meetings')}"></div>`;
   } else if(page==='traitdough'){
     f.innerHTML=`
-      <div class="fr"><label>Page Subtitle</label><input type="text" id="peTDSub" value="${esc(pc.traitdoughSubtitle)}"></div>
-      <div class="fr"><label>Body Text (leave blank for default)</label><textarea id="peTDBody" rows="8">${esc(pc.traitdoughBody)}</textarea></div>`;
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peTDSub" value="${esc(pc.traitdoughSubtitle||DEF.pageContent.traitdoughSubtitle)}"></div>
+      <div class="fr"><label>Body Text</label><textarea id="peTDBody" rows="6">${esc(pc.traitdoughBody||DEF.pageContent.traitdoughBody)}</textarea></div>
+      <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft);margin:12px 0 8px">Sidebar — SotM Experiences Card</div>
+      <div class="fr"><label>Card Title</label><input type="text" id="peTDSotmTitle" value="${esc(pc.tdSotmTitle||'🌟 SotM Experiences')}"></div>
+      <div class="g2">
+        <div class="fr"><label>September</label><input type="text" id="peTDSotmSept" value="${esc(pc.tdSotmSept||'Thaddeus Stevens')}"></div>
+        <div class="fr"><label>October</label><input type="text" id="peTDSotmOct" value="${esc(pc.tdSotmOct||'Meadow Valley Electric')}"></div>
+      </div>
+      <div class="g2">
+        <div class="fr"><label>November</label><input type="text" id="peTDSotmNov" value="${esc(pc.tdSotmNov||'Astro Machine Works')}"></div>
+        <div class="fr"><label>December</label><input type="text" id="peTDSotmDec" value="${esc(pc.tdSotmDec||'Ephrata Borough Police')}"></div>
+      </div>
+      <div class="g2">
+        <div class="fr"><label>January</label><input type="text" id="peTDSotmJan" value="${esc(pc.tdSotmJan||'Chamber of Commerce')}"></div>
+        <div class="fr"><label>February</label><input type="text" id="peTDSotmFeb" value="${esc(pc.tdSotmFeb||'EASD Athletics / PA Guard')}"></div>
+      </div>
+      <div class="g2">
+        <div class="fr"><label>March</label><input type="text" id="peTDSotmMar" value="${esc(pc.tdSotmMar||'Ephrata Review / LEO Club')}"></div>
+        <div class="fr"><label>April</label><input type="text" id="peTDSotmApr" value="${esc(pc.tdSotmApr||'GEARS / WellSpan')}"></div>
+      </div>
+      <div class="fr"><label>May</label><input type="text" id="peTDSotmMay" value="${esc(pc.tdSotmMay||'EHS Future Teachers')}"></div>`;
   } else if(page==='sotm'){
     const sd=D.sotmData||DEF.sotmData;
     const partners=(sd.partners||DEF.sotmData.partners).map(p=>`${p.month}|${p.trait}|${p.partners}`).join('\n');
@@ -4882,6 +5368,7 @@ function pTab(page){
       </div>
       <div style="margin:14px 0 8px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">Community Partners Table</div>
       <div style="font-size:12px;color:var(--text3);margin-bottom:8px">One row per line: <strong>Month|Trait|Partners</strong></div>
+      <div class="fr"><label>Section Header</label><input type="text" id="peSotmPartnersHdr" value="${esc(sd.partnersHeader||'Community Partners by Month')}"></div>
       <div class="fr"><textarea id="peSotmPartners" rows="12" style="font-family:'DM Mono',monospace;font-size:12px">${esc(partners)}</textarea></div>`;
   } else if(page==='mayhem'){
     f.innerHTML=`
@@ -4930,6 +5417,15 @@ function pTab(page){
       </div>
       <div class="fr"><label>Table Footnote</label><input type="text" id="peChampsTableNote2" value="${esc(pc.champsTableNote||DEF.pageContent.champsTableNote)}"></div>
       <div class="fr"><label>Photo Gallery Label</label><input type="text" id="peChampsPhotoLabel2" value="${esc(pc.champsPhotoLabel||'Photos from the championship event')}"></div>`;
+  } else if(page==='gallery'){
+    f.innerHTML=`
+      <div class="fr"><label>Gallery Subtitle</label><input type="text" id="peGallerySub" value="${esc(pc.gallerySubtitle||'Photos, voices, spotlights & upcoming events')}"></div>
+      <div class="fr"><label>Squads Page Subtitle</label><input type="text" id="peSquadsSub" value="${esc(pc.squadsSubtitle||'Everyone Belongs')}"></div>
+      <div class="fr"><label>Tracker Page Subtitle</label><input type="text" id="peTrackerSub" value="${esc(pc.trackerSubtitle||'Real-time squad standings')}"></div>`;
+  } else if(page==='staff'){
+    f.innerHTML=`
+      <div class="fr"><label>Page Subtitle</label><input type="text" id="peStaffSub" value="${esc(pc.staffSubtitle||'Everything you need to run Clash of Classes')}"></div>
+      <div class="fr"><label>Quick Links Section Title</label><input type="text" id="peStaffQLT" value="${esc(pc.staffQLinksTitle||'📌 Quick Links')}"></div>`;
   } else if(page.startsWith('sq-')){
     const sq=page.replace('sq-','');
     const hex=SQ_HEX[sq];
@@ -5002,6 +5498,7 @@ async function addGItem(type){
   if(type==='photo'){
     const fileInput=document.getElementById('gPhotoFile');
     const urlInput=document.getElementById('gPhotoUrl').value.trim();
+    if(urlInput && !isImageUrl(urlInput)){ alert('Please enter a valid https:// URL for the photo.'); return; }
     const title=document.getElementById('gPhotoTitle').value.trim();
     const date=document.getElementById('gPhotoDate').value;
     if(fileInput&&fileInput.files&&fileInput.files[0]){
@@ -5102,6 +5599,7 @@ function aTab(name){
     const sqc=D.squadColors||DEF.squadColors||{};
     SQUADS.forEach(function(sq){ const el=document.getElementById('sqColor'+sq); if(el) el.value=sqc[sq]||SQ_HEX[sq]; });
     renderSeasonThemeSwatches();
+    renderCountdownEventsList();
     const ctp=document.getElementById('customThemePrimary'); if(ctp) ctp.value=(D.seasonTheme&&D.seasonTheme.primary)||'#6d2b9f';
     const cta=document.getElementById('customThemeAccent'); if(cta) cta.value=(D.seasonTheme&&D.seasonTheme.accent)||'#e8c840';
     const tvsImg=document.getElementById('tvSlideImg'); if(tvsImg) tvsImg.value=tvs.image||'';
@@ -5397,6 +5895,10 @@ function renderSnapshots(){
 }
 
 function renderStaffLinks(){
+  const pc=D.pageContent||{};
+  const tsub=document.getElementById('trackerSubtitle'); if(tsub) tsub.textContent=pc.trackerSubtitle||DEF.pageContent.trackerSubtitle;
+  const sub=document.getElementById('staffSubtitle'); if(sub) sub.textContent=pc.staffSubtitle||'Everything you need to run Clash of Classes';
+  const qt=document.getElementById('staffQLinksTitle'); if(qt) qt.textContent=pc.staffQLinksTitle||'📌 Quick Links';
   const el=document.getElementById('staffQuickLinks'); if(!el) return;
   const links=D.staffLinks||[];
   if(!links.length){
