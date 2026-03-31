@@ -1872,6 +1872,111 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   </div>
 </div>
 
+<!-- SPIN PAGE -->
+<div class="page" id="page-spin">
+  <div class="page-hero" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
+    <div>
+      <h1 class="page-title">&#127992; <span>Spin!</span></h1>
+      <div class="page-subtitle">Admin-only wheel — results save directly to the tracker</div>
+    </div>
+    <button class="btn" onclick="openSpinTV()" style="color:var(--gold-soft);border-color:rgba(232,200,64,0.3)">&#128250; TV Display</button>
+  </div>
+
+  <!-- Auth gate — shown until password entered -->
+  <div id="spinAuthGate" style="text-align:center;padding:60px 20px;background:var(--surface);border:1px solid var(--border);border-radius:16px;margin-bottom:24px">
+    <div style="font-size:48px;margin-bottom:16px">&#127992;</div>
+    <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--gold-soft);margin-bottom:8px">Admin Access Required</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:24px">The Spin wheel is restricted to staff. Enter the admin password to continue.</div>
+    <div style="display:flex;gap:10px;justify-content:center;max-width:360px;margin:0 auto">
+      <input type="password" id="spinPwInput" placeholder="Admin password" onkeydown="if(event.key==='Enter')spinAuth()" style="flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;color:var(--text);font-size:14px">
+      <button onclick="spinAuth()" class="btn btn-purple" style="padding:12px 20px;font-size:14px">Enter</button>
+    </div>
+    <div id="spinAuthErr" style="color:#f87171;font-size:12px;margin-top:10px;display:none;font-family:'DM Mono',monospace;letter-spacing:1px">&#10005; Incorrect password</div>
+  </div>
+
+  <!-- Wheel UI — hidden until authed -->
+  <div id="spinWheelUI" style="display:none">
+
+    <!-- Top bar: squad select + TV button -->
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text3)">Spinning Squad:</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="spin-sq-btn spin-sq-on" data-ssq="BLACK" onclick="spinSetSq('BLACK')" style="border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;background:var(--surface2);color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s">&#11035; Black</button>
+        <button class="spin-sq-btn" data-ssq="GOLD" onclick="spinSetSq('GOLD')" style="border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;background:var(--surface2);color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s">&#11036; Gold</button>
+        <button class="spin-sq-btn" data-ssq="GREY" onclick="spinSetSq('GREY')" style="border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;background:var(--surface2);color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s">&#9633; Grey</button>
+        <button class="spin-sq-btn" data-ssq="PURPLE" onclick="spinSetSq('PURPLE')" style="border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;background:var(--surface2);color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s">&#11044; Purple</button>
+      </div>
+      <div style="margin-left:auto">
+        <button onclick="spinLogout()" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--text3);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:7px 12px;cursor:pointer;transition:all .2s">&#128274; Lock</button>
+      </div>
+    </div>
+
+    <!-- Main layout -->
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center">
+
+      <!-- WHEEL CANVAS -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;flex-shrink:0">
+        <div style="position:relative">
+          <div id="spinPtr" style="position:absolute;top:-22px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:26px solid var(--gold-soft);z-index:5;filter:drop-shadow(0 2px 6px rgba(232,200,64,.4))"></div>
+          <canvas id="spinCanvas" width="380" height="380" style="display:block;border-radius:50%;box-shadow:0 0 40px rgba(187,142,245,.12)"></canvas>
+        </div>
+        <!-- Ring progress dots -->
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase">Ring</span>
+          <div id="sDot0" style="width:12px;height:12px;border-radius:50%;background:var(--gold-soft);box-shadow:0 0 8px rgba(232,200,64,.5);transition:all .3s"></div>
+          <div id="sDot1" style="width:12px;height:12px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border);transition:all .3s"></div>
+          <div id="sDot2" style="width:12px;height:12px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border);transition:all .3s"></div>
+          <div id="sDot3" style="width:12px;height:12px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border);transition:all .3s"></div>
+          <span id="sRingLabel" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--gold-soft);text-transform:uppercase;margin-left:4px">1</span>
+        </div>
+      </div>
+
+      <!-- CONTROL PANEL -->
+      <div style="flex:1;min-width:240px;max-width:340px;display:flex;flex-direction:column;gap:12px">
+
+        <!-- Points banked -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Points This Spin</div>
+          <div id="sBanked" style="font-family:'Fraunces',serif;font-size:44px;font-weight:900;color:var(--gold-soft);line-height:1">0</div>
+          <div id="sBankedSub" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:5px">ready to bank</div>
+        </div>
+
+        <!-- Result card -->
+        <div id="sResultCard" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;min-height:80px;transition:border-color .3s,background .3s">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:5px">Result</div>
+          <div id="sResultVal" style="font-family:'Fraunces',serif;font-size:22px;font-weight:900;color:var(--text)">—</div>
+          <div id="sResultSub" style="font-size:11px;color:var(--text2);margin-top:3px">Select a squad and spin</div>
+        </div>
+
+        <!-- Buttons -->
+        <button id="sSpinBtn" onclick="sDoSpin()" style="width:100%;padding:16px;border-radius:14px;border:none;background:var(--gold-soft);color:#000;font-family:'Fraunces',serif;font-size:20px;font-weight:900;cursor:pointer;transition:all .15s;letter-spacing:1px">SPIN</button>
+        <div style="display:flex;gap:10px">
+          <button id="sBankBtn" onclick="sDoBank()" disabled style="flex:1;padding:12px 8px;border-radius:12px;border:1.5px solid var(--gold-soft);color:var(--gold-soft);background:transparent;font-family:'Fraunces',serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;opacity:.3">Bank It &#128176;</button>
+          <button id="sRiskBtn" onclick="sDoRisk()" disabled style="flex:1;padding:12px 8px;border-radius:12px;border:1.5px solid var(--purple-lt);color:var(--purple-lt);background:transparent;font-family:'Fraunces',serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;opacity:.3">Risk It &#9889;</button>
+        </div>
+
+        <!-- Save panel -->
+        <div id="sSaveArea" style="display:none;background:rgba(75,222,128,0.07);border:1px solid rgba(75,222,128,0.3);border-radius:14px;padding:16px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#4ade80;margin-bottom:8px">Save to Tracker</div>
+          <div id="sSavePreview" style="font-size:13px;color:var(--text2);margin-bottom:10px"></div>
+          <div class="fr" style="margin-bottom:10px"><label>Event label</label><input type="text" id="sEvtLabel" placeholder="Wheel Spin — Squad" style="font-size:13px"></div>
+          <div class="fmsg" id="sSaveOk">&#10003; Points saved to tracker!</div>
+          <button onclick="sSavePoints()" style="width:100%;padding:11px;border-radius:10px;border:none;background:#4ade80;color:#000;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;cursor:pointer">Save Points to Tracker</button>
+        </div>
+
+        <!-- Recent spin log -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Today's Spins</div>
+          <div id="sSpinLog" style="display:flex;flex-direction:column;gap:4px;max-height:140px;overflow-y:auto">
+            <div style="color:var(--text3);font-size:11px;padding:4px">No spins this session</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- WHEEL -->
 <div class="page" id="page-wheel">
   <div class="page-hero" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
@@ -1899,11 +2004,11 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         <div style="display:flex;flex-direction:column;align-items:center;padding:0 4px;flex-shrink:0;color:var(--gold-soft);font-size:14px">&#8595;<div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text3);white-space:nowrap">final</div></div>
         <div style="background:linear-gradient(135deg,rgba(255,225,0,0.15),rgba(157,95,204,0.15));border:2px solid var(--gold);border-radius:8px;padding:12px 14px;text-align:center;min-width:86px;flex-shrink:0"><div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:4px">Center!</div><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold)">100 pts</div><div style="font-size:10px;color:var(--text3);margin-top:2px">Squad color only</div></div>
       </div>
-      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px"><div style="width:28px;height:28px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;color:var(--purple-lt);flex-shrink:0;font-weight:700">1</div><div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px" id="wheelStep1Title">Start on the Outer Ring</div><div style="font-size:12px;color:var(--text2)" id="wheelStep1Text">Every spinner begins on Ring 1. Give it a spin and see where it lands.</div></div></div>
-      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px"><div style="width:28px;height:28px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;color:var(--purple-lt);flex-shrink:0;font-weight:700">2</div><div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px" id="wheelStep2Title">Land on Number + Arrow? Bank It or Risk It</div><div style="font-size:12px;color:var(--text2)" id="wheelStep2Text">Keep those points for your squad, or risk them and spin the next ring inward. You can risk up to 4 times total to reach the center.</div></div></div>
-      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px"><div style="width:28px;height:28px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;color:var(--purple-lt);flex-shrink:0;font-weight:700">3</div><div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px" id="wheelStep3Title">Center: Land on Your Squad Color = 100 Points!</div><div style="font-size:12px;color:var(--text2)" id="wheelStep3Text">If you reach the center and land on your squad's color, your squad earns 100 points. Wrong color = nothing. Big risk, big reward.</div></div></div>
+      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px"><div style="width:28px;height:28px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;color:var(--purple-lt);flex-shrink:0;font-weight:700">1</div><div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px" id="wheelStep1Title">Start on the Outer Ring</div><div style="font-size:12px;color:var(--text2)" id="wheelStep1Text">Every spinner begins on Ring 1. Give it a spin and earn whatever number you land on — color doesn't matter yet.</div></div></div>
+      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px"><div style="width:28px;height:28px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;color:var(--purple-lt);flex-shrink:0;font-weight:700">2</div><div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px" id="wheelStep2Title">Bank It or Risk It</div><div style="font-size:12px;color:var(--text2)" id="wheelStep2Text">Keep those points, or risk them and spin the next ring inward for higher values. Rings 1–3 pay out regardless of color.</div></div></div>
+      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px"><div style="width:28px;height:28px;background:var(--purple-dim);border:1px solid rgba(157,95,204,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;color:var(--purple-lt);flex-shrink:0;font-weight:700">3</div><div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px" id="wheelStep3Title">Ring 4: Color Matters!</div><div style="font-size:12px;color:var(--text2)" id="wheelStep3Text">On the 4th spin (and LOYALTY segments), color finally matters — you must land on your squad's color to earn. Wrong color = nothing.</div></div></div>
       <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:12px" id="wheelSpecialTitle">Special Spaces</div>
-      <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--sq-purple);border-radius:10px;padding:14px;margin-bottom:8px"><div style="font-family:'Fraunces',serif;font-size:16px;font-weight:900;color:var(--sq-purple);min-width:76px;flex-shrink:0" id="wheelLoyaltyName">LOYALTY</div><div style="font-size:13px;color:var(--text2);line-height:1.5" id="wheelLoyaltyText">You only earn points if you are in your squad's color section. Land on Loyalty on a different color = nothing.</div></div>
+      <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--sq-purple);border-radius:10px;padding:14px;margin-bottom:8px"><div style="font-family:'Fraunces',serif;font-size:16px;font-weight:900;color:var(--sq-purple);min-width:76px;flex-shrink:0" id="wheelLoyaltyName">LOYALTY</div><div style="font-size:13px;color:var(--text2);line-height:1.5" id="wheelLoyaltyText">You only earn points if you land on your squad's own color section. Land on LOYALTY in a different color = nothing.</div></div>
       <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--sq-gold);border-radius:10px;padding:14px;margin-bottom:8px"><div style="font-family:'Fraunces',serif;font-size:16px;font-weight:900;color:var(--sq-gold);min-width:76px;flex-shrink:0" id="wheelGiveName">GIVE</div><div style="font-size:13px;color:var(--text2);line-height:1.5" id="wheelGiveText">You must give those points to another squad instead of keeping them.</div></div>
       <div style="display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--sq-grey);border-radius:10px;padding:14px;margin-bottom:8px"><div style="font-family:'Fraunces',serif;font-size:16px;font-weight:900;color:var(--sq-grey);min-width:76px;flex-shrink:0" id="wheelAutoName">AUTO</div><div style="font-size:13px;color:var(--text2);line-height:1.5" id="wheelAutoText">You automatically advance to the next ring inward — no choice, you must spin again.</div></div>
       <div id="wheelEmbeds" style="margin-top:20px"></div>
@@ -1918,13 +2023,12 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
           <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Surprise spins</span><span id="wheelQFSurprise">At lunch!</span></div>
           <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Staff spins</span><span id="wheelQFStaff">Faculty meetings</span></div>
         </div>
-        <button class="btn btn-purple btn-full" style="margin-top:12px" onclick="goTo('tracker')">View Live Tracker →</button>
+        <button class="btn btn-purple btn-full" style="margin-top:12px" onclick="requireAdmin(openWheelSpinner)">&#127992; Spin the Wheel</button>
       </div>
-      <div class="link-card" id="wheelLinks"><div class="link-card-title">🔗 Resources</div><div style="color:var(--text3);font-size:12px">Loading...</div></div>
+      <div class="link-card" id="wheelLinks"><div class="link-card-title">&#128279; Resources</div><div style="color:var(--text3);font-size:12px">Loading...</div></div>
     </div>
   </div>
 </div>
-
 <!-- TRAIT DOUGH -->
 <div class="page" id="page-traitdough">
   <div class="page-hero" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
@@ -2127,6 +2231,51 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 </div>
 
 <!-- ═══ TICKER TAPE ═══ -->
+
+<!-- SPIN TV DISPLAY -->
+<div id="spinTV" style="display:none;position:fixed;inset:0;z-index:950;background:#06060f;flex-direction:column;align-items:center;justify-content:center;gap:0">
+  <button onclick="closeSpinTV()" style="position:absolute;top:16px;right:20px;background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.3);cursor:pointer;padding:8px 18px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;z-index:10">&#10005; Exit TV</button>
+
+  <!-- Live squad scores strip -->
+  <div id="spinTVScores" style="display:flex;width:100%;border-bottom:2px solid rgba(255,255,255,.06)"></div>
+
+  <!-- Center: wheel + result -->
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:60px;padding:24px;flex-wrap:wrap">
+
+    <!-- Wheel -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+      <div style="position:relative">
+        <div id="spinTVPtr" style="position:absolute;top:-26px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:32px solid #e8c840;z-index:5"></div>
+        <canvas id="spinTVCanvas" width="420" height="420" style="display:block;border-radius:50%;box-shadow:0 0 60px rgba(187,142,245,.18)"></canvas>
+      </div>
+      <!-- Ring dots -->
+      <div style="display:flex;gap:10px;align-items:center">
+        <div id="tvDot0" style="width:14px;height:14px;border-radius:50%;background:#e8c840;box-shadow:0 0 10px rgba(232,200,64,.6);transition:all .3s"></div>
+        <div id="tvDot1" style="width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);transition:all .3s"></div>
+        <div id="tvDot2" style="width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);transition:all .3s"></div>
+        <div id="tvDot3" style="width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);transition:all .3s"></div>
+      </div>
+    </div>
+
+    <!-- Result panel -->
+    <div style="max-width:360px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px">
+      <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:rgba(255,255,255,.25)">Clash of Classes · The Wheel</div>
+      <!-- Squad badge -->
+      <div id="spinTVSquadBadge" style="padding:10px 28px;border-radius:40px;font-family:'DM Mono',monospace;font-size:13px;letter-spacing:3px;text-transform:uppercase;font-weight:700;background:rgba(197,201,209,.1);color:#c5c9d1;border:1.5px solid rgba(197,201,209,.25)">Black Squad</div>
+      <!-- Big result -->
+      <div id="spinTVResult" style="font-family:'Fraunces',serif;font-size:clamp(60px,12vw,120px);font-weight:900;color:#e8c840;line-height:1;transition:all .3s">—</div>
+      <div id="spinTVSub" style="font-family:'DM Mono',monospace;font-size:clamp(13px,2vw,18px);letter-spacing:2px;color:rgba(255,255,255,.45);text-transform:uppercase">Waiting to spin</div>
+      <!-- Points banked -->
+      <div id="spinTVBanked" style="display:none;font-family:'Fraunces',serif;font-size:24px;font-weight:700;color:rgba(255,255,255,.4)">0 pts banked</div>
+    </div>
+  </div>
+
+  <!-- Bottom: scrolling ticker -->
+  <div style="width:100%;border-top:1px solid rgba(255,255,255,.06);padding:14px 0;overflow:hidden">
+    <div id="spinTVTicker" style="display:flex;gap:0;animation:tickerScroll 35s linear infinite;white-space:nowrap;width:max-content"></div>
+  </div>
+</div>
+
 <div id="tickerView">
   <button class="ticker-exit" onclick="closeTicker()">✕ Exit</button>
   <div id="tickerScores" class="ticker-scores"></div>
@@ -2681,6 +2830,87 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   </div>
 </div>
 
+
+<!-- WHEEL SPINNER MODAL -->
+<div class="overlay" id="wheelSpinModal" onclick="if(event.target===this)closeWheelSpinner()">
+  <div class="edit-evt-box" style="max-width:700px;padding:0;overflow:hidden;background:var(--bg2)">
+
+    <!-- Header -->
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 24px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:900;color:var(--gold-soft)">&#127992; The Wheel — Admin</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-top:3px">Results auto-save to tracker</div>
+      </div>
+      <button class="modal-close" style="position:relative;top:0;right:0" onclick="closeWheelSpinner()">&#10005;</button>
+    </div>
+
+    <div style="padding:24px;display:flex;gap:24px;flex-wrap:wrap;justify-content:center;align-items:flex-start">
+
+      <!-- Canvas -->
+      <div style="position:relative;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:12px">
+        <div style="position:relative">
+          <div id="wSpinPtr" style="position:absolute;top:-20px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-top:22px solid var(--gold-soft);z-index:5"></div>
+          <canvas id="wSpinCanvas" width="300" height="300" style="display:block;border-radius:50%"></canvas>
+        </div>
+        <!-- Ring indicator dots -->
+        <div style="display:flex;gap:6px;justify-content:center;align-items:center">
+          <span style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-right:4px">Ring</span>
+          <div id="wDot0" style="width:10px;height:10px;border-radius:50%;background:var(--gold-soft);box-shadow:0 0 6px rgba(232,200,64,.5);transition:all .3s"></div>
+          <div id="wDot1" style="width:10px;height:10px;border-radius:50%;background:var(--surface);border:1.5px solid var(--border);transition:all .3s"></div>
+          <div id="wDot2" style="width:10px;height:10px;border-radius:50%;background:var(--surface);border:1.5px solid var(--border);transition:all .3s"></div>
+          <div id="wDot3" style="width:10px;height:10px;border-radius:50%;background:var(--surface);border:1.5px solid var(--border);transition:all .3s"></div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:12px">
+
+        <!-- Squad select -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Spinning Squad</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px" id="wSqBtns">
+            <button class="w-sq-btn w-sq-on" data-wsq="BLACK" onclick="wSetSq('BLACK')" style="border:1.5px solid var(--border);border-radius:8px;padding:8px 6px;background:var(--surface2);color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s">&#11035; Black</button>
+            <button class="w-sq-btn" data-wsq="GOLD" onclick="wSetSq('GOLD')" style="border:1.5px solid var(--border);border-radius:8px;padding:8px 6px;background:var(--surface2);color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s">&#11036; Gold</button>
+            <button class="w-sq-btn" data-wsq="GREY" onclick="wSetSq('GREY')" style="border:1.5px solid var(--border);border-radius:8px;padding:8px 6px;background:var(--surface2);color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s">&#9633; Grey</button>
+            <button class="w-sq-btn" data-wsq="PURPLE" onclick="wSetSq('PURPLE')" style="border:1.5px solid var(--border);border-radius:8px;padding:8px 6px;background:var(--surface2);color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s">&#11044; Purple</button>
+          </div>
+        </div>
+
+        <!-- Banked points display -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Points This Spin</div>
+          <div id="wBankedPts" style="font-family:'Fraunces',serif;font-size:36px;font-weight:900;color:var(--gold-soft);line-height:1">0</div>
+          <div id="wBankedSub" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:4px">ready to bank</div>
+        </div>
+
+        <!-- Last result -->
+        <div id="wResultCard" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;min-height:72px;transition:border-color .3s,background .3s">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:5px">Result</div>
+          <div id="wResultVal" style="font-family:'Fraunces',serif;font-size:18px;font-weight:900;color:var(--text)">—</div>
+          <div id="wResultSub" style="font-size:11px;color:var(--text2);margin-top:3px">Pick a squad and spin</div>
+        </div>
+
+        <!-- Action buttons -->
+        <button id="wSpinBtn" onclick="wDoSpin()" style="width:100%;padding:14px;border-radius:12px;border:none;background:var(--gold-soft);color:#000;font-family:'Fraunces',serif;font-size:18px;font-weight:900;cursor:pointer;transition:all .15s;letter-spacing:1px">SPIN</button>
+        <div style="display:flex;gap:8px">
+          <button id="wBankBtn" onclick="wDoBank()" disabled style="flex:1;padding:11px 8px;border-radius:10px;border:1.5px solid var(--gold-soft);color:var(--gold-soft);background:transparent;font-family:'Fraunces',serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;opacity:.3">Bank It &#128176;</button>
+          <button id="wRiskBtn" onclick="wDoRisk()" disabled style="flex:1;padding:11px 8px;border-radius:10px;border:1.5px solid var(--purple-lt);color:var(--purple-lt);background:transparent;font-family:'Fraunces',serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;opacity:.3">Risk It &#9889;</button>
+        </div>
+
+        <!-- Save to tracker -->
+        <div id="wSaveArea" style="display:none;background:rgba(75,222,128,0.08);border:1px solid rgba(75,222,128,0.3);border-radius:12px;padding:14px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#4ade80;margin-bottom:8px">Save to Tracker</div>
+          <div id="wSavePreview" style="font-size:13px;color:var(--text2);margin-bottom:10px"></div>
+          <div class="fr" style="margin-bottom:8px"><label style="font-size:11px;color:var(--text3)">Event label (optional)</label><input type="text" id="wEvtLabel" placeholder="e.g. Wheel Spin — Fri Oct 24" style="font-size:12px"></div>
+          <div class="fmsg" id="wSaveOk">&#10003; Saved to tracker!</div>
+          <button onclick="wSaveToTracker()" style="width:100%;padding:10px;border-radius:8px;border:none;background:#4ade80;color:#000;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;cursor:pointer">Save Points</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- EDIT EVENT MODAL -->
 <div class="edit-evt-modal" id="editEvtModal">
   <div class="edit-evt-box">
@@ -2782,7 +3012,7 @@ window.toggleMode = function(){
     {id:'mindset',icon:'📚',label:'Mindset'},{id:'wheel',icon:'🎡',label:'Wheel'},
     {id:'traitdough',icon:'💵',label:'Trait Dough'},{id:'sotm',icon:'🌟',label:'Student of Month'},
     {id:'kickoff',icon:'🚀',label:'Kick Off'},{id:'mayhem',icon:'⚡',label:'Mayhem'},{id:'champs',icon:'🏆',label:'Champs'},
-    {id:'gallery',icon:'📸',label:'Gallery'},{id:'staff',icon:'👤',label:'Staff'},
+    {id:'gallery',icon:'📸',label:'Gallery'},{id:'staff',icon:'👤',label:'Staff'},{id:'spin',icon:'🎰',label:'Spin!'},
   ];
   var tabs=document.getElementById('navTabs');
   var mob=document.getElementById('mobileNav');
@@ -2836,6 +3066,7 @@ const PAGES_DEF = [
   { id:'champs',     icon:'🏆', label:'Champs'         },
   { id:'gallery',    icon:'📸', label:'Gallery'        },
   { id:'staff',      icon:'👤', label:'Staff'          },
+  { id:'spin',       icon:'🎰', label:'Spin!'          },
 ];
 
 const TRAITS = [
@@ -3242,6 +3473,7 @@ function goTo(id){
   else if(id==='tracker'){ renderStrip(); renderTable(); renderMetrics(); renderTimeline(); renderSnapshots(); renderPoll(); renderCatChart(); renderSeasonCal(); }
   else if(id==='home'){ renderMini(); renderHomeText(); renderTraitPillar(); renderCountdown(); renderAnnouncement(); renderHeroStrip(); }
   else if(id==='staff'){ renderStaffLinks(); }
+  else if(id==='spin'){ renderSpinPage(); }
   else if(id.startsWith('squad-')){ renderSquadDetail(id.replace('squad-','')); }
 }
 
@@ -4049,33 +4281,87 @@ function openHeadToHead(){
   renderH2H();
 }
 function renderH2H(){
-  const sq1=document.getElementById('h2hSq1')?.value||'BLACK';
-  const sq2=document.getElementById('h2hSq2')?.value||'GOLD';
-  const events=(D.events||[]).filter(ev=>ev.type==='event'||ev.type==='other');
+  const sq1El=document.getElementById('h2hSq1');
+  const sq2El=document.getElementById('h2hSq2');
+  if(!sq1El||!sq2El) return;
+  const sq1=sq1El.value||'BLACK';
+  const sq2=sq2El.value||'GOLD';
+  const out=document.getElementById('h2hOutput'); if(!out) return;
+
+  // Guard: same squad selected
+  if(sq1===sq2){
+    out.innerHTML='<div style="color:var(--text3);text-align:center;padding:32px;font-size:13px">Select two different squads to compare.</div>';
+    return;
+  }
+
+  const events=(D.events||[]);
+  if(!events.length){
+    out.innerHTML='<div style="color:var(--text3);text-align:center;padding:32px;font-size:13px">No events recorded yet.</div>';
+    return;
+  }
+
   let wins1=0,wins2=0,ties=0,total1=0,total2=0;
   const rows=events.map(function(ev){
     const p1=ev.pts[sq1]||0, p2=ev.pts[sq2]||0;
     total1+=p1; total2+=p2;
-    if(p1>p2) wins1++; else if(p2>p1) wins2++; else if(p1>0) ties++;
+    const winner = p1>p2 ? 1 : p2>p1 ? 2 : 0;
+    if(winner===1) wins1++; else if(winner===2) wins2++; else if(p1>0||p2>0) ties++;
     const mx=Math.max(p1,p2,1);
     const w1=Math.round(p1/mx*100), w2=Math.round(p2/mx*100);
-    return `<div style="margin-bottom:10px;padding:10px;background:var(--surface);border-radius:8px">
-      <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text)">${ev.name}${ev.date?'<span style="color:var(--text3);font-size:10px;margin-left:6px;font-family:DM Mono,monospace">'+ev.date+'</span>':''}</div>
-      <div class="h2h-bar-wrap"><div class="h2h-bar" style="width:${w1}%;background:${SQ_HEX[sq1]}"></div><div class="h2h-val" style="color:${SQ_HEX[sq1]}">${p1}</div></div>
-      <div class="h2h-bar-wrap"><div class="h2h-bar" style="width:${w2}%;background:${SQ_HEX[sq2]}"></div><div class="h2h-val" style="color:${SQ_HEX[sq2]}">${p2}</div></div>
-    </div>`;
+    const winBorder = winner===1 ? 'border-left:3px solid '+SQ_HEX[sq1] : winner===2 ? 'border-left:3px solid '+SQ_HEX[sq2] : 'border-left:3px solid var(--border)';
+    const typeTag = ev.type==='event'
+      ? '<span style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;background:rgba(109,43,159,0.12);color:var(--purple-lt);padding:2px 6px;border-radius:10px;margin-left:6px">Event</span>'
+      : '<span style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;background:rgba(255,255,255,0.05);color:var(--text3);padding:2px 6px;border-radius:10px;margin-left:6px">Other</span>';
+    const winLabel = winner===1
+      ? '<span style="font-family:DM Mono,monospace;font-size:9px;color:'+SQ_HEX[sq1]+';margin-left:auto;font-weight:700">'+sq1+' +</span>'
+      : winner===2
+        ? '<span style="font-family:DM Mono,monospace;font-size:9px;color:'+SQ_HEX[sq2]+';margin-left:auto;font-weight:700">'+sq2+' +</span>'
+        : (p1>0||p2>0)?'<span style="font-family:DM Mono,monospace;font-size:9px;color:var(--text3);margin-left:auto">TIE</span>':'';
+    return '<div style="margin-bottom:8px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;'+winBorder+'">'
+      +'<div style="display:flex;align-items:center;gap:4px;margin-bottom:8px">'
+      +'<span style="font-size:13px;font-weight:600;color:var(--text)">'+ev.name+'</span>'
+      +typeTag
+      +(ev.date?'<span style="font-family:DM Mono,monospace;font-size:9px;color:var(--text3);margin-left:4px">'+ev.date+'</span>':'')
+      +winLabel
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+      +'<span style="font-family:DM Mono,monospace;font-size:10px;color:'+SQ_HEX[sq1]+';width:52px;text-align:right;flex-shrink:0">'+sq1+'</span>'
+      +'<div style="flex:1;height:10px;background:var(--surface2);border-radius:5px;overflow:hidden"><div style="height:100%;width:'+w1+'%;background:'+SQ_HEX[sq1]+';border-radius:5px;transition:width 0.4s"></div></div>'
+      +'<span style="font-family:Fraunces,serif;font-size:14px;font-weight:700;color:'+SQ_HEX[sq1]+';width:32px;flex-shrink:0">'+p1+'</span>'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+      +'<span style="font-family:DM Mono,monospace;font-size:10px;color:'+SQ_HEX[sq2]+';width:52px;text-align:right;flex-shrink:0">'+sq2+'</span>'
+      +'<div style="flex:1;height:10px;background:var(--surface2);border-radius:5px;overflow:hidden"><div style="height:100%;width:'+w2+'%;background:'+SQ_HEX[sq2]+';border-radius:5px;transition:width 0.4s"></div></div>'
+      +'<span style="font-family:Fraunces,serif;font-size:14px;font-weight:700;color:'+SQ_HEX[sq2]+';width:32px;flex-shrink:0">'+p2+'</span>'
+      +'</div>'
+      +'</div>';
   }).join('');
-  const out=document.getElementById('h2hOutput'); if(!out) return;
-  out.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px;text-align:center">
-    <div style="background:var(--surface);border-radius:10px;padding:12px"><div style="font-family:Fraunces,serif;font-size:24px;font-weight:900;color:${SQ_HEX[sq1]}">${wins1}</div><div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace">${sq1} WINS</div></div>
-    <div style="background:var(--surface);border-radius:10px;padding:12px"><div style="font-family:Fraunces,serif;font-size:24px;font-weight:900;color:var(--text3)">${ties}</div><div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace">TIES</div></div>
-    <div style="background:var(--surface);border-radius:10px;padding:12px"><div style="font-family:Fraunces,serif;font-size:24px;font-weight:900;color:${SQ_HEX[sq2]}">${wins2}</div><div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace">${sq2} WINS</div></div>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
-    <div style="text-align:center;font-family:Fraunces,serif;font-size:18px;font-weight:700;color:${SQ_HEX[sq1]}">${total1.toLocaleString()} pts total</div>
-    <div style="text-align:center;font-family:Fraunces,serif;font-size:18px;font-weight:700;color:${SQ_HEX[sq2]}">${total2.toLocaleString()} pts total</div>
-  </div>
-  ${rows||'<div style="color:var(--text3);text-align:center;padding:24px;font-size:13px">No events yet.</div>'}`;
+
+  // Overall leader
+  const overallWinner = total1>total2 ? sq1 : total2>total1 ? sq2 : null;
+  const overallColor = overallWinner ? SQ_HEX[overallWinner] : 'var(--text3)';
+  const overallLabel = overallWinner ? overallWinner+' leads overall' : 'Even overall';
+
+  out.innerHTML=
+    '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;margin-bottom:16px;text-align:center;align-items:center">'
+    +'<div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid '+SQ_HEX[sq1]+';border-radius:10px;padding:12px">'
+    +'<div style="font-family:Fraunces,serif;font-size:28px;font-weight:900;color:'+SQ_HEX[sq1]+'">'+wins1+'</div>'
+    +'<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:'+SQ_HEX[sq1]+';margin-top:2px">'+sq1+' wins</div>'
+    +'<div style="font-family:Fraunces,serif;font-size:16px;font-weight:700;color:'+SQ_HEX[sq1]+';margin-top:4px">'+total1.toLocaleString()+' pts</div>'
+    +'</div>'
+    +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 6px;min-width:48px">'
+    +'<div style="font-family:Fraunces,serif;font-size:14px;font-weight:900;color:var(--text3)">'+ties+'</div>'
+    +'<div style="font-family:DM Mono,monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--text3)">ties</div>'
+    +'</div>'
+    +'<div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid '+SQ_HEX[sq2]+';border-radius:10px;padding:12px">'
+    +'<div style="font-family:Fraunces,serif;font-size:28px;font-weight:900;color:'+SQ_HEX[sq2]+'">'+wins2+'</div>'
+    +'<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:'+SQ_HEX[sq2]+';margin-top:2px">'+sq2+' wins</div>'
+    +'<div style="font-family:Fraunces,serif;font-size:16px;font-weight:700;color:'+SQ_HEX[sq2]+';margin-top:4px">'+total2.toLocaleString()+' pts</div>'
+    +'</div>'
+    +'</div>'
+    +'<div style="text-align:center;font-family:DM Mono,monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:'+overallColor+';margin-bottom:16px;padding:8px;background:var(--surface);border-radius:8px;border:1px solid var(--border)">'+overallLabel+'</div>'
+    +'<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Event Breakdown ('+events.length+' events)</div>'
+    +rows;
 }
 
 // ── GALLERY FILTER ──
@@ -4136,6 +4422,7 @@ function renderAll(){
   if(currentPage==='mayhem') renderMayhem();
   if(currentPage==='champs') renderChamps();
   if(currentPage==='kickoff') renderKickoff();
+  if(currentPage==='spin') renderSpinPage();
   if(currentPage==='wheel') renderWheel();
   if(currentPage==='traitdough') renderTraitDough();
   if(currentPage==='sotm') renderSotm();
@@ -5970,6 +6257,697 @@ async function saveSpotlights(){
   await save(); flash('spotlightsOk'); renderTraitSpotlight();
 }
 
+
+// ══════════════════════════════════════════
+// WHEEL SPINNER
+// ══════════════════════════════════════════
+
+// Real wheel segments — single flat disc, 4 colour quadrants
+// Points always earned on rings 1-3 regardless of colour
+// Ring 4 and LOYALTY: must match squad colour to earn
+const W_SEGS = [
+  // Each segment: {color, type:'pts'|'special', val, name?, loyalty?}
+  // BLACK quadrant (6 segments)
+  {color:'BLACK', type:'pts',     val:1},
+  {color:'BLACK', type:'pts',     val:10},
+  {color:'BLACK', type:'pts',     val:25},
+  {color:'BLACK', type:'special', val:0,  name:'NONE'},
+  {color:'BLACK', type:'pts',     val:50},
+  {color:'BLACK', type:'pts',     val:5},
+  // GOLD quadrant
+  {color:'GOLD',  type:'pts',     val:20},
+  {color:'GOLD',  type:'pts',     val:5},
+  {color:'GOLD',  type:'special', val:20, name:'LOYALTY', loyalty:true},
+  {color:'GOLD',  type:'pts',     val:50},
+  {color:'GOLD',  type:'pts',     val:10},
+  {color:'GOLD',  type:'pts',     val:25},
+  // GREY quadrant
+  {color:'GREY',  type:'pts',     val:1},
+  {color:'GREY',  type:'pts',     val:30},
+  {color:'GREY',  type:'pts',     val:10},
+  {color:'GREY',  type:'special', val:0,  name:'ZERO'},
+  {color:'GREY',  type:'pts',     val:20},
+  {color:'GREY',  type:'pts',     val:75},
+  // PURPLE quadrant
+  {color:'PURPLE',type:'pts',     val:5},
+  {color:'PURPLE',type:'pts',     val:50},
+  {color:'PURPLE',type:'special', val:0,  name:'AUTO'},
+  {color:'PURPLE',type:'pts',     val:25},
+  {color:'PURPLE',type:'pts',     val:10},
+  {color:'PURPLE',type:'special', val:20, name:'LOYALTY', loyalty:true},
+];
+
+const W_SQ_HEX = {BLACK:'#b8bcc6',GOLD:'#ffe100',GREY:'#8899aa',PURPLE:'#bb8ef5'};
+const W_SQ_DARK= {BLACK:'#5a6070',GOLD:'#907000',GREY:'#445566',PURPLE:'#6a40a8'};
+const W_SPEC   = {
+  NONE:    {bg:'#151520',text:'#5050a0',label:'NONE'},
+  ZERO:    {bg:'#151520',text:'#5050a0',label:'ZERO'},
+  NADA:    {bg:'#151520',text:'#5050a0',label:'NADA'},
+  GIVE:    {bg:'#1e1400',text:'#cc9900',label:'GIVE'},
+  AUTO:    {bg:'#0c1220',text:'#4477aa',label:'AUTO'},
+  LOYALTY: {bg:'#180830',text:'#aa55ee',label:'LOYALTY'},
+};
+
+let wCanvas, wCtx, wAngle=0, wSpinning=false, wRing=0, wBanked=0;
+let wSquad='BLACK', wRaf=null;
+
+const W_N = W_SEGS.length;
+const W_SA = (Math.PI*2)/W_N;
+const W_CX=150, W_CY=150, W_R=142;
+
+function openWheelSpinner(){
+  wCanvas=document.getElementById('wSpinCanvas');
+  wCtx=wCanvas.getContext('2d');
+  wAngle=0; wRing=0; wBanked=0; wSpinning=false;
+  wUpdateDots(); wUpdateBanked(); wDrawWheel();
+  wSetResult('—','Pick a squad and spin','');
+  wSetBtns(true,false,false);
+  document.getElementById('wSaveArea').style.display='none';
+  document.getElementById('wheelSpinModal').classList.add('open');
+}
+
+function closeWheelSpinner(){
+  if(wRaf) cancelAnimationFrame(wRaf);
+  document.getElementById('wheelSpinModal').classList.remove('open');
+}
+
+function wDrawWheel(){
+  if(!wCtx) return;
+  const ctx=wCtx;
+  ctx.clearRect(0,0,300,300);
+  for(let i=0;i<W_N;i++){
+    const seg=W_SEGS[i];
+    const a0=wAngle+i*W_SA-Math.PI/2;
+    const a1=a0+W_SA, am=a0+W_SA/2;
+    ctx.beginPath();
+    ctx.moveTo(W_CX,W_CY);
+    ctx.arc(W_CX,W_CY,W_R,a0,a1);
+    ctx.closePath();
+    // Color: dim non-active rings (just cosmetic — all rings share same flat disc)
+    if(seg.type==='special'){
+      const ss=W_SPEC[seg.name]||W_SPEC.NONE;
+      ctx.fillStyle=ss.bg;
+    } else {
+      ctx.fillStyle=W_SQ_HEX[seg.color];
+    }
+    ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.5)'; ctx.lineWidth=1; ctx.stroke();
+    // Label
+    const lr=W_R*0.62, lx=W_CX+Math.cos(am)*lr, ly=W_CY+Math.sin(am)*lr;
+    ctx.save(); ctx.translate(lx,ly); ctx.rotate(am+Math.PI/2);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    if(seg.type==='special'){
+      const ss=W_SPEC[seg.name]||W_SPEC.NONE;
+      ctx.fillStyle=ss.text;
+      ctx.font='bold 8px "DM Mono",monospace,"Courier New"';
+      ctx.fillText(seg.name,0,0);
+    } else {
+      const light=seg.color==='GOLD'||seg.color==='GREY';
+      ctx.fillStyle=light?'#111':'#fff';
+      ctx.font='bold 12px "Fraunces",serif';
+      ctx.fillText(seg.val,0,0);
+    }
+    ctx.restore();
+  }
+  // Outer rim
+  wCtx.beginPath(); wCtx.arc(W_CX,W_CY,W_R,0,Math.PI*2);
+  wCtx.strokeStyle='rgba(232,200,64,0.35)'; wCtx.lineWidth=3; wCtx.stroke();
+  // Ring 4 highlight: inner donut to show which ring matters for colour
+  if(wRing===3){
+    wCtx.beginPath(); wCtx.arc(W_CX,W_CY,W_R*0.5,0,Math.PI*2);
+    wCtx.strokeStyle='rgba(232,200,64,0.55)'; wCtx.lineWidth=2.5; wCtx.stroke();
+    wCtx.beginPath(); wCtx.arc(W_CX,W_CY,W_R*0.5,0,Math.PI*2);
+    wCtx.strokeStyle='rgba(232,200,64,0.15)'; wCtx.lineWidth=W_R; wCtx.stroke();
+  }
+  // Hub
+  wCtx.beginPath(); wCtx.arc(W_CX,W_CY,18,0,Math.PI*2);
+  wCtx.fillStyle='#0f0f18'; wCtx.fill();
+  wCtx.strokeStyle='rgba(255,255,255,0.18)'; wCtx.lineWidth=1.5; wCtx.stroke();
+  wCtx.beginPath(); wCtx.arc(W_CX,W_CY,5,0,Math.PI*2);
+  wCtx.fillStyle='#e8c840'; wCtx.fill();
+}
+
+function wDoSpin(){
+  if(wSpinning) return;
+  wSpinning=true;
+  document.getElementById('wSaveArea').style.display='none';
+  wSetBtns(false,false,false);
+  wSetResult('—','Spinning…','');
+  const landIdx=Math.floor(Math.random()*W_N);
+  const extra=5+Math.random()*5;
+  const target=-Math.PI/2-landIdx*W_SA-W_SA/2-extra*Math.PI*2;
+  const a0=wAngle, delta=target-a0;
+  const dur=3000+Math.random()*1600, t0=performance.now();
+  const ease=t=>1-Math.pow(1-t,4);
+  function frame(now){
+    const t=Math.min((now-t0)/dur,1);
+    wAngle=a0+delta*ease(t); wDrawWheel();
+    if(t<1){ wRaf=requestAnimationFrame(frame); }
+    else { wSpinning=false; wLand(W_SEGS[landIdx]); }
+  }
+  wRaf=requestAnimationFrame(frame);
+}
+
+function wLand(seg){
+  const isRing4=(wRing===3);
+  // Determine earn
+  if(seg.type==='special'){
+    const n=seg.name;
+    if(n==='NONE'||n==='ZERO'||n==='NADA'){
+      wSetResult(n+' — 0 pts','No points this spin.','zero');
+      wSetBtns(false,false,false);
+      setTimeout(()=>{wNextOrSave(false);},1200);
+    } else if(n==='LOYALTY'){
+      const match=(seg.color===wSquad);
+      const pts=match?seg.val:0;
+      if(match) wBanked+=pts;
+      wUpdateBanked();
+      wSetResult('LOYALTY — '+(match?'+'+pts+' pts':'0 pts'), match?'Your squad color — points earned!':'Not your squad color. No points.', match?'earn':'zero');
+      if(isRing4||!match){ setTimeout(()=>wNextOrSave(match),1200); }
+      else { wSetBtns(false,true,true); }
+    } else if(n==='AUTO'){
+      wSetResult('AUTO — advance!','Must spin the next ring!','auto');
+      wRing=Math.min(wRing+1,3);
+      wUpdateDots();
+      setTimeout(wDoSpin,1600);
+      return;
+    } else if(n==='GIVE'){
+      const pts=seg.val||20;
+      wBanked=Math.max(0,wBanked-pts);
+      wUpdateBanked();
+      wSetResult('GIVE — −'+pts+' pts','Give those points to another squad!','give');
+      if(isRing4){ setTimeout(()=>wNextOrSave(false),1200); }
+      else { wSetBtns(false,true,true); }
+    }
+  } else {
+    // Points segment
+    const pts=seg.val;
+    const colorMatch=(seg.color===wSquad);
+    // Ring 4: must match colour. Rings 1-3: always earn.
+    const earn=(isRing4?colorMatch:true);
+    if(earn){ wBanked+=pts; wUpdateBanked(); }
+    wSetResult(
+      earn ? '+'+pts+' pts' : '0 pts — wrong colour',
+      earn
+        ? (isRing4 ? 'Your squad colour on Ring 4! +'+pts+' pts.' : '+'+pts+' pts earned.')
+        : 'Ring 4: must land on your squad colour. No points.',
+      earn?'earn':'zero'
+    );
+    if(isRing4||!earn){
+      setTimeout(()=>wNextOrSave(earn),1200);
+    } else {
+      wSetBtns(false,true,true);
+    }
+  }
+}
+
+function wNextOrSave(earned){
+  // Show save panel — always, so admin can choose to save or discard
+  wShowSave();
+  wSetBtns(true,false,false); // allow another full spin session
+}
+
+function wDoBank(){
+  wSetBtns(false,false,false);
+  wShowSave();
+}
+
+function wDoRisk(){
+  if(wRing>=3) return;
+  wSetBtns(false,false,false);
+  wRing++;
+  wUpdateDots();
+  setTimeout(wDoSpin,300);
+}
+
+function wShowSave(){
+  const area=document.getElementById('wSaveArea');
+  area.style.display='block';
+  const label='Wheel — '+SQ_HEX_NAMES[wSquad]+' Squad';
+  document.getElementById('wEvtLabel').value=label;
+  const prev=document.getElementById('wSavePreview');
+  if(wBanked>0){
+    const pts={}; SQUADS.forEach(s=>pts[s]=0); pts[wSquad]=wBanked;
+    prev.innerHTML='<strong style="color:var(--gold-soft)">+'+wBanked+' pts</strong> for '+SQ_HEX_NAMES[wSquad]+' Squad';
+  } else {
+    prev.innerHTML='<span style="color:var(--text3)">0 points — nothing to save.</span>';
+  }
+}
+
+async function wSaveToTracker(){
+  if(wBanked<=0){
+    // Nothing to save — just close
+    const ok=document.getElementById('wSaveOk');
+    ok.textContent='No points to save.'; ok.className='fmsg on';
+    setTimeout(()=>{ok.className='fmsg';},1800);
+    return;
+  }
+  const label=document.getElementById('wEvtLabel').value.trim()||('Wheel — '+SQ_HEX_NAMES[wSquad]+' Squad');
+  const pts={}; SQUADS.forEach(s=>pts[s]=0); pts[wSquad]=wBanked;
+  if(!D.nextId) D.nextId=100;
+  if(!Array.isArray(D.events)) D.events=[];
+  D.events.push({id:D.nextId++,name:label,type:'event',date:new Date().toISOString().split('T')[0],note:'Wheel spin',pts});
+  D.history.unshift({type:'event',name:label,pts,time:new Date().toISOString()});
+  logActivity('Wheel spin: +'+wBanked+' to '+wSquad);
+  await save();
+  renderAll();
+  flash('wSaveOk');
+  // Reset for next spin
+  wBanked=0; wRing=0; wUpdateDots(); wUpdateBanked();
+  document.getElementById('wSaveArea').style.display='none';
+  wSetResult('Saved!','Points added to tracker.','earn');
+  wSetBtns(true,false,false);
+}
+
+const SQ_HEX_NAMES={BLACK:'Black',GOLD:'Gold',GREY:'Grey',PURPLE:'Purple'};
+
+function wSetSq(sq){
+  wSquad=sq;
+  document.querySelectorAll('.w-sq-btn').forEach(b=>{
+    const on=b.dataset.wsq===sq;
+    b.classList.toggle('w-sq-on',on);
+    b.style.background=on?W_SQ_HEX[sq]:'var(--surface2)';
+    b.style.borderColor=on?W_SQ_HEX[sq]:'var(--border)';
+    b.style.color=on?(sq==='BLACK'||sq==='PURPLE'?'#fff':'#000'):'var(--text2)';
+    b.style.fontWeight=on?'700':'400';
+  });
+}
+
+function wUpdateDots(){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('wDot'+i);
+    if(!d) continue;
+    const active=i===wRing, done=i<wRing;
+    d.style.background=active?'var(--gold-soft)':done?'rgba(232,200,64,.35)':'var(--surface)';
+    d.style.border=active?'none':done?'1.5px solid rgba(232,200,64,.4)':'1.5px solid var(--border)';
+    d.style.boxShadow=active?'0 0 6px rgba(232,200,64,.5)':'none';
+  }
+  document.getElementById('wRiskBtn').textContent=wRing>=3?'Go Center ⚡':'Risk It ⚡';
+}
+
+function wUpdateBanked(){
+  document.getElementById('wBankedPts').textContent=wBanked;
+  document.getElementById('wBankedSub').textContent=wBanked===0?'nothing banked yet':'pts banked this spin';
+}
+
+function wSetResult(v,s,cls){
+  const c=document.getElementById('wResultCard');
+  c.style.borderColor=cls==='earn'?'rgba(75,222,128,.4)':cls==='zero'?'rgba(248,113,113,.3)':cls==='give'?'rgba(255,225,0,.4)':cls==='auto'?'rgba(153,168,187,.35)':cls==='loyalty'?'rgba(187,142,245,.4)':'var(--border)';
+  c.style.background=cls==='earn'?'rgba(75,222,128,.04)':cls==='zero'?'rgba(248,113,113,.03)':'var(--surface)';
+  document.getElementById('wResultVal').textContent=v;
+  document.getElementById('wResultSub').textContent=s;
+}
+
+function wSetBtns(spin,bank,risk){
+  const sb=document.getElementById('wSpinBtn'),bb=document.getElementById('wBankBtn'),rb=document.getElementById('wRiskBtn');
+  sb.disabled=!spin; sb.style.opacity=spin?'1':'.35'; sb.style.cursor=spin?'pointer':'default';
+  bb.disabled=!bank; bb.style.opacity=bank?'1':'.3'; bb.style.cursor=bank?'pointer':'default';
+  rb.disabled=!risk; rb.style.opacity=risk?'1':'.3'; rb.style.cursor=risk?'pointer':'default';
+}
+
+
+// ══════════════════════════════════════════
+// SPIN PAGE — STANDALONE WHEEL WITH AUTH + TV
+// ══════════════════════════════════════════
+
+// Shared wheel segment data (same as W_SEGS but declared here for Spin page)
+const SP_SEGS = [
+  {color:'BLACK', type:'pts',     val:1},
+  {color:'BLACK', type:'pts',     val:10},
+  {color:'BLACK', type:'pts',     val:25},
+  {color:'BLACK', type:'special', val:0,  name:'NONE'},
+  {color:'BLACK', type:'pts',     val:50},
+  {color:'BLACK', type:'pts',     val:5},
+  {color:'GOLD',  type:'pts',     val:20},
+  {color:'GOLD',  type:'pts',     val:5},
+  {color:'GOLD',  type:'special', val:20, name:'LOYALTY', loyalty:true},
+  {color:'GOLD',  type:'pts',     val:50},
+  {color:'GOLD',  type:'pts',     val:10},
+  {color:'GOLD',  type:'pts',     val:25},
+  {color:'GREY',  type:'pts',     val:1},
+  {color:'GREY',  type:'pts',     val:30},
+  {color:'GREY',  type:'pts',     val:10},
+  {color:'GREY',  type:'special', val:0,  name:'ZERO'},
+  {color:'GREY',  type:'pts',     val:20},
+  {color:'GREY',  type:'pts',     val:75},
+  {color:'PURPLE',type:'pts',     val:5},
+  {color:'PURPLE',type:'pts',     val:50},
+  {color:'PURPLE',type:'special', val:0,  name:'AUTO'},
+  {color:'PURPLE',type:'pts',     val:25},
+  {color:'PURPLE',type:'pts',     val:10},
+  {color:'PURPLE',type:'special', val:20, name:'LOYALTY', loyalty:true},
+];
+
+const SP_SQ_HEX={BLACK:'#b8bcc6',GOLD:'#ffe100',GREY:'#8899aa',PURPLE:'#bb8ef5'};
+const SP_SPEC={
+  NONE:{bg:'#151520',text:'#5050a0',label:'NONE'},
+  ZERO:{bg:'#151520',text:'#5050a0',label:'ZERO'},
+  AUTO:{bg:'#0c1220',text:'#4477aa',label:'AUTO'},
+  LOYALTY:{bg:'#180830',text:'#aa55ee',label:'LOYALTY'},
+};
+const SP_SQNAME={BLACK:'Black',GOLD:'Gold',GREY:'Grey',PURPLE:'Purple'};
+
+let spAuthed=false, spSquad='BLACK', spRing=0, spBanked=0;
+let spAngle=0, spSpinning=false, spRaf=null, spLog=[], spTVOpen=false;
+let spTVCtx=null, spTVAngle=0, spTVRaf=null;
+
+const SP_N=SP_SEGS.length, SP_SA=(Math.PI*2)/SP_N;
+
+// ── AUTH ──────────────────────────────────
+function spinAuth(){
+  const pw=document.getElementById('spinPwInput').value;
+  if(pw===D.password||pw==='ephrata2026'){
+    spAuthed=true;
+    document.getElementById('spinAuthGate').style.display='none';
+    document.getElementById('spinWheelUI').style.display='block';
+    document.getElementById('spinPwInput').value='';
+    spInitCanvas();
+    spDrawWheel(document.getElementById('spinCanvas').getContext('2d'), spAngle, spRing, 380);
+  } else {
+    const err=document.getElementById('spinAuthErr');
+    err.style.display='block';
+    document.getElementById('spinPwInput').value='';
+    setTimeout(()=>err.style.display='none',2000);
+  }
+}
+
+function spinLogout(){
+  spAuthed=false;
+  document.getElementById('spinAuthGate').style.display='block';
+  document.getElementById('spinWheelUI').style.display='none';
+  if(spRaf) cancelAnimationFrame(spRaf);
+}
+
+// ── RENDER / INIT ──────────────────────────
+function renderSpinPage(){
+  if(!spAuthed){
+    document.getElementById('spinAuthGate').style.display='block';
+    document.getElementById('spinWheelUI').style.display='none';
+  } else {
+    document.getElementById('spinAuthGate').style.display='none';
+    document.getElementById('spinWheelUI').style.display='block';
+    spInitCanvas();
+  }
+}
+
+function spInitCanvas(){
+  const cv=document.getElementById('spinCanvas');
+  if(!cv) return;
+  spDrawWheel(cv.getContext('2d'), spAngle, spRing, 380);
+}
+
+// ── CORE DRAW ──────────────────────────────
+function spDrawWheel(ctx, angle, ring, size){
+  if(!ctx) return;
+  const cx=size/2, cy=size/2, r=size/2-8;
+  ctx.clearRect(0,0,size,size);
+  for(let i=0;i<SP_N;i++){
+    const seg=SP_SEGS[i];
+    const a0=angle+i*SP_SA-Math.PI/2;
+    const a1=a0+SP_SA, am=a0+SP_SA/2;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,a0,a1); ctx.closePath();
+    if(seg.type==='special'){
+      const ss=SP_SPEC[seg.name]||SP_SPEC.NONE;
+      ctx.fillStyle=ss.bg;
+    } else {
+      ctx.fillStyle=SP_SQ_HEX[seg.color];
+    }
+    ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.45)'; ctx.lineWidth=1; ctx.stroke();
+    // Ring 4 overlay
+    if(ring===3){
+      ctx.beginPath(); ctx.arc(cx,cy,r*0.42,0,Math.PI*2);
+      ctx.strokeStyle='rgba(232,200,64,0.6)'; ctx.lineWidth=3; ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx,cy,r*0.42,0,Math.PI*2);
+      ctx.strokeStyle='rgba(232,200,64,0.08)'; ctx.lineWidth=r*0.84; ctx.stroke();
+    }
+    // Labels
+    const scale=size/380;
+    const lr=r*0.63, lx=cx+Math.cos(am)*lr, ly=cy+Math.sin(am)*lr;
+    ctx.save(); ctx.translate(lx,ly); ctx.rotate(am+Math.PI/2);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    if(seg.type==='special'){
+      const ss=SP_SPEC[seg.name]||SP_SPEC.NONE;
+      ctx.fillStyle=ss.text;
+      ctx.font=`bold ${Math.round(8*scale)}px "DM Mono",monospace`;
+      ctx.fillText(seg.name,0,0);
+    } else {
+      const light=seg.color==='GOLD'||seg.color==='GREY';
+      ctx.fillStyle=light?'#111':'#fff';
+      ctx.font=`bold ${Math.round(13*scale)}px "Fraunces",serif`;
+      ctx.fillText(seg.val,0,0);
+    }
+    ctx.restore();
+  }
+  // Outer rim
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.strokeStyle='rgba(232,200,64,0.3)'; ctx.lineWidth=3; ctx.stroke();
+  // Hub
+  ctx.beginPath(); ctx.arc(cx,cy,Math.round(18*size/380),0,Math.PI*2);
+  ctx.fillStyle='#06060f'; ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx,cy,5*size/380,0,Math.PI*2);
+  ctx.fillStyle='#e8c840'; ctx.fill();
+}
+
+// ── SPIN LOGIC ────────────────────────────
+function sDoSpin(){
+  if(spSpinning) return;
+  spSpinning=true; sSyncTV();
+  document.getElementById('sSaveArea').style.display='none';
+  sBtns(false,false,false);
+  sSetResult('—','Spinning…','');
+  const landIdx=Math.floor(Math.random()*SP_N);
+  const extra=5+Math.random()*5;
+  const target=-Math.PI/2-landIdx*SP_SA-SP_SA/2-extra*Math.PI*2;
+  const a0=spAngle, delta=target-a0;
+  const dur=3200+Math.random()*1600, t0=performance.now();
+  const ease=t=>1-Math.pow(1-t,4);
+  const mainCV=document.getElementById('spinCanvas');
+  const mainCtx=mainCV?mainCV.getContext('2d'):null;
+  const tvCV=document.getElementById('spinTVCanvas');
+  const tvCtx=tvCV?tvCV.getContext('2d'):null;
+  function frame(now){
+    const t=Math.min((now-t0)/dur,1);
+    spAngle=a0+delta*ease(t);
+    if(mainCtx) spDrawWheel(mainCtx, spAngle, spRing, 380);
+    if(spTVOpen && tvCtx) spDrawWheel(tvCtx, spAngle, spRing, 420);
+    if(t<1){ spRaf=requestAnimationFrame(frame); }
+    else { spSpinning=false; sLand(SP_SEGS[landIdx]); }
+  }
+  spRaf=requestAnimationFrame(frame);
+}
+
+function sLand(seg){
+  const isRing4=(spRing===3);
+  if(seg.type==='special'){
+    const n=seg.name;
+    if(n==='NONE'||n==='ZERO'||n==='NADA'){
+      sSetResult(n+' — 0 pts','No points this spin.','zero');
+      sBtns(false,false,false);
+      setTimeout(()=>sNextOrSave(false),1400);
+    } else if(n==='LOYALTY'){
+      const match=(seg.color===spSquad);
+      const pts=match?seg.val:0;
+      if(match) spBanked+=pts;
+      sUpdateBanked();
+      sSetResult('LOYALTY — '+(match?'+'+pts+' pts':'0 pts'), match?'Your squad color — points earned!':'Not your squad color. No points.', match?'earn':'zero');
+      if(isRing4){ setTimeout(()=>sNextOrSave(match),1400); }
+      else { sBtns(false,true,true); }
+    } else if(n==='AUTO'){
+      sSetResult('AUTO — advance!','Must spin the next ring!','auto');
+      spRing=Math.min(spRing+1,3);
+      sUpdateDots(); sSyncTV();
+      setTimeout(sDoSpin,1600); return;
+    }
+  } else {
+    const pts=seg.val;
+    const earn=(isRing4?(seg.color===spSquad):true);
+    if(earn){ spBanked+=pts; sUpdateBanked(); }
+    sSetResult(
+      earn?'+'+pts+' pts':'0 pts — wrong color',
+      earn?(isRing4?'Ring 4: Your squad color! +'+pts+' pts.':'+'+pts+' pts earned.'):'Ring 4: must land on your squad color.',
+      earn?'earn':'zero'
+    );
+    if(isRing4){ setTimeout(()=>sNextOrSave(earn),1400); }
+    else { sBtns(false,true,true); }
+  }
+  sTVShowResult();
+}
+
+function sDoBank(){ sBtns(false,false,false); sNextOrSave(true); }
+function sDoRisk(){
+  if(spRing>=3) return;
+  sBtns(false,false,false); spRing++; sUpdateDots(); sSyncTV();
+  setTimeout(sDoSpin,300);
+}
+
+function sNextOrSave(earned){
+  const area=document.getElementById('sSaveArea');
+  area.style.display='block';
+  const nm=SP_SQNAME[spSquad];
+  document.getElementById('sEvtLabel').value='Wheel — '+nm+' Squad';
+  const prev=document.getElementById('sSavePreview');
+  if(spBanked>0){
+    prev.innerHTML='<strong style="color:#4ade80">+'+spBanked+' pts</strong> for '+nm+' Squad';
+  } else {
+    prev.innerHTML='<span style="color:var(--text3)">0 points this spin.</span>';
+  }
+  sBtns(true,false,false);
+}
+
+async function sSavePoints(){
+  const nm=SP_SQNAME[spSquad];
+  const label=document.getElementById('sEvtLabel').value.trim()||('Wheel — '+nm+' Squad');
+  const pts={}; SQUADS.forEach(s=>pts[s]=0);
+  if(spBanked>0) pts[spSquad]=spBanked;
+  if(!D.nextId) D.nextId=100;
+  if(!Array.isArray(D.events)) D.events=[];
+  D.events.push({id:D.nextId++,name:label,type:'event',date:new Date().toISOString().split('T')[0],note:'Wheel spin',pts});
+  D.history.unshift({type:'event',name:label,pts,time:new Date().toISOString()});
+  logActivity('Wheel spin: +'+spBanked+' to '+spSquad);
+  await save(); renderAll();
+  flash('sSaveOk');
+  // log to session
+  spLog.unshift({sq:spSquad,pts:spBanked,label:nm});
+  sRenderLog();
+  // reset for next spin
+  spBanked=0; spRing=0; sUpdateDots(); sUpdateBanked(); sSyncTV();
+  document.getElementById('sSaveArea').style.display='none';
+  sSetResult('Saved!','Points added to tracker. Ready for next spin.','earn');
+  spAngle=0;
+  const cv=document.getElementById('spinCanvas');
+  if(cv) spDrawWheel(cv.getContext('2d'), spAngle, spRing, 380);
+}
+
+// ── UI HELPERS ────────────────────────────
+function spinSetSq(sq){
+  spSquad=sq;
+  document.querySelectorAll('.spin-sq-btn').forEach(b=>{
+    const on=b.dataset.ssq===sq;
+    b.classList.toggle('spin-sq-on',on);
+    b.style.background=on?SP_SQ_HEX[sq]:'var(--surface2)';
+    b.style.borderColor=on?SP_SQ_HEX[sq]:'var(--border)';
+    b.style.color=on?(sq==='BLACK'?'#fff':sq==='GREY'?'#111':'#000'):'var(--text2)';
+    b.style.fontWeight=on?'700':'400';
+  });
+  sSyncTV();
+}
+
+function sUpdateDots(){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('sDot'+i);
+    if(!d) continue;
+    const act=i===spRing, done=i<spRing;
+    d.style.background=act?'var(--gold-soft)':done?'rgba(232,200,64,.3)':'var(--surface2)';
+    d.style.border=act?'none':done?'1.5px solid rgba(232,200,64,.35)':'1.5px solid var(--border)';
+    d.style.boxShadow=act?'0 0 8px rgba(232,200,64,.5)':'none';
+    // TV dots
+    const td=document.getElementById('tvDot'+i);
+    if(td){
+      td.style.background=act?'#e8c840':done?'rgba(232,200,64,.25)':'rgba(255,255,255,.1)';
+      td.style.boxShadow=act?'0 0 12px rgba(232,200,64,.6)':'none';
+    }
+  }
+  const rl=document.getElementById('sRingLabel');
+  if(rl) rl.textContent=spRing+1;
+  document.getElementById('sRiskBtn').textContent=spRing>=3?'Center ⚡':'Risk It ⚡';
+}
+
+function sUpdateBanked(){
+  document.getElementById('sBanked').textContent=spBanked;
+  document.getElementById('sBankedSub').textContent=spBanked===0?'ready to spin':'pts banked this spin';
+  const tvb=document.getElementById('spinTVBanked');
+  if(tvb){ tvb.style.display=spBanked>0?'block':'none'; tvb.textContent=spBanked+' pts banked'; }
+}
+
+function sSetResult(v,s,cls){
+  const c=document.getElementById('sResultCard');
+  c.style.borderColor=cls==='earn'?'rgba(75,222,128,.4)':cls==='zero'?'rgba(248,113,113,.3)':cls==='auto'?'rgba(153,168,187,.35)':'var(--border)';
+  c.style.background=cls==='earn'?'rgba(75,222,128,.04)':cls==='zero'?'rgba(248,113,113,.03)':'var(--surface)';
+  document.getElementById('sResultVal').textContent=v;
+  document.getElementById('sResultSub').textContent=s;
+}
+
+function sBtns(spin,bank,risk){
+  const sb=document.getElementById('sSpinBtn'),bb=document.getElementById('sBankBtn'),rb=document.getElementById('sRiskBtn');
+  if(sb){ sb.disabled=!spin; sb.style.opacity=spin?'1':'.35'; sb.style.cursor=spin?'pointer':'default'; }
+  if(bb){ bb.disabled=!bank; bb.style.opacity=bank?'1':'.3'; }
+  if(rb){ rb.disabled=!risk; rb.style.opacity=risk?'1':'.3'; }
+}
+
+function sRenderLog(){
+  const el=document.getElementById('sSpinLog'); if(!el) return;
+  if(!spLog.length){ el.innerHTML='<div style="color:var(--text3);font-size:11px;padding:4px">No spins this session</div>'; return; }
+  el.innerHTML=spLog.slice(0,6).map(h=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:var(--surface2);border-radius:7px;font-size:10px">
+      <span style="color:${SP_SQ_HEX[h.sq]};font-family:'DM Mono',monospace;letter-spacing:1px">${h.label}</span>
+      <span style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:${h.pts>0?'#4ade80':'#606080'}">${h.pts>0?'+'+h.pts:h.pts} pts</span>
+    </div>`).join('');
+}
+
+// ── TV DISPLAY ────────────────────────────
+function openSpinTV(){
+  spTVOpen=true;
+  const el=document.getElementById('spinTV');
+  if(!el) return;
+  el.style.display='flex';
+  sSyncTV();
+  // Draw wheel on TV canvas
+  const tvCV=document.getElementById('spinTVCanvas');
+  if(tvCV) spDrawWheel(tvCV.getContext('2d'), spAngle, spRing, 420);
+}
+
+function closeSpinTV(){
+  spTVOpen=false;
+  const el=document.getElementById('spinTV');
+  if(el) el.style.display='none';
+}
+
+function sSyncTV(){
+  if(!spTVOpen) return;
+  // Squad badge
+  const badge=document.getElementById('spinTVSquadBadge');
+  if(badge){
+    badge.textContent=SP_SQNAME[spSquad]+' Squad';
+    badge.style.background=SP_SQ_HEX[spSquad]+'22';
+    badge.style.color=SP_SQ_HEX[spSquad];
+    badge.style.borderColor=SP_SQ_HEX[spSquad]+'55';
+  }
+  // Live scores strip
+  const strip=document.getElementById('spinTVScores');
+  if(strip){
+    const r=ranked();
+    strip.innerHTML=r.map((sq,i)=>`
+      <div style="flex:1;text-align:center;padding:14px 8px;background:${i===0?'rgba(232,200,64,0.06)':'transparent'};border-right:1px solid rgba(255,255,255,0.05)">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:4px">${i===0?'▲ ':''} ${sq} ${i===0?'▲ ':''}</div>
+        <div style="font-family:'Fraunces',serif;font-size:clamp(28px,5vw,52px);font-weight:900;color:${SQ_HEX[sq]};line-height:1">${grand(sq).toLocaleString()}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,.25);margin-top:3px">pts</div>
+      </div>`).join('');
+  }
+  // Ticker tape
+  const tape=document.getElementById('spinTVTicker');
+  if(tape){
+    const r2=ranked();
+    const items=r2.map(sq=>`<span style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:${SQ_HEX[sq]};padding:0 32px">${sq} — ${grand(sq).toLocaleString()} pts</span><span style="font-family:'DM Mono',monospace;font-size:12px;color:rgba(255,255,255,.2);padding:0 16px">·</span>`).join('');
+    tape.innerHTML=items+items;
+  }
+  // Dots
+  sUpdateDots();
+  sUpdateBanked();
+}
+
+function sTVShowResult(){
+  if(!spTVOpen) return;
+  const rv=document.getElementById('sResultVal');
+  const rs=document.getElementById('sResultSub');
+  const tvr=document.getElementById('spinTVResult');
+  const tvs=document.getElementById('spinTVSub');
+  if(tvr&&rv) tvr.textContent=rv.textContent;
+  if(tvs&&rs) tvs.textContent=rs.textContent;
+}
+
 const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePhoto,
   __scrollMindset:scrollMindset,previewPhoto,openLogin,tryLogin,close1,
   requireAdmin,openAddEvent,openAdmin,aTab,addEvent,saveMetrics,
@@ -5982,7 +6960,21 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   saveSquadColors,applyThemePreset,saveCustomTheme,printCertificate,undoLastEvent,markTraitDone,unmarkTraitDone,
   generateEmailDigest,copyEmailDigest,printSubGuide,showEventBreakdown,
   saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,saveHomeStats,
-  renderWheel,renderTraitDough,renderSotm};
+  renderWheel,renderTraitDough,renderSotm,
+  openWheelSpinner,closeWheelSpinner,wDoSpin,wDoBank,wDoRisk,wSaveToTracker,wSetSq,
+  spinAuth,spinLogout,spinSetSq,sDoSpin,sDoBank,sDoRisk,sSavePoints,openSpinTV,closeSpinTV,
+  renderSpinPage,
+  renderH2H,openHeadToHead,
+  saveEditEvent,deleteEditEvent,
+  filterGallery,
+  addCountdownEvent,removeCountdownEvent,renderCountdownEventsList,
+  addPagePhoto,removePagePhoto,renderAdminPhotoList,
+  saveMayhemContent,loadMayhemEditor,
+  saveChampsContent,loadChampsEditor,
+  saveKickoffContent,loadKickoffEditor,
+  isImageUrl,validatePhotoUrl,
+  renderChamps,renderMayhem,renderKickoff,
+  renderGallery,renderStaffLinks};
 Object.entries(_fns).forEach(([k,v])=>{ window[k]=v; window['_real_'+k]=v; });
 window.__real_goTo = goTo;
 window.__moduleReady=true;
