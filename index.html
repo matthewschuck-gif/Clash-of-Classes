@@ -6801,11 +6801,6 @@ function spDrawWheel(ctx,angle,sz,hlSeg){
     ctx.font='bold '+Math.round(26*sz/380)+'px "Fraunces",serif';
     ctx.fillText(lbl,cx,cy);
   }
-  // Pointer: a gold notch drawn AT the rim at angle -PI/2
-  // Drawn on canvas so it's guaranteed to be at the same position as targeting math
-  const pw=typeof spPointerWobble!=='undefined'?spPointerWobble:0;
-  const pA=-Math.PI/2+pw;
-  const sc2=sz/380;
   // Pointer: long gold line unambiguously pointing at -PI/2
   const pw=typeof spPointerWobble!=='undefined'?spPointerWobble:0;
   const pA=-Math.PI/2+pw;
@@ -6905,7 +6900,7 @@ function spLand(seg){
         spPlayLand('zero');
         if(cv) cv.style.boxShadow='0 0 50px rgba(248,113,113,.2)';
         spSetResult('GIVE \u2014 0 pts','GIVE only applies on spins 2 & 3. No points.','zero');
-        spPipDone();setTimeout(sNextOrSave,1500);
+        spPipDone();setTimeout(spShowSave,1500);
       }
       return;
     } else if(seg.n==='NONE'||seg.n==='ZERO'){
@@ -7055,7 +7050,7 @@ async function spConfirmGive(targetSq){
   await save();renderAll();
   sSetResult('GIVE → '+nm+' +50 pts','50 points given to '+nm+' Squad — saved!','earn');
   spPipDone();
-  setTimeout(sNextOrSave,1200);
+  setTimeout(spShowSave,1200);
 }
 async function sSavePoints(){
   const nm=SP_SQNAME[spSquad];
