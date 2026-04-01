@@ -405,6 +405,22 @@ body.light-mode .tab.active { color:var(--text); border-bottom-color:var(--gold-
 }
 
 /* ── PAGES ── */
+/* ── SPIN PAGE ANIMATIONS ── */
+@keyframes sp-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes sp-btn-ring{0%,100%{box-shadow:0 0 36px rgba(232,200,64,.28)}50%{box-shadow:0 0 56px rgba(232,200,64,.5)}}
+@keyframes sp-choice-pulse{0%,100%{box-shadow:0 0 20px rgba(232,200,64,.1)}50%{box-shadow:0 0 36px rgba(232,200,64,.25)}}
+@keyframes sp-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes sp-pts-bump{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+@keyframes sp-fade-up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes sp-log-in{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+.sp-choice-card{animation:sp-choice-pulse 1.8s ease-in-out infinite!important}
+.sp-shimmer-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.09) 50%,transparent 100%);animation:sp-shimmer 1.8s ease-in-out infinite;pointer-events:none}
+.sp-bump{animation:sp-pts-bump .4s ease-out!important}
+.sp-save-show{animation:sp-fade-up .4s ease-out!important}
+.sp-log-item{animation:sp-log-in .3s ease-out!important}
+.sp-spinning-glow{box-shadow:0 0 70px rgba(232,200,64,.18),0 0 120px rgba(187,142,245,.07)!important}
+.sp-landed-arrow{box-shadow:0 0 65px rgba(74,222,128,.25)!important}
+.sp-landed-zero{box-shadow:0 0 50px rgba(248,113,113,.2)!important}
 .page { display:none; position:relative; z-index:10; max-width:1280px; margin:0 auto; padding:0 24px 80px; }
 .page.active { display:block; animation:fadeIn 0.25s ease; }
 @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
@@ -1882,94 +1898,106 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
     <button class="btn" onclick="openSpinTV()" style="color:var(--gold-soft);border-color:rgba(232,200,64,0.3)">&#128250; TV Display</button>
   </div>
 
-  <!-- Auth gate — shown until password entered -->
-  <div id="spinAuthGate" style="text-align:center;padding:60px 20px;background:var(--surface);border:1px solid var(--border);border-radius:16px;margin-bottom:24px">
-    <div style="font-size:48px;margin-bottom:16px">&#127992;</div>
-    <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--gold-soft);margin-bottom:8px">Admin Access Required</div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:24px">The Spin wheel is restricted to staff. Enter the admin password to continue.</div>
+  <!-- AUTH GATE -->
+  <div id="spinAuthGate" style="text-align:center;padding:56px 20px;background:var(--surface);border:1px solid var(--border);border-radius:16px;margin-bottom:24px">
+    <div style="font-size:52px;margin-bottom:16px;animation:sp-pulse 2s ease-in-out infinite;display:inline-block">&#127992;</div>
+    <div style="font-family:'Fraunces',serif;font-size:24px;font-weight:900;color:var(--gold-soft);margin-bottom:8px">Admin Access Required</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:24px;max-width:340px;margin-left:auto;margin-right:auto;line-height:1.7">The Spin wheel is for staff only. Enter the admin password to spin and save results to the tracker.</div>
     <div style="display:flex;gap:10px;justify-content:center;max-width:360px;margin:0 auto">
-      <input type="password" id="spinPwInput" placeholder="Admin password" onkeydown="if(event.key==='Enter')spinAuth()" style="flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;color:var(--text);font-size:14px">
+      <input type="password" id="spinPwInput" placeholder="Admin password" onkeydown="if(event.key==='Enter')spinAuth()" style="flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s">
       <button onclick="spinAuth()" class="btn btn-purple" style="padding:12px 20px;font-size:14px">Enter</button>
     </div>
     <div id="spinAuthErr" style="color:#f87171;font-size:12px;margin-top:10px;display:none;font-family:'DM Mono',monospace;letter-spacing:1px">&#10005; Incorrect password</div>
   </div>
 
-  <!-- Wheel UI — hidden until authed -->
+  <!-- WHEEL UI -->
   <div id="spinWheelUI" style="display:none">
 
-    <!-- Top bar: squad select + TV button -->
-    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px">
-      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text3)">Spinning Squad:</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="spin-sq-btn spin-sq-on" data-ssq="BLACK" onclick="spinSetSq('BLACK')" style="border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;background:var(--surface2);color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s">&#11035; Black</button>
-        <button class="spin-sq-btn" data-ssq="GOLD" onclick="spinSetSq('GOLD')" style="border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;background:var(--surface2);color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s">&#11036; Gold</button>
-        <button class="spin-sq-btn" data-ssq="GREY" onclick="spinSetSq('GREY')" style="border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;background:var(--surface2);color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s">&#9633; Grey</button>
-        <button class="spin-sq-btn" data-ssq="PURPLE" onclick="spinSetSq('PURPLE')" style="border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;background:var(--surface2);color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s">&#11044; Purple</button>
-      </div>
-      <div style="margin-left:auto">
-        <button onclick="spinLogout()" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--text3);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:7px 12px;cursor:pointer;transition:all .2s">&#128274; Lock</button>
-      </div>
+    <!-- Squad bar + lock -->
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text3)">Squad:</div>
+      <button class="spin-sq-btn spin-sq-on" data-ssq="BLACK" onclick="spinSetSq('BLACK')" style="border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;background:var(--surface2);color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s">&#11035; Black</button>
+      <button class="spin-sq-btn" data-ssq="GOLD"   onclick="spinSetSq('GOLD')"   style="border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;background:var(--surface2);color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s">&#11036; Gold</button>
+      <button class="spin-sq-btn" data-ssq="GREY"   onclick="spinSetSq('GREY')"   style="border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;background:var(--surface2);color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s">&#9633; Grey</button>
+      <button class="spin-sq-btn" data-ssq="PURPLE" onclick="spinSetSq('PURPLE')" style="border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;background:var(--surface2);color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s">&#11044; Purple</button>
+      <button onclick="spinLogout()" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text3);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:7px 12px;cursor:pointer;transition:all .2s">&#128274; Lock</button>
     </div>
 
-    <!-- Main layout -->
-    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center">
+    <!-- Main layout: wheel + controls -->
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;justify-content:center">
 
-      <!-- WHEEL CANVAS -->
-      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;flex-shrink:0">
-        <div style="position:relative">
-          <div id="spinPtr" style="position:absolute;top:-22px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:26px solid var(--gold-soft);z-index:5;filter:drop-shadow(0 2px 6px rgba(232,200,64,.4))"></div>
-          <canvas id="spinCanvas" width="380" height="380" style="display:block;border-radius:50%;box-shadow:0 0 40px rgba(187,142,245,.12)"></canvas>
+      <!-- WHEEL COLUMN -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:16px;flex-shrink:0">
+
+        <!-- Canvas + pointer + tick flash -->
+        <div style="position:relative;display:inline-block">
+          <!-- Animated SVG pointer -->
+          <div id="spinPtr" style="position:absolute;top:-28px;left:50%;transform:translateX(-50%);z-index:10">
+            <svg width="28" height="32" viewBox="0 0 28 32" style="display:block;filter:drop-shadow(0 4px 12px rgba(232,200,64,.5))">
+              <polygon points="14,32 2,4 14,10 26,4" fill="#e8c840"/>
+              <polygon points="14,32 2,4 14,10" fill="#c8a820" opacity=".4"/>
+            </svg>
+          </div>
+          <!-- Tick flash overlay -->
+          <div id="spinTickFlash" style="position:absolute;inset:0;border-radius:50%;pointer-events:none;opacity:0;z-index:5"></div>
+          <canvas id="spinCanvas" width="380" height="380" style="display:block;border-radius:50%;transition:box-shadow .4s;cursor:pointer;box-shadow:0 0 40px rgba(187,142,245,.1)"></canvas>
         </div>
-        <!-- Ring progress dots -->
+
+        <!-- Spin pips -->
         <div style="display:flex;gap:8px;align-items:center">
-          <span style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase">Ring</span>
-          <div id="sDot0" style="width:12px;height:12px;border-radius:50%;background:var(--gold-soft);box-shadow:0 0 8px rgba(232,200,64,.5);transition:all .3s"></div>
-          <div id="sDot1" style="width:12px;height:12px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border);transition:all .3s"></div>
-          <div id="sDot2" style="width:12px;height:12px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border);transition:all .3s"></div>
-          <div id="sDot3" style="width:12px;height:12px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border);transition:all .3s"></div>
-          <span id="sRingLabel" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--gold-soft);text-transform:uppercase;margin-left:4px">1</span>
+          <div id="sPip0" style="width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,.12);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--gold-soft);border-color:var(--gold-soft);background:rgba(232,200,64,.1);box-shadow:0 0 14px rgba(232,200,64,.3);transition:all .4s">1</div>
+          <div id="sPipArr0" style="font-size:13px;color:rgba(255,255,255,.15);transition:all .4s">&#8594;</div>
+          <div id="sPip1" style="width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,.12);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--text3);transition:all .4s">2</div>
+          <div id="sPipArr1" style="font-size:13px;color:rgba(255,255,255,.15);transition:all .4s">&#8594;</div>
+          <div id="sPip2" style="width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,.12);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--text3);transition:all .4s">3</div>
+          <div id="sPipArr2" style="font-size:13px;color:rgba(255,255,255,.15);transition:all .4s">&#8594;</div>
+          <div id="sPip3" style="width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,.12);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--text3);transition:all .4s">4</div>
         </div>
+        <div id="spinPipNote" style="font-size:10px;color:var(--text3);letter-spacing:.5px;text-align:center">Tap the wheel or press SPIN</div>
+
+        <!-- Big round SPIN button -->
+        <button id="sSpinBtn" onclick="sDoSpin()" style="width:110px;height:110px;border-radius:50%;border:none;background:var(--gold-soft);color:#000;font-family:'Fraunces',serif;font-size:17px;font-weight:900;cursor:pointer;letter-spacing:2px;text-transform:uppercase;transition:all .2s;box-shadow:0 0 36px rgba(232,200,64,.28);position:relative">SPIN</button>
       </div>
 
-      <!-- CONTROL PANEL -->
-      <div style="flex:1;min-width:240px;max-width:340px;display:flex;flex-direction:column;gap:12px">
+      <!-- CONTROL COLUMN -->
+      <div style="flex:1;min-width:240px;max-width:320px;display:flex;flex-direction:column;gap:12px">
 
         <!-- Points banked -->
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px">
-          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Points This Spin</div>
-          <div id="sBanked" style="font-family:'Fraunces',serif;font-size:44px;font-weight:900;color:var(--gold-soft);line-height:1">0</div>
-          <div id="sBankedSub" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:5px">ready to bank</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:5px;display:flex;justify-content:space-between"><span>Points Banked</span><span id="sSessionBadge" style="color:var(--text3)">session: 0 pts</span></div>
+          <div id="sBanked" style="font-family:'Fraunces',serif;font-size:48px;font-weight:900;color:var(--gold-soft);line-height:1;transition:transform .3s">0</div>
+          <div id="sBankedSub" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:4px">ready to spin</div>
         </div>
 
         <!-- Result card -->
-        <div id="sResultCard" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;min-height:80px;transition:border-color .3s,background .3s">
+        <div id="sResultCard" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;min-height:80px;transition:border-color .4s,background .4s,box-shadow .4s">
           <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:5px">Result</div>
-          <div id="sResultVal" style="font-family:'Fraunces',serif;font-size:22px;font-weight:900;color:var(--text)">—</div>
-          <div id="sResultSub" style="font-size:11px;color:var(--text2);margin-top:3px">Select a squad and spin</div>
+          <div id="sResultVal" style="font-family:'Fraunces',serif;font-size:22px;font-weight:900;color:var(--text);transition:color .3s">—</div>
+          <div id="sResultSub" style="font-size:11px;color:var(--text2);margin-top:3px;line-height:1.5">Select a squad and spin</div>
         </div>
 
-        <!-- Buttons -->
-        <button id="sSpinBtn" onclick="sDoSpin()" style="width:100%;padding:16px;border-radius:14px;border:none;background:var(--gold-soft);color:#000;font-family:'Fraunces',serif;font-size:20px;font-weight:900;cursor:pointer;transition:all .15s;letter-spacing:1px">SPIN</button>
+        <!-- Choice hint -->
+        <div id="sChoiceHint" style="font-size:10px;color:var(--text3);text-align:center;min-height:14px;letter-spacing:.3px"></div>
+
+        <!-- Bank / Risk -->
         <div style="display:flex;gap:10px">
-          <button id="sBankBtn" onclick="sDoBank()" disabled style="flex:1;padding:12px 8px;border-radius:12px;border:1.5px solid var(--gold-soft);color:var(--gold-soft);background:transparent;font-family:'Fraunces',serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;opacity:.3">Bank It &#128176;</button>
-          <button id="sRiskBtn" onclick="sDoRisk()" disabled style="flex:1;padding:12px 8px;border-radius:12px;border:1.5px solid var(--purple-lt);color:var(--purple-lt);background:transparent;font-family:'Fraunces',serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;opacity:.3">Risk It &#9889;</button>
+          <button id="sBankBtn" onclick="sDoBank()" disabled style="flex:1;padding:13px 8px;border-radius:12px;border:2px solid var(--gold-soft);color:var(--gold-soft);background:transparent;font-family:'Fraunces',serif;font-size:15px;font-weight:900;cursor:pointer;transition:all .2s;opacity:.2;position:relative;overflow:hidden">Bank It &#128176;</button>
+          <button id="sRiskBtn" onclick="sDoRisk()" disabled style="flex:1;padding:13px 8px;border-radius:12px;border:2px solid var(--purple-lt);color:var(--purple-lt);background:transparent;font-family:'Fraunces',serif;font-size:15px;font-weight:900;cursor:pointer;transition:all .2s;opacity:.2;position:relative;overflow:hidden">Risk It &#9889;</button>
         </div>
 
         <!-- Save panel -->
-        <div id="sSaveArea" style="display:none;background:rgba(75,222,128,0.07);border:1px solid rgba(75,222,128,0.3);border-radius:14px;padding:16px">
-          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#4ade80;margin-bottom:8px">Save to Tracker</div>
-          <div id="sSavePreview" style="font-size:13px;color:var(--text2);margin-bottom:10px"></div>
+        <div id="sSaveArea" style="display:none;background:rgba(75,222,128,.06);border:1px solid rgba(75,222,128,.3);border-radius:14px;padding:14px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#4ade80;margin-bottom:6px">Save to Tracker</div>
+          <div id="sSavePreview" style="font-size:12px;color:var(--text2);margin-bottom:10px"></div>
           <div class="fr" style="margin-bottom:10px"><label>Event label</label><input type="text" id="sEvtLabel" placeholder="Wheel Spin — Squad" style="font-size:13px"></div>
           <div class="fmsg" id="sSaveOk">&#10003; Points saved to tracker!</div>
-          <button onclick="sSavePoints()" style="width:100%;padding:11px;border-radius:10px;border:none;background:#4ade80;color:#000;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;cursor:pointer">Save Points to Tracker</button>
+          <button onclick="sSavePoints()" style="width:100%;padding:11px;border-radius:10px;border:none;background:#4ade80;color:#000;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:700;cursor:pointer">Save Points to Tracker</button>
         </div>
 
-        <!-- Recent spin log -->
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px">
-          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Today's Spins</div>
-          <div id="sSpinLog" style="display:flex;flex-direction:column;gap:4px;max-height:140px;overflow-y:auto">
-            <div style="color:var(--text3);font-size:11px;padding:4px">No spins this session</div>
-          </div>
+        <!-- Session log -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;display:flex;justify-content:space-between"><span>Today's Spins</span><span id="sSessionTotal" style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--gold-soft)">0 pts</span></div>
+          <div id="sSpinLog" style="display:flex;flex-direction:column;gap:4px;max-height:130px;overflow-y:auto"><div style="color:var(--text3);font-size:11px;padding:4px">No spins this session</div></div>
         </div>
 
       </div>
@@ -6567,53 +6595,58 @@ function wSetBtns(spin,bank,risk){
 
 
 // ══════════════════════════════════════════
-// SPIN PAGE — STANDALONE WHEEL WITH AUTH + TV
+// ══════════════════════════════════════════
+// SPIN PAGE — TEMPTING WHEEL WITH AUTH + TV
 // ══════════════════════════════════════════
 
-// Shared wheel segment data (same as W_SEGS but declared here for Spin page)
-const SP_SEGS = [
-  {color:'BLACK', type:'pts',     val:1},
-  {color:'BLACK', type:'pts',     val:10},
-  {color:'BLACK', type:'pts',     val:25},
-  {color:'BLACK', type:'special', val:0,  name:'NONE'},
-  {color:'BLACK', type:'pts',     val:50},
-  {color:'BLACK', type:'pts',     val:5},
-  {color:'GOLD',  type:'pts',     val:20},
-  {color:'GOLD',  type:'pts',     val:5},
-  {color:'GOLD',  type:'special', val:20, name:'LOYALTY', loyalty:true},
-  {color:'GOLD',  type:'pts',     val:50},
-  {color:'GOLD',  type:'pts',     val:10},
-  {color:'GOLD',  type:'pts',     val:25},
-  {color:'GREY',  type:'pts',     val:1},
-  {color:'GREY',  type:'pts',     val:30},
-  {color:'GREY',  type:'pts',     val:10},
-  {color:'GREY',  type:'special', val:0,  name:'ZERO'},
-  {color:'GREY',  type:'pts',     val:20},
-  {color:'GREY',  type:'pts',     val:75},
-  {color:'PURPLE',type:'pts',     val:5},
-  {color:'PURPLE',type:'pts',     val:50},
-  {color:'PURPLE',type:'special', val:0,  name:'AUTO'},
-  {color:'PURPLE',type:'pts',     val:25},
-  {color:'PURPLE',type:'pts',     val:10},
-  {color:'PURPLE',type:'special', val:20, name:'LOYALTY', loyalty:true},
+// Wheel segment data
+const SP_QUADS=[
+  {color:'BLACK',segs:[
+    {t:'pts',v:1,  arrow:true, sf:0,   ef:.16},
+    {t:'pts',v:10, arrow:true, sf:.16, ef:.33},
+    {t:'pts',v:25, arrow:true, sf:.33, ef:.5},
+    {t:'sp', v:0,  n:'NONE',  sf:.5,  ef:.66},
+    {t:'pts',v:50, arrow:false,sf:.66, ef:.83},
+    {t:'pts',v:5,  arrow:true, sf:.83, ef:1},
+  ]},
+  {color:'GOLD',segs:[
+    {t:'pts',v:20, arrow:true, sf:0,   ef:.16},
+    {t:'pts',v:5,  arrow:true, sf:.16, ef:.33},
+    {t:'sp', v:20, n:'LOYALTY',sf:.33, ef:.5},
+    {t:'pts',v:50, arrow:false,sf:.5,  ef:.66},
+    {t:'pts',v:10, arrow:true, sf:.66, ef:.83},
+    {t:'pts',v:25, arrow:true, sf:.83, ef:1},
+  ]},
+  {color:'GREY',segs:[
+    {t:'pts',v:1,  arrow:true, sf:0,   ef:.16},
+    {t:'pts',v:30, arrow:true, sf:.16, ef:.33},
+    {t:'pts',v:10, arrow:true, sf:.33, ef:.5},
+    {t:'sp', v:0,  n:'ZERO',  sf:.5,  ef:.66},
+    {t:'pts',v:20, arrow:true, sf:.66, ef:.83},
+    {t:'pts',v:75, arrow:false,sf:.83, ef:1},
+  ]},
+  {color:'PURPLE',segs:[
+    {t:'pts',v:5,  arrow:true, sf:0,   ef:.16},
+    {t:'pts',v:50, arrow:false,sf:.16, ef:.33},
+    {t:'sp', v:0,  n:'AUTO',  sf:.33, ef:.5},
+    {t:'pts',v:25, arrow:true, sf:.5,  ef:.66},
+    {t:'pts',v:10, arrow:true, sf:.66, ef:.83},
+    {t:'sp', v:20, n:'LOYALTY',sf:.83, ef:1},
+  ]},
 ];
-
-const SP_SQ_HEX={BLACK:'#b8bcc6',GOLD:'#ffe100',GREY:'#8899aa',PURPLE:'#bb8ef5'};
-const SP_SPEC={
-  NONE:{bg:'#151520',text:'#5050a0',label:'NONE'},
-  ZERO:{bg:'#151520',text:'#5050a0',label:'ZERO'},
-  AUTO:{bg:'#0c1220',text:'#4477aa',label:'AUTO'},
-  LOYALTY:{bg:'#180830',text:'#aa55ee',label:'LOYALTY'},
-};
+const SP_ALL=[];
+SP_QUADS.forEach((q,qi)=>q.segs.forEach(s=>SP_ALL.push({qi,...s,color:q.color})));
+const SP_QS=[-Math.PI/2,0,Math.PI/2,Math.PI],SP_QA=Math.PI/2;
+const SP_HEX={BLACK:'#9da2ab',GOLD:'#ffe100',GREY:'#7a8d9e',PURPLE:'#9a6fd8'};
+const SP_SBG={NONE:'#0c0c1c',ZERO:'#0c0c1c',AUTO:'#07101e',LOYALTY:'#0e0522'};
+const SP_STX={NONE:'#5858a8',ZERO:'#5858a8',AUTO:'#4477aa',LOYALTY:'#9944dd'};
 const SP_SQNAME={BLACK:'Black',GOLD:'Gold',GREY:'Grey',PURPLE:'Purple'};
 
-let spAuthed=false, spSquad='BLACK', spRing=0, spBanked=0;
-let spAngle=0, spSpinning=false, spRaf=null, spLog=[], spTVOpen=false;
-let spTVCtx=null, spTVAngle=0, spTVRaf=null;
+let spAuthed=false,spSquad='BLACK',spSpinNum=0,spBanked=0;
+let spAngle=0,spSpinning=false,spRaf=null,spLog=[],spSessTotal=0,spTVOpen=false;
+let spLastSegIdx=-1,spAudioCtx=null;
 
-const SP_N=SP_SEGS.length, SP_SA=(Math.PI*2)/SP_N;
-
-// ── AUTH ──────────────────────────────────
+// ── AUTH ────────────────────────────────────
 function spinAuth(){
   const pw=document.getElementById('spinPwInput').value;
   if(pw===D.password||pw==='ephrata2026'){
@@ -6621,8 +6654,7 @@ function spinAuth(){
     document.getElementById('spinAuthGate').style.display='none';
     document.getElementById('spinWheelUI').style.display='block';
     document.getElementById('spinPwInput').value='';
-    spInitCanvas();
-    spDrawWheel(document.getElementById('spinCanvas').getContext('2d'), spAngle, spRing, 380);
+    spInit();
   } else {
     const err=document.getElementById('spinAuthErr');
     err.style.display='block';
@@ -6630,15 +6662,12 @@ function spinAuth(){
     setTimeout(()=>err.style.display='none',2000);
   }
 }
-
 function spinLogout(){
   spAuthed=false;
   document.getElementById('spinAuthGate').style.display='block';
   document.getElementById('spinWheelUI').style.display='none';
   if(spRaf) cancelAnimationFrame(spRaf);
 }
-
-// ── RENDER / INIT ──────────────────────────
 function renderSpinPage(){
   if(!spAuthed){
     document.getElementById('spinAuthGate').style.display='block';
@@ -6646,304 +6675,368 @@ function renderSpinPage(){
   } else {
     document.getElementById('spinAuthGate').style.display='none';
     document.getElementById('spinWheelUI').style.display='block';
-    spInitCanvas();
+    spInit();
   }
 }
-
-function spInitCanvas(){
+function spInit(){
   const cv=document.getElementById('spinCanvas');
   if(!cv) return;
-  spDrawWheel(cv.getContext('2d'), spAngle, spRing, 380);
+  cv.onclick=()=>{ if(!spSpinning&&!document.getElementById('sSpinBtn').disabled) sDoSpin(); };
+  spDrawWheel(cv.getContext('2d'),spAngle,380);
+  spSetBtns(true,false,false);
+  spUpdPips();
 }
 
-// ── CORE DRAW ──────────────────────────────
-function spDrawWheel(ctx, angle, ring, size){
+// ── AUDIO ───────────────────────────────────
+function spInitAudio(){
+  if(spAudioCtx) return;
+  try{ spAudioCtx=new(window.AudioContext||window.webkitAudioContext)(); }catch(e){}
+}
+function spPlayTick(intensity){
+  if(!spAudioCtx) return;
+  try{
+    const o=spAudioCtx.createOscillator(),g=spAudioCtx.createGain();
+    o.connect(g);g.connect(spAudioCtx.destination);
+    o.type='sine';o.frequency.setValueAtTime(900+intensity*300,spAudioCtx.currentTime);
+    g.gain.setValueAtTime(0.05*intensity,spAudioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001,spAudioCtx.currentTime+0.07);
+    o.start();o.stop(spAudioCtx.currentTime+0.07);
+  }catch(e){}
+}
+function spPlayLand(type){
+  if(!spAudioCtx) return;
+  try{
+    const freqs=type==='earn'?[523,659,784]:type==='zero'?[220,185,165]:[440,550];
+    freqs.forEach((f,i)=>{
+      const o=spAudioCtx.createOscillator(),g=spAudioCtx.createGain();
+      o.connect(g);g.connect(spAudioCtx.destination);
+      o.type=type==='earn'?'triangle':'sawtooth';
+      o.frequency.setValueAtTime(f,spAudioCtx.currentTime+i*.05);
+      g.gain.setValueAtTime(0.07,spAudioCtx.currentTime+i*.05);
+      g.gain.exponentialRampToValueAtTime(0.0001,spAudioCtx.currentTime+0.55+i*.05);
+      o.start(spAudioCtx.currentTime+i*.05);
+      o.stop(spAudioCtx.currentTime+0.65+i*.05);
+    });
+  }catch(e){}
+}
+
+// ── DRAW ────────────────────────────────────
+function spDrawWheel(ctx,angle,sz){
   if(!ctx) return;
-  const cx=size/2, cy=size/2, r=size/2-8;
-  ctx.clearRect(0,0,size,size);
-  for(let i=0;i<SP_N;i++){
-    const seg=SP_SEGS[i];
-    const a0=angle+i*SP_SA-Math.PI/2;
-    const a1=a0+SP_SA, am=a0+SP_SA/2;
-    ctx.beginPath(); ctx.moveTo(cx,cy);
-    ctx.arc(cx,cy,r,a0,a1); ctx.closePath();
-    if(seg.type==='special'){
-      const ss=SP_SPEC[seg.name]||SP_SPEC.NONE;
-      ctx.fillStyle=ss.bg;
-    } else {
-      ctx.fillStyle=SP_SQ_HEX[seg.color];
-    }
-    ctx.fill();
-    ctx.strokeStyle='rgba(0,0,0,0.45)'; ctx.lineWidth=1; ctx.stroke();
-    // Ring 4 overlay
-    if(ring===3){
-      ctx.beginPath(); ctx.arc(cx,cy,r*0.42,0,Math.PI*2);
-      ctx.strokeStyle='rgba(232,200,64,0.6)'; ctx.lineWidth=3; ctx.stroke();
-      ctx.beginPath(); ctx.arc(cx,cy,r*0.42,0,Math.PI*2);
-      ctx.strokeStyle='rgba(232,200,64,0.08)'; ctx.lineWidth=r*0.84; ctx.stroke();
-    }
-    // Labels
-    const scale=size/380;
-    const lr=r*0.63, lx=cx+Math.cos(am)*lr, ly=cy+Math.sin(am)*lr;
-    ctx.save(); ctx.translate(lx,ly); ctx.rotate(am+Math.PI/2);
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    if(seg.type==='special'){
-      const ss=SP_SPEC[seg.name]||SP_SPEC.NONE;
-      ctx.fillStyle=ss.text;
-      ctx.font=`bold ${Math.round(8*scale)}px "DM Mono",monospace`;
-      ctx.fillText(seg.name,0,0);
-    } else {
-      const light=seg.color==='GOLD'||seg.color==='GREY';
-      ctx.fillStyle=light?'#111':'#fff';
-      ctx.font=`bold ${Math.round(13*scale)}px "Fraunces",serif`;
-      ctx.fillText(seg.val,0,0);
-    }
-    ctx.restore();
-  }
-  // Outer rim
-  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.strokeStyle='rgba(232,200,64,0.3)'; ctx.lineWidth=3; ctx.stroke();
-  // Hub
-  ctx.beginPath(); ctx.arc(cx,cy,Math.round(18*size/380),0,Math.PI*2);
-  ctx.fillStyle='#06060f'; ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1.5; ctx.stroke();
-  ctx.beginPath(); ctx.arc(cx,cy,5*size/380,0,Math.PI*2);
-  ctx.fillStyle='#e8c840'; ctx.fill();
+  const cx=sz/2,cy=sz/2,r=sz/2-7;
+  ctx.clearRect(0,0,sz,sz);
+  SP_QUADS.forEach((q,qi)=>{
+    const qBase=SP_QS[qi]+angle;
+    q.segs.forEach(seg=>{
+      const a0=qBase+seg.sf*SP_QA,a1=qBase+seg.ef*SP_QA,am=(a0+a1)/2;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,a0,a1);ctx.closePath();
+      ctx.fillStyle=seg.t==='sp'?(SP_SBG[seg.n]||'#0c0c1c'):SP_HEX[q.color];
+      ctx.fill();ctx.strokeStyle='rgba(0,0,0,0.55)';ctx.lineWidth=1.2;ctx.stroke();
+      const sc=sz/380,lr=r*.63,lx=cx+Math.cos(am)*lr,ly=cy+Math.sin(am)*lr;
+      ctx.save();ctx.translate(lx,ly);ctx.rotate(am+Math.PI/2);
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      if(seg.t==='sp'){
+        ctx.fillStyle=SP_STX[seg.n]||'#5858a8';
+        ctx.font='bold '+Math.round(7*sc)+'px "DM Mono",monospace';
+        ctx.fillText(seg.n,0,0);
+      } else {
+        const lt=q.color==='GOLD'||q.color==='GREY';
+        ctx.fillStyle=lt?'#111':'#fff';
+        ctx.font='bold '+Math.round(13*sc)+'px "Fraunces",serif';
+        ctx.fillText(seg.v,0,0);
+        if(seg.arrow){
+          ctx.fillStyle=lt?'rgba(0,0,0,.4)':'rgba(255,255,255,.55)';
+          ctx.font='bold '+Math.round(9*sc)+'px sans-serif';
+          ctx.fillText('\u2192',0,Math.round(14*sc));
+        }
+      }
+      ctx.restore();
+    });
+    ctx.beginPath();ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+Math.cos(qBase)*r,cy+Math.sin(qBase)*r);
+    ctx.strokeStyle='rgba(0,0,0,.85)';ctx.lineWidth=3.5;ctx.stroke();
+  });
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.strokeStyle='rgba(232,200,64,.3)';ctx.lineWidth=4;ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,cy,Math.round(20*sz/380),0,Math.PI*2);
+  ctx.fillStyle='#06060f';ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=2;ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,cy,Math.round(6*sz/380),0,Math.PI*2);
+  ctx.fillStyle='#e8c840';ctx.fill();
 }
 
-// ── SPIN LOGIC ────────────────────────────
+function spGetSegAtPointer(ang){
+  const ptr=-Math.PI/2;
+  for(let i=0;i<SP_ALL.length;i++){
+    const s=SP_ALL[i];
+    const a0w=SP_QS[s.qi]+s.sf*SP_QA+ang;
+    const span=((SP_QS[s.qi]+s.ef*SP_QA+ang-a0w)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
+    const dist=((ptr-a0w)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
+    if(dist<span) return i;
+  }
+  return 0;
+}
+
+// ── SPIN ────────────────────────────────────
 function sDoSpin(){
   if(spSpinning) return;
-  spSpinning=true; sSyncTV();
+  spInitAudio();
+  spSpinning=true;
+  spSetBtns(false,false,false);
   document.getElementById('sSaveArea').style.display='none';
-  sBtns(false,false,false);
-  sSetResult('—','Spinning…','');
-  const landIdx=Math.floor(Math.random()*SP_N);
-  const extra=5+Math.random()*5;
-  const target=-Math.PI/2-landIdx*SP_SA-SP_SA/2-extra*Math.PI*2;
-  const a0=spAngle, delta=target-a0;
-  const dur=3200+Math.random()*1600, t0=performance.now();
-  const ease=t=>1-Math.pow(1-t,4);
-  const mainCV=document.getElementById('spinCanvas');
-  const mainCtx=mainCV?mainCV.getContext('2d'):null;
-  const tvCV=document.getElementById('spinTVCanvas');
-  const tvCtx=tvCV?tvCV.getContext('2d'):null;
-  function frame(now){
+  spSetResult('—','Spinning\u2026','');
+  spSetChoiceHint('');
+  const cv=document.getElementById('spinCanvas');
+  if(cv){ cv.style.boxShadow='0 0 70px rgba(232,200,64,.18),0 0 120px rgba(187,142,245,.08)'; cv.style.cursor='default'; }
+  const li=Math.floor(Math.random()*SP_ALL.length);
+  const seg=SP_ALL[li];
+  const segMid=SP_QS[seg.qi]+(seg.sf+seg.ef)/2*SP_QA;
+  const extra=6+Math.random()*6;
+  const target=-Math.PI/2-segMid-extra*Math.PI*2;
+  const a0=spAngle,delta=target-a0;
+  const dur=4200+Math.random()*1800,t0=performance.now();
+  const ease=t=>{const t2=1-t;return 1-t2*t2*t2*(1+t*1.5);};
+  const mc=document.getElementById('spinCanvas'),tc=document.getElementById('spinTVCanvas');
+  const mCtx=mc?mc.getContext('2d'):null,tCtx=tc?tc.getContext('2d'):null;
+  spLastSegIdx=-1;
+  function fr(now){
     const t=Math.min((now-t0)/dur,1);
     spAngle=a0+delta*ease(t);
-    if(mainCtx) spDrawWheel(mainCtx, spAngle, spRing, 380);
-    if(spTVOpen && tvCtx) spDrawWheel(tvCtx, spAngle, spRing, 420);
-    if(t<1){ spRaf=requestAnimationFrame(frame); }
-    else { spSpinning=false; sLand(SP_SEGS[landIdx]); }
+    if(mCtx) spDrawWheel(mCtx,spAngle,380);
+    if(spTVOpen&&tCtx) spDrawWheel(tCtx,spAngle,420);
+    // Tick
+    const curSeg=spGetSegAtPointer(spAngle);
+    if(curSeg!==spLastSegIdx){
+      const speed=1-t,intensity=Math.min(1,speed*2);
+      if(intensity>0.02){
+        spPlayTick(intensity);
+        const tf=document.getElementById('spinTickFlash');
+        if(tf){tf.style.background='rgba(232,200,64,'+intensity*.07+')';tf.style.opacity='1';setTimeout(()=>{if(tf)tf.style.opacity='0';},80);}
+        // Pointer wiggle near end
+        if(speed<0.14){
+          const ptr=document.getElementById('spinPtr');
+          if(ptr){ptr.style.transform='translateX(-50%) rotate('+(Math.random()-.5)*9+'deg)';setTimeout(()=>{if(ptr)ptr.style.transform='translateX(-50%) rotate(0deg)';},80);}
+        }
+      }
+      spLastSegIdx=curSeg;
+    }
+    if(t<1){ spRaf=requestAnimationFrame(fr); }
+    else {
+      spAngle=a0+delta;
+      if(mCtx) spDrawWheel(mCtx,spAngle,380);
+      if(spTVOpen&&tCtx) spDrawWheel(tCtx,spAngle,420);
+      spSpinning=false;
+      if(cv) cv.style.cursor='pointer';
+      spLand(seg);
+    }
   }
-  spRaf=requestAnimationFrame(frame);
+  spRaf=requestAnimationFrame(fr);
 }
 
-function sLand(seg){
-  const isRing4=(spRing===3);
-  if(seg.type==='special'){
-    const n=seg.name;
-    if(n==='NONE'||n==='ZERO'||n==='NADA'){
-      sSetResult(n+' — 0 pts','No points this spin.','zero');
-      sBtns(false,false,false);
-      setTimeout(()=>sNextOrSave(false),1400);
-    } else if(n==='LOYALTY'){
-      const match=(seg.color===spSquad);
-      const pts=match?seg.val:0;
-      if(match) spBanked+=pts;
-      sUpdateBanked();
-      sSetResult('LOYALTY — '+(match?'+'+pts+' pts':'0 pts'), match?'Your squad color — points earned!':'Not your squad color. No points.', match?'earn':'zero');
-      if(isRing4){ setTimeout(()=>sNextOrSave(match),1400); }
-      else { sBtns(false,true,true); }
-    } else if(n==='AUTO'){
-      sSetResult('AUTO — advance!','Must spin the next ring!','auto');
-      spRing=Math.min(spRing+1,3);
-      sUpdateDots(); sSyncTV();
-      setTimeout(sDoSpin,1600); return;
+function spLand(seg){
+  const isSpin4=spSpinNum===3;
+  const cv=document.getElementById('spinCanvas');
+  if(seg.t==='sp'){
+    if(seg.n==='NONE'||seg.n==='ZERO'){
+      spPlayLand('zero');
+      if(cv) cv.style.boxShadow='0 0 50px rgba(248,113,113,.2)';
+      spSetResult(seg.n+' \u2014 0 pts','No points. Spin over.','zero');
+      spPipDone();setTimeout(spShowSave,1500);
+    } else if(seg.n==='AUTO'){
+      spPlayLand('zero');
+      spSetResult('AUTO \u2014 0 pts','No points. Must spin again!','auto');
+      spPipDone();if(spSpinNum<3){spSpinNum++;spUpdPips();}
+      setTimeout(sDoSpin,1800);return;
+    } else if(seg.n==='LOYALTY'){
+      const match=seg.color===spSquad,pts=match?seg.v:0;
+      if(match){spBanked+=pts;spUpdBanked();}
+      if(match) spPlayLand('earn'); else spPlayLand('zero');
+      if(cv) cv.style.boxShadow=match?'0 0 65px rgba(74,222,128,.25)':'0 0 50px rgba(248,113,113,.2)';
+      spSetResult('LOYALTY \u2014 '+(match?'+'+pts+' pts':'0 pts'),match?'Your squad! +'+pts+' pts.':'Not your squad. 0 points.',match?'earn':'zero');
+      spPipDone();setTimeout(spShowSave,1500);
     }
   } else {
-    const pts=seg.val;
-    const earn=(isRing4?(seg.color===spSquad):true);
-    if(earn){ spBanked+=pts; sUpdateBanked(); }
-    sSetResult(
-      earn?'+'+pts+' pts':'0 pts — wrong color',
-      earn?(isRing4?'Ring 4: Your squad color! +'+pts+' pts.':'+'+pts+' pts earned.'):'Ring 4: must land on your squad color.',
-      earn?'earn':'zero'
-    );
-    if(isRing4){ setTimeout(()=>sNextOrSave(earn),1400); }
-    else { sBtns(false,true,true); }
+    const colorOk=isSpin4?(seg.color===spSquad):true;
+    const pts=colorOk?seg.v:0;
+    if(pts>0){spBanked+=pts;spUpdBanked();}
+    if(isSpin4){
+      if(pts>0) spPlayLand('earn'); else spPlayLand('zero');
+      if(cv) cv.style.boxShadow=pts>0?'0 0 65px rgba(74,222,128,.25)':'0 0 50px rgba(248,113,113,.2)';
+      spSetResult(pts>0?'+'+pts+' pts':'0 pts \u2014 wrong color',pts>0?'Spin 4: your squad color! +'+pts+' pts.':'Spin 4: wrong color. 0 points.',pts>0?'earn':'zero');
+      spPipDone();setTimeout(spShowSave,1500);
+    } else if(seg.arrow){
+      // THE TEMPTATION
+      spPlayLand('earn');
+      if(cv) cv.style.boxShadow='0 0 65px rgba(74,222,128,.25)';
+      spSetResult('+'+pts+' pts \u2192','Bank it safe\u2026 or risk it for more?','choice');
+      spSetChoiceHint('Spin '+(spSpinNum+2)+' could win up to 75 pts \u2014 if you dare.');
+      const rc=document.getElementById('sResultCard');
+      if(rc) rc.classList.add('sp-choice-card');
+      const bb=document.getElementById('sBankBtn'),rb=document.getElementById('sRiskBtn');
+      if(bb) bb.classList.add('sp-shimmer-btn');
+      if(rb) rb.classList.add('sp-shimmer-btn');
+      spSetBtns(false,true,true);
+    } else {
+      spPlayLand('earn');
+      if(cv) cv.style.boxShadow='0 0 65px rgba(74,222,128,.2)';
+      spSetResult('+'+pts+' pts','Points earned. Spin complete.','earn');
+      spPipDone();setTimeout(spShowSave,1500);
+    }
   }
-  sTVShowResult();
+  spTVResult();
 }
 
-function sDoBank(){ sBtns(false,false,false); sNextOrSave(true); }
+function sDoBank(){
+  const bb=document.getElementById('sBankBtn'),rb=document.getElementById('sRiskBtn'),rc=document.getElementById('sResultCard');
+  if(bb) bb.classList.remove('sp-shimmer-btn');
+  if(rb) rb.classList.remove('sp-shimmer-btn');
+  if(rc) rc.classList.remove('sp-choice-card');
+  spSetChoiceHint('');
+  spSetBtns(false,false,false);
+  spPipDone();spShowSave();
+}
 function sDoRisk(){
-  if(spRing>=3) return;
-  sBtns(false,false,false); spRing++; sUpdateDots(); sSyncTV();
+  if(spSpinNum>=3) return;
+  const bb=document.getElementById('sBankBtn'),rb=document.getElementById('sRiskBtn'),rc=document.getElementById('sResultCard');
+  if(bb) bb.classList.remove('sp-shimmer-btn');
+  if(rb) rb.classList.remove('sp-shimmer-btn');
+  if(rc) rc.classList.remove('sp-choice-card');
+  spSetChoiceHint('');
+  spSetBtns(false,false,false);
+  spPipDone();spSpinNum++;spUpdPips();
   setTimeout(sDoSpin,300);
 }
 
-function sNextOrSave(earned){
-  const area=document.getElementById('sSaveArea');
-  area.style.display='block';
+// ── SAVE ────────────────────────────────────
+function spShowSave(){
   const nm=SP_SQNAME[spSquad];
-  document.getElementById('sEvtLabel').value='Wheel — '+nm+' Squad';
+  document.getElementById('sEvtLabel').value='Wheel \u2014 '+nm+' Squad';
   const prev=document.getElementById('sSavePreview');
-  if(spBanked>0){
-    prev.innerHTML='<strong style="color:#4ade80">+'+spBanked+' pts</strong> for '+nm+' Squad';
-  } else {
-    prev.innerHTML='<span style="color:var(--text3)">0 points this spin.</span>';
-  }
-  sBtns(true,false,false);
+  if(prev) prev.innerHTML=spBanked>0
+    ?'<strong style="color:#4ade80">+'+spBanked+' pts</strong> for '+nm+' Squad'
+    :'<span style="color:var(--text3)">0 points this spin.</span>';
+  const sa=document.getElementById('sSaveArea');
+  if(sa){ sa.style.display='block'; sa.classList.add('sp-save-show'); }
+  spSetBtns(true,false,false);
 }
-
 async function sSavePoints(){
   const nm=SP_SQNAME[spSquad];
-  const label=document.getElementById('sEvtLabel').value.trim()||('Wheel — '+nm+' Squad');
-  const pts={}; SQUADS.forEach(s=>pts[s]=0);
-  if(spBanked>0) pts[spSquad]=spBanked;
-  if(!D.nextId) D.nextId=100;
-  if(!Array.isArray(D.events)) D.events=[];
+  const label=document.getElementById('sEvtLabel').value.trim()||'Wheel \u2014 '+nm+' Squad';
+  const pts={};SQUADS.forEach(s=>pts[s]=0);if(spBanked>0) pts[spSquad]=spBanked;
+  if(!D.nextId) D.nextId=100;if(!Array.isArray(D.events)) D.events=[];
   D.events.push({id:D.nextId++,name:label,type:'event',date:new Date().toISOString().split('T')[0],note:'Wheel spin',pts});
   D.history.unshift({type:'event',name:label,pts,time:new Date().toISOString()});
   logActivity('Wheel spin: +'+spBanked+' to '+spSquad);
-  await save(); renderAll();
+  await save();renderAll();
   flash('sSaveOk');
-  // log to session
-  spLog.unshift({sq:spSquad,pts:spBanked,label:nm});
-  sRenderLog();
-  // reset for next spin
-  spBanked=0; spRing=0; sUpdateDots(); sUpdateBanked(); sSyncTV();
+  spLog.unshift({sq:spSquad,pts:spBanked,nm});spSessTotal+=spBanked;
+  const sb=document.getElementById('sSessionBadge');if(sb) sb.textContent='session: '+spSessTotal+' pts';
+  spRenderLog();spTVSync();
+  // Reset for next person — wheel stays where it is
+  spBanked=0;spSpinNum=0;spUpdBanked();spUpdPips();
   document.getElementById('sSaveArea').style.display='none';
-  sSetResult('Saved!','Points added to tracker. Ready for next spin.','earn');
-  spAngle=0;
-  const cv=document.getElementById('spinCanvas');
-  if(cv) spDrawWheel(cv.getContext('2d'), spAngle, spRing, 380);
+  const cv=document.getElementById('spinCanvas');if(cv) cv.style.boxShadow='0 0 40px rgba(187,142,245,.1)';
+  spSetResult('\u2713 Saved!','Points added to tracker. Ready for next spin.','earn');
 }
 
-// ── UI HELPERS ────────────────────────────
+// ── UI HELPERS ───────────────────────────────
 function spinSetSq(sq){
   spSquad=sq;
   document.querySelectorAll('.spin-sq-btn').forEach(b=>{
     const on=b.dataset.ssq===sq;
     b.classList.toggle('spin-sq-on',on);
-    b.style.background=on?SP_SQ_HEX[sq]:'var(--surface2)';
-    b.style.borderColor=on?SP_SQ_HEX[sq]:'var(--border)';
+    b.style.background=on?SP_HEX[sq]:'var(--surface2)';
+    b.style.borderColor=on?SP_HEX[sq]:'var(--border)';
     b.style.color=on?(sq==='BLACK'?'#fff':sq==='GREY'?'#111':'#000'):'var(--text2)';
     b.style.fontWeight=on?'700':'400';
   });
-  sSyncTV();
+  spTVSync();
 }
-
-function sUpdateDots(){
+function spPipDone(){
+  const p=document.getElementById('sPip'+spSpinNum);
+  if(p){ p.style.color='rgba(232,200,64,.45)'; p.style.borderColor='rgba(232,200,64,.35)'; p.style.background='var(--surface2)'; p.style.boxShadow='none'; }
+  const a=document.getElementById('sPipArr'+spSpinNum);
+  if(a){ a.style.color='rgba(232,200,64,.5)'; }
+  const tp=document.getElementById('tvDot'+spSpinNum);
+  if(tp){ tp.style.background='rgba(232,200,64,.25)'; tp.style.border='1.5px solid rgba(232,200,64,.4)'; tp.style.boxShadow='none'; }
+}
+function spUpdPips(){
   for(let i=0;i<4;i++){
-    const d=document.getElementById('sDot'+i);
-    if(!d) continue;
-    const act=i===spRing, done=i<spRing;
-    d.style.background=act?'var(--gold-soft)':done?'rgba(232,200,64,.3)':'var(--surface2)';
-    d.style.border=act?'none':done?'1.5px solid rgba(232,200,64,.35)':'1.5px solid var(--border)';
-    d.style.boxShadow=act?'0 0 8px rgba(232,200,64,.5)':'none';
-    // TV dots
-    const td=document.getElementById('tvDot'+i);
-    if(td){
-      td.style.background=act?'#e8c840':done?'rgba(232,200,64,.25)':'rgba(255,255,255,.1)';
-      td.style.boxShadow=act?'0 0 12px rgba(232,200,64,.6)':'none';
-    }
+    const p=document.getElementById('sPip'+i);
+    if(!p) continue;
+    const isDone=p.style.color==='rgba(232,200,64,.45)';
+    if(isDone) continue;
+    const act=i===spSpinNum;
+    p.style.borderColor=act?'var(--gold-soft)':'rgba(255,255,255,.12)';
+    p.style.background=act?'rgba(232,200,64,.1)':'var(--surface2)';
+    p.style.color=act?'var(--gold-soft)':'var(--text3)';
+    p.style.boxShadow=act?'0 0 14px rgba(232,200,64,.3)':'none';
+    p.style.transform=act?'scale(1.1)':'scale(1)';
+    const tp=document.getElementById('tvDot'+i);
+    if(tp){const tdone=tp.style.background==='rgba(232,200,64,.25)';if(!tdone){tp.style.background=act?'#e8c840':'rgba(255,255,255,.08)';tp.style.boxShadow=act?'0 0 14px rgba(232,200,64,.7)':'none';}}
   }
-  const rl=document.getElementById('sRingLabel');
-  if(rl) rl.textContent=spRing+1;
-  document.getElementById('sRiskBtn').textContent=spRing>=3?'Center ⚡':'Risk It ⚡';
+  const rb=document.getElementById('sRiskBtn');
+  if(rb) rb.textContent=spSpinNum>=3?'Spin 4 \u26a1':'Risk It \u26a1';
+  const pn=document.getElementById('spinPipNote');
+  if(pn){ if(spSpinNum===3){pn.textContent='Spin 4 \u2014 squad color must match!';pn.style.color='var(--gold-soft)';}else{pn.textContent='Tap the wheel or press SPIN';pn.style.color='var(--text3)';} }
 }
-
-function sUpdateBanked(){
-  document.getElementById('sBanked').textContent=spBanked;
-  document.getElementById('sBankedSub').textContent=spBanked===0?'ready to spin':'pts banked this spin';
-  const tvb=document.getElementById('spinTVBanked');
-  if(tvb){ tvb.style.display=spBanked>0?'block':'none'; tvb.textContent=spBanked+' pts banked'; }
+function spUpdBanked(){
+  const el=document.getElementById('sBanked');
+  if(el){ el.textContent=spBanked; el.classList.remove('sp-bump'); void el.offsetWidth; el.classList.add('sp-bump'); }
+  document.getElementById('sBankedSub').textContent=spBanked===0?'ready to spin':spBanked+' pts banked';
+  const tb=document.getElementById('spinTVBanked');
+  if(tb){ tb.style.display=spBanked>0?'block':'none'; tb.textContent=spBanked+' pts banked'; }
 }
-
-function sSetResult(v,s,cls){
+function spSetResult(v,s,cls){
   const c=document.getElementById('sResultCard');
-  c.style.borderColor=cls==='earn'?'rgba(75,222,128,.4)':cls==='zero'?'rgba(248,113,113,.3)':cls==='auto'?'rgba(153,168,187,.35)':'var(--border)';
-  c.style.background=cls==='earn'?'rgba(75,222,128,.04)':cls==='zero'?'rgba(248,113,113,.03)':'var(--surface)';
-  document.getElementById('sResultVal').textContent=v;
+  if(!c) return;
+  c.classList.remove('sp-choice-card');
+  c.style.borderColor=cls==='earn'?'rgba(75,222,128,.4)':cls==='zero'?'rgba(248,113,113,.3)':cls==='choice'?'rgba(232,200,64,.5)':cls==='auto'?'rgba(153,168,187,.35)':'var(--border)';
+  c.style.background=cls==='earn'?'rgba(75,222,128,.04)':cls==='zero'?'rgba(248,113,113,.03)':cls==='choice'?'rgba(232,200,64,.06)':'var(--surface)';
+  c.style.boxShadow=cls==='choice'?'0 0 24px rgba(232,200,64,.12)':cls==='earn'?'0 0 16px rgba(74,222,128,.08)':'none';
+  const rv=document.getElementById('sResultVal');
+  if(rv){ rv.textContent=v; rv.style.color=cls==='earn'||cls==='choice'?'#4ade80':cls==='zero'?'#f87171':'var(--text)'; }
   document.getElementById('sResultSub').textContent=s;
 }
-
-function sBtns(spin,bank,risk){
+function spSetChoiceHint(t){
+  const el=document.getElementById('sChoiceHint'); if(el) el.textContent=t;
+}
+function spSetBtns(sp,bk,rk){
   const sb=document.getElementById('sSpinBtn'),bb=document.getElementById('sBankBtn'),rb=document.getElementById('sRiskBtn');
-  if(sb){ sb.disabled=!spin; sb.style.opacity=spin?'1':'.35'; sb.style.cursor=spin?'pointer':'default'; }
-  if(bb){ bb.disabled=!bank; bb.style.opacity=bank?'1':'.3'; }
-  if(rb){ rb.disabled=!risk; rb.style.opacity=risk?'1':'.3'; }
+  if(sb){ sb.disabled=!sp; sb.style.opacity=sp?'1':'.25'; sb.style.cursor=sp?'pointer':'default'; }
+  if(bb){ bb.disabled=!bk; bb.style.opacity=bk?'1':'.2'; }
+  if(rb){ rb.disabled=!rk; rb.style.opacity=rk?'1':'.2'; }
 }
-
-function sRenderLog(){
-  const el=document.getElementById('sSpinLog'); if(!el) return;
+function spRenderLog(){
+  const el=document.getElementById('sSpinLog'),tl=document.getElementById('sSessionTotal');
+  if(tl) tl.textContent=spSessTotal+' pts';
   if(!spLog.length){ el.innerHTML='<div style="color:var(--text3);font-size:11px;padding:4px">No spins this session</div>'; return; }
-  el.innerHTML=spLog.slice(0,6).map(h=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:var(--surface2);border-radius:7px;font-size:10px">
-      <span style="color:${SP_SQ_HEX[h.sq]};font-family:'DM Mono',monospace;letter-spacing:1px">${h.label}</span>
-      <span style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:${h.pts>0?'#4ade80':'#606080'}">${h.pts>0?'+'+h.pts:h.pts} pts</span>
-    </div>`).join('');
+  el.innerHTML=spLog.slice(0,6).map(h=>`<div class="sp-log-item" style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:var(--surface2);border-radius:7px;font-size:10px;margin-bottom:3px"><span style="color:${SP_HEX[h.sq]};letter-spacing:1px">${h.nm}</span><span style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:${h.pts>0?'#4ade80':'#606080'}">${h.pts>0?'+'+h.pts:h.pts} pts</span></div>`).join('');
 }
 
-// ── TV DISPLAY ────────────────────────────
+// ── TV ────────────────────────────────────────
 function openSpinTV(){
   spTVOpen=true;
-  const el=document.getElementById('spinTV');
-  if(!el) return;
-  el.style.display='flex';
-  sSyncTV();
-  // Draw wheel on TV canvas
-  const tvCV=document.getElementById('spinTVCanvas');
-  if(tvCV) spDrawWheel(tvCV.getContext('2d'), spAngle, spRing, 420);
+  const el=document.getElementById('spinTV');if(el) el.style.display='flex';
+  spTVSync();
+  const tc=document.getElementById('spinTVCanvas');
+  if(tc) spDrawWheel(tc.getContext('2d'),spAngle,420);
 }
-
-function closeSpinTV(){
-  spTVOpen=false;
-  const el=document.getElementById('spinTV');
-  if(el) el.style.display='none';
-}
-
-function sSyncTV(){
+function closeSpinTV(){spTVOpen=false;const el=document.getElementById('spinTV');if(el) el.style.display='none';}
+function spTVSync(){
   if(!spTVOpen) return;
-  // Squad badge
   const badge=document.getElementById('spinTVSquadBadge');
-  if(badge){
-    badge.textContent=SP_SQNAME[spSquad]+' Squad';
-    badge.style.background=SP_SQ_HEX[spSquad]+'22';
-    badge.style.color=SP_SQ_HEX[spSquad];
-    badge.style.borderColor=SP_SQ_HEX[spSquad]+'55';
-  }
-  // Live scores strip
+  if(badge){ badge.textContent=SP_SQNAME[spSquad]+' Squad'; badge.style.background=SP_HEX[spSquad]+'22'; badge.style.color=SP_HEX[spSquad]; badge.style.border='1.5px solid '+SP_HEX[spSquad]+'55'; }
   const strip=document.getElementById('spinTVScores');
-  if(strip){
-    const r=ranked();
-    strip.innerHTML=r.map((sq,i)=>`
-      <div style="flex:1;text-align:center;padding:14px 8px;background:${i===0?'rgba(232,200,64,0.06)':'transparent'};border-right:1px solid rgba(255,255,255,0.05)">
-        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:4px">${i===0?'▲ ':''} ${sq} ${i===0?'▲ ':''}</div>
-        <div style="font-family:'Fraunces',serif;font-size:clamp(28px,5vw,52px);font-weight:900;color:${SQ_HEX[sq]};line-height:1">${grand(sq).toLocaleString()}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,.25);margin-top:3px">pts</div>
-      </div>`).join('');
-  }
-  // Ticker tape
+  if(strip){ const r=ranked(); strip.innerHTML=r.map((sq,i)=>`<div style="flex:1;text-align:center;padding:14px 8px;background:${i===0?'rgba(232,200,64,0.05)':'transparent'};border-right:1px solid rgba(255,255,255,0.05)"><div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:4px">${i===0?'\u25b2 ':' '}${sq}${i===0?' \u25b2':''}</div><div style="font-family:'Fraunces',serif;font-size:clamp(28px,5vw,52px);font-weight:900;color:${SQ_HEX[sq]};line-height:1">${grand(sq).toLocaleString()}</div></div>`).join(''); }
   const tape=document.getElementById('spinTVTicker');
-  if(tape){
-    const r2=ranked();
-    const items=r2.map(sq=>`<span style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:${SQ_HEX[sq]};padding:0 32px">${sq} — ${grand(sq).toLocaleString()} pts</span><span style="font-family:'DM Mono',monospace;font-size:12px;color:rgba(255,255,255,.2);padding:0 16px">·</span>`).join('');
-    tape.innerHTML=items+items;
-  }
-  // Dots
-  sUpdateDots();
-  sUpdateBanked();
+  if(tape){ const r2=ranked(); const items=r2.map(sq=>`<span style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:${SQ_HEX[sq]};padding:0 32px">${sq} \u2014 ${grand(sq).toLocaleString()} pts</span><span style="font-family:'DM Mono',monospace;font-size:12px;color:rgba(255,255,255,.15);padding:0 16px">\u00b7</span>`).join(''); tape.innerHTML=items+items; }
+  spUpdBanked();
 }
-
-function sTVShowResult(){
+function spTVResult(){
   if(!spTVOpen) return;
-  const rv=document.getElementById('sResultVal');
-  const rs=document.getElementById('sResultSub');
-  const tvr=document.getElementById('spinTVResult');
-  const tvs=document.getElementById('spinTVSub');
+  const rv=document.getElementById('sResultVal'),rs=document.getElementById('sResultSub');
+  const tvr=document.getElementById('spinTVResult'),tvs=document.getElementById('spinTVSub');
   if(tvr&&rv) tvr.textContent=rv.textContent;
   if(tvs&&rs) tvs.textContent=rs.textContent;
 }
