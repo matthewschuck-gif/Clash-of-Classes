@@ -7414,7 +7414,8 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   saveKickoffContent,loadKickoffEditor,
   isImageUrl,validatePhotoUrl,
   renderChamps,renderMayhem,renderKickoff,
-  renderGallery,renderStaffLinks};
+  renderGallery,renderStaffLinks,
+  renderNavOrder,saveNavOrder};
 Object.entries(_fns).forEach(([k,v])=>{ window[k]=v; window['_real_'+k]=v; });
 window.__real_goTo = goTo;
 window.__moduleReady=true;
