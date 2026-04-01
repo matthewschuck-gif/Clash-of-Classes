@@ -6871,6 +6871,7 @@ function sDoSpin(){
     if(t<1){ spRaf=requestAnimationFrame(fr); }
     else {
       spAngle=a0+delta;
+      spPointerWobble=0; // ensure pointer is perfectly centred at rest
       if(mCtx) spDrawWheel(mCtx,spAngle,380);
       if(spTVOpen&&tCtx) spDrawWheel(tCtx,spAngle,420);
       spSpinning=false;
