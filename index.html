@@ -6759,16 +6759,19 @@ function spDrawWheel(ctx,angle,sz){
   ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=2;ctx.stroke();
   ctx.beginPath();ctx.arc(cx,cy,Math.round(6*sz/380),0,Math.PI*2);
   ctx.fillStyle='#e8c840';ctx.fill();
-  // Pointer drawn ON canvas — guaranteed alignment with targeting math
+  // Pointer: inward-pointing triangle drawn inside the canvas circle
+  // (border-radius:50% clips anything outside, so we draw inside the rim)
   const pw=typeof spPointerWobble!=='undefined'?spPointerWobble:0;
   const pA=-Math.PI/2+pw;
   const sc2=sz/380;
-  const pTip={x:cx+Math.cos(pA)*(r+3*sc2), y:cy+Math.sin(pA)*(r+3*sc2)};
-  const pL={x:cx+Math.cos(pA+0.18)*(r+20*sc2), y:cy+Math.sin(pA+0.18)*(r+20*sc2)};
-  const pR={x:cx+Math.cos(pA-0.18)*(r+20*sc2), y:cy+Math.sin(pA-0.18)*(r+20*sc2)};
+  const pTip={x:cx+Math.cos(pA)*r*0.97,      y:cy+Math.sin(pA)*r*0.97};
+  const pL  ={x:cx+Math.cos(pA+0.22)*r*0.80, y:cy+Math.sin(pA+0.22)*r*0.80};
+  const pR  ={x:cx+Math.cos(pA-0.22)*r*0.80, y:cy+Math.sin(pA-0.22)*r*0.80};
+  ctx.beginPath();ctx.moveTo(pTip.x+1,pTip.y+1);ctx.lineTo(pL.x+1,pL.y+1);ctx.lineTo(pR.x+1,pR.y+1);ctx.closePath();
+  ctx.fillStyle='rgba(0,0,0,0.4)';ctx.fill();
   ctx.beginPath();ctx.moveTo(pTip.x,pTip.y);ctx.lineTo(pL.x,pL.y);ctx.lineTo(pR.x,pR.y);ctx.closePath();
   ctx.fillStyle='#e8c840';ctx.fill();
-  ctx.strokeStyle='rgba(0,0,0,.55)';ctx.lineWidth=1.2;ctx.stroke();
+  ctx.strokeStyle='rgba(0,0,0,0.6)';ctx.lineWidth=1.5*sc2;ctx.stroke();
 }
 
 let spPointerWobble=0;
