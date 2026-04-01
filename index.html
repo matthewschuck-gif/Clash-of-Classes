@@ -6830,22 +6830,22 @@ function sDoSpin(){
   spSetChoiceHint('');
   const cv=document.getElementById('spinCanvas');
   if(cv){ cv.style.boxShadow='0 0 70px rgba(232,200,64,.18),0 0 120px rgba(187,142,245,.08)'; cv.style.cursor='default'; }
-  // Spin 4: 1-in-4 odds — pick quadrant center only
-  let li, seg, segMid;
+
+  // Spin to a purely random angle — result is read from pointer position after stop.
+  // For spin 4, bias toward landing near a quadrant center (1-in-4 color odds).
+  let extraRot, landOffset;
   if(spSpinNum===3){
+    // Pick a random quadrant center ±5% of a segment width
     const qIdx=Math.floor(Math.random()*4);
-    const quadColors=['BLACK','GOLD','GREY','PURPLE'];
-    const quadPts=[25,20,20,25];
-    seg={qi:qIdx,t:'pts',v:quadPts[qIdx],arrow:false,color:quadColors[qIdx],sf:0.4,ef:0.6};
-    segMid=SP_QS[qIdx]+0.5*SP_QA;
-    li=-1;
+    landOffset=SP_QS[qIdx]+0.5*SP_QA+(Math.random()-0.5)*SP_QA*0.08;
   } else {
-    li=Math.floor(Math.random()*SP_ALL.length);
-    seg=SP_ALL[li];
-    segMid=SP_QS[seg.qi]+(seg.sf+seg.ef)/2*SP_QA;
+    landOffset=Math.random()*Math.PI*2;
   }
-  const extra=6+Math.random()*6;
-  const target=-Math.PI/2-segMid-extra*Math.PI*2;
+  extraRot=(6+Math.random()*6)*Math.PI*2;
+  // target: pointer (-PI/2) aligns with landOffset angle on wheel
+  // wheel draws segment at (SP_QS[qi]+spAngle+sf*SP_QA)
+  // we want landOffset+spAngle = -PI/2  =>  spAngle = -PI/2 - landOffset
+  const target=-Math.PI/2-landOffset-extraRot;
   const a0=spAngle,delta=target-a0;
   const dur=4200+Math.random()*1800,t0=performance.now();
   const ease=t=>1-Math.pow(1-t,3);
@@ -6857,7 +6857,6 @@ function sDoSpin(){
     spAngle=a0+delta*ease(t);
     if(mCtx) spDrawWheel(mCtx,spAngle,380);
     if(spTVOpen&&tCtx) spDrawWheel(tCtx,spAngle,420);
-    // Angle-based tick (reliable regardless of rotation count)
     const spSwept=Math.abs(spAngle-spLastTickAngle);
     if(spSwept>=(Math.PI*2)/24){
       spLastTickAngle=spAngle;
@@ -6875,18 +6874,41 @@ function sDoSpin(){
     if(t<1){ spRaf=requestAnimationFrame(fr); }
     else {
       spAngle=a0+delta;
-      spPointerWobble=0; // ensure pointer is perfectly centred at rest
+      spPointerWobble=0;
       if(mCtx) spDrawWheel(mCtx,spAngle,380);
       if(spTVOpen&&tCtx) spDrawWheel(tCtx,spAngle,420);
       spSpinning=false;
       if(cv) cv.style.cursor='pointer';
-      // Redraw with highlight on landed segment
-      if(li>=0&&mCtx) spDrawWheel(mCtx,spAngle,380,li);
-      if(spTVOpen&&tCtx) spDrawWheel(tCtx,spAngle,420,li);
-      spLand(seg);
+      // Read which segment is actually under the pointer
+      const landed=spSegAtPointer();
+      if(!landed){ spLand({t:'sp',n:'NONE',v:0,color:'BLACK'}); return; }
+      if(landed.li>=0&&mCtx) spDrawWheel(mCtx,spAngle,380,landed.li);
+      if(spTVOpen&&tCtx) spDrawWheel(tCtx,spAngle,420,landed.li);
+      spLand(landed.seg);
     }
   }
   spRaf=requestAnimationFrame(fr);
+}
+
+// Read which segment the pointer (-PI/2) is currently over
+function spSegAtPointer(){
+  const ptr=-Math.PI/2;
+  for(let qi=0;qi<SP_QUADS.length;qi++){
+    let rel=((ptr-SP_QS[qi]-spAngle)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
+    if(rel>=0&&rel<SP_QA){
+      const frac=rel/SP_QA;
+      const segs=SP_QUADS[qi].segs;
+      for(let si=0;si<segs.length;si++){
+        if(frac>=segs[si].sf&&frac<segs[si].ef){
+          let li=0;
+          for(let q2=0;q2<qi;q2++) li+=SP_QUADS[q2].segs.length;
+          li+=si;
+          return {seg:{...segs[si],color:SP_QUADS[qi].color,qi},li};
+        }
+      }
+    }
+  }
+  return null;
 }
 
 function spLand(seg){
