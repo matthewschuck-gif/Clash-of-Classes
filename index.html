@@ -413,6 +413,7 @@ body.light-mode .tab.active { color:var(--text); border-bottom-color:var(--gold-
 @keyframes sp-pts-bump{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
 @keyframes sp-fade-up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes sp-log-in{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+.sp-give-card{border-color:rgba(232,160,32,.5)!important;background:rgba(232,160,32,.06)!important}
 .sp-choice-card{animation:sp-choice-pulse 1.8s ease-in-out infinite!important}
 .sp-shimmer-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.09) 50%,transparent 100%);animation:sp-shimmer 1.8s ease-in-out infinite;pointer-events:none}
 .sp-bump{animation:sp-pts-bump .4s ease-out!important}
@@ -1976,6 +1977,13 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         <div style="display:flex;gap:10px">
           <button id="sBankBtn" onclick="sDoBank()" disabled style="flex:1;padding:13px 8px;border-radius:12px;border:2px solid var(--gold-soft);color:var(--gold-soft);background:transparent;font-family:'Fraunces',serif;font-size:15px;font-weight:900;cursor:pointer;transition:all .2s;opacity:.2;position:relative;overflow:hidden">Bank It &#128176;</button>
           <button id="sRiskBtn" onclick="sDoRisk()" disabled style="flex:1;padding:13px 8px;border-radius:12px;border:2px solid var(--purple-lt);color:var(--purple-lt);background:transparent;font-family:'Fraunces',serif;font-size:15px;font-weight:900;cursor:pointer;transition:all .2s;opacity:.2;position:relative;overflow:hidden">Risk It &#9889;</button>
+        </div>
+
+        <!-- GIVE picker -->
+        <div id="sGiveBox" style="display:none;background:rgba(232,160,32,.07);border:2px solid rgba(232,160,32,.4);border-radius:14px;padding:14px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#e8a020;margin-bottom:7px">&#127381; GIVE — Choose a Squad</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Give <strong style="color:var(--gold-soft)">50 pts</strong> to a squad you are <em>not</em> on.</div>
+          <div id="sGiveSqBtns" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
         </div>
 
         <!-- Save panel -->
@@ -6600,7 +6608,7 @@ const SP_QUADS=[
   {color:'BLACK',segs:[
     {t:'pts',v:1,  arrow:true, sf:0,   ef:.16},
     {t:'pts',v:10, arrow:true, sf:.16, ef:.33},
-    {t:'pts',v:25, arrow:true, sf:.33, ef:.5},
+    {t:'sp', v:50, n:'GIVE',  sf:.33, ef:.5},
     {t:'sp', v:0,  n:'NONE',  sf:.5,  ef:.66},
     {t:'pts',v:50, arrow:false,sf:.66, ef:.83},
     {t:'pts',v:5,  arrow:true, sf:.83, ef:1},
@@ -6618,7 +6626,7 @@ const SP_QUADS=[
     {t:'pts',v:30, arrow:true, sf:.16, ef:.33},
     {t:'pts',v:10, arrow:true, sf:.33, ef:.5},
     {t:'sp', v:0,  n:'ZERO',  sf:.5,  ef:.66},
-    {t:'pts',v:20, arrow:true, sf:.66, ef:.83},
+    {t:'sp', v:50, n:'GIVE',  sf:.66, ef:.83},
     {t:'pts',v:75, arrow:false,sf:.83, ef:1},
   ]},
   {color:'PURPLE',segs:[
@@ -6634,8 +6642,8 @@ const SP_ALL=[];
 SP_QUADS.forEach((q,qi)=>q.segs.forEach(s=>SP_ALL.push({qi,...s,color:q.color})));
 const SP_QS=[-Math.PI/2,0,Math.PI/2,Math.PI],SP_QA=Math.PI/2;
 const SP_HEX={BLACK:'#9da2ab',GOLD:'#ffe100',GREY:'#7a8d9e',PURPLE:'#9a6fd8'};
-const SP_SBG={NONE:'#0c0c1c',ZERO:'#0c0c1c',AUTO:'#07101e',LOYALTY:'#0e0522'};
-const SP_STX={NONE:'#5858a8',ZERO:'#5858a8',AUTO:'#4477aa',LOYALTY:'#9944dd'};
+const SP_SBG={NONE:'#0c0c1c',ZERO:'#0c0c1c',AUTO:'#07101e',LOYALTY:'#0e0522',GIVE:'#1a0a00'};
+const SP_STX={NONE:'#5858a8',ZERO:'#5858a8',AUTO:'#4477aa',LOYALTY:'#9944dd',GIVE:'#e8a020'};
 const SP_SQNAME={BLACK:'Black',GOLD:'Gold',GREY:'Grey',PURPLE:'Purple'};
 
 let spAuthed=false,spSquad='BLACK',spSpinNum=0,spBanked=0;
@@ -6759,19 +6767,19 @@ function spDrawWheel(ctx,angle,sz){
   ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=2;ctx.stroke();
   ctx.beginPath();ctx.arc(cx,cy,Math.round(6*sz/380),0,Math.PI*2);
   ctx.fillStyle='#e8c840';ctx.fill();
-  // Pointer: inward-pointing triangle drawn inside the canvas circle
-  // (border-radius:50% clips anything outside, so we draw inside the rim)
+  // Pointer: line+arrowhead at label depth (r*0.68) for unambiguous pointing
   const pw=typeof spPointerWobble!=='undefined'?spPointerWobble:0;
   const pA=-Math.PI/2+pw;
   const sc2=sz/380;
-  const pTip={x:cx+Math.cos(pA)*r*0.97,      y:cy+Math.sin(pA)*r*0.97};
-  const pL  ={x:cx+Math.cos(pA+0.22)*r*0.80, y:cy+Math.sin(pA+0.22)*r*0.80};
-  const pR  ={x:cx+Math.cos(pA-0.22)*r*0.80, y:cy+Math.sin(pA-0.22)*r*0.80};
-  ctx.beginPath();ctx.moveTo(pTip.x+1,pTip.y+1);ctx.lineTo(pL.x+1,pL.y+1);ctx.lineTo(pR.x+1,pR.y+1);ctx.closePath();
-  ctx.fillStyle='rgba(0,0,0,0.4)';ctx.fill();
-  ctx.beginPath();ctx.moveTo(pTip.x,pTip.y);ctx.lineTo(pL.x,pL.y);ctx.lineTo(pR.x,pR.y);ctx.closePath();
+  const rimPt={x:cx+Math.cos(pA)*r,          y:cy+Math.sin(pA)*r};
+  const tipPt={x:cx+Math.cos(pA)*r*0.68,     y:cy+Math.sin(pA)*r*0.68};
+  const bL   ={x:cx+Math.cos(pA+0.16)*r*0.80,y:cy+Math.sin(pA+0.16)*r*0.80};
+  const bR   ={x:cx+Math.cos(pA-0.16)*r*0.80,y:cy+Math.sin(pA-0.16)*r*0.80};
+  ctx.beginPath();ctx.moveTo(rimPt.x,rimPt.y);ctx.lineTo(tipPt.x,tipPt.y);
+  ctx.strokeStyle='#e8c840';ctx.lineWidth=3*sc2;ctx.stroke();
+  ctx.beginPath();ctx.moveTo(tipPt.x,tipPt.y);ctx.lineTo(bL.x,bL.y);ctx.lineTo(bR.x,bR.y);ctx.closePath();
   ctx.fillStyle='#e8c840';ctx.fill();
-  ctx.strokeStyle='rgba(0,0,0,0.6)';ctx.lineWidth=1.5*sc2;ctx.stroke();
+  ctx.strokeStyle='rgba(0,0,0,0.5)';ctx.lineWidth=1*sc2;ctx.stroke();
 }
 
 let spPointerWobble=0;
@@ -6787,14 +6795,25 @@ function sDoSpin(){
   spSetChoiceHint('');
   const cv=document.getElementById('spinCanvas');
   if(cv){ cv.style.boxShadow='0 0 70px rgba(232,200,64,.18),0 0 120px rgba(187,142,245,.08)'; cv.style.cursor='default'; }
-  const li=Math.floor(Math.random()*SP_ALL.length);
-  const seg=SP_ALL[li];
-  const segMid=SP_QS[seg.qi]+(seg.sf+seg.ef)/2*SP_QA;
+  // Spin 4: 1-in-4 odds — pick quadrant center only
+  let li, seg, segMid;
+  if(spSpinNum===3){
+    const qIdx=Math.floor(Math.random()*4);
+    const quadColors=['BLACK','GOLD','GREY','PURPLE'];
+    const quadPts=[25,20,20,25];
+    seg={qi:qIdx,t:'pts',v:quadPts[qIdx],arrow:false,color:quadColors[qIdx],sf:0.4,ef:0.6};
+    segMid=SP_QS[qIdx]+0.5*SP_QA;
+    li=-1;
+  } else {
+    li=Math.floor(Math.random()*SP_ALL.length);
+    seg=SP_ALL[li];
+    segMid=SP_QS[seg.qi]+(seg.sf+seg.ef)/2*SP_QA;
+  }
   const extra=6+Math.random()*6;
   const target=-Math.PI/2-segMid-extra*Math.PI*2;
   const a0=spAngle,delta=target-a0;
   const dur=4200+Math.random()*1800,t0=performance.now();
-  const ease=t=>{const t2=1-t;return 1-t2*t2*t2*(1+t*1.5);};
+  const ease=t=>1-Math.pow(1-t,3);
   const mc=document.getElementById('spinCanvas'),tc=document.getElementById('spinTVCanvas');
   const mCtx=mc?mc.getContext('2d'):null,tCtx=tc?tc.getContext('2d'):null;
   spLastTickAngle=spAngle;
@@ -6835,7 +6854,21 @@ function spLand(seg){
   const isSpin4=spSpinNum===3;
   const cv=document.getElementById('spinCanvas');
   if(seg.t==='sp'){
-    if(seg.n==='NONE'||seg.n==='ZERO'){
+    if(seg.n==='GIVE'){
+      // GIVE only active on spins 2 & 3 (spSpinNum 1 or 2)
+      if(spSpinNum===1||spSpinNum===2){
+        spPlayLand('earn');
+        if(cv) cv.style.boxShadow='0 0 50px rgba(232,160,32,.3)';
+        spSetResult('GIVE \u2014 50 pts','Choose a squad to give 50 points to!','give');
+        spShowGivePicker();
+      } else {
+        spPlayLand('zero');
+        if(cv) cv.style.boxShadow='0 0 50px rgba(248,113,113,.2)';
+        spSetResult('GIVE \u2014 0 pts','GIVE only applies on spins 2 & 3. No points.','zero');
+        spPipDone();setTimeout(sNextOrSave,1500);
+      }
+      return;
+    } else if(seg.n==='NONE'||seg.n==='ZERO'){
       spPlayLand('zero');
       if(cv) cv.style.boxShadow='0 0 50px rgba(248,113,113,.2)';
       spSetResult(seg.n+' \u2014 0 pts','No points. Spin over.','zero');
@@ -6846,11 +6879,18 @@ function spLand(seg){
       spPipDone();if(spSpinNum<3){spSpinNum++;spUpdPips();}
       setTimeout(sDoSpin,1800);return;
     } else if(seg.n==='LOYALTY'){
-      const match=seg.color===spSquad,pts=match?seg.v:0;
-      if(match){spBanked+=pts;spUpdBanked();}
-      if(match) spPlayLand('earn'); else spPlayLand('zero');
-      if(cv) cv.style.boxShadow=match?'0 0 65px rgba(74,222,128,.25)':'0 0 50px rgba(248,113,113,.2)';
-      spSetResult('LOYALTY \u2014 '+(match?'+'+pts+' pts':'0 pts'),match?'Your squad! +'+pts+' pts.':'Not your squad. 0 points.',match?'earn':'zero');
+      // LOYALTY only active on spins 2 & 3 (spSpinNum 1 or 2)
+      if(spSpinNum===1||spSpinNum===2){
+        const match=seg.color===spSquad,pts=match?seg.v:0;
+        if(match){spBanked+=pts;spUpdBanked();}
+        if(match) spPlayLand('earn'); else spPlayLand('zero');
+        if(cv) cv.style.boxShadow=match?'0 0 65px rgba(74,222,128,.25)':'0 0 50px rgba(248,113,113,.2)';
+        spSetResult('LOYALTY \u2014 '+(match?'+'+pts+' pts':'0 pts'),match?'Your squad! +'+pts+' pts.':'Not your squad. 0 points.',match?'earn':'zero');
+      } else {
+        spPlayLand('zero');
+        if(cv) cv.style.boxShadow='0 0 50px rgba(248,113,113,.2)';
+        spSetResult('LOYALTY \u2014 0 pts','LOYALTY only applies on spins 2 & 3. No points.','zero');
+      }
       spPipDone();setTimeout(spShowSave,1500);
     }
   } else {
@@ -6950,6 +6990,32 @@ function sResetSpin(){
   if(rb2){rb2.classList.remove('sp-shimmer-btn');rb2.disabled=true;rb2.style.opacity='.2';}
   const sb=document.getElementById('sSpinBtn');if(sb){sb.disabled=false;sb.style.opacity='1';}
   if(spTVOpen)spTVSync();
+}
+function spShowGivePicker(){
+  const box=document.getElementById('sGiveBox');
+  if(!box) return;
+  const btns=document.getElementById('sGiveSqBtns');
+  const SQ_NAMES=['BLACK','GOLD','GREY','PURPLE'];
+  const SQ_HEX3={BLACK:'#b8bcc6',GOLD:'#ffe100',GREY:'#8899aa',PURPLE:'#bb8ef5'};
+  btns.innerHTML=SQ_NAMES
+    .filter(q=>q!==spSquad)
+    .map(q=>`<button onclick="spConfirmGive('${q}')" style="border:2px solid ${SQ_HEX3[q]}44;border-radius:9px;padding:10px 6px;background:${SQ_HEX3[q]}11;color:${SQ_HEX3[q]};font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;font-weight:700;transition:all .2s">${q}</button>`)
+    .join('');
+  box.style.display='block';
+}
+async function spConfirmGive(targetSq){
+  const box=document.getElementById('sGiveBox');if(box)box.style.display='none';
+  const nm=SP_SQNAME[targetSq];
+  const label='Wheel GIVE — '+nm+' Squad (+50 pts)';
+  const pts={};SQUADS.forEach(s=>pts[s]=0);pts[targetSq]=50;
+  if(!D.nextId)D.nextId=100;if(!Array.isArray(D.events))D.events=[];
+  D.events.push({id:D.nextId++,name:label,type:'event',date:new Date().toISOString().split('T')[0],note:'Wheel GIVE',pts});
+  D.history.unshift({type:'event',name:label,pts,time:new Date().toISOString()});
+  logActivity('Wheel GIVE: +50 to '+targetSq);
+  await save();renderAll();
+  sSetResult('GIVE → '+nm+' +50 pts','50 points given to '+nm+' Squad — saved!','earn');
+  spPipDone();
+  setTimeout(sNextOrSave,1200);
 }
 async function sSavePoints(){
   const nm=SP_SQNAME[spSquad];
@@ -7087,7 +7153,7 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,saveHomeStats,
   renderWheel,renderTraitDough,renderSotm,
   openWheelSpinner,closeWheelSpinner,wDoSpin,wDoBank,wDoRisk,wSaveToTracker,wSetSq,
-  spinAuth,spinLogout,spinSetSq,sDoSpin,sDoBank,sDoRisk,sSavePoints,sResetSpin,openSpinTV,closeSpinTV,
+  spinAuth,spinLogout,spinSetSq,sDoSpin,sDoBank,sDoRisk,sSavePoints,sResetSpin,openSpinTV,closeSpinTV,spShowGivePicker,spConfirmGive,
   renderSpinPage,
   renderH2H,openHeadToHead,
   saveEditEvent,deleteEditEvent,
