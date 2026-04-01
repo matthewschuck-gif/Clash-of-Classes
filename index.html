@@ -1948,7 +1948,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         </div>
 
         <!-- DEBUG: remove after fixing -->
-        <div id="sDbg" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(232,200,64,.7);text-align:center;min-height:16px;letter-spacing:1px;padding:2px 0"></div>
+        <div id="sDbg" style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:#ff0;background:rgba(0,0,0,.8);text-align:center;padding:6px 12px;border-radius:8px;border:2px solid #ff0;min-height:32px;letter-spacing:1px;margin-top:4px"></div>
 
         <!-- Spin pips -->
         <div style="display:flex;gap:8px;align-items:center">
@@ -6857,8 +6857,12 @@ function spLand(seg){
   const cv=document.getElementById('spinCanvas');
   // DEBUG
   const sDbg=document.getElementById('sDbg');
-  if(sDbg){const lbl=seg.n||String(seg.v);sDbg.textContent='CODE SAYS: '+seg.color+' · '+lbl+(seg.t==='pts'?' ('+seg.v+' pts)':'');}
-  console.log('[WHEEL LAND]',{color:seg.color,v:seg.v,n:seg.n,qi:seg.qi,sf:seg.sf,ef:seg.ef,angle:Math.round(spAngle*180/Math.PI)+'deg'});
+  const lbl=seg.n||String(seg.v);
+  const dbgTxt='CODE: '+seg.color+' '+lbl+(seg.t==='pts'?' = '+seg.v+' pts':'');
+  if(sDbg){sDbg.textContent=dbgTxt;sDbg.style.display='block';}
+  // Also alert so it's impossible to miss
+  document.title=dbgTxt;
+  console.log('%c[WHEEL LAND] '+dbgTxt,'color:yellow;font-size:16px;font-weight:bold', {color:seg.color,v:seg.v,n:seg.n,qi:seg.qi,sf:seg.sf,ef:seg.ef,angle:Math.round(spAngle*180/Math.PI)+'deg'});
   if(seg.t==='sp'){
     if(seg.n==='GIVE'){
       // GIVE only active on spins 2 & 3 (spSpinNum 1 or 2)
