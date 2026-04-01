@@ -6648,6 +6648,10 @@ const SP_QUADS=[
 ];
 const SP_ALL=[];
 SP_QUADS.forEach((q,qi)=>q.segs.forEach(s=>SP_ALL.push({qi,...s,color:q.color})));
+// Max points per spin ring (spin 4 = 100 fixed, handled separately)
+const SP_SPIN_MAX=[10,25,75,100];
+// Scale a segment's raw value down to the current spin's cap
+function spCapVal(rawVal){ return Math.min(rawVal, SP_SPIN_MAX[Math.min(spSpinNum,2)]); }
 const SP_QS=[-Math.PI/2,Math.PI,Math.PI/2,0],SP_QA=Math.PI/2;
 const SP_HEX={BLACK:'#9da2ab',GOLD:'#ffe100',GREY:'#7a8d9e',PURPLE:'#9a6fd8'};
 const SP_SBG={NONE:'#0c0c1c',ZERO:'#0c0c1c',AUTO:'#07101e',LOYALTY:'#0e0522',GIVE:'#1a0a00'};
@@ -6765,7 +6769,8 @@ function spDrawWheel(ctx,angle,sz,hlSeg){
         const lt=q.color==='GOLD'||q.color==='GREY';
         ctx.fillStyle=lt?'#111':'#fff';
         ctx.font='bold '+Math.round(13*sc)+'px "Fraunces",serif';
-        ctx.fillText(seg.v,0,0);
+        const displayVal=typeof spSpinNum!=='undefined'?spCapVal(seg.v):seg.v;
+        ctx.fillText(displayVal,0,0);
         if(seg.arrow){
           ctx.fillStyle=lt?'rgba(0,0,0,.55)':'rgba(255,255,255,.75)';
           ctx.font='bold '+Math.round(11*sc)+'px sans-serif';
@@ -6951,7 +6956,7 @@ function spLand(seg){
     } else if(seg.n==='LOYALTY'){
       // LOYALTY only active on spins 2 & 3 (spSpinNum 1 or 2)
       if(spSpinNum===1||spSpinNum===2){
-        const match=seg.color===spSquad,pts=match?seg.v:0;
+        const match=seg.color===spSquad,pts=match?spCapVal(seg.v):0;
         if(match){spBanked+=pts;spUpdBanked();}
         if(match) spPlayLand('earn'); else spPlayLand('zero');
         if(cv) cv.style.boxShadow=match?'0 0 65px rgba(74,222,128,.25)':'0 0 50px rgba(248,113,113,.2)';
@@ -6965,7 +6970,7 @@ function spLand(seg){
     }
   } else {
     const colorOk=isSpin4?(seg.color===spSquad):true;
-    const pts=isSpin4?(colorOk?100:0):seg.v;
+    const pts=isSpin4?(colorOk?100:0):spCapVal(seg.v);
     if(pts>0){spBanked+=pts;spUpdBanked();}
     if(isSpin4){
       if(pts>0) spPlayLand('earn'); else spPlayLand('zero');
@@ -6977,7 +6982,7 @@ function spLand(seg){
       spPlayLand('earn');
       if(cv) cv.style.boxShadow='0 0 65px rgba(74,222,128,.25)';
       spSetResult('+'+pts+' pts \u2192','Bank it safe\u2026 or risk it for more?','choice');
-      spSetChoiceHint('Spin '+(spSpinNum+2)+' could win up to 75 pts \u2014 if you dare.');
+      spSetChoiceHint('Spin '+(spSpinNum+2)+' could win up to '+SP_SPIN_MAX[spSpinNum+1]+' pts \u2014 if you dare.');
       const rc=document.getElementById('sResultCard');
       if(rc) rc.classList.add('sp-choice-card');
       const bb=document.getElementById('sBankBtn'),rb=document.getElementById('sRiskBtn');
