@@ -2844,7 +2844,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 <button class="back-to-top" id="backToTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">↑</button>
 
 <!-- HEAD TO HEAD MODAL -->
-<div class="edit-evt-modal" id="h2hModal">
+<div class="edit-evt-modal" id="h2hModal" style="display:none">
   <div class="edit-evt-box" style="max-width:600px">
     <button class="modal-close" onclick="close1('h2hModal')">✕</button>
     <h2 style="margin-bottom:16px">⚔ Head-to-Head Comparison</h2>
@@ -2949,7 +2949,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 </div>
 
 <!-- EDIT EVENT MODAL -->
-<div class="edit-evt-modal" id="editEvtModal">
+<div class="edit-evt-modal" id="editEvtModal" style="display:none">
   <div class="edit-evt-box">
     <button class="modal-close" onclick="close1('editEvtModal')">✕</button>
     <h2 style="margin-bottom:20px">Edit Event</h2>
@@ -4314,7 +4314,8 @@ function calcStreak(){
 
 // ── HEAD TO HEAD COMPARISON ──
 function openHeadToHead(){
-  document.getElementById('h2hModal').classList.add('open');
+  const m=document.getElementById('h2hModal');
+  m.style.display='flex'; m.classList.add('open');
   renderH2H();
 }
 function renderH2H(){
@@ -4523,7 +4524,8 @@ function openEditEvent(id){
   document.getElementById('editEvtDate').value=ev.date||'';
   document.getElementById('editEvtNote').value=ev.note||'';
   SQUADS.forEach(sq=>document.getElementById('editPts'+sq).value=ev.pts[sq]||0);
-  document.getElementById('editEvtModal').classList.add('open');
+  const em=document.getElementById('editEvtModal');
+  em.style.display='flex'; em.classList.add('open');
 }
 
 async function saveEditEvent(){
@@ -5904,7 +5906,7 @@ function tryLogin(){ if(document.getElementById('pwIn').value===D.password){ aut
 function requireAdmin(fn){ if(authed) fn(); else { pendingFn=fn; openLogin(); } }
 function openAddEvent(){ openAdmin(); aTab('points'); }
 function openAdmin(){ document.getElementById('adminModal').classList.add('open'); aTab('points'); loadPageContent(); }
-function close1(id){ document.getElementById(id).classList.remove('open'); }
+function close1(id){ const m=document.getElementById(id); m.classList.remove('open'); m.style.display='none'; }
 
 function aTab(name){
   const names=['points','metrics','pages','mayhem','champs','kickoff','links','gallery','scores','history','settings'];
@@ -6646,7 +6648,7 @@ const SP_QUADS=[
 ];
 const SP_ALL=[];
 SP_QUADS.forEach((q,qi)=>q.segs.forEach(s=>SP_ALL.push({qi,...s,color:q.color})));
-const SP_QS=[0,Math.PI,-Math.PI/2,Math.PI/2],SP_QA=Math.PI/2;
+const SP_QS=[-Math.PI/2,Math.PI,Math.PI/2,0],SP_QA=Math.PI/2;
 const SP_HEX={BLACK:'#9da2ab',GOLD:'#ffe100',GREY:'#7a8d9e',PURPLE:'#9a6fd8'};
 const SP_SBG={NONE:'#0c0c1c',ZERO:'#0c0c1c',AUTO:'#07101e',LOYALTY:'#0e0522',GIVE:'#1a0a00'};
 const SP_STX={NONE:'#5858a8',ZERO:'#5858a8',AUTO:'#4477aa',LOYALTY:'#9944dd',GIVE:'#e8a020'};
