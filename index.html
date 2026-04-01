@@ -6654,7 +6654,8 @@ const SP_SBG={NONE:'#0c0c1c',ZERO:'#0c0c1c',AUTO:'#07101e',LOYALTY:'#0e0522',GIV
 const SP_STX={NONE:'#5858a8',ZERO:'#5858a8',AUTO:'#4477aa',LOYALTY:'#9944dd',GIVE:'#e8a020'};
 const SP_SQNAME={BLACK:'Black',GOLD:'Gold',GREY:'Grey',PURPLE:'Purple'};
 
-let spAuthed=false,spSquad='BLACK',spSpinNum=0,spBanked=0;
+let spAuthed=false,spSquad=null,spSpinNum=0,spBanked=0;
+let spSquadLocked=false;
 let spAngle=0,spSpinning=false,spRaf=null,spLog=[],spSessTotal=0,spTVOpen=false;
 let spLastTickAngle=0,spAudioCtx=null;
 
@@ -6695,8 +6696,12 @@ function spInit(){
   if(!cv) return;
   cv.onclick=()=>{ if(!spSpinning&&!document.getElementById('sSpinBtn').disabled) sDoSpin(); };
   spDrawWheel(cv.getContext('2d'),spAngle,380);
-  spSetBtns(true,false,false);
+  spSquad=null; spSquadLocked=false;
+  spSetBtns(false,false,false); // spin disabled until squad picked
+  spUpdSquadBtns();
   spUpdPips();
+  const pn=document.getElementById('spinPipNote');
+  if(pn){pn.textContent='Select a squad first';pn.style.color='var(--gold-soft)';}
 }
 
 // ── AUDIO ───────────────────────────────────
@@ -6822,6 +6827,9 @@ let spPointerWobble=0;
 // ── SPIN ────────────────────────────────────
 function sDoSpin(){
   if(spSpinning) return;
+  if(!spSquad) return; // must select squad first
+  spSquadLocked=true; // lock squad for this user's session
+  spUpdSquadBtns();
   spInitAudio();
   spSpinning=true;
   spSetBtns(false,false,false);
@@ -7021,8 +7029,9 @@ function spShowSave(){
 }
 function sResetSpin(){
   if(spSpinning){cancelAnimationFrame(spRaf);spSpinning=false;}
-  spSquad='BLACK';spSpinNum=0;spBanked=0;spAngle=0;spLog=[];spSessTotal=0;spLastTickAngle=0;
-  spinSetSq('BLACK');
+  spSquad=null; spSquadLocked=false;
+  spSpinNum=0;spBanked=0;spAngle=0;spLog=[];spSessTotal=0;spLastTickAngle=0;
+  spUpdSquadBtns();
   const cv=document.getElementById('spinCanvas');
   if(cv){cv.style.boxShadow='0 0 40px rgba(187,142,245,.1)';cv.style.cursor='pointer';spDrawWheel(cv.getContext('2d'),0,380);}
   const tc=document.getElementById('spinTVCanvas');
@@ -7035,7 +7044,7 @@ function sResetSpin(){
     if(tp){tp.style.background=i===0?'#e8c840':'rgba(255,255,255,.08)';tp.style.boxShadow=i===0?'0 0 14px rgba(232,200,64,.7)':'none';}
   }
   const rb=document.getElementById('sRiskBtn');if(rb)rb.textContent='Risk It ⚡';
-  const pn=document.getElementById('spinPipNote');if(pn){pn.textContent='Tap the wheel or press SPIN';pn.style.color='var(--text3)';}
+  const pn=document.getElementById('spinPipNote');if(pn){pn.textContent='Select a squad first';pn.style.color='var(--gold-soft)';}
   document.getElementById('sBanked').textContent='0';
   document.getElementById('sBankedSub').textContent='ready to spin';
   document.getElementById('sSessionBadge').textContent='session: 0 pts';
@@ -7050,7 +7059,7 @@ function sResetSpin(){
   const bb=document.getElementById('sBankBtn'),rb2=document.getElementById('sRiskBtn');
   if(bb){bb.classList.remove('sp-shimmer-btn');bb.disabled=true;bb.style.opacity='.2';}
   if(rb2){rb2.classList.remove('sp-shimmer-btn');rb2.disabled=true;rb2.style.opacity='.2';}
-  const sb=document.getElementById('sSpinBtn');if(sb){sb.disabled=false;sb.style.opacity='1';}
+  const sb=document.getElementById('sSpinBtn');if(sb){sb.disabled=true;sb.style.opacity='.4';} // disabled until squad picked
   if(spTVOpen)spTVSync();
 }
 function spShowGivePicker(){
@@ -7101,16 +7110,29 @@ async function sSavePoints(){
 
 // ── UI HELPERS ───────────────────────────────
 function spinSetSq(sq){
+  if(spSquadLocked) return; // locked during active spin session
   spSquad=sq;
+  spUpdSquadBtns();
+  // Enable SPIN button now that a squad is selected
+  const sb=document.getElementById('sSpinBtn');
+  if(sb){sb.disabled=false;sb.style.opacity='1';sb.style.cursor='pointer';}
+  const pn=document.getElementById('spinPipNote');
+  if(pn){pn.textContent='Tap the wheel or press SPIN';pn.style.color='var(--text3)';}
+  spTVSync();
+}
+function spUpdSquadBtns(){
   document.querySelectorAll('.spin-sq-btn').forEach(b=>{
-    const on=b.dataset.ssq===sq;
+    const sq=b.dataset.ssq;
+    const on=sq===spSquad;
+    const locked=spSquadLocked;
     b.classList.toggle('spin-sq-on',on);
     b.style.background=on?SP_HEX[sq]:'var(--surface2)';
     b.style.borderColor=on?SP_HEX[sq]:'var(--border)';
     b.style.color=on?(sq==='BLACK'?'#fff':sq==='GREY'?'#111':'#000'):'var(--text2)';
     b.style.fontWeight=on?'700':'400';
+    b.style.opacity=locked&&!on?'0.35':'1';
+    b.style.cursor=locked&&!on?'default':'pointer';
   });
-  spTVSync();
 }
 function spPipDone(){
   const p=document.getElementById('sPip'+spSpinNum);
