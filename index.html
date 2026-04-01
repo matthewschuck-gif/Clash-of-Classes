@@ -1061,6 +1061,9 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   </div>
   <div id="squadsStreakBar" style="margin-bottom:16px"></div>
   <div class="squads-grid" id="squadsGrid"></div>
+  <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn" onclick="openHeadToHead()" style="color:var(--purple-lt);border-color:rgba(157,95,204,0.3)">⚔ Head-to-Head</button>
+  </div>
 </div>
 
 <!-- TRACKER -->
@@ -1078,7 +1081,6 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <button class="btn share-btn" onclick="copyPageUrl()" id="shareTrackerBtn">🔗 Copy Link</button>
       <button class="btn share-btn" onclick="showEmbedCode()" id="embedBtn">{'</>'} Embed Widget</button>
       <button class="btn share-btn" onclick="exportCSV()">⬇ Export CSV</button>
-      <button class="btn share-btn" onclick="openHeadToHead()" style="color:var(--purple-lt);border-color:rgba(157,95,204,0.3)">⚔ Head-to-Head</button>
     </div>
   </div>
   <div class="score-strip" id="scoreStrip">
@@ -1930,11 +1932,19 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <!-- WHEEL COLUMN -->
       <div style="display:flex;flex-direction:column;align-items:center;gap:16px;flex-shrink:0">
 
-        <!-- Canvas with pointer drawn on it + tick flash -->
+        <!-- Outer relative wrapper for SVG pointer + clipped canvas -->
         <div style="position:relative;display:inline-block">
-          <!-- Tick flash overlay -->
-          <div id="spinTickFlash" style="position:absolute;inset:0;border-radius:50%;pointer-events:none;opacity:0;z-index:5"></div>
-          <canvas id="spinCanvas" width="380" height="380" style="display:block;border-radius:50%;transition:box-shadow .4s;cursor:pointer;box-shadow:0 0 40px rgba(187,142,245,.1)"></canvas>
+          <!-- SVG pointer above the wheel -->
+          <svg id="spinWheelPtr" width="36" height="32" viewBox="0 0 36 32"
+               style="position:absolute;left:50%;top:-28px;transform:translateX(-50%);pointer-events:none;z-index:10;filter:drop-shadow(0 3px 8px rgba(232,200,64,.5))">
+            <polygon points="18,32 3,4 18,11 33,4" fill="#e8c840"/>
+            <polygon points="18,32 3,4 18,11" fill="#c8a820" opacity=".4"/>
+          </svg>
+          <!-- Circular clip wrapper -->
+          <div style="border-radius:50%;overflow:hidden;display:block;line-height:0">
+            <div id="spinTickFlash" style="position:absolute;inset:0;pointer-events:none;opacity:0;z-index:5"></div>
+            <canvas id="spinCanvas" width="380" height="380" style="display:block;border-radius:0;transition:box-shadow .4s;cursor:pointer;box-shadow:0 0 40px rgba(187,142,245,.1)"></canvas>
+          </div>
         </div>
 
         <!-- Spin pips -->
@@ -4678,6 +4688,7 @@ function renderSquadDetail(sq){
     +'<div style="margin-top:32px;display:flex;gap:12px;flex-wrap:wrap">'
     +'<button class="btn btn-purple" onclick="goTo(\'tracker\')">📊 View Full Tracker</button>'
     +'<button class="btn" onclick="goTo(\'squads\')">← All Squads</button>'
+    +'<button class="btn" onclick="openHeadToHead()" style="color:var(--purple-lt);border-color:rgba(157,95,204,0.3)">⚔ Head-to-Head</button>'
     +'</div>';
 }
 
@@ -6767,19 +6778,7 @@ function spDrawWheel(ctx,angle,sz){
   ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=2;ctx.stroke();
   ctx.beginPath();ctx.arc(cx,cy,Math.round(6*sz/380),0,Math.PI*2);
   ctx.fillStyle='#e8c840';ctx.fill();
-  // Pointer: line+arrowhead at label depth (r*0.68) for unambiguous pointing
-  const pw=typeof spPointerWobble!=='undefined'?spPointerWobble:0;
-  const pA=-Math.PI/2+pw;
-  const sc2=sz/380;
-  const rimPt={x:cx+Math.cos(pA)*r,          y:cy+Math.sin(pA)*r};
-  const tipPt={x:cx+Math.cos(pA)*r*0.68,     y:cy+Math.sin(pA)*r*0.68};
-  const bL   ={x:cx+Math.cos(pA+0.16)*r*0.80,y:cy+Math.sin(pA+0.16)*r*0.80};
-  const bR   ={x:cx+Math.cos(pA-0.16)*r*0.80,y:cy+Math.sin(pA-0.16)*r*0.80};
-  ctx.beginPath();ctx.moveTo(rimPt.x,rimPt.y);ctx.lineTo(tipPt.x,tipPt.y);
-  ctx.strokeStyle='#e8c840';ctx.lineWidth=3*sc2;ctx.stroke();
-  ctx.beginPath();ctx.moveTo(tipPt.x,tipPt.y);ctx.lineTo(bL.x,bL.y);ctx.lineTo(bR.x,bR.y);ctx.closePath();
-  ctx.fillStyle='#e8c840';ctx.fill();
-  ctx.strokeStyle='rgba(0,0,0,0.5)';ctx.lineWidth=1*sc2;ctx.stroke();
+  // Pointer is SVG element above wheel - no canvas drawing needed
 }
 
 let spPointerWobble=0;
@@ -6832,8 +6831,8 @@ function sDoSpin(){
         const tf=document.getElementById('spinTickFlash');
         if(tf){tf.style.background='rgba(232,200,64,'+intensity*.07+')';tf.style.opacity='1';setTimeout(()=>{if(tf)tf.style.opacity='0';},80);}
         if(speed<0.14){
-          spPointerWobble=(Math.random()-.5)*0.12;
-          setTimeout(()=>{spPointerWobble=0;},80);
+          const sptr=document.getElementById('spinWheelPtr');
+          if(sptr){const d=(Math.random()-.5)*12;sptr.style.transform=`translateX(-50%) rotate(${d}deg)`;sptr.style.transformOrigin='bottom center';setTimeout(()=>{if(sptr)sptr.style.transform='translateX(-50%) rotate(0deg)';},100);}
         }
       }
     }
