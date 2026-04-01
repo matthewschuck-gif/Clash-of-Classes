@@ -807,6 +807,8 @@ body.light-mode .tab.active { color:var(--text); border-bottom-color:var(--gold-
 
 /* ── MODAL / ADMIN ── */
 .overlay { display:none; position:fixed; inset:0; background:rgba(10,8,6,0.85); z-index:500; align-items:center; justify-content:center; backdrop-filter:blur(6px); }
+.edit-evt-modal { display:none; position:fixed; inset:0; background:rgba(10,8,6,0.85); z-index:500; align-items:center; justify-content:center; backdrop-filter:blur(6px); overflow-y:auto; }
+.edit-evt-modal.open { display:flex; }
 .overlay.open { display:flex; }
 .modal {
   background:var(--bg2); border:1px solid var(--border2);
@@ -6644,7 +6646,7 @@ const SP_QUADS=[
 ];
 const SP_ALL=[];
 SP_QUADS.forEach((q,qi)=>q.segs.forEach(s=>SP_ALL.push({qi,...s,color:q.color})));
-const SP_QS=[-Math.PI/2,0,Math.PI/2,Math.PI],SP_QA=Math.PI/2;
+const SP_QS=[0,Math.PI,-Math.PI/2,Math.PI/2],SP_QA=Math.PI/2;
 const SP_HEX={BLACK:'#9da2ab',GOLD:'#ffe100',GREY:'#7a8d9e',PURPLE:'#9a6fd8'};
 const SP_SBG={NONE:'#0c0c1c',ZERO:'#0c0c1c',AUTO:'#07101e',LOYALTY:'#0e0522',GIVE:'#1a0a00'};
 const SP_STX={NONE:'#5858a8',ZERO:'#5858a8',AUTO:'#4477aa',LOYALTY:'#9944dd',GIVE:'#e8a020'};
