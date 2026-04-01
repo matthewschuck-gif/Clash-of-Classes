@@ -2000,6 +2000,9 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
           <div id="sSpinLog" style="display:flex;flex-direction:column;gap:4px;max-height:130px;overflow-y:auto"><div style="color:var(--text3);font-size:11px;padding:4px">No spins this session</div></div>
         </div>
 
+        <!-- Reset -->
+        <button onclick="sResetSpin()" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text3);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s" onmouseover="this.style.color='var(--text2)'" onmouseout="this.style.color='var(--text3)'">&#8635; Reset — New Spin</button>
+
       </div>
     </div>
   </div>
@@ -6644,7 +6647,7 @@ const SP_SQNAME={BLACK:'Black',GOLD:'Gold',GREY:'Grey',PURPLE:'Purple'};
 
 let spAuthed=false,spSquad='BLACK',spSpinNum=0,spBanked=0;
 let spAngle=0,spSpinning=false,spRaf=null,spLog=[],spSessTotal=0,spTVOpen=false;
-let spLastSegIdx=-1,spAudioCtx=null;
+let spLastTickAngle=0,spAudioCtx=null;
 
 // ── AUTH ────────────────────────────────────
 function spinAuth(){
@@ -6745,9 +6748,9 @@ function spDrawWheel(ctx,angle,sz){
         ctx.font='bold '+Math.round(13*sc)+'px "Fraunces",serif';
         ctx.fillText(seg.v,0,0);
         if(seg.arrow){
-          ctx.fillStyle=lt?'rgba(0,0,0,.4)':'rgba(255,255,255,.55)';
-          ctx.font='bold '+Math.round(9*sc)+'px sans-serif';
-          ctx.fillText('\u2192',0,Math.round(14*sc));
+          ctx.fillStyle=lt?'rgba(0,0,0,.55)':'rgba(255,255,255,.75)';
+          ctx.font='bold '+Math.round(11*sc)+'px sans-serif';
+          ctx.fillText('\u279C',0,Math.round(15*sc));
         }
       }
       ctx.restore();
@@ -6765,17 +6768,7 @@ function spDrawWheel(ctx,angle,sz){
   ctx.fillStyle='#e8c840';ctx.fill();
 }
 
-function spGetSegAtPointer(ang){
-  const ptr=-Math.PI/2;
-  for(let i=0;i<SP_ALL.length;i++){
-    const s=SP_ALL[i];
-    const a0w=SP_QS[s.qi]+s.sf*SP_QA+ang;
-    const span=((SP_QS[s.qi]+s.ef*SP_QA+ang-a0w)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
-    const dist=((ptr-a0w)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
-    if(dist<span) return i;
-  }
-  return 0;
-}
+
 
 // ── SPIN ────────────────────────────────────
 function sDoSpin(){
@@ -6798,27 +6791,26 @@ function sDoSpin(){
   const ease=t=>{const t2=1-t;return 1-t2*t2*t2*(1+t*1.5);};
   const mc=document.getElementById('spinCanvas'),tc=document.getElementById('spinTVCanvas');
   const mCtx=mc?mc.getContext('2d'):null,tCtx=tc?tc.getContext('2d'):null;
-  spLastSegIdx=-1;
+  spLastTickAngle=spAngle;
   function fr(now){
     const t=Math.min((now-t0)/dur,1);
     spAngle=a0+delta*ease(t);
     if(mCtx) spDrawWheel(mCtx,spAngle,380);
     if(spTVOpen&&tCtx) spDrawWheel(tCtx,spAngle,420);
-    // Tick
-    const curSeg=spGetSegAtPointer(spAngle);
-    if(curSeg!==spLastSegIdx){
-      const speed=1-t,intensity=Math.min(1,speed*2);
+    // Angle-based tick (reliable regardless of rotation count)
+    const spSwept=Math.abs(spAngle-spLastTickAngle);
+    if(spSwept>=(Math.PI*2)/24){
+      spLastTickAngle=spAngle;
+      const speed=1-t,intensity=Math.min(1,speed*2.5);
       if(intensity>0.02){
         spPlayTick(intensity);
         const tf=document.getElementById('spinTickFlash');
         if(tf){tf.style.background='rgba(232,200,64,'+intensity*.07+')';tf.style.opacity='1';setTimeout(()=>{if(tf)tf.style.opacity='0';},80);}
-        // Pointer wiggle near end
         if(speed<0.14){
           const ptr=document.getElementById('spinPtr');
           if(ptr){ptr.style.transform='translateX(-50%) rotate('+(Math.random()-.5)*9+'deg)';setTimeout(()=>{if(ptr)ptr.style.transform='translateX(-50%) rotate(0deg)';},80);}
         }
       }
-      spLastSegIdx=curSeg;
     }
     if(t<1){ spRaf=requestAnimationFrame(fr); }
     else {
@@ -6918,6 +6910,40 @@ function spShowSave(){
   const sa=document.getElementById('sSaveArea');
   if(sa){ sa.style.display='block'; sa.classList.add('sp-save-show'); }
   spSetBtns(true,false,false);
+}
+function sResetSpin(){
+  if(spSpinning){cancelAnimationFrame(spRaf);spSpinning=false;}
+  spSquad='BLACK';spSpinNum=0;spBanked=0;spAngle=0;spLog=[];spSessTotal=0;spLastTickAngle=0;
+  spinSetSq('BLACK');
+  const cv=document.getElementById('spinCanvas');
+  if(cv){cv.style.boxShadow='0 0 40px rgba(187,142,245,.1)';cv.style.cursor='pointer';spDrawWheel(cv.getContext('2d'),0,380);}
+  const tc=document.getElementById('spinTVCanvas');
+  if(tc) spDrawWheel(tc.getContext('2d'),0,420);
+  // Reset pips
+  for(let i=0;i<4;i++){
+    const p=document.getElementById('sPip'+i),a=document.getElementById('sPipArr'+i),tp=document.getElementById('tvDot'+i);
+    if(p){const act=i===0;p.style.borderColor=act?'var(--gold-soft)':'rgba(255,255,255,.12)';p.style.background=act?'rgba(232,200,64,.1)':'var(--surface2)';p.style.color=act?'var(--gold-soft)':'var(--text3)';p.style.boxShadow=act?'0 0 14px rgba(232,200,64,.3)':'none';p.style.transform=act?'scale(1.1)':'scale(1)';}
+    if(a){a.style.color='rgba(255,255,255,.15)';}
+    if(tp){tp.style.background=i===0?'#e8c840':'rgba(255,255,255,.08)';tp.style.boxShadow=i===0?'0 0 14px rgba(232,200,64,.7)':'none';}
+  }
+  const rb=document.getElementById('sRiskBtn');if(rb)rb.textContent='Risk It ⚡';
+  const pn=document.getElementById('spinPipNote');if(pn){pn.textContent='Tap the wheel or press SPIN';pn.style.color='var(--text3)';}
+  document.getElementById('sBanked').textContent='0';
+  document.getElementById('sBankedSub').textContent='ready to spin';
+  document.getElementById('sSessionBadge').textContent='session: 0 pts';
+  document.getElementById('sSessionTotal').textContent='0 pts';
+  document.getElementById('sSpinLog').innerHTML='<div style="color:var(--text3);font-size:11px;padding:4px">No spins this session</div>';
+  document.getElementById('sSaveArea').style.display='none';
+  const rc=document.getElementById('sResultCard');
+  if(rc){rc.classList.remove('sp-choice-card');rc.style.borderColor='var(--border)';rc.style.background='var(--surface)';rc.style.boxShadow='none';}
+  const rv=document.getElementById('sResultVal');if(rv){rv.textContent='—';rv.style.color='var(--text)';}
+  document.getElementById('sResultSub').textContent='Select a squad and spin';
+  const ch=document.getElementById('sChoiceHint');if(ch)ch.textContent='';
+  const bb=document.getElementById('sBankBtn'),rb2=document.getElementById('sRiskBtn');
+  if(bb){bb.classList.remove('sp-shimmer-btn');bb.disabled=true;bb.style.opacity='.2';}
+  if(rb2){rb2.classList.remove('sp-shimmer-btn');rb2.disabled=true;rb2.style.opacity='.2';}
+  const sb=document.getElementById('sSpinBtn');if(sb){sb.disabled=false;sb.style.opacity='1';}
+  if(spTVOpen)spTVSync();
 }
 async function sSavePoints(){
   const nm=SP_SQNAME[spSquad];
@@ -7055,7 +7081,7 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,saveHomeStats,
   renderWheel,renderTraitDough,renderSotm,
   openWheelSpinner,closeWheelSpinner,wDoSpin,wDoBank,wDoRisk,wSaveToTracker,wSetSq,
-  spinAuth,spinLogout,spinSetSq,sDoSpin,sDoBank,sDoRisk,sSavePoints,openSpinTV,closeSpinTV,
+  spinAuth,spinLogout,spinSetSq,sDoSpin,sDoBank,sDoRisk,sSavePoints,sResetSpin,openSpinTV,closeSpinTV,
   renderSpinPage,
   renderH2H,openHeadToHead,
   saveEditEvent,deleteEditEvent,
