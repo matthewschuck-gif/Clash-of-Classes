@@ -6792,18 +6792,30 @@ function spDrawWheel(ctx,angle,sz,hlSeg){
   ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=2;ctx.stroke();
   ctx.beginPath();ctx.arc(cx,cy,Math.round(6*sz/380),0,Math.PI*2);
   ctx.fillStyle='#e8c840';ctx.fill();
+  // Show landed value in center when highlighted
+  if(hlSeg!==undefined&&hlSeg>=0&&hlSeg<SP_ALL.length){
+    const hs=SP_ALL[hlSeg];
+    const lbl=hs.n?hs.n:String(hs.v);
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='#e8c840';
+    ctx.font='bold '+Math.round(26*sz/380)+'px "Fraunces",serif';
+    ctx.fillText(lbl,cx,cy);
+  }
   // Pointer: a gold notch drawn AT the rim at angle -PI/2
   // Drawn on canvas so it's guaranteed to be at the same position as targeting math
   const pw=typeof spPointerWobble!=='undefined'?spPointerWobble:0;
   const pA=-Math.PI/2+pw;
   const sc2=sz/380;
-  // Outer triangle pointing inward from just outside rim
-  const p1={x:cx+Math.cos(pA)*(r-2),        y:cy+Math.sin(pA)*(r-2)};        // tip at rim
-  const p2={x:cx+Math.cos(pA+0.13)*(r-16*sc2),y:cy+Math.sin(pA+0.13)*(r-16*sc2)};// base left
-  const p3={x:cx+Math.cos(pA-0.13)*(r-16*sc2),y:cy+Math.sin(pA-0.13)*(r-16*sc2)};// base right
-  ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.lineTo(p3.x,p3.y);ctx.closePath();
+  // Pointer: long gold line unambiguously pointing at -PI/2
+  const pw=typeof spPointerWobble!=='undefined'?spPointerWobble:0;
+  const pA=-Math.PI/2+pw;
+  const sc2=sz/380;
+  const pOuter={x:cx+Math.cos(pA)*(r+5*sc2), y:cy+Math.sin(pA)*(r+5*sc2)};
+  const pInner={x:cx+Math.cos(pA)*r*0.42,    y:cy+Math.sin(pA)*r*0.42};
+  ctx.beginPath();ctx.moveTo(pOuter.x,pOuter.y);ctx.lineTo(pInner.x,pInner.y);
+  ctx.strokeStyle='#e8c840';ctx.lineWidth=4*sc2;ctx.lineCap='round';ctx.stroke();
+  ctx.beginPath();ctx.arc(pInner.x,pInner.y,5*sc2,0,Math.PI*2);
   ctx.fillStyle='#e8c840';ctx.fill();
-  ctx.strokeStyle='rgba(0,0,0,0.7)';ctx.lineWidth=1.5;ctx.stroke();
 }
 
 let spPointerWobble=0;
