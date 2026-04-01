@@ -1929,15 +1929,8 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <!-- WHEEL COLUMN -->
       <div style="display:flex;flex-direction:column;align-items:center;gap:16px;flex-shrink:0">
 
-        <!-- Canvas + pointer + tick flash -->
+        <!-- Canvas with pointer drawn on it + tick flash -->
         <div style="position:relative;display:inline-block">
-          <!-- Animated SVG pointer -->
-          <div id="spinPtr" style="position:absolute;top:-28px;left:50%;transform:translateX(-50%);z-index:10">
-            <svg width="28" height="32" viewBox="0 0 28 32" style="display:block;filter:drop-shadow(0 4px 12px rgba(232,200,64,.5))">
-              <polygon points="14,32 2,4 14,10 26,4" fill="#e8c840"/>
-              <polygon points="14,32 2,4 14,10" fill="#c8a820" opacity=".4"/>
-            </svg>
-          </div>
           <!-- Tick flash overlay -->
           <div id="spinTickFlash" style="position:absolute;inset:0;border-radius:50%;pointer-events:none;opacity:0;z-index:5"></div>
           <canvas id="spinCanvas" width="380" height="380" style="display:block;border-radius:50%;transition:box-shadow .4s;cursor:pointer;box-shadow:0 0 40px rgba(187,142,245,.1)"></canvas>
@@ -6766,9 +6759,19 @@ function spDrawWheel(ctx,angle,sz){
   ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=2;ctx.stroke();
   ctx.beginPath();ctx.arc(cx,cy,Math.round(6*sz/380),0,Math.PI*2);
   ctx.fillStyle='#e8c840';ctx.fill();
+  // Pointer drawn ON canvas — guaranteed alignment with targeting math
+  const pw=typeof spPointerWobble!=='undefined'?spPointerWobble:0;
+  const pA=-Math.PI/2+pw;
+  const sc2=sz/380;
+  const pTip={x:cx+Math.cos(pA)*(r+3*sc2), y:cy+Math.sin(pA)*(r+3*sc2)};
+  const pL={x:cx+Math.cos(pA+0.18)*(r+20*sc2), y:cy+Math.sin(pA+0.18)*(r+20*sc2)};
+  const pR={x:cx+Math.cos(pA-0.18)*(r+20*sc2), y:cy+Math.sin(pA-0.18)*(r+20*sc2)};
+  ctx.beginPath();ctx.moveTo(pTip.x,pTip.y);ctx.lineTo(pL.x,pL.y);ctx.lineTo(pR.x,pR.y);ctx.closePath();
+  ctx.fillStyle='#e8c840';ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,.55)';ctx.lineWidth=1.2;ctx.stroke();
 }
 
-
+let spPointerWobble=0;
 
 // ── SPIN ────────────────────────────────────
 function sDoSpin(){
@@ -6807,8 +6810,8 @@ function sDoSpin(){
         const tf=document.getElementById('spinTickFlash');
         if(tf){tf.style.background='rgba(232,200,64,'+intensity*.07+')';tf.style.opacity='1';setTimeout(()=>{if(tf)tf.style.opacity='0';},80);}
         if(speed<0.14){
-          const ptr=document.getElementById('spinPtr');
-          if(ptr){ptr.style.transform='translateX(-50%) rotate('+(Math.random()-.5)*9+'deg)';setTimeout(()=>{if(ptr)ptr.style.transform='translateX(-50%) rotate(0deg)';},80);}
+          spPointerWobble=(Math.random()-.5)*0.12;
+          setTimeout(()=>{spPointerWobble=0;},80);
         }
       }
     }
