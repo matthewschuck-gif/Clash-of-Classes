@@ -3240,6 +3240,9 @@ const sb = window.supabase.createClient(
   'https://yvutgnpgnthvnonhgdux.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak'
 );
+// Unique session ID — used to ignore our own Realtime echoes
+const SESSION_ID = Math.random().toString(36).slice(2);
+let _lastSaveId = null; // set before each save, cleared after Realtime confirms
 
 const params = new URLSearchParams(window.location.search);
 const ADMIN_URL = params.get('admin')==='true';
@@ -3547,6 +3550,8 @@ let currentPage=window.__currentPage||'home', currentTrait='March', currentGTab=
 
 async function save(){
   try{
+    _lastSaveId=SESSION_ID+'-'+Date.now();
+    D._saveId=_lastSaveId;
     const {error}=await sb.from('app_data').upsert({key:'coc',value:D,updated_at:new Date().toISOString()});
     if(error) throw error;
     const ts=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
@@ -3653,8 +3658,13 @@ async function sbLoad(){
   sb.channel('coc_realtime')
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'app_data',filter:'key=eq.coc'},
       (payload)=>{
+        try{
         const v=payload.new&&payload.new.value;
         if(!v) return;
+        // Ignore our own saves — we already have the latest D in memory
+        if(v._saveId&&v._saveId===_lastSaveId){ _lastSaveId=null; return; }
+        // Never re-render while a spin is actively animating
+        if(spSpinning) return;
         D=v;
         if(!Array.isArray(D.events)) D.events=[];
         if(!D.metrics) D.metrics=JSON.parse(JSON.stringify(DEF.metrics));
@@ -3671,7 +3681,7 @@ async function sbLoad(){
         if(!D.pageContent) D.pageContent={...DEF.pageContent};
         Object.keys(DEF.pageContent).forEach(k=>{ if(!D.pageContent[k]) D.pageContent[k]=DEF.pageContent[k]; });
         window._D=D;
-        renderAll();
+        try{ renderAll(); } catch(e){ console.error('renderAll error in RT handler:',e); }
         // ── Remote spin handling for TV display ──
         if(D.spinState){
           const ss=D.spinState;
@@ -3681,6 +3691,7 @@ async function sbLoad(){
             else if(ss.id===_tvLastSpinId) tvRemoteSpinResult(ss);
           }
         }
+        } catch(e){ console.error('Realtime handler error:',e); }
       })
     .subscribe();
 })();
@@ -7355,6 +7366,7 @@ function sDoSpin(){
   // ── BROADCAST spin to Supabase for remote TV ──
   if(!D.spinState) D.spinState={};
   D.spinState={id:Date.now(),squad:spSquad,spinNum:spSpinNum,a0,delta,dur,easeExp,startedAt:Date.now(),result:null,quadsIdx:Math.min(spSpinNum,3)};
+  _lastSaveId=SESSION_ID+'-spin-'+Date.now(); D._saveId=_lastSaveId;
   sb.from('app_data').upsert({key:'coc',value:D,updated_at:new Date().toISOString()}).then(()=>{});
 
   spRaf=requestAnimationFrame(fr);
@@ -7465,6 +7477,7 @@ function spLand(seg){
       sub:document.getElementById('sResultSub')?document.getElementById('sResultSub').textContent:'',
       finalAngle:spAngle,
     };
+    _lastSaveId=SESSION_ID+'-res-'+Date.now(); D._saveId=_lastSaveId;
     sb.from('app_data').upsert({key:'coc',value:D,updated_at:new Date().toISOString()}).then(()=>{});
   }
 }
