@@ -6762,185 +6762,39 @@ function wSetBtns(spin,bank,risk){
 // ══════════════════════════════════════════
 
 // Wheel segment data
-// Segment layouts per spin — escalating GIVE/LOYALTY on spins 2 & 3
-const SP_QUADS_BY_SPIN=[
+// Per-spin segment tables — GIVE/LOYALTY escalate on spins 2 & 3
+const SP_QUADS_BY_SPIN = [
+  // Spin 1 — normal
   [
-  {color:'BLACK',segs:[
-    {t:'pts',v:1,arrow:true,sf:0.0,ef:0.16666667},
-    {t:'pts',v:10,arrow:true,sf:0.16666667,ef:0.33333333},
-    {t:'sp',v:50,n:'GIVE',sf:0.33333333,ef:0.5},
-    {t:'sp',v:0,n:'NONE',sf:0.5,ef:0.66666667},
-    {t:'pts',v:50,arrow:false,sf:0.66666667,ef:0.83333333},
-    {t:'pts',v:5,arrow:true,sf:0.83333333,ef:1.0},
-  ]}},
-  {color:'GOLD',segs:[
-    {t:'pts',v:20,arrow:true,sf:0.0,ef:0.16666667},
-    {t:'pts',v:5,arrow:true,sf:0.16666667,ef:0.33333333},
-    {t:'sp',v:20,n:'LOYALTY',sf:0.33333333,ef:0.5},
-    {t:'pts',v:50,arrow:false,sf:0.5,ef:0.66666667},
-    {t:'pts',v:10,arrow:true,sf:0.66666667,ef:0.83333333},
-    {t:'pts',v:25,arrow:true,sf:0.83333333,ef:1.0},
-  ]}},
-  {color:'GREY',segs:[
-    {t:'pts',v:1,arrow:true,sf:0.0,ef:0.16666667},
-    {t:'pts',v:30,arrow:true,sf:0.16666667,ef:0.33333333},
-    {t:'pts',v:10,arrow:true,sf:0.33333333,ef:0.5},
-    {t:'sp',v:0,n:'ZERO',sf:0.5,ef:0.66666667},
-    {t:'sp',v:50,n:'GIVE',sf:0.66666667,ef:0.83333333},
-    {t:'pts',v:75,arrow:false,sf:0.83333333,ef:1.0},
-  ]}},
-  {color:'PURPLE',segs:[
-    {t:'pts',v:5,arrow:true,sf:0.0,ef:0.16666667},
-    {t:'pts',v:50,arrow:false,sf:0.16666667,ef:0.33333333},
-    {t:'sp',v:0,n:'AUTO',sf:0.33333333,ef:0.5},
-    {t:'pts',v:25,arrow:true,sf:0.5,ef:0.66666667},
-    {t:'pts',v:10,arrow:true,sf:0.66666667,ef:0.83333333},
-    {t:'sp',v:20,n:'LOYALTY',sf:0.83333333,ef:1.0},
-  ]}}
-], // spin 1 — normal
+    {color:'BLACK',segs:[{t:'pts',v:1,arrow:true,sf:0,ef:.167},{t:'pts',v:10,arrow:true,sf:.167,ef:.333},{t:'sp',v:50,n:'GIVE',sf:.333,ef:.5},{t:'sp',v:0,n:'NONE',sf:.5,ef:.667},{t:'pts',v:50,arrow:false,sf:.667,ef:.833},{t:'pts',v:5,arrow:true,sf:.833,ef:1}]},
+    {color:'GOLD', segs:[{t:'pts',v:20,arrow:true,sf:0,ef:.167},{t:'pts',v:5,arrow:true,sf:.167,ef:.333},{t:'sp',v:20,n:'LOYALTY',sf:.333,ef:.5},{t:'pts',v:50,arrow:false,sf:.5,ef:.667},{t:'pts',v:10,arrow:true,sf:.667,ef:.833},{t:'pts',v:25,arrow:true,sf:.833,ef:1}]},
+    {color:'GREY', segs:[{t:'pts',v:1,arrow:true,sf:0,ef:.167},{t:'pts',v:30,arrow:true,sf:.167,ef:.333},{t:'pts',v:10,arrow:true,sf:.333,ef:.5},{t:'sp',v:0,n:'ZERO',sf:.5,ef:.667},{t:'sp',v:50,n:'GIVE',sf:.667,ef:.833},{t:'pts',v:75,arrow:false,sf:.833,ef:1}]},
+    {color:'PURPLE',segs:[{t:'pts',v:5,arrow:true,sf:0,ef:.167},{t:'pts',v:50,arrow:false,sf:.167,ef:.333},{t:'sp',v:0,n:'AUTO',sf:.333,ef:.5},{t:'pts',v:25,arrow:true,sf:.5,ef:.667},{t:'pts',v:10,arrow:true,sf:.667,ef:.833},{t:'sp',v:20,n:'LOYALTY',sf:.833,ef:1}]},
+  ],
+  // Spin 2 — 2x GIVE/LOYALTY
   [
-  {color:'BLACK',segs:[
-    {t:'pts',v:1,arrow:true,sf:0.0,ef:0.16666667},
-    {t:'sp',v:50,n:'GIVE',sf:0.16666667,ef:0.33333333},
-    {t:'sp',v:50,n:'GIVE',sf:0.33333333,ef:0.5},
-    {t:'sp',v:0,n:'NONE',sf:0.5,ef:0.66666667},
-    {t:'pts',v:50,arrow:false,sf:0.66666667,ef:0.83333333},
-    {t:'pts',v:5,arrow:true,sf:0.83333333,ef:1.0},
-  ]}},
-  {color:'GOLD',segs:[
-    {t:'pts',v:20,arrow:true,sf:0.0,ef:0.16666667},
-    {t:'sp',v:20,n:'LOYALTY',sf:0.16666667,ef:0.33333333},
-    {t:'sp',v:20,n:'LOYALTY',sf:0.33333333,ef:0.5},
-    {t:'pts',v:50,arrow:false,sf:0.5,ef:0.66666667},
-    {t:'pts',v:10,arrow:true,sf:0.66666667,ef:0.83333333},
-    {t:'pts',v:25,arrow:true,sf:0.83333333,ef:1.0},
-  ]}},
-  {color:'GREY',segs:[
-    {t:'pts',v:1,arrow:true,sf:0.0,ef:0.16666667},
-    {t:'pts',v:30,arrow:true,sf:0.16666667,ef:0.33333333},
-    {t:'sp',v:0,n:'ZERO',sf:0.33333333,ef:0.5},
-    {t:'sp',v:50,n:'GIVE',sf:0.5,ef:0.66666667},
-    {t:'sp',v:50,n:'GIVE',sf:0.66666667,ef:0.83333333},
-    {t:'pts',v:75,arrow:false,sf:0.83333333,ef:1.0},
-  ]}},
-  {color:'PURPLE',segs:[
-    {t:'pts',v:5,arrow:true,sf:0.0,ef:0.16666667},
-    {t:'sp',v:20,n:'LOYALTY',sf:0.16666667,ef:0.33333333},
-    {t:'sp',v:0,n:'AUTO',sf:0.33333333,ef:0.5},
-    {t:'pts',v:25,arrow:true,sf:0.5,ef:0.66666667},
-    {t:'sp',v:20,n:'LOYALTY',sf:0.66666667,ef:0.83333333},
-    {t:'pts',v:10,arrow:true,sf:0.83333333,ef:1.0},
-  ]}}
-], // spin 2 — 2x GIVE/LOYALTY
+    {color:'BLACK',segs:[{t:'pts',v:1,arrow:true,sf:0,ef:.167},{t:'sp',v:50,n:'GIVE',sf:.167,ef:.333},{t:'sp',v:50,n:'GIVE',sf:.333,ef:.5},{t:'sp',v:0,n:'NONE',sf:.5,ef:.667},{t:'pts',v:50,arrow:false,sf:.667,ef:.833},{t:'pts',v:5,arrow:true,sf:.833,ef:1}]},
+    {color:'GOLD', segs:[{t:'pts',v:20,arrow:true,sf:0,ef:.167},{t:'sp',v:20,n:'LOYALTY',sf:.167,ef:.333},{t:'sp',v:20,n:'LOYALTY',sf:.333,ef:.5},{t:'pts',v:50,arrow:false,sf:.5,ef:.667},{t:'pts',v:10,arrow:true,sf:.667,ef:.833},{t:'pts',v:25,arrow:true,sf:.833,ef:1}]},
+    {color:'GREY', segs:[{t:'pts',v:1,arrow:true,sf:0,ef:.167},{t:'pts',v:30,arrow:true,sf:.167,ef:.333},{t:'sp',v:0,n:'ZERO',sf:.333,ef:.5},{t:'sp',v:50,n:'GIVE',sf:.5,ef:.667},{t:'sp',v:50,n:'GIVE',sf:.667,ef:.833},{t:'pts',v:75,arrow:false,sf:.833,ef:1}]},
+    {color:'PURPLE',segs:[{t:'pts',v:5,arrow:true,sf:0,ef:.167},{t:'sp',v:20,n:'LOYALTY',sf:.167,ef:.333},{t:'sp',v:0,n:'AUTO',sf:.333,ef:.5},{t:'pts',v:25,arrow:true,sf:.5,ef:.667},{t:'sp',v:20,n:'LOYALTY',sf:.667,ef:.833},{t:'pts',v:10,arrow:true,sf:.833,ef:1}]},
+  ],
+  // Spin 3 — 3x GIVE/LOYALTY
   [
-  {color:'BLACK',segs:[
-    {t:'sp',v:50,n:'GIVE',sf:0.0,ef:0.16666667},
-    {t:'pts',v:10,arrow:true,sf:0.16666667,ef:0.33333333},
-    {t:'sp',v:50,n:'GIVE',sf:0.33333333,ef:0.5},
-    {t:'sp',v:0,n:'NONE',sf:0.5,ef:0.66666667},
-    {t:'sp',v:50,n:'GIVE',sf:0.66666667,ef:0.83333333},
-    {t:'pts',v:5,arrow:true,sf:0.83333333,ef:1.0},
-  ]}},
-  {color:'GOLD',segs:[
-    {t:'sp',v:20,n:'LOYALTY',sf:0.0,ef:0.16666667},
-    {t:'pts',v:5,arrow:true,sf:0.16666667,ef:0.33333333},
-    {t:'sp',v:20,n:'LOYALTY',sf:0.33333333,ef:0.5},
-    {t:'pts',v:50,arrow:false,sf:0.5,ef:0.66666667},
-    {t:'sp',v:20,n:'LOYALTY',sf:0.66666667,ef:0.83333333},
-    {t:'pts',v:25,arrow:true,sf:0.83333333,ef:1.0},
-  ]}},
-  {color:'GREY',segs:[
-    {t:'sp',v:50,n:'GIVE',sf:0.0,ef:0.16666667},
-    {t:'pts',v:30,arrow:true,sf:0.16666667,ef:0.33333333},
-    {t:'sp',v:50,n:'GIVE',sf:0.33333333,ef:0.5},
-    {t:'sp',v:0,n:'ZERO',sf:0.5,ef:0.66666667},
-    {t:'sp',v:50,n:'GIVE',sf:0.66666667,ef:0.83333333},
-    {t:'pts',v:75,arrow:false,sf:0.83333333,ef:1.0},
-  ]}},
-  {color:'PURPLE',segs:[
-    {t:'sp',v:20,n:'LOYALTY',sf:0.0,ef:0.16666667},
-    {t:'pts',v:50,arrow:false,sf:0.16666667,ef:0.33333333},
-    {t:'sp',v:0,n:'AUTO',sf:0.33333333,ef:0.5},
-    {t:'sp',v:20,n:'LOYALTY',sf:0.5,ef:0.66666667},
-    {t:'pts',v:10,arrow:true,sf:0.66666667,ef:0.83333333},
-    {t:'sp',v:20,n:'LOYALTY',sf:0.83333333,ef:1.0},
-  ]}}
-], // spin 3 — 3x GIVE/LOYALTY
+    {color:'BLACK',segs:[{t:'sp',v:50,n:'GIVE',sf:0,ef:.167},{t:'pts',v:10,arrow:true,sf:.167,ef:.333},{t:'sp',v:50,n:'GIVE',sf:.333,ef:.5},{t:'sp',v:0,n:'NONE',sf:.5,ef:.667},{t:'sp',v:50,n:'GIVE',sf:.667,ef:.833},{t:'pts',v:5,arrow:true,sf:.833,ef:1}]},
+    {color:'GOLD', segs:[{t:'sp',v:20,n:'LOYALTY',sf:0,ef:.167},{t:'pts',v:5,arrow:true,sf:.167,ef:.333},{t:'sp',v:20,n:'LOYALTY',sf:.333,ef:.5},{t:'pts',v:50,arrow:false,sf:.5,ef:.667},{t:'sp',v:20,n:'LOYALTY',sf:.667,ef:.833},{t:'pts',v:25,arrow:true,sf:.833,ef:1}]},
+    {color:'GREY', segs:[{t:'sp',v:50,n:'GIVE',sf:0,ef:.167},{t:'pts',v:30,arrow:true,sf:.167,ef:.333},{t:'sp',v:50,n:'GIVE',sf:.333,ef:.5},{t:'sp',v:0,n:'ZERO',sf:.5,ef:.667},{t:'sp',v:50,n:'GIVE',sf:.667,ef:.833},{t:'pts',v:75,arrow:false,sf:.833,ef:1}]},
+    {color:'PURPLE',segs:[{t:'sp',v:20,n:'LOYALTY',sf:0,ef:.167},{t:'pts',v:50,arrow:false,sf:.167,ef:.333},{t:'sp',v:0,n:'AUTO',sf:.333,ef:.5},{t:'sp',v:20,n:'LOYALTY',sf:.5,ef:.667},{t:'pts',v:10,arrow:true,sf:.667,ef:.833},{t:'sp',v:20,n:'LOYALTY',sf:.833,ef:1}]},
+  ],
+  // Spin 4 — normal (color match = 100 pts, specials irrelevant)
   [
-  {color:'BLACK',segs:[
-    {t:'pts',v:1,arrow:true,sf:0.0,ef:0.16666667},
-    {t:'pts',v:10,arrow:true,sf:0.16666667,ef:0.33333333},
-    {t:'sp',v:50,n:'GIVE',sf:0.33333333,ef:0.5},
-    {t:'sp',v:0,n:'NONE',sf:0.5,ef:0.66666667},
-    {t:'pts',v:50,arrow:false,sf:0.66666667,ef:0.83333333},
-    {t:'pts',v:5,arrow:true,sf:0.83333333,ef:1.0},
-  ]}},
-  {color:'GOLD',segs:[
-    {t:'pts',v:20,arrow:true,sf:0.0,ef:0.16666667},
-    {t:'pts',v:5,arrow:true,sf:0.16666667,ef:0.33333333},
-    {t:'sp',v:20,n:'LOYALTY',sf:0.33333333,ef:0.5},
-    {t:'pts',v:50,arrow:false,sf:0.5,ef:0.66666667},
-    {t:'pts',v:10,arrow:true,sf:0.66666667,ef:0.83333333},
-    {t:'pts',v:25,arrow:true,sf:0.83333333,ef:1.0},
-  ]}},
-  {color:'GREY',segs:[
-    {t:'pts',v:1,arrow:true,sf:0.0,ef:0.16666667},
-    {t:'pts',v:30,arrow:true,sf:0.16666667,ef:0.33333333},
-    {t:'pts',v:10,arrow:true,sf:0.33333333,ef:0.5},
-    {t:'sp',v:0,n:'ZERO',sf:0.5,ef:0.66666667},
-    {t:'sp',v:50,n:'GIVE',sf:0.66666667,ef:0.83333333},
-    {t:'pts',v:75,arrow:false,sf:0.83333333,ef:1.0},
-  ]}},
-  {color:'PURPLE',segs:[
-    {t:'pts',v:5,arrow:true,sf:0.0,ef:0.16666667},
-    {t:'pts',v:50,arrow:false,sf:0.16666667,ef:0.33333333},
-    {t:'sp',v:0,n:'AUTO',sf:0.33333333,ef:0.5},
-    {t:'pts',v:25,arrow:true,sf:0.5,ef:0.66666667},
-    {t:'pts',v:10,arrow:true,sf:0.66666667,ef:0.83333333},
-    {t:'sp',v:20,n:'LOYALTY',sf:0.83333333,ef:1.0},
-  ]}}
-], // spin 4 — normal (color match only, 100pts)
+    {color:'BLACK',segs:[{t:'pts',v:1,arrow:true,sf:0,ef:.167},{t:'pts',v:10,arrow:true,sf:.167,ef:.333},{t:'sp',v:50,n:'GIVE',sf:.333,ef:.5},{t:'sp',v:0,n:'NONE',sf:.5,ef:.667},{t:'pts',v:50,arrow:false,sf:.667,ef:.833},{t:'pts',v:5,arrow:true,sf:.833,ef:1}]},
+    {color:'GOLD', segs:[{t:'pts',v:20,arrow:true,sf:0,ef:.167},{t:'pts',v:5,arrow:true,sf:.167,ef:.333},{t:'sp',v:20,n:'LOYALTY',sf:.333,ef:.5},{t:'pts',v:50,arrow:false,sf:.5,ef:.667},{t:'pts',v:10,arrow:true,sf:.667,ef:.833},{t:'pts',v:25,arrow:true,sf:.833,ef:1}]},
+    {color:'GREY', segs:[{t:'pts',v:1,arrow:true,sf:0,ef:.167},{t:'pts',v:30,arrow:true,sf:.167,ef:.333},{t:'pts',v:10,arrow:true,sf:.333,ef:.5},{t:'sp',v:0,n:'ZERO',sf:.5,ef:.667},{t:'sp',v:50,n:'GIVE',sf:.667,ef:.833},{t:'pts',v:75,arrow:false,sf:.833,ef:1}]},
+    {color:'PURPLE',segs:[{t:'pts',v:5,arrow:true,sf:0,ef:.167},{t:'pts',v:50,arrow:false,sf:.167,ef:.333},{t:'sp',v:0,n:'AUTO',sf:.333,ef:.5},{t:'pts',v:25,arrow:true,sf:.5,ef:.667},{t:'pts',v:10,arrow:true,sf:.667,ef:.833},{t:'sp',v:20,n:'LOYALTY',sf:.833,ef:1}]},
+  ],
 ];
-// Active quads for current spin — updated before each spin
-let SP_QUADS=[
-  {color:'BLACK',segs:[
-    {t:'pts',v:1,arrow:true,sf:0.0,ef:0.16666667},
-    {t:'pts',v:10,arrow:true,sf:0.16666667,ef:0.33333333},
-    {t:'sp',v:50,n:'GIVE',sf:0.33333333,ef:0.5},
-    {t:'sp',v:0,n:'NONE',sf:0.5,ef:0.66666667},
-    {t:'pts',v:50,arrow:false,sf:0.66666667,ef:0.83333333},
-    {t:'pts',v:5,arrow:true,sf:0.83333333,ef:1.0},
-  ]}},
-  {color:'GOLD',segs:[
-    {t:'pts',v:20,arrow:true,sf:0.0,ef:0.16666667},
-    {t:'pts',v:5,arrow:true,sf:0.16666667,ef:0.33333333},
-    {t:'sp',v:20,n:'LOYALTY',sf:0.33333333,ef:0.5},
-    {t:'pts',v:50,arrow:false,sf:0.5,ef:0.66666667},
-    {t:'pts',v:10,arrow:true,sf:0.66666667,ef:0.83333333},
-    {t:'pts',v:25,arrow:true,sf:0.83333333,ef:1.0},
-  ]}},
-  {color:'GREY',segs:[
-    {t:'pts',v:1,arrow:true,sf:0.0,ef:0.16666667},
-    {t:'pts',v:30,arrow:true,sf:0.16666667,ef:0.33333333},
-    {t:'pts',v:10,arrow:true,sf:0.33333333,ef:0.5},
-    {t:'sp',v:0,n:'ZERO',sf:0.5,ef:0.66666667},
-    {t:'sp',v:50,n:'GIVE',sf:0.66666667,ef:0.83333333},
-    {t:'pts',v:75,arrow:false,sf:0.83333333,ef:1.0},
-  ]}},
-  {color:'PURPLE',segs:[
-    {t:'pts',v:5,arrow:true,sf:0.0,ef:0.16666667},
-    {t:'pts',v:50,arrow:false,sf:0.16666667,ef:0.33333333},
-    {t:'sp',v:0,n:'AUTO',sf:0.33333333,ef:0.5},
-    {t:'pts',v:25,arrow:true,sf:0.5,ef:0.66666667},
-    {t:'pts',v:10,arrow:true,sf:0.66666667,ef:0.83333333},
-    {t:'sp',v:20,n:'LOYALTY',sf:0.83333333,ef:1.0},
-  ]}}
-];
-// Rebuild SP_ALL from active SP_QUADS
-function spRebuildAll(){
-  SP_ALL.length=0;
-  SP_QUADS.forEach((q,qi)=>q.segs.forEach(s=>SP_ALL.push({qi,...s,color:q.color})));
-}
+let SP_QUADS = SP_QUADS_BY_SPIN[0];
+function spRebuildAll(){ SP_ALL.length=0; SP_QUADS.forEach((q,qi)=>q.segs.forEach(s=>SP_ALL.push({qi,...s,color:q.color}))); }
 const SP_ALL=[];
 SP_QUADS_BY_SPIN[0].forEach((q,qi)=>q.segs.forEach(s=>SP_ALL.push({qi,...s,color:q.color})));
 // Max points per spin ring (spin 4 = 100 fixed, handled separately)
@@ -7045,79 +6899,46 @@ function spPlayLand(type){
 function spDrawWheel(ctx,angle,sz,hlSeg){
   if(!ctx) return;
   const cx=sz/2, cy=sz/2, r=sz/2-6, sc=sz/380;
-
-  // ── Background shadow under wheel ──
   ctx.clearRect(0,0,sz,sz);
   ctx.save();
-  ctx.shadowColor='rgba(0,0,0,0.7)';
-  ctx.shadowBlur=32*sc;
+  ctx.shadowColor='rgba(0,0,0,0.7)'; ctx.shadowBlur=32*sc;
   ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle='#08080f'; ctx.fill();
   ctx.restore();
-
-  // Segment base colors (richer than flat)
-  const SP_BASE={
-    BLACK:{fill:'#1e2130', mid:'#2a2f45', edge:'#12141f'},
-    GOLD: {fill:'#d4a800', mid:'#ffe44d', edge:'#a07800'},
-    GREY: {fill:'#6b7f94', mid:'#9ab0c4', edge:'#4a5a6a'},
-    PURPLE:{fill:'#6b2daa', mid:'#a05de0', edge:'#3d1265'},
-  };
-  const SP_SPEC_FILL={
-    BLACK:{fill:'#0d0f1a',mid:'#14182a',edge:'#08090f'},
-    GOLD: {fill:'#5a4200',mid:'#7a5e00',edge:'#3a2a00'},
-    GREY: {fill:'#2a3540',mid:'#3a4a58',edge:'#1a2028'},
-    PURPLE:{fill:'#230d45',mid:'#341460',edge:'#120625'},
-  };
-
+  const SP_BASE={BLACK:{fill:'#1e2130',mid:'#2a2f45',edge:'#12141f'},GOLD:{fill:'#d4a800',mid:'#ffe44d',edge:'#a07800'},GREY:{fill:'#6b7f94',mid:'#9ab0c4',edge:'#4a5a6a'},PURPLE:{fill:'#6b2daa',mid:'#a05de0',edge:'#3d1265'}};
+  const SP_SPEC_FILL={BLACK:{fill:'#0d0f1a',mid:'#14182a',edge:'#08090f'},GOLD:{fill:'#5a4200',mid:'#7a5e00',edge:'#3a2a00'},GREY:{fill:'#2a3540',mid:'#3a4a58',edge:'#1a2028'},PURPLE:{fill:'#230d45',mid:'#341460',edge:'#120625'}};
   let si=0;
   SP_QUADS.forEach((q,qi)=>{
     const qBase=SP_QS[qi]+angle;
     q.segs.forEach(seg=>{
       const a0=qBase+seg.sf*SP_QA, a1=qBase+seg.ef*SP_QA, am=(a0+a1)/2;
-      const isHL=(hlSeg!==undefined && si===hlSeg);
-      const palette=seg.t==='sp'?(SP_SPEC_FILL[q.color]||SP_SPEC_FILL.BLACK):(SP_BASE[q.color]||SP_BASE.BLACK);
-
-      // Radial gradient per segment — center bright, edge dark
+      const isHL=(hlSeg!==undefined&&si===hlSeg);
+      const pal=seg.t==='sp'?(SP_SPEC_FILL[q.color]||SP_SPEC_FILL.BLACK):(SP_BASE[q.color]||SP_BASE.BLACK);
       const gmx=cx+Math.cos(am)*r*0.5, gmy=cy+Math.sin(am)*r*0.5;
       const grad=ctx.createRadialGradient(gmx,gmy,r*0.05,cx,cy,r);
-      grad.addColorStop(0, palette.mid);
-      grad.addColorStop(0.55, palette.fill);
-      grad.addColorStop(1, palette.edge);
-
+      grad.addColorStop(0,pal.mid); grad.addColorStop(0.55,pal.fill); grad.addColorStop(1,pal.edge);
       ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,a0,a1); ctx.closePath();
       ctx.fillStyle=grad; ctx.fill();
-
-      // Thin divider lines between segments
       ctx.strokeStyle='rgba(0,0,0,0.75)'; ctx.lineWidth=1.5*sc; ctx.stroke();
-
-      // Highlight overlay on landed segment
       if(isHL){
         ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,a0,a1); ctx.closePath();
         ctx.fillStyle='rgba(232,200,64,0.18)'; ctx.fill();
         ctx.strokeStyle='rgba(232,200,64,0.9)'; ctx.lineWidth=3*sc; ctx.stroke();
       }
-
-      // ── Label ──
       const lr=r*0.64, lx=cx+Math.cos(am)*lr, ly=cy+Math.sin(am)*lr;
       ctx.save(); ctx.translate(lx,ly); ctx.rotate(am+Math.PI/2);
       ctx.textAlign='center'; ctx.textBaseline='middle';
-
       if(seg.t==='sp'){
-        // Special segment — icon + name stacked
         const lt=q.color==='GOLD'||q.color==='GREY';
-        const txColor=lt?'rgba(255,230,100,0.9)':'rgba(200,170,255,0.92)';
         ctx.shadowColor='rgba(0,0,0,0.8)'; ctx.shadowBlur=4;
-        ctx.fillStyle=txColor;
+        ctx.fillStyle=lt?'rgba(255,230,100,0.9)':'rgba(200,170,255,0.92)';
         ctx.font='bold '+Math.round(6.5*sc)+'px "DM Mono",monospace';
-        ctx.fillText(seg.n,0,0);
-        ctx.shadowBlur=0;
+        ctx.fillText(seg.n,0,0); ctx.shadowBlur=0;
       } else {
         const lt=q.color==='GOLD'||q.color==='GREY';
-        const txColor=lt?'#111111':'#ffffff';
-        const displayVal=typeof spSpinNum!=='undefined'?spCapVal(seg.v):seg.v;
-        // Drop shadow on text for legibility
         ctx.shadowColor='rgba(0,0,0,0.6)'; ctx.shadowBlur=5*sc;
-        ctx.fillStyle=txColor;
+        ctx.fillStyle=lt?'#111111':'#ffffff';
         ctx.font='bold '+Math.round(14*sc)+'px "Fraunces",serif';
+        const displayVal=typeof spSpinNum!=='undefined'?spCapVal(seg.v):seg.v;
         ctx.fillText(displayVal,0,0);
         if(seg.arrow){
           ctx.font=Math.round(10*sc)+'px sans-serif';
@@ -7129,94 +6950,57 @@ function spDrawWheel(ctx,angle,sz,hlSeg){
       ctx.restore();
       si++;
     });
-
-    // Bold quadrant divider lines
     ctx.beginPath(); ctx.moveTo(cx,cy);
-    ctx.lineTo(cx+Math.cos(qBase)*r, cy+Math.sin(qBase)*r);
+    ctx.lineTo(cx+Math.cos(qBase)*r,cy+Math.sin(qBase)*r);
     ctx.strokeStyle='rgba(0,0,0,0.95)'; ctx.lineWidth=4*sc; ctx.stroke();
-    // Gold accent on dividers
     ctx.beginPath(); ctx.moveTo(cx+Math.cos(qBase)*r*0.18,cy+Math.sin(qBase)*r*0.18);
-    ctx.lineTo(cx+Math.cos(qBase)*r, cy+Math.sin(qBase)*r);
+    ctx.lineTo(cx+Math.cos(qBase)*r,cy+Math.sin(qBase)*r);
     ctx.strokeStyle='rgba(232,200,64,0.25)'; ctx.lineWidth=1.5*sc; ctx.stroke();
   });
-
-  // ── Outer rim — triple ring ──
-  // Outer dark ring
   ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
   ctx.strokeStyle='rgba(0,0,0,0.9)'; ctx.lineWidth=5*sc; ctx.stroke();
-  // Gold accent ring
   ctx.beginPath(); ctx.arc(cx,cy,r-3*sc,0,Math.PI*2);
   ctx.strokeStyle='rgba(232,200,64,0.6)'; ctx.lineWidth=2*sc; ctx.stroke();
-  // Inner subtle highlight
   ctx.beginPath(); ctx.arc(cx,cy,r-6*sc,0,Math.PI*2);
   ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=1*sc; ctx.stroke();
-
-  // ── Glow rim on highlight ──
   if(hlSeg!==undefined){
-    ctx.save();
-    ctx.shadowColor='rgba(232,200,64,0.7)';
-    ctx.shadowBlur=24*sc;
+    ctx.save(); ctx.shadowColor='rgba(232,200,64,0.7)'; ctx.shadowBlur=24*sc;
     ctx.beginPath(); ctx.arc(cx,cy,r-2*sc,0,Math.PI*2);
     ctx.strokeStyle='rgba(232,200,64,0.4)'; ctx.lineWidth=3*sc; ctx.stroke();
     ctx.restore();
   }
-
-  // ── Hub ──
-  // Outer hub ring
   const hubR=Math.round(24*sc);
   const hubGrad=ctx.createRadialGradient(cx-hubR*0.3,cy-hubR*0.3,0,cx,cy,hubR);
-  hubGrad.addColorStop(0,'#2a2a3a');
-  hubGrad.addColorStop(1,'#07070f');
+  hubGrad.addColorStop(0,'#2a2a3a'); hubGrad.addColorStop(1,'#07070f');
   ctx.beginPath(); ctx.arc(cx,cy,hubR,0,Math.PI*2);
   ctx.fillStyle=hubGrad; ctx.fill();
   ctx.strokeStyle='rgba(232,200,64,0.5)'; ctx.lineWidth=2*sc; ctx.stroke();
-
-  // Inner hub glow dot
   const dotR=Math.round(7*sc);
   const dotGrad=ctx.createRadialGradient(cx,cy,0,cx,cy,dotR);
-  dotGrad.addColorStop(0,'#fff8b0');
-  dotGrad.addColorStop(0.4,'#e8c840');
-  dotGrad.addColorStop(1,'rgba(232,200,64,0)');
-  ctx.beginPath(); ctx.arc(cx,cy,dotR,0,Math.PI*2);
-  ctx.fillStyle=dotGrad; ctx.fill();
-
-  // ── Center label on land ──
+  dotGrad.addColorStop(0,'#fff8b0'); dotGrad.addColorStop(0.4,'#e8c840'); dotGrad.addColorStop(1,'rgba(232,200,64,0)');
+  ctx.beginPath(); ctx.arc(cx,cy,dotR,0,Math.PI*2); ctx.fillStyle=dotGrad; ctx.fill();
   if(hlSeg!==undefined&&hlSeg>=0&&hlSeg<SP_ALL.length){
-    const hs=SP_ALL[hlSeg];
-    const lbl=hs.n?hs.n:String(hs.v);
-    ctx.save();
-    ctx.textAlign='center'; ctx.textBaseline='middle';
+    const hs=SP_ALL[hlSeg]; const lbl=hs.n?hs.n:String(hs.v);
+    ctx.save(); ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.shadowColor='rgba(232,200,64,0.9)'; ctx.shadowBlur=18*sc;
-    ctx.fillStyle='#ffe060';
-    ctx.font='bold '+Math.round(22*sc)+'px "Fraunces",serif';
-    ctx.fillText(lbl,cx,cy);
-    ctx.restore();
+    ctx.fillStyle='#ffe060'; ctx.font='bold '+Math.round(22*sc)+'px "Fraunces",serif';
+    ctx.fillText(lbl,cx,cy); ctx.restore();
   }
-
-  // ── Pointer — premium needle ──
   const pw=typeof spPointerWobble!=='undefined'?spPointerWobble:0;
-  const pA=-Math.PI/2+pw;
-  const pTip={x:cx+Math.cos(pA)*(r+4*sc), y:cy+Math.sin(pA)*(r+4*sc)};
-  const pBase=r*0.36;
-  const pL={x:cx+Math.cos(pA+Math.PI/2)*6*sc+Math.cos(pA)*pBase, y:cy+Math.sin(pA+Math.PI/2)*6*sc+Math.sin(pA)*pBase};
-  const pR={x:cx+Math.cos(pA-Math.PI/2)*6*sc+Math.cos(pA)*pBase, y:cy+Math.sin(pA-Math.PI/2)*6*sc+Math.sin(pA)*pBase};
-  // Needle shadow
-  ctx.save();
-  ctx.shadowColor='rgba(0,0,0,0.8)'; ctx.shadowBlur=10*sc;
+  const pA=-Math.PI/2+pw, pBase=r*0.36;
+  const pTip={x:cx+Math.cos(pA)*(r+4*sc),y:cy+Math.sin(pA)*(r+4*sc)};
+  const pL={x:cx+Math.cos(pA+Math.PI/2)*6*sc+Math.cos(pA)*pBase,y:cy+Math.sin(pA+Math.PI/2)*6*sc+Math.sin(pA)*pBase};
+  const pR={x:cx+Math.cos(pA-Math.PI/2)*6*sc+Math.cos(pA)*pBase,y:cy+Math.sin(pA-Math.PI/2)*6*sc+Math.sin(pA)*pBase};
+  ctx.save(); ctx.shadowColor='rgba(0,0,0,0.8)'; ctx.shadowBlur=10*sc;
   ctx.beginPath(); ctx.moveTo(pTip.x,pTip.y); ctx.lineTo(pL.x,pL.y); ctx.lineTo(pR.x,pR.y); ctx.closePath();
   const needleGrad=ctx.createLinearGradient(pTip.x,pTip.y,pL.x,pL.y);
-  needleGrad.addColorStop(0,'#fff8b0');
-  needleGrad.addColorStop(0.3,'#e8c840');
-  needleGrad.addColorStop(1,'#a07800');
+  needleGrad.addColorStop(0,'#fff8b0'); needleGrad.addColorStop(0.3,'#e8c840'); needleGrad.addColorStop(1,'#a07800');
   ctx.fillStyle=needleGrad; ctx.fill();
-  ctx.strokeStyle='rgba(0,0,0,0.6)'; ctx.lineWidth=1*sc; ctx.stroke();
-  ctx.restore();
-  // Needle base cap
+  ctx.strokeStyle='rgba(0,0,0,0.6)'; ctx.lineWidth=1*sc; ctx.stroke(); ctx.restore();
   ctx.beginPath(); ctx.arc(cx+Math.cos(pA)*pBase,cy+Math.sin(pA)*pBase,5*sc,0,Math.PI*2);
   ctx.fillStyle='#e8c840'; ctx.fill();
   ctx.strokeStyle='rgba(0,0,0,0.5)'; ctx.lineWidth=1*sc; ctx.stroke();
 }
-
 let spPointerWobble=0;
 
 // ── SPIN ────────────────────────────────────
@@ -7224,9 +7008,7 @@ function sDoSpin(){
   if(spSpinning) return;
   if(!spSquad) return; // must select squad first
   spSquadLocked=true; // lock squad for this user's session
-  // Swap segment layout based on spin number
-  SP_QUADS=SP_QUADS_BY_SPIN[Math.min(spSpinNum,3)];
-  spRebuildAll();
+  SP_QUADS=SP_QUADS_BY_SPIN[Math.min(spSpinNum,3)]; spRebuildAll();
   spUpdSquadBtns();
   spSetIntensity(spSpinNum+1); // ramp up background intensity each spin
   spInitAudio();
@@ -7364,9 +7146,8 @@ function spLand(seg){
       spPlayLand('zero');
       spSetResult('AUTO \u2014 0 pts','No points. Advance to next spin!','auto');
       spPipDone();
-      // Only advance one spin (not skip to final)
       if(spSpinNum<3){ spSpinNum++; spUpdPips(); SP_QUADS=SP_QUADS_BY_SPIN[Math.min(spSpinNum,3)]; spRebuildAll(); }
-      else { setTimeout(spShowSave,1500); return; } // already on last spin, end
+      else { setTimeout(spShowSave,1500); return; }
       setTimeout(sDoSpin,1800);return;
     } else if(seg.n==='LOYALTY'){
       // LOYALTY only active on spins 2 & 3 (spSpinNum 1 or 2)
