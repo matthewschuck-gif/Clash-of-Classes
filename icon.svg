@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3d1265"/>
+      <stop offset="100%" style="stop-color:#1a0730"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffe44d"/>
+      <stop offset="100%" style="stop-color:#c8960a"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- Outer gold ring -->
+  <circle cx="256" cy="256" r="220" fill="none" stroke="url(#gold)" stroke-width="8" opacity="0.4"/>
+  <!-- Inner ring -->
+  <circle cx="256" cy="256" r="195" fill="none" stroke="url(#gold)" stroke-width="2" opacity="0.2"/>
+  <!-- C letter -->
+  <text x="256" y="310" font-family="Georgia, serif" font-size="220" font-weight="900" 
+        text-anchor="middle" fill="url(#gold)" letter-spacing="-8">C</text>
+  <!-- CoC small text -->
+  <text x="256" y="410" font-family="'Courier New', monospace" font-size="42" font-weight="700"
+        text-anchor="middle" fill="rgba(255,228,77,0.7)" letter-spacing="8">CLASH</text>
+  <!-- Top accent dots -->
+  <circle cx="256" cy="68" r="8" fill="url(#gold)" opacity="0.8"/>
+  <circle cx="220" cy="78" r="5" fill="url(#gold)" opacity="0.4"/>
+  <circle cx="292" cy="78" r="5" fill="url(#gold)" opacity="0.4"/>
+</svg>
