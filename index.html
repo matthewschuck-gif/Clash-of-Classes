@@ -5,7 +5,13 @@
 <meta charset="UTF-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CoC">
+<meta name="theme-color" content="#6d2b9f">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon.svg">
 <title>Clash of Classes — Ephrata Middle School</title>
 <meta name="description" content="Clash of Classes is a squad competition program at Ephrata Middle School built around Life Ready Graduate traits, community, and fun. Track live standings, monthly traits, and events.">
 <meta name="keywords" content="Clash of Classes, Ephrata Middle School, EMS, Life Ready Graduate, LRG, squad competition, Mountaineers, EASD">
@@ -399,9 +405,90 @@ body.light-mode .tab.active { color:var(--text); border-bottom-color:var(--gold-
 
 @media(max-width:768px) {
   .nav-tabs { display:none; }
-  .nav-mobile-row { display:flex; }
+  .nav-mobile-row { display:none !important; }
   .nav-inner { height:52px; }
   .nav-wordmark { font-size:15px; }
+}
+
+/* ── MOBILE FULL REDESIGN ── */
+@media(max-width:768px) {
+  body { padding-bottom:env(safe-area-inset-bottom,0px); }
+
+  /* Bottom tab bar */
+  #mobileBottomBar {
+    display:flex !important;
+    position:fixed;
+    bottom:0; left:0; right:0;
+    height:calc(56px + env(safe-area-inset-bottom,0px));
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    background:var(--bg2);
+    border-top:1px solid var(--border);
+    z-index:300;
+    align-items:stretch;
+    overflow-x:auto;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  #mobileBottomBar::-webkit-scrollbar { display:none; }
+
+  .mob-bottom-tab {
+    flex:0 0 auto;
+    min-width:60px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:3px;
+    padding:6px 12px;
+    cursor:pointer;
+    color:var(--text3);
+    font-family:'DM Mono',monospace;
+    font-size:9px;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    border:none;
+    background:none;
+    transition:color .15s;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:rgba(0,0,0,0);
+  }
+  .mob-bottom-tab.active { color:var(--gold-soft); }
+  .mob-bottom-tab .mob-icon { font-size:20px; line-height:1; }
+  .mob-bottom-tab .mob-label { font-size:9px; white-space:nowrap; }
+
+  /* Page padding for bottom bar */
+  .page { padding-bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
+
+  /* Modal as bottom sheet */
+  .overlay { align-items:flex-end; }
+  .modal {
+    border-radius:20px 20px 0 0;
+    max-height:92vh;
+    width:100%;
+    max-width:100%;
+    margin:0;
+    padding:20px 16px;
+    padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));
+    -webkit-overflow-scrolling:touch;
+  }
+
+  /* Admin panel full height */
+  #adminModal.overlay { align-items:stretch; }
+  #adminModal .modal {
+    border-radius:0;
+    max-height:100vh;
+    height:100%;
+  }
+
+  /* Smaller modal elements */
+  .adm-tabs { flex-wrap:wrap; gap:4px; }
+  .adm-tab { font-size:10px; padding:6px 8px; }
+  .g2 { grid-template-columns:1fr; }
+  .fr { flex-direction:column; align-items:stretch; }
+  .fr label { margin-bottom:4px; }
+  .btn-submit { width:100%; }
+  table { font-size:12px; }
+  th, td { padding:6px 8px; }
 }
 
 /* ── PAGES ── */
@@ -2284,6 +2371,14 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
     <div class="tv-slide" id="tvS2"><div class="tv-met-grid" id="tvMets"></div></div>
   </div>
   <div class="tv-nav" id="tvNav"></div>
+  <!-- Remote spin overlay -->
+  <div id="tvSpinOverlay" style="display:none;position:absolute;inset:0;z-index:10;background:rgba(6,6,15,0.92);flex-direction:column;align-items:center;justify-content:center;gap:20px">
+    <div id="tvSpinSquadBadge" style="font-family:'Fraunces',serif;font-size:32px;font-weight:900;color:var(--gold-soft);letter-spacing:2px;text-transform:uppercase"></div>
+    <canvas id="tvRemoteCanvas" width="520" height="520" style="border-radius:50%;box-shadow:0 0 80px rgba(187,142,245,.3)"></canvas>
+    <div id="tvSpinPips" style="display:flex;gap:10px"></div>
+    <div id="tvSpinResultBanner" style="font-family:'Fraunces',serif;font-size:56px;font-weight:900;color:var(--gold-soft);text-align:center;min-height:70px;opacity:0;transition:opacity .4s"></div>
+    <div id="tvSpinResultSub" style="font-family:'DM Mono',monospace;font-size:18px;color:var(--text2);text-align:center"></div>
+  </div>
 </div>
 
 <!-- ═══ TICKER TAPE ═══ -->
@@ -2368,12 +2463,12 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 </div>
 
 <!-- ═══ LOGIN MODAL ═══ -->
-<div class="overlay" id="loginModal" onclick="if(event.target===this)close1('loginModal')">
+<div class="overlay" id="loginModal" style="z-index:600" onclick="if(event.target===this)close1('loginModal')">
   <div class="modal" style="max-width:380px">
     <button class="modal-close" onclick="close1('loginModal')">✕</button>
     <h2>Admin Access</h2>
     <div class="fr"><label>Password</label>
-      <input type="password" id="pwIn" onkeydown="if(event.key==='Enter')tryLogin()" placeholder="Enter admin password">
+      <input type="password" id="pwIn" type="password" autocorrect="off" autocapitalize="off" autocomplete="current-password" onkeydown="if(event.key==='Enter')tryLogin()" placeholder="Enter admin password">
     </div>
     <div class="fmsg err" id="loginErr">Incorrect password.</div>
     <button class="btn-submit" onclick="tryLogin()">Unlock</button>
@@ -2381,7 +2476,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 </div>
 
 <!-- ═══ ADMIN MODAL ═══ -->
-<div class="overlay" id="adminModal">
+<div class="overlay" id="adminModal" style="z-index:600">
   <div class="modal">
     <button class="modal-close" onclick="close1('adminModal')">✕</button>
     <h2>Admin Panel</h2>
@@ -3043,6 +3138,12 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 </div>
 <script type="module">
 // Supabase loaded via <script> tag in <head>
+// ── PWA Service Worker ──
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}
 
 // ── EARLY GLOBALS: exposed before Firebase so UI works instantly ──
 window.goTo = function(id){
@@ -3123,6 +3224,16 @@ window.toggleMode = function(){
   var mob=document.getElementById('mobileNav');
   if(tabs) tabs.innerHTML=pages.map(p=>`<button class="tab${p.id==='home'?' active':''}" id="tab-${p.id}" onclick="goTo('${p.id}')"><span class="tab-icon">${p.icon}</span>${p.label}</button>`).join('');
   if(mob) mob.innerHTML=pages.map(p=>`<button class="mob-tab${p.id==='home'?' active':''}" id="mobtab-${p.id}" onclick="goTo('${p.id}')">${p.icon} ${p.label}</button>`).join('');
+
+  // ── Build mobile bottom bar ──
+  const bb=document.getElementById('mobileBottomBar');
+  if(bb){
+    bb.innerHTML=orderedPages.map(p=>{
+      const icon=(D&&D.navIcons&&D.navIcons[p.id])||p.icon;
+      const label=(D&&D.navLabels&&D.navLabels[p.id])||p.label;
+      return `<button class="mob-bottom-tab ${p.id===currentPage?'active':''}" id="bbtab-${p.id}" onclick="goTo('${p.id}')"><span class="mob-icon">${icon}</span><span class="mob-label">${label}</span></button>`;
+    }).join('');
+  }
 })();
 
 const sb = window.supabase.createClient(
@@ -3378,6 +3489,7 @@ const DEF = {
   squadNames: { BLACK:'Black', GOLD:'Gold', GREY:'Grey', PURPLE:'Purple' },
   navIcons: {},
   navLabels: {},
+  spinState: null,
   branding: { schoolName:'Ephrata Middle School', tagline:'Mountaineers', logoUrl:'' },
   spinCaps: { spin1:10, spin2:25, spin3:75, spin4:100 },
   squadPages: {
@@ -3515,6 +3627,19 @@ async function sbLoad(){
 (async function(){
   await sbLoad();
   fbReady=true;
+  // PWA install prompt
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault(); window._pwaPrompt=e;
+    setTimeout(()=>{
+      if(window._pwaPrompt&&!window.matchMedia('(display-mode:standalone)').matches){
+        const b=document.createElement('div');
+        b.id='pwaBanner';
+        b.style.cssText='position:fixed;bottom:70px;left:12px;right:12px;background:var(--surface2);border:1px solid var(--gold-soft);border-radius:12px;padding:14px 16px;z-index:400;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4)';
+        b.innerHTML=`<span style="font-size:24px">📲</span><div style="flex:1"><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--gold-soft)">Install Clash of Classes</div><div style="font-size:11px;color:var(--text3)">Add to home screen</div></div><button onclick="window._pwaPrompt.prompt();document.getElementById('pwaBanner')?.remove()" style="background:var(--gold-soft);color:#111;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation">Install</button><button onclick="document.getElementById('pwaBanner')?.remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:4px;touch-action:manipulation">✕</button>`;
+        document.body.appendChild(b);
+      }
+    },30000);
+  });
   if(window._authed) authed=true;
   if(window._pendingFn){ pendingFn=window._pendingFn; window._pendingFn=null; }
   window._D=D;
@@ -3547,6 +3672,15 @@ async function sbLoad(){
         Object.keys(DEF.pageContent).forEach(k=>{ if(!D.pageContent[k]) D.pageContent[k]=DEF.pageContent[k]; });
         window._D=D;
         renderAll();
+        // ── Remote spin handling for TV display ──
+        if(D.spinState){
+          const ss=D.spinState;
+          const tvOpen=document.getElementById('tvView')&&document.getElementById('tvView').classList.contains('active');
+          if(tvOpen){
+            if(!ss.result) tvRemoteSpinStart(ss);
+            else if(ss.id===_tvLastSpinId) tvRemoteSpinResult(ss);
+          }
+        }
       })
     .subscribe();
 })();
@@ -3605,6 +3739,7 @@ function goTo(id){
   if(el) el.classList.add('active');
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.id==='tab-'+id));
   document.querySelectorAll('.mob-tab').forEach(t=>t.classList.toggle('active',t.id==='mobtab-'+id));
+  document.querySelectorAll('.mob-bottom-tab').forEach(t=>t.classList.toggle('active',t.id==='bbtab-'+id));
   window.scrollTo(0,0);
   // Page-specific renders — every page gets its render called
   if(id==='trait'){ renderTrait(); renderTraitTracker(); }
@@ -6189,6 +6324,63 @@ document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{
 let tvSlide=0, tvTimer=null, tvPTimer=null, tvPct=0;
 const TV_MS=9000;
 
+let _tvRemoteRaf=null, _tvLastSpinId=null;
+
+function tvRemoteSpinStart(state){
+  if(!state||state.id===_tvLastSpinId) return;
+  _tvLastSpinId=state.id;
+  const overlay=document.getElementById('tvSpinOverlay');
+  const canvas=document.getElementById('tvRemoteCanvas');
+  if(!overlay||!canvas) return;
+  overlay.style.display='flex';
+  const badge=document.getElementById('tvSpinSquadBadge');
+  if(badge){ badge.textContent=(D.squadNames&&D.squadNames[state.squad])||state.squad; badge.style.color=SQ_HEX[state.squad]||'var(--gold-soft)'; }
+  const pips=document.getElementById('tvSpinPips');
+  if(pips){ pips.innerHTML=[0,1,2,3].map(i=>`<div style="width:14px;height:14px;border-radius:50%;background:${i<state.spinNum?'var(--gold-soft)':i===state.spinNum?'#fff':'rgba(255,255,255,0.2)'};transition:background .3s"></div>`).join(''); }
+  const banner=document.getElementById('tvSpinResultBanner');
+  const sub=document.getElementById('tvSpinResultSub');
+  if(banner){banner.textContent='';banner.style.opacity='0';}
+  if(sub) sub.textContent='Spinning…';
+  SP_QUADS=SP_QUADS_BY_SPIN[Math.min(state.quadsIdx||state.spinNum,3)]; spRebuildAll();
+  const ctx=canvas.getContext('2d');
+  const {a0,delta,dur,easeExp}=state;
+  const ease=t=>1-Math.pow(1-t,easeExp||3);
+  const elapsed=Math.min(Date.now()-state.startedAt, dur*0.9);
+  const t0=performance.now()-elapsed;
+  if(_tvRemoteRaf) cancelAnimationFrame(_tvRemoteRaf);
+  function fr(now){
+    const t=Math.min((now-t0)/dur,1);
+    spDrawWheel(ctx,a0+delta*ease(t),520);
+    if(t<1) _tvRemoteRaf=requestAnimationFrame(fr);
+    else spDrawWheel(ctx,a0+delta,520);
+  }
+  _tvRemoteRaf=requestAnimationFrame(fr);
+}
+
+function tvRemoteSpinResult(state){
+  if(!state||!state.result) return;
+  const canvas=document.getElementById('tvRemoteCanvas');
+  const ctx=canvas?canvas.getContext('2d'):null;
+  const finalAngle=state.result.finalAngle||spAngle;
+  SP_QUADS=SP_QUADS_BY_SPIN[Math.min(state.quadsIdx||state.spinNum,3)]; spRebuildAll();
+  if(ctx){
+    const savedAngle=spAngle; spAngle=finalAngle;
+    const landed=spSegAtPointer();
+    spAngle=savedAngle;
+    if(landed&&landed.li>=0) spDrawWheel(ctx,finalAngle,520,landed.li);
+    else spDrawWheel(ctx,finalAngle,520);
+  }
+  const banner=document.getElementById('tvSpinResultBanner');
+  const sub=document.getElementById('tvSpinResultSub');
+  if(banner){banner.textContent=state.result.label||'';banner.style.opacity='1';}
+  if(sub) sub.textContent=state.result.sub||'';
+  setTimeout(()=>{
+    const overlay=document.getElementById('tvSpinOverlay');
+    if(overlay) overlay.style.display='none';
+    SP_QUADS=SP_QUADS_BY_SPIN[0]; spRebuildAll();
+  },6000);
+}
+
 function openDisplay(){
   document.getElementById('tvView').classList.add('active');
   document.getElementById('tvDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
@@ -7160,6 +7352,11 @@ function sDoSpin(){
       spLand(landed.seg);
     }
   }
+  // ── BROADCAST spin to Supabase for remote TV ──
+  if(!D.spinState) D.spinState={};
+  D.spinState={id:Date.now(),squad:spSquad,spinNum:spSpinNum,a0,delta,dur,easeExp,startedAt:Date.now(),result:null,quadsIdx:Math.min(spSpinNum,3)};
+  sb.from('app_data').upsert({key:'coc',value:D,updated_at:new Date().toISOString()}).then(()=>{});
+
   spRaf=requestAnimationFrame(fr);
 }
 
@@ -7261,6 +7458,15 @@ function spLand(seg){
     }
   }
   spTVResult();
+  // Broadcast result to Supabase for remote TV
+  if(D.spinState){
+    D.spinState.result={
+      label:document.getElementById('sResultVal')?document.getElementById('sResultVal').textContent:'',
+      sub:document.getElementById('sResultSub')?document.getElementById('sResultSub').textContent:'',
+      finalAngle:spAngle,
+    };
+    sb.from('app_data').upsert({key:'coc',value:D,updated_at:new Date().toISOString()}).then(()=>{});
+  }
 }
 
 function sDoBank(){
@@ -7612,5 +7818,9 @@ goTo(window.__currentPage || currentPage);
 
 <div id="milestoneBanner"></div>
 <canvas id="confettiCanvas" style="display:none"></canvas>
+
+<!-- ── MOBILE BOTTOM NAV BAR ── -->
+<div id="mobileBottomBar" style="display:none"></div>
+
 </body>
 </html>
