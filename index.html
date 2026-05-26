@@ -6084,7 +6084,7 @@ function tryLogin(){ if(document.getElementById('pwIn').value===D.password){ aut
 function requireAdmin(fn){ if(authed) fn(); else { pendingFn=fn; openLogin(); } }
 function openAddEvent(){ openAdmin(); aTab('points'); }
 function openAdmin(){ document.getElementById('adminModal').classList.add('open'); aTab('points'); loadPageContent(); }
-function close1(id){ const m=document.getElementById(id); m.classList.remove('open'); m.style.display='none'; }
+function close1(id){ const m=document.getElementById(id); if(!m) return; m.classList.remove('open'); m.style.display=''; }
 
 function aTab(name){
   const names=['points','metrics','pages','navorder','mayhem','champs','kickoff','links','gallery','scores','history','settings'];
