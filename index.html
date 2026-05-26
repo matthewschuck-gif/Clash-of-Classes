@@ -2494,7 +2494,8 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-soft);margin-bottom:12px">🔀 Drag to reorder navigation tabs</div>
       <div id="navOrderList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px"></div>
       <div class="fmsg" id="navOrderOk">✓ Order saved!</div>
-      <button class="btn-submit" onclick="saveNavOrder()">Save Order</button>
+      <button class="btn-submit" onclick="saveNavOrder()">Save Order + Icons</button>
+        <button class="btn-submit" style="background:var(--surface2);color:var(--text2);margin-top:6px" onclick="resetNavDefaults()">Reset to Defaults</button>
     </div>
 
     <!-- MAYHEM EDITOR (dedicated shortcut tab) -->
@@ -3370,6 +3371,8 @@ const DEF = {
   history: [], password: 'ephrata2026', nextId: 100,
   mottos: { BLACK:'', GOLD:'', GREY:'', PURPLE:'' },
   squadNames: { BLACK:'Black', GOLD:'Gold', GREY:'Grey', PURPLE:'Purple' },
+  navIcons: {},
+  navLabels: {},
   branding: { schoolName:'Ephrata Middle School', tagline:'Mountaineers', logoUrl:'' },
   spinCaps: { spin1:10, spin2:25, spin3:75, spin4:100 },
   squadPages: {
@@ -3475,6 +3478,8 @@ async function sbLoad(){
       if(!D.countdownEvents) D.countdownEvents=[{label:'Last Day of School',date:'2026-06-04'}];
       if(!D.mottos) D.mottos={BLACK:'',GOLD:'',GREY:'',PURPLE:''};
       if(!D.squadNames) D.squadNames={BLACK:'Black',GOLD:'Gold',GREY:'Grey',PURPLE:'Purple'};
+      if(!D.navIcons) D.navIcons={};
+      if(!D.navLabels) D.navLabels={};
       if(!D.branding) D.branding={schoolName:'Ephrata Middle School',tagline:'Mountaineers',logoUrl:''};
       if(!D.spinCaps) D.spinCaps={spin1:10,spin2:25,spin3:75,spin4:100};
       if(!D.squadPages) D.squadPages={BLACK:{motto:'',image:'',desc:'',boxes:[]},GOLD:{motto:'',image:'',desc:'',boxes:[]},GREY:{motto:'',image:'',desc:'',boxes:[]},PURPLE:{motto:'',image:'',desc:'',boxes:[]}};
@@ -3527,6 +3532,8 @@ async function sbLoad(){
         if(!D.squadColors) D.squadColors={BLACK:'#c5c9d1',GOLD:'#ffe100',GREY:'#99a8bb',PURPLE:'#bb8ef5'};
         if(!D.seasonTheme) D.seasonTheme={primary:'#6d2b9f',accent:'#ffe100',name:'Default'};
         if(!D.squadNames) D.squadNames={BLACK:'Black',GOLD:'Gold',GREY:'Grey',PURPLE:'Purple'};
+        if(!D.navIcons) D.navIcons={};
+        if(!D.navLabels) D.navLabels={};
         if(!D.branding) D.branding={schoolName:'Ephrata Middle School',tagline:'Mountaineers',logoUrl:''};
         if(!D.spinCaps) D.spinCaps={spin1:10,spin2:25,spin3:75,spin4:100};
         Object.keys(D.squadColors).forEach(sq=>{ SQ_HEX[sq]=D.squadColors[sq]; });
@@ -3562,8 +3569,16 @@ function buildNav(){
     PAGES_DEF.forEach(p=>{ if(!D.navOrder.includes(p.id)) reordered.push(p); });
     orderedPages=reordered;
   }
-  tabs.innerHTML=orderedPages.map(p=>`<button class="tab ${p.id===currentPage?'active':''}" id="tab-${p.id}" onclick="goTo('${p.id}')"><span class="tab-icon">${p.icon}</span>${p.label}</button>`).join('');
-  mob.innerHTML=orderedPages.map(p=>`<button class="mob-tab ${p.id===currentPage?'active':''}" id="mobtab-${p.id}" onclick="goTo('${p.id}')">${p.icon} ${p.label}</button>`).join('');
+  tabs.innerHTML=orderedPages.map(p=>{
+    const icon=(D&&D.navIcons&&D.navIcons[p.id])||p.icon;
+    const label=(D&&D.navLabels&&D.navLabels[p.id])||p.label;
+    return `<button class="tab ${p.id===currentPage?'active':''}" id="tab-${p.id}" onclick="goTo('${p.id}')"><span class="tab-icon">${icon}</span>${label}</button>`;
+  }).join('');
+  mob.innerHTML=orderedPages.map(p=>{
+    const icon=(D&&D.navIcons&&D.navIcons[p.id])||p.icon;
+    const label=(D&&D.navLabels&&D.navLabels[p.id])||p.label;
+    return `<button class="mob-tab ${p.id===currentPage?'active':''}" id="mobtab-${p.id}" onclick="goTo('${p.id}')">${icon} ${label}</button>`;
+  }).join('');
   // Wire scroll listener for arrow visibility
   const nt=document.getElementById('navTabs');
   if(nt&&!nt._scrollWired){
@@ -5553,14 +5568,21 @@ function renderNavOrder(){
     PAGES_DEF.forEach(p=>{ if(!D.navOrder.includes(p.id)) reordered.push(p); });
     orderedPages=reordered;
   }
-  list.innerHTML=orderedPages.map((p,i)=>`
-    <div class="nav-order-item" data-id="${p.id}" draggable="true"
-      style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;cursor:grab;user-select:none;transition:background .15s">
-      <span style="color:var(--text3);font-family:'DM Mono',monospace;font-size:11px;width:18px;text-align:right">${i+1}</span>
-      <span style="font-size:16px">${p.icon}</span>
-      <span style="font-size:13px;color:var(--text);flex:1">${p.label}</span>
-      <span style="color:var(--text3);font-size:14px">&#9776;</span>
-    </div>`).join('');
+  list.innerHTML=orderedPages.map((p,i)=>{
+    const icon=(D&&D.navIcons&&D.navIcons[p.id])||p.icon;
+    const label=(D&&D.navLabels&&D.navLabels[p.id])||p.label;
+    return `<div class="nav-order-item" data-id="${p.id}" draggable="true"
+      style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:grab;user-select:none;transition:background .15s">
+      <span style="color:var(--text3);font-family:'DM Mono',monospace;font-size:11px;width:18px;text-align:right;flex-shrink:0">${i+1}</span>
+      <input type="text" data-nav-icon="${p.id}" value="${icon}"
+        style="width:36px;text-align:center;font-size:18px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:3px;cursor:text;flex-shrink:0"
+        onclick="event.stopPropagation()" ondragstart="event.stopPropagation()">
+      <input type="text" data-nav-label="${p.id}" value="${label}"
+        style="flex:1;font-size:12px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:5px 8px;color:var(--text);cursor:text;min-width:60px"
+        onclick="event.stopPropagation()" ondragstart="event.stopPropagation()">
+      <span style="color:var(--text3);font-size:14px;flex-shrink:0;cursor:grab">&#9776;</span>
+    </div>`;
+  }).join('');
   // Wire drag-and-drop
   let dragSrc=null;
   list.querySelectorAll('.nav-order-item').forEach(item=>{
@@ -5585,6 +5607,23 @@ function renderNavOrder(){
 async function saveNavOrder(){
   const items=[...document.querySelectorAll('#navOrderList .nav-order-item')];
   D.navOrder=items.map(it=>it.dataset.id);
+  if(!D.navIcons) D.navIcons={};
+  if(!D.navLabels) D.navLabels={};
+  // Save custom icons and labels from inline inputs
+  document.querySelectorAll('[data-nav-icon]').forEach(el=>{
+    const id=el.dataset.navIcon;
+    const def=PAGES_DEF.find(p=>p.id===id);
+    const val=el.value.trim();
+    if(val && def && val!==def.icon) D.navIcons[id]=val;
+    else delete D.navIcons[id];
+  });
+  document.querySelectorAll('[data-nav-label]').forEach(el=>{
+    const id=el.dataset.navLabel;
+    const def=PAGES_DEF.find(p=>p.id===id);
+    const val=el.value.trim();
+    if(val && def && val!==def.label) D.navLabels[id]=val;
+    else delete D.navLabels[id];
+  });
   await save();
   buildNav();
   flash('navOrderOk');
@@ -6801,7 +6840,7 @@ SP_QUADS_BY_SPIN[0].forEach((q,qi)=>q.segs.forEach(s=>SP_ALL.push({qi,...s,color
 const SP_SPIN_MAX=[10,25,75,100];
 function spGetCaps(){ const c=(D&&D.spinCaps)||{}; return [c.spin1||10,c.spin2||25,c.spin3||75,c.spin4||100]; }
 // Scale a segment's raw value down to the current spin's cap
-function spCapVal(rawVal){ const caps=spGetCaps(); return Math.min(rawVal, caps[Math.min(spSpinNum,2)]); }
+function spCapVal(rawVal){ const caps=spGetCaps(); const sn=window._spSpinNumAtStart!==undefined?window._spSpinNumAtStart:spSpinNum; return Math.min(rawVal, caps[Math.min(sn,2)]); }
 const SP_QS=[-Math.PI/2,Math.PI,Math.PI/2,0],SP_QA=Math.PI/2;
 const SP_HEX={BLACK:'#1a1a1a',GOLD:'#ffe100',GREY:'#7a8d9e',PURPLE:'#9a6fd8'};
 // Special slice bg/text now derived per-segment from its quadrant color (see spDrawWheel)
@@ -7009,6 +7048,7 @@ function sDoSpin(){
   if(!spSquad) return; // must select squad first
   spSquadLocked=true; // lock squad for this user's session
   SP_QUADS=SP_QUADS_BY_SPIN[Math.min(spSpinNum,3)]; spRebuildAll();
+  window._spSpinNumAtStart=spSpinNum; // snapshot for consistent display+scoring
   spUpdSquadBtns();
   spSetIntensity(spSpinNum+1); // ramp up background intensity each spin
   spInitAudio();
@@ -7216,6 +7256,12 @@ function sDoRisk(){
   spSetBtns(false,false,false);
   spBanked=0; spUpdBanked(); // lose current points by risking
   spPipDone();spSpinNum++;spUpdPips();
+  SP_QUADS=SP_QUADS_BY_SPIN[Math.min(spSpinNum,3)]; spRebuildAll();
+  // Redraw wheel immediately so player sees new segment layout before spin
+  const _cv2=document.getElementById('spinCanvas');
+  if(_cv2) spDrawWheel(_cv2.getContext('2d'),spAngle,380);
+  const _tc2=document.getElementById('spinTVCanvas');
+  if(_tc2&&spTVOpen) spDrawWheel(_tc2.getContext('2d'),spAngle,420);
   setTimeout(sDoSpin,300);
 }
 
@@ -7468,6 +7514,10 @@ function spTVResult(){
   if(tvs&&rs) tvs.textContent=rs.textContent;
 }
 
+async function resetNavDefaults(){
+  D.navIcons={}; D.navLabels={};
+  await save(); buildNav(); renderNavOrder(); flash('navOrderOk');
+}
 async function saveBranding(){
   if(!D.branding) D.branding={};
   D.branding.schoolName=document.getElementById('brandSchoolName')?.value.trim()||'Ephrata Middle School';
@@ -7514,7 +7564,7 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   saveKickoffContent,loadKickoffEditor,
   isImageUrl,validatePhotoUrl,
   renderChamps,renderMayhem,renderKickoff,
-  saveBranding,saveSquadNames,saveSpinCaps,applyBranding,sqName,
+  saveBranding,saveSquadNames,saveSpinCaps,applyBranding,sqName,resetNavDefaults,
   renderGallery,renderStaffLinks,
   renderNavOrder,saveNavOrder};
 Object.entries(_fns).forEach(([k,v])=>{ window[k]=v; window['_real_'+k]=v; });
