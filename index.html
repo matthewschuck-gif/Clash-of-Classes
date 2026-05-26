@@ -3232,14 +3232,10 @@ window.toggleMode = function(){
   if(tabs) tabs.innerHTML=pages.map(p=>`<button class="tab${p.id==='home'?' active':''}" id="tab-${p.id}" onclick="goTo('${p.id}')"><span class="tab-icon">${p.icon}</span>${p.label}</button>`).join('');
   if(mob) mob.innerHTML=pages.map(p=>`<button class="mob-tab${p.id==='home'?' active':''}" id="mobtab-${p.id}" onclick="goTo('${p.id}')">${p.icon} ${p.label}</button>`).join('');
 
-  // ── Build mobile bottom bar ──
+  // ── Build mobile bottom bar (uses pages — available in this early IIFE) ──
   const bb=document.getElementById('mobileBottomBar');
   if(bb){
-    bb.innerHTML=orderedPages.map(p=>{
-      const icon=(D&&D.navIcons&&D.navIcons[p.id])||p.icon;
-      const label=(D&&D.navLabels&&D.navLabels[p.id])||p.label;
-      return `<button class="mob-bottom-tab ${p.id===currentPage?'active':''}" id="bbtab-${p.id}" onclick="goTo('${p.id}')"><span class="mob-icon">${icon}</span><span class="mob-label">${label}</span></button>`;
-    }).join('');
+    bb.innerHTML=pages.map(p=>`<button class="mob-bottom-tab${p.id==='home'?' active':''}" id="bbtab-${p.id}" onclick="goTo('${p.id}')"><span class="mob-icon">${p.icon}</span><span class="mob-label">${p.label}</span></button>`).join('');
   }
 })();
 
