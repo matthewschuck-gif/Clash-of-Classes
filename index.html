@@ -6942,7 +6942,7 @@ function spRebuildAll(){
   SP_QUADS.forEach((q,qi)=>q.segs.forEach(s=>SP_ALL.push({qi,...s,color:q.color})));
 }
 const SP_ALL=[];
-spRebuildAll();
+SP_QUADS_BY_SPIN[0].forEach((q,qi)=>q.segs.forEach(s=>SP_ALL.push({qi,...s,color:q.color})));
 // Max points per spin ring (spin 4 = 100 fixed, handled separately)
 const SP_SPIN_MAX=[10,25,75,100];
 function spGetCaps(){ const c=(D&&D.spinCaps)||{}; return [c.spin1||10,c.spin2||25,c.spin3||75,c.spin4||100]; }
