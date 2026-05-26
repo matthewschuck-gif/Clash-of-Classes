@@ -2857,6 +2857,38 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         <div class="fmsg" id="cdOk">✓ Saved!</div>
         <button class="btn-submit" onclick="saveCountdown()">Save All</button>
       </div>
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">🏫 Site Branding</div>
+        <div class="fr"><label>School Name</label><input type="text" id="brandSchoolName" placeholder="Ephrata Middle School"></div>
+        <div class="fr"><label>Tagline / Mascot</label><input type="text" id="brandTagline" placeholder="Mountaineers"></div>
+        <div class="fr"><label>Logo URL (optional)</label><input type="url" id="brandLogoUrl" placeholder="https://…"></div>
+        <div class="fmsg" id="brandOk">✓ Saved!</div>
+        <button class="btn-submit" onclick="saveBranding()">Save Branding</button>
+      </div>
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:4px">🏷 Squad Names</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Rename your squads site-wide. Colors stay the same — only the display name changes.</div>
+        <div class="g2">
+          <div class="fr"><label style="color:var(--sq-black)">Squad 1 Name</label><input type="text" id="sqNameBLACK" placeholder="Black"></div>
+          <div class="fr"><label style="color:var(--sq-gold)">Squad 2 Name</label><input type="text" id="sqNameGOLD" placeholder="Gold"></div>
+          <div class="fr"><label style="color:var(--sq-grey)">Squad 3 Name</label><input type="text" id="sqNameGREY" placeholder="Grey"></div>
+          <div class="fr"><label style="color:var(--sq-purple)">Squad 4 Name</label><input type="text" id="sqNamePURPLE" placeholder="Purple"></div>
+        </div>
+        <div class="fmsg" id="sqNameOk">✓ Saved!</div>
+        <button class="btn-submit" onclick="saveSquadNames()">Save Squad Names</button>
+      </div>
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:4px">🎰 Spin Point Caps</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Max points a student can earn per spin ring.</div>
+        <div class="g2">
+          <div class="fr"><label>Spin 1 Max (pts)</label><input type="number" id="spinCap1" min="1" max="999" placeholder="10"></div>
+          <div class="fr"><label>Spin 2 Max (pts)</label><input type="number" id="spinCap2" min="1" max="999" placeholder="25"></div>
+          <div class="fr"><label>Spin 3 Max (pts)</label><input type="number" id="spinCap3" min="1" max="999" placeholder="75"></div>
+          <div class="fr"><label>Spin 4 Jackpot (pts)</label><input type="number" id="spinCap4" min="1" max="999" placeholder="100"></div>
+        </div>
+        <div class="fmsg" id="spinCapOk">✓ Saved!</div>
+        <button class="btn-submit" onclick="saveSpinCaps()">Save Spin Caps</button>
+      </div>
       <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">🔑 Change Password</div>
       <div class="fr"><label>New Admin Password</label><input type="password" id="newPw" placeholder="New password (min 4 chars)"></div>
       <div class="fr"><input type="password" id="newPw2" placeholder="Confirm password"></div>
@@ -3120,6 +3152,12 @@ window.addEventListener('scroll', function(){
 const SQUADS = ['BLACK','GOLD','GREY','PURPLE'];
 const SQ_HEX = { BLACK:'#c5c9d1', GOLD:'#ffe100', GREY:'#99a8bb', PURPLE:'#bb8ef5' };
 const SQ_CSS = { BLACK:'var(--sq-black)', GOLD:'var(--sq-gold)', GREY:'var(--sq-grey)', PURPLE:'var(--sq-purple)' };
+function sqName(sq){ return (D.squadNames&&D.squadNames[sq])||sq[0]+sq.slice(1).toLowerCase(); }
+function applyBranding(){
+  const b=D.branding||{};
+  const n=document.getElementById('navBrandName'); if(n) n.textContent=b.schoolName||'Ephrata Middle School';
+  const t=document.getElementById('navBrandTagline'); if(t) t.textContent=b.tagline||'Mountaineers';
+}
 
 const PAGES_DEF = [
   { id:'home',       icon:'🏠', label:'Home'           },
@@ -3331,6 +3369,9 @@ const DEF = {
   },
   history: [], password: 'ephrata2026', nextId: 100,
   mottos: { BLACK:'', GOLD:'', GREY:'', PURPLE:'' },
+  squadNames: { BLACK:'Black', GOLD:'Gold', GREY:'Grey', PURPLE:'Purple' },
+  branding: { schoolName:'Ephrata Middle School', tagline:'Mountaineers', logoUrl:'' },
+  spinCaps: { spin1:10, spin2:25, spin3:75, spin4:100 },
   squadPages: {
     BLACK:  { motto:'', image:'', desc:'', boxes:[] },
     GOLD:   { motto:'', image:'', desc:'', boxes:[] },
@@ -3404,7 +3445,7 @@ async function sbLoad(){
   try{
     const {data,error}=await sb.from('app_data').select('value').eq('key','coc').single();
     if(error && error.code!=='PGRST116') throw error;
-    const v = data ? data.value : null;
+    const v=data?data.value:null;
     if(v){
       D=v;
       if(!Array.isArray(D.events)) D.events=[];
@@ -3433,6 +3474,9 @@ async function sbLoad(){
       if(!D.traitDoughTally) D.traitDoughTally={BLACK:0,GOLD:0,GREY:0,PURPLE:0};
       if(!D.countdownEvents) D.countdownEvents=[{label:'Last Day of School',date:'2026-06-04'}];
       if(!D.mottos) D.mottos={BLACK:'',GOLD:'',GREY:'',PURPLE:''};
+      if(!D.squadNames) D.squadNames={BLACK:'Black',GOLD:'Gold',GREY:'Grey',PURPLE:'Purple'};
+      if(!D.branding) D.branding={schoolName:'Ephrata Middle School',tagline:'Mountaineers',logoUrl:''};
+      if(!D.spinCaps) D.spinCaps={spin1:10,spin2:25,spin3:75,spin4:100};
       if(!D.squadPages) D.squadPages={BLACK:{motto:'',image:'',desc:'',boxes:[]},GOLD:{motto:'',image:'',desc:'',boxes:[]},GREY:{motto:'',image:'',desc:'',boxes:[]},PURPLE:{motto:'',image:'',desc:'',boxes:[]}};
       SQUADS.forEach(sq=>{
         if(!D.squadPages[sq]) D.squadPages[sq]={motto:'',image:'',desc:'',boxes:[]};
@@ -3445,12 +3489,7 @@ async function sbLoad(){
       if(!Array.isArray(D.staffLinks)) D.staffLinks=[];
       if(!D.sotmData) D.sotmData=JSON.parse(JSON.stringify(DEF.sotmData));
       if(!Array.isArray(D.sotmData.partners)) D.sotmData.partners=DEF.sotmData.partners.slice();
-      if(D.links.wheel && D.links.wheel.length===0){
-        D.links.wheel=[
-          {label:'Wheel Demo Video',url:'https://drive.google.com/file/d/1cPO_FGUmweW91kBiQ5rmHOuN-jREN7jQ/view?usp=sharing',id:1},
-          {label:'Wheel Presentation',url:'https://docs.google.com/presentation/d/1GV3jLRh4v_-bLNgHiTio-yk7yyVCv_BFnm7k3DNjLxc/edit?usp=sharing',id:2}
-        ];
-      }
+      if(D.links.wheel&&D.links.wheel.length===0){D.links.wheel=[{label:'Wheel Demo Video',url:'https://drive.google.com/file/d/1cPO_FGUmweW91kBiQ5rmHOuN-jREN7jQ/view?usp=sharing',id:1},{label:'Wheel Presentation',url:'https://docs.google.com/presentation/d/1GV3jLRh4v_-bLNgHiTio-yk7yyVCv_BFnm7k3DNjLxc/edit?usp=sharing',id:2}];}
       if(!D.pageContent) D.pageContent={...DEF.pageContent};
       Object.keys(DEF.pageContent).forEach(k=>{ if(!D.pageContent[k]) D.pageContent[k]=DEF.pageContent[k]; });
     } else {
@@ -3479,7 +3518,7 @@ async function sbLoad(){
   sb.channel('coc_realtime')
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'app_data',filter:'key=eq.coc'},
       (payload)=>{
-        const v=payload.new && payload.new.value;
+        const v=payload.new&&payload.new.value;
         if(!v) return;
         D=v;
         if(!Array.isArray(D.events)) D.events=[];
@@ -3487,6 +3526,9 @@ async function sbLoad(){
         ['attendance','referral','grades'].forEach(k=>{ if(!D.metrics[k]) D.metrics[k]={BLACK:0,GOLD:0,GREY:0,PURPLE:0}; });
         if(!D.squadColors) D.squadColors={BLACK:'#c5c9d1',GOLD:'#ffe100',GREY:'#99a8bb',PURPLE:'#bb8ef5'};
         if(!D.seasonTheme) D.seasonTheme={primary:'#6d2b9f',accent:'#ffe100',name:'Default'};
+        if(!D.squadNames) D.squadNames={BLACK:'Black',GOLD:'Gold',GREY:'Grey',PURPLE:'Purple'};
+        if(!D.branding) D.branding={schoolName:'Ephrata Middle School',tagline:'Mountaineers',logoUrl:''};
+        if(!D.spinCaps) D.spinCaps={spin1:10,spin2:25,spin3:75,spin4:100};
         Object.keys(D.squadColors).forEach(sq=>{ SQ_HEX[sq]=D.squadColors[sq]; });
         applySeasonTheme(D.seasonTheme);
         if(!D.pageContent) D.pageContent={...DEF.pageContent};
@@ -3496,6 +3538,7 @@ async function sbLoad(){
       })
     .subscribe();
 })();
+
 
 // ── CALCS ──
 const evtTotal=sq=>(D.events||[]).reduce((s,e)=>s+(e.pts[sq]||0),0);
@@ -4500,6 +4543,7 @@ function renderAll(){
   checkConfetti(); checkMilestone(); renderCatChart(); renderSeasonCal();
   renderHeroStrip(); renderTraitTracker();
   renderTraitPillar(); renderPoll(); renderStaffLinks(); renderSnapshots();
+  applyBranding();
   document.getElementById('statEvents').textContent=(D.events||[]).length;
   document.getElementById('statWeek').textContent=D.metrics.weekLabel||'—';
   if(currentPage==='trait') renderTrait();
@@ -6051,6 +6095,16 @@ function aTab(name){
     const hs2n=document.getElementById('hStat2Num'); if(hs2n) hs2n.value=hs2.stat2num||'9';
     const hs2l=document.getElementById('hStat2Lbl'); if(hs2l) hs2l.value=hs2.stat2lbl||'LRG Traits';
     SQUADS.forEach(sq=>{ const el=document.getElementById('mot'+sq); if(el) el.value=(D.mottos&&D.mottos[sq])||''; });
+    const _b=D.branding||{}; 
+    const _bn=document.getElementById('brandSchoolName'); if(_bn) _bn.value=_b.schoolName||'Ephrata Middle School';
+    const _bt=document.getElementById('brandTagline'); if(_bt) _bt.value=_b.tagline||'Mountaineers';
+    const _bl=document.getElementById('brandLogoUrl'); if(_bl) _bl.value=_b.logoUrl||'';
+    SQUADS.forEach(sq=>{ const _sn=document.getElementById('sqName'+sq); if(_sn) _sn.value=(D.squadNames&&D.squadNames[sq])||sq[0]+sq.slice(1).toLowerCase(); });
+    const _sc=D.spinCaps||{}; 
+    const _sc1=document.getElementById('spinCap1'); if(_sc1) _sc1.value=_sc.spin1||10;
+    const _sc2=document.getElementById('spinCap2'); if(_sc2) _sc2.value=_sc.spin2||25;
+    const _sc3=document.getElementById('spinCap3'); if(_sc3) _sc3.value=_sc.spin3||75;
+    const _sc4=document.getElementById('spinCap4'); if(_sc4) _sc4.value=_sc.spin4||100;
     const pq2=document.getElementById('pollQ'); if(pq2) pq2.value=D.poll?.question||'';
     const po2=document.getElementById('pollOpts'); if(po2) po2.value=(D.poll?.options||[]).join('\n');
     const pa2=document.getElementById('pollActive'); if(pa2) pa2.checked=D.poll?.active||false;
@@ -6708,46 +6762,192 @@ function wSetBtns(spin,bank,risk){
 // ══════════════════════════════════════════
 
 // Wheel segment data
-const SP_QUADS=[
+// Segment layouts per spin — escalating GIVE/LOYALTY on spins 2 & 3
+const SP_QUADS_BY_SPIN=[
+  [
   {color:'BLACK',segs:[
-    {t:'pts',v:1,  arrow:true, sf:0,   ef:.16},
-    {t:'pts',v:10, arrow:true, sf:.16, ef:.33},
-    {t:'sp', v:50, n:'GIVE',  sf:.33, ef:.5},
-    {t:'sp', v:0,  n:'NONE',  sf:.5,  ef:.66},
-    {t:'pts',v:50, arrow:false,sf:.66, ef:.83},
-    {t:'pts',v:5,  arrow:true, sf:.83, ef:1},
-  ]},
+    {t:'pts',v:1,arrow:true,sf:0.0,ef:0.16666667},
+    {t:'pts',v:10,arrow:true,sf:0.16666667,ef:0.33333333},
+    {t:'sp',v:50,n:'GIVE',sf:0.33333333,ef:0.5},
+    {t:'sp',v:0,n:'NONE',sf:0.5,ef:0.66666667},
+    {t:'pts',v:50,arrow:false,sf:0.66666667,ef:0.83333333},
+    {t:'pts',v:5,arrow:true,sf:0.83333333,ef:1.0},
+  ]}},
   {color:'GOLD',segs:[
-    {t:'pts',v:20, arrow:true, sf:0,   ef:.16},
-    {t:'pts',v:5,  arrow:true, sf:.16, ef:.33},
-    {t:'sp', v:20, n:'LOYALTY',sf:.33, ef:.5},
-    {t:'pts',v:50, arrow:false,sf:.5,  ef:.66},
-    {t:'pts',v:10, arrow:true, sf:.66, ef:.83},
-    {t:'pts',v:25, arrow:true, sf:.83, ef:1},
-  ]},
+    {t:'pts',v:20,arrow:true,sf:0.0,ef:0.16666667},
+    {t:'pts',v:5,arrow:true,sf:0.16666667,ef:0.33333333},
+    {t:'sp',v:20,n:'LOYALTY',sf:0.33333333,ef:0.5},
+    {t:'pts',v:50,arrow:false,sf:0.5,ef:0.66666667},
+    {t:'pts',v:10,arrow:true,sf:0.66666667,ef:0.83333333},
+    {t:'pts',v:25,arrow:true,sf:0.83333333,ef:1.0},
+  ]}},
   {color:'GREY',segs:[
-    {t:'pts',v:1,  arrow:true, sf:0,   ef:.16},
-    {t:'pts',v:30, arrow:true, sf:.16, ef:.33},
-    {t:'pts',v:10, arrow:true, sf:.33, ef:.5},
-    {t:'sp', v:0,  n:'ZERO',  sf:.5,  ef:.66},
-    {t:'sp', v:50, n:'GIVE',  sf:.66, ef:.83},
-    {t:'pts',v:75, arrow:false,sf:.83, ef:1},
-  ]},
+    {t:'pts',v:1,arrow:true,sf:0.0,ef:0.16666667},
+    {t:'pts',v:30,arrow:true,sf:0.16666667,ef:0.33333333},
+    {t:'pts',v:10,arrow:true,sf:0.33333333,ef:0.5},
+    {t:'sp',v:0,n:'ZERO',sf:0.5,ef:0.66666667},
+    {t:'sp',v:50,n:'GIVE',sf:0.66666667,ef:0.83333333},
+    {t:'pts',v:75,arrow:false,sf:0.83333333,ef:1.0},
+  ]}},
   {color:'PURPLE',segs:[
-    {t:'pts',v:5,  arrow:true, sf:0,   ef:.16},
-    {t:'pts',v:50, arrow:false,sf:.16, ef:.33},
-    {t:'sp', v:0,  n:'AUTO',  sf:.33, ef:.5},
-    {t:'pts',v:25, arrow:true, sf:.5,  ef:.66},
-    {t:'pts',v:10, arrow:true, sf:.66, ef:.83},
-    {t:'sp', v:20, n:'LOYALTY',sf:.83, ef:1},
-  ]},
+    {t:'pts',v:5,arrow:true,sf:0.0,ef:0.16666667},
+    {t:'pts',v:50,arrow:false,sf:0.16666667,ef:0.33333333},
+    {t:'sp',v:0,n:'AUTO',sf:0.33333333,ef:0.5},
+    {t:'pts',v:25,arrow:true,sf:0.5,ef:0.66666667},
+    {t:'pts',v:10,arrow:true,sf:0.66666667,ef:0.83333333},
+    {t:'sp',v:20,n:'LOYALTY',sf:0.83333333,ef:1.0},
+  ]}}
+], // spin 1 — normal
+  [
+  {color:'BLACK',segs:[
+    {t:'pts',v:1,arrow:true,sf:0.0,ef:0.16666667},
+    {t:'sp',v:50,n:'GIVE',sf:0.16666667,ef:0.33333333},
+    {t:'sp',v:50,n:'GIVE',sf:0.33333333,ef:0.5},
+    {t:'sp',v:0,n:'NONE',sf:0.5,ef:0.66666667},
+    {t:'pts',v:50,arrow:false,sf:0.66666667,ef:0.83333333},
+    {t:'pts',v:5,arrow:true,sf:0.83333333,ef:1.0},
+  ]}},
+  {color:'GOLD',segs:[
+    {t:'pts',v:20,arrow:true,sf:0.0,ef:0.16666667},
+    {t:'sp',v:20,n:'LOYALTY',sf:0.16666667,ef:0.33333333},
+    {t:'sp',v:20,n:'LOYALTY',sf:0.33333333,ef:0.5},
+    {t:'pts',v:50,arrow:false,sf:0.5,ef:0.66666667},
+    {t:'pts',v:10,arrow:true,sf:0.66666667,ef:0.83333333},
+    {t:'pts',v:25,arrow:true,sf:0.83333333,ef:1.0},
+  ]}},
+  {color:'GREY',segs:[
+    {t:'pts',v:1,arrow:true,sf:0.0,ef:0.16666667},
+    {t:'pts',v:30,arrow:true,sf:0.16666667,ef:0.33333333},
+    {t:'sp',v:0,n:'ZERO',sf:0.33333333,ef:0.5},
+    {t:'sp',v:50,n:'GIVE',sf:0.5,ef:0.66666667},
+    {t:'sp',v:50,n:'GIVE',sf:0.66666667,ef:0.83333333},
+    {t:'pts',v:75,arrow:false,sf:0.83333333,ef:1.0},
+  ]}},
+  {color:'PURPLE',segs:[
+    {t:'pts',v:5,arrow:true,sf:0.0,ef:0.16666667},
+    {t:'sp',v:20,n:'LOYALTY',sf:0.16666667,ef:0.33333333},
+    {t:'sp',v:0,n:'AUTO',sf:0.33333333,ef:0.5},
+    {t:'pts',v:25,arrow:true,sf:0.5,ef:0.66666667},
+    {t:'sp',v:20,n:'LOYALTY',sf:0.66666667,ef:0.83333333},
+    {t:'pts',v:10,arrow:true,sf:0.83333333,ef:1.0},
+  ]}}
+], // spin 2 — 2x GIVE/LOYALTY
+  [
+  {color:'BLACK',segs:[
+    {t:'sp',v:50,n:'GIVE',sf:0.0,ef:0.16666667},
+    {t:'pts',v:10,arrow:true,sf:0.16666667,ef:0.33333333},
+    {t:'sp',v:50,n:'GIVE',sf:0.33333333,ef:0.5},
+    {t:'sp',v:0,n:'NONE',sf:0.5,ef:0.66666667},
+    {t:'sp',v:50,n:'GIVE',sf:0.66666667,ef:0.83333333},
+    {t:'pts',v:5,arrow:true,sf:0.83333333,ef:1.0},
+  ]}},
+  {color:'GOLD',segs:[
+    {t:'sp',v:20,n:'LOYALTY',sf:0.0,ef:0.16666667},
+    {t:'pts',v:5,arrow:true,sf:0.16666667,ef:0.33333333},
+    {t:'sp',v:20,n:'LOYALTY',sf:0.33333333,ef:0.5},
+    {t:'pts',v:50,arrow:false,sf:0.5,ef:0.66666667},
+    {t:'sp',v:20,n:'LOYALTY',sf:0.66666667,ef:0.83333333},
+    {t:'pts',v:25,arrow:true,sf:0.83333333,ef:1.0},
+  ]}},
+  {color:'GREY',segs:[
+    {t:'sp',v:50,n:'GIVE',sf:0.0,ef:0.16666667},
+    {t:'pts',v:30,arrow:true,sf:0.16666667,ef:0.33333333},
+    {t:'sp',v:50,n:'GIVE',sf:0.33333333,ef:0.5},
+    {t:'sp',v:0,n:'ZERO',sf:0.5,ef:0.66666667},
+    {t:'sp',v:50,n:'GIVE',sf:0.66666667,ef:0.83333333},
+    {t:'pts',v:75,arrow:false,sf:0.83333333,ef:1.0},
+  ]}},
+  {color:'PURPLE',segs:[
+    {t:'sp',v:20,n:'LOYALTY',sf:0.0,ef:0.16666667},
+    {t:'pts',v:50,arrow:false,sf:0.16666667,ef:0.33333333},
+    {t:'sp',v:0,n:'AUTO',sf:0.33333333,ef:0.5},
+    {t:'sp',v:20,n:'LOYALTY',sf:0.5,ef:0.66666667},
+    {t:'pts',v:10,arrow:true,sf:0.66666667,ef:0.83333333},
+    {t:'sp',v:20,n:'LOYALTY',sf:0.83333333,ef:1.0},
+  ]}}
+], // spin 3 — 3x GIVE/LOYALTY
+  [
+  {color:'BLACK',segs:[
+    {t:'pts',v:1,arrow:true,sf:0.0,ef:0.16666667},
+    {t:'pts',v:10,arrow:true,sf:0.16666667,ef:0.33333333},
+    {t:'sp',v:50,n:'GIVE',sf:0.33333333,ef:0.5},
+    {t:'sp',v:0,n:'NONE',sf:0.5,ef:0.66666667},
+    {t:'pts',v:50,arrow:false,sf:0.66666667,ef:0.83333333},
+    {t:'pts',v:5,arrow:true,sf:0.83333333,ef:1.0},
+  ]}},
+  {color:'GOLD',segs:[
+    {t:'pts',v:20,arrow:true,sf:0.0,ef:0.16666667},
+    {t:'pts',v:5,arrow:true,sf:0.16666667,ef:0.33333333},
+    {t:'sp',v:20,n:'LOYALTY',sf:0.33333333,ef:0.5},
+    {t:'pts',v:50,arrow:false,sf:0.5,ef:0.66666667},
+    {t:'pts',v:10,arrow:true,sf:0.66666667,ef:0.83333333},
+    {t:'pts',v:25,arrow:true,sf:0.83333333,ef:1.0},
+  ]}},
+  {color:'GREY',segs:[
+    {t:'pts',v:1,arrow:true,sf:0.0,ef:0.16666667},
+    {t:'pts',v:30,arrow:true,sf:0.16666667,ef:0.33333333},
+    {t:'pts',v:10,arrow:true,sf:0.33333333,ef:0.5},
+    {t:'sp',v:0,n:'ZERO',sf:0.5,ef:0.66666667},
+    {t:'sp',v:50,n:'GIVE',sf:0.66666667,ef:0.83333333},
+    {t:'pts',v:75,arrow:false,sf:0.83333333,ef:1.0},
+  ]}},
+  {color:'PURPLE',segs:[
+    {t:'pts',v:5,arrow:true,sf:0.0,ef:0.16666667},
+    {t:'pts',v:50,arrow:false,sf:0.16666667,ef:0.33333333},
+    {t:'sp',v:0,n:'AUTO',sf:0.33333333,ef:0.5},
+    {t:'pts',v:25,arrow:true,sf:0.5,ef:0.66666667},
+    {t:'pts',v:10,arrow:true,sf:0.66666667,ef:0.83333333},
+    {t:'sp',v:20,n:'LOYALTY',sf:0.83333333,ef:1.0},
+  ]}}
+], // spin 4 — normal (color match only, 100pts)
 ];
+// Active quads for current spin — updated before each spin
+let SP_QUADS=[
+  {color:'BLACK',segs:[
+    {t:'pts',v:1,arrow:true,sf:0.0,ef:0.16666667},
+    {t:'pts',v:10,arrow:true,sf:0.16666667,ef:0.33333333},
+    {t:'sp',v:50,n:'GIVE',sf:0.33333333,ef:0.5},
+    {t:'sp',v:0,n:'NONE',sf:0.5,ef:0.66666667},
+    {t:'pts',v:50,arrow:false,sf:0.66666667,ef:0.83333333},
+    {t:'pts',v:5,arrow:true,sf:0.83333333,ef:1.0},
+  ]}},
+  {color:'GOLD',segs:[
+    {t:'pts',v:20,arrow:true,sf:0.0,ef:0.16666667},
+    {t:'pts',v:5,arrow:true,sf:0.16666667,ef:0.33333333},
+    {t:'sp',v:20,n:'LOYALTY',sf:0.33333333,ef:0.5},
+    {t:'pts',v:50,arrow:false,sf:0.5,ef:0.66666667},
+    {t:'pts',v:10,arrow:true,sf:0.66666667,ef:0.83333333},
+    {t:'pts',v:25,arrow:true,sf:0.83333333,ef:1.0},
+  ]}},
+  {color:'GREY',segs:[
+    {t:'pts',v:1,arrow:true,sf:0.0,ef:0.16666667},
+    {t:'pts',v:30,arrow:true,sf:0.16666667,ef:0.33333333},
+    {t:'pts',v:10,arrow:true,sf:0.33333333,ef:0.5},
+    {t:'sp',v:0,n:'ZERO',sf:0.5,ef:0.66666667},
+    {t:'sp',v:50,n:'GIVE',sf:0.66666667,ef:0.83333333},
+    {t:'pts',v:75,arrow:false,sf:0.83333333,ef:1.0},
+  ]}},
+  {color:'PURPLE',segs:[
+    {t:'pts',v:5,arrow:true,sf:0.0,ef:0.16666667},
+    {t:'pts',v:50,arrow:false,sf:0.16666667,ef:0.33333333},
+    {t:'sp',v:0,n:'AUTO',sf:0.33333333,ef:0.5},
+    {t:'pts',v:25,arrow:true,sf:0.5,ef:0.66666667},
+    {t:'pts',v:10,arrow:true,sf:0.66666667,ef:0.83333333},
+    {t:'sp',v:20,n:'LOYALTY',sf:0.83333333,ef:1.0},
+  ]}}
+];
+// Rebuild SP_ALL from active SP_QUADS
+function spRebuildAll(){
+  SP_ALL.length=0;
+  SP_QUADS.forEach((q,qi)=>q.segs.forEach(s=>SP_ALL.push({qi,...s,color:q.color})));
+}
 const SP_ALL=[];
-SP_QUADS.forEach((q,qi)=>q.segs.forEach(s=>SP_ALL.push({qi,...s,color:q.color})));
+spRebuildAll();
 // Max points per spin ring (spin 4 = 100 fixed, handled separately)
 const SP_SPIN_MAX=[10,25,75,100];
+function spGetCaps(){ const c=(D&&D.spinCaps)||{}; return [c.spin1||10,c.spin2||25,c.spin3||75,c.spin4||100]; }
 // Scale a segment's raw value down to the current spin's cap
-function spCapVal(rawVal){ return Math.min(rawVal, SP_SPIN_MAX[Math.min(spSpinNum,2)]); }
+function spCapVal(rawVal){ const caps=spGetCaps(); return Math.min(rawVal, caps[Math.min(spSpinNum,2)]); }
 const SP_QS=[-Math.PI/2,Math.PI,Math.PI/2,0],SP_QA=Math.PI/2;
 const SP_HEX={BLACK:'#1a1a1a',GOLD:'#ffe100',GREY:'#7a8d9e',PURPLE:'#9a6fd8'};
 // Special slice bg/text now derived per-segment from its quadrant color (see spDrawWheel)
@@ -6844,89 +7044,177 @@ function spPlayLand(type){
 // ── DRAW ────────────────────────────────────
 function spDrawWheel(ctx,angle,sz,hlSeg){
   if(!ctx) return;
-  const cx=sz/2,cy=sz/2,r=sz/2-7;
+  const cx=sz/2, cy=sz/2, r=sz/2-6, sc=sz/380;
+
+  // ── Background shadow under wheel ──
   ctx.clearRect(0,0,sz,sz);
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,0.7)';
+  ctx.shadowBlur=32*sc;
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle='#08080f'; ctx.fill();
+  ctx.restore();
+
+  // Segment base colors (richer than flat)
+  const SP_BASE={
+    BLACK:{fill:'#1e2130', mid:'#2a2f45', edge:'#12141f'},
+    GOLD: {fill:'#d4a800', mid:'#ffe44d', edge:'#a07800'},
+    GREY: {fill:'#6b7f94', mid:'#9ab0c4', edge:'#4a5a6a'},
+    PURPLE:{fill:'#6b2daa', mid:'#a05de0', edge:'#3d1265'},
+  };
+  const SP_SPEC_FILL={
+    BLACK:{fill:'#0d0f1a',mid:'#14182a',edge:'#08090f'},
+    GOLD: {fill:'#5a4200',mid:'#7a5e00',edge:'#3a2a00'},
+    GREY: {fill:'#2a3540',mid:'#3a4a58',edge:'#1a2028'},
+    PURPLE:{fill:'#230d45',mid:'#341460',edge:'#120625'},
+  };
+
   let si=0;
   SP_QUADS.forEach((q,qi)=>{
     const qBase=SP_QS[qi]+angle;
     q.segs.forEach(seg=>{
-      const a0=qBase+seg.sf*SP_QA,a1=qBase+seg.ef*SP_QA,am=(a0+a1)/2;
-      const isHL=(hlSeg!==undefined&&si===hlSeg);
-      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,a0,a1);ctx.closePath();
-      // Special slices use darkened version of their quadrant color
-      ctx.fillStyle=seg.t==='sp'?(SP_SPEC_BG[q.color]||'#0c0c1c'):SP_HEX[q.color];
-      ctx.fill();
-      ctx.strokeStyle=isHL?'rgba(232,200,64,0.9)':'rgba(0,0,0,0.55)';
-      ctx.lineWidth=isHL?3:1.2;ctx.stroke();
-      si++;
-      const sc=sz/380,lr=r*.63,lx=cx+Math.cos(am)*lr,ly=cy+Math.sin(am)*lr;
-      ctx.save();ctx.translate(lx,ly);ctx.rotate(am+Math.PI/2);
-      ctx.textAlign='center';ctx.textBaseline='middle';
+      const a0=qBase+seg.sf*SP_QA, a1=qBase+seg.ef*SP_QA, am=(a0+a1)/2;
+      const isHL=(hlSeg!==undefined && si===hlSeg);
+      const palette=seg.t==='sp'?(SP_SPEC_FILL[q.color]||SP_SPEC_FILL.BLACK):(SP_BASE[q.color]||SP_BASE.BLACK);
+
+      // Radial gradient per segment — center bright, edge dark
+      const gmx=cx+Math.cos(am)*r*0.5, gmy=cy+Math.sin(am)*r*0.5;
+      const grad=ctx.createRadialGradient(gmx,gmy,r*0.05,cx,cy,r);
+      grad.addColorStop(0, palette.mid);
+      grad.addColorStop(0.55, palette.fill);
+      grad.addColorStop(1, palette.edge);
+
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,a0,a1); ctx.closePath();
+      ctx.fillStyle=grad; ctx.fill();
+
+      // Thin divider lines between segments
+      ctx.strokeStyle='rgba(0,0,0,0.75)'; ctx.lineWidth=1.5*sc; ctx.stroke();
+
+      // Highlight overlay on landed segment
+      if(isHL){
+        ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,a0,a1); ctx.closePath();
+        ctx.fillStyle='rgba(232,200,64,0.18)'; ctx.fill();
+        ctx.strokeStyle='rgba(232,200,64,0.9)'; ctx.lineWidth=3*sc; ctx.stroke();
+      }
+
+      // ── Label ──
+      const lr=r*0.64, lx=cx+Math.cos(am)*lr, ly=cy+Math.sin(am)*lr;
+      ctx.save(); ctx.translate(lx,ly); ctx.rotate(am+Math.PI/2);
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+
       if(seg.t==='sp'){
-        ctx.fillStyle=SP_SPEC_TX[q.color]||'#aaaaaa';
-        ctx.font='bold '+Math.round(7*sc)+'px "DM Mono",monospace';
-        ctx.fillText(seg.n,0,0);
-      } else {
-        // GOLD and GREY are light, need dark text. BLACK is now true black, needs white.
+        // Special segment — icon + name stacked
         const lt=q.color==='GOLD'||q.color==='GREY';
-        ctx.fillStyle=lt?'#111':'#fff';
-        ctx.font='bold '+Math.round(13*sc)+'px "Fraunces",serif';
+        const txColor=lt?'rgba(255,230,100,0.9)':'rgba(200,170,255,0.92)';
+        ctx.shadowColor='rgba(0,0,0,0.8)'; ctx.shadowBlur=4;
+        ctx.fillStyle=txColor;
+        ctx.font='bold '+Math.round(6.5*sc)+'px "DM Mono",monospace';
+        ctx.fillText(seg.n,0,0);
+        ctx.shadowBlur=0;
+      } else {
+        const lt=q.color==='GOLD'||q.color==='GREY';
+        const txColor=lt?'#111111':'#ffffff';
         const displayVal=typeof spSpinNum!=='undefined'?spCapVal(seg.v):seg.v;
+        // Drop shadow on text for legibility
+        ctx.shadowColor='rgba(0,0,0,0.6)'; ctx.shadowBlur=5*sc;
+        ctx.fillStyle=txColor;
+        ctx.font='bold '+Math.round(14*sc)+'px "Fraunces",serif';
         ctx.fillText(displayVal,0,0);
         if(seg.arrow){
-          ctx.fillStyle=lt?'rgba(0,0,0,.55)':'rgba(255,255,255,.75)';
-          ctx.font='bold '+Math.round(11*sc)+'px sans-serif';
-          ctx.fillText('\u279C',0,Math.round(15*sc));
+          ctx.font=Math.round(10*sc)+'px sans-serif';
+          ctx.fillStyle=lt?'rgba(0,0,0,0.5)':'rgba(255,255,255,0.6)';
+          ctx.fillText('➜',0,Math.round(14*sc));
         }
+        ctx.shadowBlur=0;
       }
       ctx.restore();
+      si++;
     });
-    ctx.beginPath();ctx.moveTo(cx,cy);
-    ctx.lineTo(cx+Math.cos(qBase)*r,cy+Math.sin(qBase)*r);
-    ctx.strokeStyle='rgba(0,0,0,.85)';ctx.lineWidth=3.5;ctx.stroke();
+
+    // Bold quadrant divider lines
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+Math.cos(qBase)*r, cy+Math.sin(qBase)*r);
+    ctx.strokeStyle='rgba(0,0,0,0.95)'; ctx.lineWidth=4*sc; ctx.stroke();
+    // Gold accent on dividers
+    ctx.beginPath(); ctx.moveTo(cx+Math.cos(qBase)*r*0.18,cy+Math.sin(qBase)*r*0.18);
+    ctx.lineTo(cx+Math.cos(qBase)*r, cy+Math.sin(qBase)*r);
+    ctx.strokeStyle='rgba(232,200,64,0.25)'; ctx.lineWidth=1.5*sc; ctx.stroke();
   });
-  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.strokeStyle='rgba(232,200,64,.3)';ctx.lineWidth=4;ctx.stroke();
-  // Highlight glow for landed segment
+
+  // ── Outer rim — triple ring ──
+  // Outer dark ring
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.strokeStyle='rgba(0,0,0,0.9)'; ctx.lineWidth=5*sc; ctx.stroke();
+  // Gold accent ring
+  ctx.beginPath(); ctx.arc(cx,cy,r-3*sc,0,Math.PI*2);
+  ctx.strokeStyle='rgba(232,200,64,0.6)'; ctx.lineWidth=2*sc; ctx.stroke();
+  // Inner subtle highlight
+  ctx.beginPath(); ctx.arc(cx,cy,r-6*sc,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=1*sc; ctx.stroke();
+
+  // ── Glow rim on highlight ──
   if(hlSeg!==undefined){
-    let si2=0;
-    SP_QUADS.forEach((q,qi)=>{
-      const qBase=SP_QS[qi]+angle;
-      q.segs.forEach(seg=>{
-        if(si2===hlSeg){
-          const a0=qBase+seg.sf*SP_QA,a1=qBase+seg.ef*SP_QA;
-          ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,a0,a1);ctx.closePath();
-          ctx.strokeStyle='#e8c840';ctx.lineWidth=4;ctx.stroke();
-          ctx.fillStyle='rgba(232,200,64,0.15)';ctx.fill();
-        }
-        si2++;
-      });
-    });
+    ctx.save();
+    ctx.shadowColor='rgba(232,200,64,0.7)';
+    ctx.shadowBlur=24*sc;
+    ctx.beginPath(); ctx.arc(cx,cy,r-2*sc,0,Math.PI*2);
+    ctx.strokeStyle='rgba(232,200,64,0.4)'; ctx.lineWidth=3*sc; ctx.stroke();
+    ctx.restore();
   }
-  ctx.beginPath();ctx.arc(cx,cy,Math.round(20*sz/380),0,Math.PI*2);
-  ctx.fillStyle='#06060f';ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=2;ctx.stroke();
-  ctx.beginPath();ctx.arc(cx,cy,Math.round(6*sz/380),0,Math.PI*2);
-  ctx.fillStyle='#e8c840';ctx.fill();
-  // Show landed value in center when highlighted
+
+  // ── Hub ──
+  // Outer hub ring
+  const hubR=Math.round(24*sc);
+  const hubGrad=ctx.createRadialGradient(cx-hubR*0.3,cy-hubR*0.3,0,cx,cy,hubR);
+  hubGrad.addColorStop(0,'#2a2a3a');
+  hubGrad.addColorStop(1,'#07070f');
+  ctx.beginPath(); ctx.arc(cx,cy,hubR,0,Math.PI*2);
+  ctx.fillStyle=hubGrad; ctx.fill();
+  ctx.strokeStyle='rgba(232,200,64,0.5)'; ctx.lineWidth=2*sc; ctx.stroke();
+
+  // Inner hub glow dot
+  const dotR=Math.round(7*sc);
+  const dotGrad=ctx.createRadialGradient(cx,cy,0,cx,cy,dotR);
+  dotGrad.addColorStop(0,'#fff8b0');
+  dotGrad.addColorStop(0.4,'#e8c840');
+  dotGrad.addColorStop(1,'rgba(232,200,64,0)');
+  ctx.beginPath(); ctx.arc(cx,cy,dotR,0,Math.PI*2);
+  ctx.fillStyle=dotGrad; ctx.fill();
+
+  // ── Center label on land ──
   if(hlSeg!==undefined&&hlSeg>=0&&hlSeg<SP_ALL.length){
     const hs=SP_ALL[hlSeg];
     const lbl=hs.n?hs.n:String(hs.v);
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillStyle='#e8c840';
-    ctx.font='bold '+Math.round(26*sz/380)+'px "Fraunces",serif';
+    ctx.save();
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(232,200,64,0.9)'; ctx.shadowBlur=18*sc;
+    ctx.fillStyle='#ffe060';
+    ctx.font='bold '+Math.round(22*sc)+'px "Fraunces",serif';
     ctx.fillText(lbl,cx,cy);
+    ctx.restore();
   }
-  // Pointer: long gold line unambiguously pointing at -PI/2
+
+  // ── Pointer — premium needle ──
   const pw=typeof spPointerWobble!=='undefined'?spPointerWobble:0;
   const pA=-Math.PI/2+pw;
-  const sc2=sz/380;
-  const pOuter={x:cx+Math.cos(pA)*(r+5*sc2), y:cy+Math.sin(pA)*(r+5*sc2)};
-  const pInner={x:cx+Math.cos(pA)*r*0.42,    y:cy+Math.sin(pA)*r*0.42};
-  ctx.beginPath();ctx.moveTo(pOuter.x,pOuter.y);ctx.lineTo(pInner.x,pInner.y);
-  ctx.strokeStyle='#e8c840';ctx.lineWidth=4*sc2;ctx.lineCap='round';ctx.stroke();
-  ctx.beginPath();ctx.arc(pInner.x,pInner.y,5*sc2,0,Math.PI*2);
-  ctx.fillStyle='#e8c840';ctx.fill();
+  const pTip={x:cx+Math.cos(pA)*(r+4*sc), y:cy+Math.sin(pA)*(r+4*sc)};
+  const pBase=r*0.36;
+  const pL={x:cx+Math.cos(pA+Math.PI/2)*6*sc+Math.cos(pA)*pBase, y:cy+Math.sin(pA+Math.PI/2)*6*sc+Math.sin(pA)*pBase};
+  const pR={x:cx+Math.cos(pA-Math.PI/2)*6*sc+Math.cos(pA)*pBase, y:cy+Math.sin(pA-Math.PI/2)*6*sc+Math.sin(pA)*pBase};
+  // Needle shadow
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,0.8)'; ctx.shadowBlur=10*sc;
+  ctx.beginPath(); ctx.moveTo(pTip.x,pTip.y); ctx.lineTo(pL.x,pL.y); ctx.lineTo(pR.x,pR.y); ctx.closePath();
+  const needleGrad=ctx.createLinearGradient(pTip.x,pTip.y,pL.x,pL.y);
+  needleGrad.addColorStop(0,'#fff8b0');
+  needleGrad.addColorStop(0.3,'#e8c840');
+  needleGrad.addColorStop(1,'#a07800');
+  ctx.fillStyle=needleGrad; ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,0.6)'; ctx.lineWidth=1*sc; ctx.stroke();
+  ctx.restore();
+  // Needle base cap
+  ctx.beginPath(); ctx.arc(cx+Math.cos(pA)*pBase,cy+Math.sin(pA)*pBase,5*sc,0,Math.PI*2);
+  ctx.fillStyle='#e8c840'; ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,0.5)'; ctx.lineWidth=1*sc; ctx.stroke();
 }
 
 let spPointerWobble=0;
@@ -6936,6 +7224,9 @@ function sDoSpin(){
   if(spSpinning) return;
   if(!spSquad) return; // must select squad first
   spSquadLocked=true; // lock squad for this user's session
+  // Swap segment layout based on spin number
+  SP_QUADS=SP_QUADS_BY_SPIN[Math.min(spSpinNum,3)];
+  spRebuildAll();
   spUpdSquadBtns();
   spSetIntensity(spSpinNum+1); // ramp up background intensity each spin
   spInitAudio();
@@ -7074,7 +7365,7 @@ function spLand(seg){
       spSetResult('AUTO \u2014 0 pts','No points. Advance to next spin!','auto');
       spPipDone();
       // Only advance one spin (not skip to final)
-      if(spSpinNum<3){ spSpinNum++; spUpdPips(); }
+      if(spSpinNum<3){ spSpinNum++; spUpdPips(); SP_QUADS=SP_QUADS_BY_SPIN[Math.min(spSpinNum,3)]; spRebuildAll(); }
       else { setTimeout(spShowSave,1500); return; } // already on last spin, end
       setTimeout(sDoSpin,1800);return;
     } else if(seg.n==='LOYALTY'){
@@ -7161,6 +7452,7 @@ function spShowSave(){
 }
 function sResetSpin(){
   if(spSpinning){cancelAnimationFrame(spRaf);spSpinning=false;}
+  SP_QUADS=SP_QUADS_BY_SPIN[0]; spRebuildAll();
   spSquad=null; spSquadLocked=false;
   spSpinNum=0;spBanked=0;spAngle=0;spLog=[];spSessTotal=0;spLastTickAngle=0;
   spHideIntensity();
@@ -7395,6 +7687,26 @@ function spTVResult(){
   if(tvs&&rs) tvs.textContent=rs.textContent;
 }
 
+async function saveBranding(){
+  if(!D.branding) D.branding={};
+  D.branding.schoolName=document.getElementById('brandSchoolName')?.value.trim()||'Ephrata Middle School';
+  D.branding.tagline=document.getElementById('brandTagline')?.value.trim()||'Mountaineers';
+  D.branding.logoUrl=document.getElementById('brandLogoUrl')?.value.trim()||'';
+  await save(); flash('brandOk'); applyBranding(); logActivity('Updated site branding');
+}
+async function saveSquadNames(){
+  if(!D.squadNames) D.squadNames={BLACK:'Black',GOLD:'Gold',GREY:'Grey',PURPLE:'Purple'};
+  SQUADS.forEach(sq=>{ const el=document.getElementById('sqName'+sq); if(el&&el.value.trim()) D.squadNames[sq]=el.value.trim(); });
+  await save(); flash('sqNameOk'); renderAll(); logActivity('Updated squad names');
+}
+async function saveSpinCaps(){
+  if(!D.spinCaps) D.spinCaps={spin1:10,spin2:25,spin3:75,spin4:100};
+  D.spinCaps.spin1=parseInt(document.getElementById('spinCap1')?.value)||10;
+  D.spinCaps.spin2=parseInt(document.getElementById('spinCap2')?.value)||25;
+  D.spinCaps.spin3=parseInt(document.getElementById('spinCap3')?.value)||75;
+  D.spinCaps.spin4=parseInt(document.getElementById('spinCap4')?.value)||100;
+  await save(); flash('spinCapOk'); logActivity('Updated spin caps');
+}
 const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePhoto,
   __scrollMindset:scrollMindset,previewPhoto,openLogin,tryLogin,close1,
   requireAdmin,openAddEvent,openAdmin,aTab,addEvent,saveMetrics,
@@ -7421,6 +7733,7 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   saveKickoffContent,loadKickoffEditor,
   isImageUrl,validatePhotoUrl,
   renderChamps,renderMayhem,renderKickoff,
+  saveBranding,saveSquadNames,saveSpinCaps,applyBranding,sqName,
   renderGallery,renderStaffLinks,
   renderNavOrder,saveNavOrder};
 Object.entries(_fns).forEach(([k,v])=>{ window[k]=v; window['_real_'+k]=v; });
