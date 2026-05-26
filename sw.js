@@ -14,16 +14,24 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Network first for API calls, cache first for static assets
-  if (e.request.url.includes('supabase.co') || e.request.url.includes('jsdelivr') || e.request.url.includes('fonts')) {
-    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-  } else {
-    e.respondWith(
-      caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
-        return res;
-      }))
-    );
+  const url = e.request.url;
+  // Skip non-http requests (chrome-extension etc) and POST/non-GET requests
+  if (!url.startsWith('http') || e.request.method !== 'GET') return;
+  // Network only for API calls
+  if (url.includes('supabase.co') || url.includes('fonts.googleapis') || url.includes('fonts.gstatic')) {
+    e.respondWith(fetch(e.request).catch(() => new Response('', {status: 503})));
+    return;
   }
+  // Cache first for static assets
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(res => {
+        if (!res || res.status !== 200 || res.type === 'opaque') return res;
+        const clone = res.clone();
+        caches.open(CACHE).then(c => { try { c.put(e.request, clone); } catch(err) {} });
+        return res;
+      }).catch(() => caches.match('/index.html'));
+    })
+  );
 });
