@@ -7331,7 +7331,12 @@ function spDrawWheel(ctx,angle,sz,hlSeg){
   dotGrad.addColorStop(0,'#fff8b0'); dotGrad.addColorStop(0.4,'#e8c840'); dotGrad.addColorStop(1,'rgba(232,200,64,0)');
   ctx.beginPath(); ctx.arc(cx,cy,dotR,0,Math.PI*2); ctx.fillStyle=dotGrad; ctx.fill();
   if(hlSeg!==undefined&&hlSeg>=0&&hlSeg<SP_ALL.length){
-    const hs=SP_ALL[hlSeg]; const lbl=hs.n?hs.n:String(hs.v);
+    const hs=SP_ALL[hlSeg];
+    const _sn=window._spSpinNumAtStart!==undefined?window._spSpinNumAtStart:spSpinNum;
+    let lbl;
+    if(_sn===3){ lbl=(hs.color===spSquad)?'100':'0'; }
+    else if(hs.t==='sp'){ lbl=hs.n||''; }
+    else { lbl=String(spCapVal(hs.v)); }
     ctx.save(); ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.shadowColor='rgba(232,200,64,0.9)'; ctx.shadowBlur=18*sc;
     ctx.fillStyle='#ffe060'; ctx.font='bold '+Math.round(22*sc)+'px "Fraunces",serif';
@@ -7523,17 +7528,10 @@ function spLand(seg){
       spPipDone();setTimeout(spShowSave,1500);
     }
   } else {
-    const colorOk=isSpin4?(seg.color===spSquad):true;
-    const pts=isSpin4?(colorOk?100:0):spCapVal(seg.v);
+    // Spin 4 handled above — only spins 1-3 reach here
+    const pts=spCapVal(seg.v);
     if(pts>0){spBanked+=pts;spUpdBanked();}
-    if(isSpin4){
-      if(pts>0) spPlayLand('earn'); else spPlayLand('zero');
-      if(cv) cv.style.boxShadow=pts>0?'0 0 65px rgba(74,222,128,.25)':'0 0 50px rgba(248,113,113,.2)';
-      spSetResult(pts>0?'+100 pts \uD83C\uDF89':'0 pts \u2014 wrong color',pts>0?'Squad color on Spin 4 — 100 points!':'Wrong color. 0 points.',pts>0?'earn':'zero');
-      spPipDone();
-      if(pts>0){ setTimeout(()=>spShowCelebration(spSquad),400); }
-      setTimeout(spShowSave,pts>0?4500:1500);
-    } else if(seg.arrow){
+    if(seg.arrow){
       // THE TEMPTATION
       spPlayLand('earn');
       if(cv) cv.style.boxShadow='0 0 65px rgba(74,222,128,.25)';
