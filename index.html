@@ -1004,9 +1004,17 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   .mini-board { gap:8px; }
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
 </head>
 <body>
+<div id="appLoadingScreen" style="position:fixed;inset:0;background:#1c1917;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+  <div style="font-family:'Fraunces',serif;font-size:32px;font-weight:900;color:#ffe44d">Clash <em style='color:#bb8ef5'>of</em> Classes</div>
+  <div style="font-family:'DM Mono',monospace;font-size:12px;color:rgba(255,255,255,0.4);letter-spacing:2px">LOADING...</div>
+  <div style="width:48px;height:4px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden">
+    <div style="height:100%;background:#ffe44d;border-radius:4px;animation:ldbar 1.2s ease-in-out infinite"></div>
+  </div>
+</div>
+<style>@keyframes ldbar{0%{width:0%;margin-left:0}50%{width:100%}100%{width:0%;margin-left:100%}}</style>
 
 <!-- ═══ NAV ═══ -->
 <nav class="nav">
@@ -3236,10 +3244,13 @@ window.toggleMode = function(){
   }
 })();
 
-const sb = window.supabase.createClient(
-  'https://yvutgnpgnthvnonhgdux.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak'
-);
+// Wait for Supabase UMD to load before creating client
+function _waitForSupabase(cb, attempts=0){
+  if(window.supabase && window.supabase.createClient){ cb(); return; }
+  if(attempts > 50){ console.error('Supabase failed to load'); return; }
+  setTimeout(()=>_waitForSupabase(cb, attempts+1), 100);
+}
+let sb = null;
 // Unique session ID — used to ignore our own Realtime echoes
 const SESSION_ID = Math.random().toString(36).slice(2);
 let _lastSaveId = null; // set before each save, cleared after Realtime confirms
@@ -3629,9 +3640,18 @@ async function sbLoad(){
   }
 }
 
-(async function(){
+_waitForSupabase(()=>{
+  sb = window.supabase.createClient(
+    'https://yvutgnpgnthvnonhgdux.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak'
+  );
+  window.sb=sb;
+  (async function(){
   await sbLoad();
   fbReady=true;
+  // Hide loading screen
+  const ld=document.getElementById('appLoadingScreen');
+  if(ld){ ld.style.opacity='0'; ld.style.transition='opacity 0.4s'; setTimeout(()=>ld.remove(),400); }
   // PWA install prompt
   window.addEventListener('beforeinstallprompt',e=>{
     e.preventDefault(); window._pwaPrompt=e;
@@ -3694,7 +3714,8 @@ async function sbLoad(){
         } catch(e){ console.error('Realtime handler error:',e); }
       })
     .subscribe();
-})();
+  })();
+}); // end _waitForSupabase
 
 
 // ── CALCS ──
