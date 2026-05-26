@@ -1004,7 +1004,6 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   .mini-board { gap:8px; }
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
 </head>
 <body>
 <div id="appLoadingScreen" style="position:fixed;inset:0;background:#1c1917;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
@@ -3244,13 +3243,61 @@ window.toggleMode = function(){
   }
 })();
 
-// Wait for Supabase UMD to load before creating client
-function _waitForSupabase(cb, attempts=0){
-  if(window.supabase && window.supabase.createClient){ cb(); return; }
-  if(attempts > 50){ console.error('Supabase failed to load'); return; }
-  setTimeout(()=>_waitForSupabase(cb, attempts+1), 100);
-}
-let sb = null;
+// ── Supabase REST client (no SDK — works on all devices) ──
+const SB_URL='https://yvutgnpgnthvnonhgdux.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak';
+const SB_HEADERS={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'};
+
+// Minimal sb object matching the SDK interface used in this app
+const sb = {
+  from: (table) => ({
+    select: (cols) => ({
+      eq: (col, val) => ({
+        single: async () => {
+          const r = await fetch(SB_URL+'/rest/v1/'+table+'?select='+cols+'&'+col+'=eq.'+encodeURIComponent(val)+'&limit=1',{headers:SB_HEADERS});
+          if(!r.ok) return {data:null,error:{code:''+r.status,message:await r.text()}};
+          const arr = await r.json();
+          return {data:arr[0]||null, error:null};
+        }
+      })
+    }),
+    upsert: async (body) => {
+      const r = await fetch(SB_URL+'/rest/v1/'+table,{method:'POST',headers:{...SB_HEADERS,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});
+      if(!r.ok) return {error:{message:await r.text()}};
+      return {error:null};
+    }
+  }),
+  channel: (name) => {
+    // Realtime via WebSocket
+    let _handlers=[];
+    const _ch = {
+      on: (event, filter, handler) => { _handlers.push({event,filter,handler}); return _ch; },
+      subscribe: () => {
+        try{
+          const wsUrl = SB_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+SB_KEY+'&vsn=1.0.0';
+          const ws = new WebSocket(wsUrl);
+          ws.onopen = () => {
+            ws.send(JSON.stringify({topic:'realtime:'+name,event:'phx_join',payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:_handlers.map(h=>h.filter)}},ref:'1'}));
+          };
+          ws.onmessage = (e) => {
+            try{
+              const msg=JSON.parse(e.data);
+              if(msg.event==='postgres_changes'||msg.payload?.data?.type==='UPDATE'){
+                const payload = msg.payload?.data || msg.payload;
+                _handlers.forEach(h=>{if(h.handler) h.handler(payload);});
+              }
+            }catch(err){}
+          };
+          ws.onerror = () => {};
+          ws.onclose = () => { setTimeout(()=>_ch.subscribe(),3000); }; // auto-reconnect
+        }catch(e){}
+        return _ch;
+      }
+    };
+    return _ch;
+  }
+};
+window.sb=sb;
 // Unique session ID — used to ignore our own Realtime echoes
 const SESSION_ID = Math.random().toString(36).slice(2);
 let _lastSaveId = null; // set before each save, cleared after Realtime confirms
@@ -3640,13 +3687,7 @@ async function sbLoad(){
   }
 }
 
-_waitForSupabase(()=>{
-  sb = window.supabase.createClient(
-    'https://yvutgnpgnthvnonhgdux.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak'
-  );
-  window.sb=sb;
-  (async function(){
+(async function(){
   await sbLoad();
   fbReady=true;
   // Hide loading screen
@@ -3714,8 +3755,7 @@ _waitForSupabase(()=>{
         } catch(e){ console.error('Realtime handler error:',e); }
       })
     .subscribe();
-  })();
-}); // end _waitForSupabase
+})();
 
 
 // ── CALCS ──
