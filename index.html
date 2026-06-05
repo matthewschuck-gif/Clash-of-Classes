@@ -1003,6 +1003,51 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   .page { padding:0 16px 60px; }
   .mini-board { gap:8px; }
 }
+
+/* ── GROWTH / TRAIL JOURNAL PANEL ── */
+.tj-panel { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px; margin:20px 0; }
+.tj-panel-head { display:flex; align-items:center; gap:10px; margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.tj-panel-head h3 { font-family:'Fraunces',serif; font-size:17px; font-weight:700; color:var(--text); margin:0; }
+.tj-badge { background:rgba(74,222,128,.12); color:#4ade80; font-size:.65rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; padding:3px 9px; border-radius:20px; font-family:'DM Mono',monospace; }
+.tj-badge-panel { background:var(--purple-dim); color:var(--purple-lt); font-size:.65rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; padding:3px 9px; border-radius:20px; font-family:'DM Mono',monospace; }
+.tj-stat-row { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:20px; }
+@media(max-width:700px){ .tj-stat-row { grid-template-columns:repeat(3,1fr); } }
+.tj-stat { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px; }
+.tj-stat-val { font-family:'Fraunces',serif; font-size:1.5rem; font-weight:900; color:var(--text); margin-bottom:4px; line-height:1; }
+.tj-stat-lbl { font-family:'DM Mono',monospace; font-size:.62rem; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.07em; }
+.tj-section-head { font-family:'DM Mono',monospace; font-size:.68rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--text3); margin:18px 0 10px; display:flex; align-items:center; gap:8px; }
+.tj-section-head::after { content:''; flex:1; height:1px; background:var(--border); }
+.tj-squad-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:20px; }
+@media(max-width:600px){ .tj-squad-grid { grid-template-columns:1fr; } }
+.tj-squad-card { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:16px; transition:border-color .2s; }
+.tj-squad-card:hover { border-color:var(--border2); }
+.tj-sq-head { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+.tj-sq-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.tj-sq-name { font-family:'Fraunces',serif; font-weight:700; font-size:.9rem; }
+.tj-sq-total { margin-left:auto; font-size:.72rem; font-weight:700; color:var(--text3); font-family:'DM Mono',monospace; }
+.tj-sq-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.tj-sq-row-lbl { font-family:'DM Mono',monospace; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text3); width:80px; flex-shrink:0; }
+.tj-bar-track { flex:1; height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
+.tj-bar-fill { height:100%; border-radius:3px; transition:width .6s ease; }
+.tj-sq-row-val { font-family:'DM Mono',monospace; font-size:.76rem; font-weight:700; color:var(--text2); min-width:28px; text-align:right; }
+.tj-panel-badge { display:inline-flex; align-items:center; gap:4px; background:var(--purple-dim); border:1px solid rgba(157,95,204,.3); color:var(--purple-lt); font-family:'DM Mono',monospace; font-size:.65rem; font-weight:700; padding:3px 8px; border-radius:20px; margin-top:8px; }
+.tj-bonus { background:rgba(74,222,128,.06); border:1px solid rgba(74,222,128,.25); border-radius:9px; padding:12px 14px; margin-top:16px; font-size:.82rem; color:#4ade80; line-height:1.6; display:flex; align-items:flex-start; gap:10px; }
+.tj-bonus-icon { font-size:1.2rem; flex-shrink:0; }
+.frd-feed { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:14px; margin-top:4px; }
+.frd-entry { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:.8rem; color:var(--text2); line-height:1.5; }
+.frd-entry:last-child { border-bottom:none; }
+.frd-icon { font-size:1rem; flex-shrink:0; margin-top:1px; }
+.frd-squad { font-weight:700; }
+.frd-time { font-family:'DM Mono',monospace; font-size:.65rem; color:var(--text3); margin-left:auto; white-space:nowrap; }
+.tj-refresh { background:none; border:1px solid var(--border2); border-radius:7px; color:var(--text3); font-family:'DM Mono',monospace; font-size:.72rem; padding:5px 12px; cursor:pointer; margin-left:auto; transition:all .15s; }
+.tj-refresh:hover { border-color:rgba(74,222,128,.4); color:#4ade80; }
+.tj-loading { color:var(--text3); font-family:'DM Mono',monospace; font-size:.82rem; padding:10px 0; }
+.tj-threshold-row { display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--border); font-size:.78rem; }
+.tj-threshold-row:last-child { border-bottom:none; }
+.tj-threshold-label { color:var(--text2); }
+.tj-threshold-val { font-weight:700; font-family:'DM Mono',monospace; font-size:.72rem; }
+.tj-threshold-val.earned { color:#4ade80; }
+.tj-threshold-val.pending { color:var(--text3); }
 </style>
 </head>
 <body>
@@ -2258,6 +2303,15 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   <div id="sqd-PURPLE"></div>
 </div>
 
+<!-- GROWTH / COMMUNITY CULTURE -->
+<div class="page" id="page-growth">
+  <div class="page-hero">
+    <h1 class="page-title">Community <span>Culture</span></h1>
+    <div class="page-subtitle">Trail Journal · Trailback Panel · Growth Points</div>
+  </div>
+  <div id="growth-panel-wrap"></div>
+</div>
+
 <!-- GALLERY -->
 <div class="page" id="page-gallery">
   <div class="page-hero">
@@ -3373,6 +3427,7 @@ const PAGES_DEF = [
   { id:'gallery',    icon:'📸', label:'Gallery'        },
   { id:'staff',      icon:'👤', label:'Staff'          },
   { id:'spin',       icon:'🎰', label:'Spin!'          },
+  { id:'growth',     icon:'🏔️', label:'Growth'         },
 ];
 
 const TRAITS = [
@@ -3844,6 +3899,7 @@ function goTo(id){
   else if(id==='wheel')       renderWheel();
   else if(id==='traitdough')  renderTraitDough();
   else if(id==='sotm')        renderSotm();
+  else if(id==='growth')    renderGrowth();
   else if(id==='squads')      renderSquads();
   else if(id==='gallery')     renderGallery();
   else if(id==='tracker'){ renderStrip(); renderTable(); renderMetrics(); renderTimeline(); renderSnapshots(); renderPoll(); renderCatChart(); renderSeasonCal(); }
@@ -4804,6 +4860,7 @@ function renderAll(){
   if(currentPage==='wheel') renderWheel();
   if(currentPage==='traitdough') renderTraitDough();
   if(currentPage==='sotm') renderSotm();
+  if(currentPage==='growth') renderGrowth();
 }
 
 function renderHomeText(){
@@ -5674,6 +5731,142 @@ function renderTraitDough(){
   const links=D.links.traitdough||[];
   const el=document.getElementById('traitdoughLinks');
   if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map(l=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via Admin → Links.</div>'}`;
+}
+
+function renderGrowth(){
+  const wrap=document.getElementById('growth-panel-wrap');
+  if(!wrap) return;
+  if(wrap._loaded) return;
+  wrap._loaded=true;
+  wrap.innerHTML=`
+  <div class="tj-panel" id="tj-panel">
+    <div class="tj-panel-head">
+      <span style="font-size:1.4rem">🏔️</span>
+      <h3>Community Culture Stats</h3>
+      <span class="tj-badge">Trail Journal</span>
+      <span class="tj-badge-panel">Trailback Panel</span>
+      <button class="tj-refresh" onclick="loadTJStats()">↻ Refresh</button>
+    </div>
+    <div class="tj-stat-row">
+      <div class="tj-stat"><div class="tj-stat-val" id="tj-total">—</div><div class="tj-stat-lbl">Reflections</div></div>
+      <div class="tj-stat"><div class="tj-stat-val" id="tj-high" style="color:#4ade80">—</div><div class="tj-stat-lbl">High Insight</div></div>
+      <div class="tj-stat"><div class="tj-stat-val" id="tj-panels" style="color:var(--purple-lt)">—</div><div class="tj-stat-lbl">Panels</div></div>
+      <div class="tj-stat"><div class="tj-stat-val" id="tj-pts-total" style="color:var(--gold-soft)">—</div><div class="tj-stat-lbl">Growth Pts</div></div>
+      <div class="tj-stat"><div class="tj-stat-val" id="tj-week" style="color:var(--purple-lt)">—</div><div class="tj-stat-lbl">This Week</div></div>
+      <div class="tj-stat"><div class="tj-stat-val" id="tj-bonus-total" style="color:var(--gold-soft)">—</div><div class="tj-stat-lbl">Bonus Pts</div></div>
+    </div>
+    <div class="tj-section-head">Per-Squad Breakdown</div>
+    <div class="tj-squad-grid" id="tj-squad-grid"><div class="tj-loading">Loading squad data…</div></div>
+    <div class="tj-section-head">Community Bonus Thresholds</div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px" id="tj-thresholds"><div class="tj-loading">Loading…</div></div>
+    <div class="tj-section-head">Recent Growth Moments</div>
+    <div class="frd-feed" id="frd-feed"><div class="tj-loading">Loading recent moments…</div></div>
+    <div class="tj-bonus" id="tj-bonus-note" style="display:none">
+      <span class="tj-bonus-icon">🫶</span>
+      <span id="tj-bonus-text"></span>
+    </div>
+  </div>`;
+
+  const TJ_URL  = 'https://kduypmpqkirvjkbnmuha.supabase.co';
+  const TJ_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkdXlwbXBxa2lydmprYm5tdWhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjksImV4cCI6MjA5NTk1MjY2OX0.nyjvSvfqsdCJIghlmrwXvL0z1dK1dp2AznPD1CoSvJE';
+  const COC_URL  = 'https://yvutgnpgnthvnonhgdux.supabase.co';
+  const COC_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak';
+  const SQUADS_TJ = ['Gold','Grey','Black','Purple'];
+  const SQUAD_COLOR_TJ = { Gold:'var(--sq-gold)', Grey:'var(--sq-grey)', Black:'var(--sq-black)', Purple:'var(--sq-purple)' };
+  const SQUAD_BG_TJ    = { Gold:'#ffe100', Grey:'#99a8bb', Black:'#c5c9d1', Purple:'#bb8ef5' };
+  const BONUS_THRESHOLDS = [
+    { min:5,  pts:25,  label:'5 reflections' },
+    { min:10, pts:50,  label:'10 reflections' },
+    { min:25, pts:150, label:'25 reflections' },
+    { min:50, pts:300, label:'50 reflections' },
+  ];
+  function timeAgo(ts){ const d=Date.now()-ts,m=Math.floor(d/60000); if(m<1)return'just now'; if(m<60)return m+'m ago'; const h=Math.floor(m/60); if(h<24)return h+'h ago'; return Math.floor(h/24)+'d ago'; }
+
+  window.loadTJStats = async function(){
+    try{
+      const [reflRes,panelRes,cocRes] = await Promise.all([
+        fetch(TJ_URL+'/rest/v1/reflections?select=insight_level,clash_points_awarded,created_at,part3_json,panel_completed&limit=1000',{headers:{apikey:TJ_ANON,Authorization:'Bearer '+TJ_ANON}}),
+        fetch(TJ_URL+'/rest/v1/panel_sessions?select=clash_squad,created_at,status&limit=500',{headers:{apikey:TJ_ANON,Authorization:'Bearer '+TJ_ANON}}),
+        fetch(COC_URL+'/rest/v1/app_data?key=eq.coc&select=value',{headers:{apikey:COC_ANON,Authorization:'Bearer '+COC_ANON}}),
+      ]);
+      const reflections=await reflRes.json();
+      const panels=await panelRes.json();
+      const cocRows=await cocRes.json();
+      if(!Array.isArray(reflections)) return;
+      const coc=cocRows?.[0]?.value||{};
+      const total=reflections.length;
+      const highCount=reflections.filter(r=>r.insight_level==='High').length;
+      const panelCount=Array.isArray(panels)?panels.filter(p=>p.status==='complete').length:0;
+      const weekAgo=Date.now()-7*24*60*60*1000;
+      const weekCount=reflections.filter(r=>new Date(r.created_at).getTime()>weekAgo).length;
+      const squadTJPts={Gold:0,Grey:0,Black:0,Purple:0};
+      const squadPanelPts={Gold:0,Grey:0,Black:0,Purple:0};
+      const squadTJCount={Gold:0,Grey:0,Black:0,Purple:0};
+      const squadPanelCount={Gold:0,Grey:0,Black:0,Purple:0};
+      const squadHighCount={Gold:0,Grey:0,Black:0,Purple:0};
+      (coc.events||[]).forEach(evt=>{
+        if(!evt.pts||!evt.type) return;
+        SQUADS_TJ.forEach(sq=>{
+          const p=evt.pts[sq.toUpperCase()]||0; if(!p) return;
+          if(evt.type==='trail_journal'){ squadTJPts[sq]+=p; squadTJCount[sq]++; if(evt.name&&evt.name.includes('High')) squadHighCount[sq]++; }
+          else if(evt.type==='trailback_panel'){ squadPanelPts[sq]+=p; squadPanelCount[sq]++; }
+        });
+      });
+      let totalGrowthPts=0,totalBonusPts=0;
+      SQUADS_TJ.forEach(sq=>{ totalGrowthPts+=squadTJPts[sq]+squadPanelPts[sq]; const c=squadTJCount[sq]; BONUS_THRESHOLDS.forEach(t=>{if(c>=t.min)totalBonusPts+=t.pts;}); });
+      document.getElementById('tj-total').textContent=total;
+      document.getElementById('tj-high').textContent=highCount;
+      document.getElementById('tj-panels').textContent=panelCount;
+      document.getElementById('tj-pts-total').textContent=totalGrowthPts;
+      document.getElementById('tj-week').textContent=weekCount;
+      document.getElementById('tj-bonus-total').textContent=totalBonusPts||'—';
+      const grid=document.getElementById('tj-squad-grid');
+      const maxTJ=Math.max(...SQUADS_TJ.map(sq=>squadTJCount[sq]),1);
+      const maxHi=Math.max(...SQUADS_TJ.map(sq=>squadHighCount[sq]),1);
+      grid.innerHTML=SQUADS_TJ.map(sq=>{
+        const tjPts=squadTJPts[sq],panelPts=squadPanelPts[sq],tjCount=squadTJCount[sq],hiCount=squadHighCount[sq],panCount=squadPanelCount[sq];
+        const totalPts=tjPts+panelPts,hiPct=tjCount?Math.round((hiCount/tjCount)*100):0;
+        let bonus=0; BONUS_THRESHOLDS.forEach(t=>{if(tjCount>=t.min)bonus=t.pts;});
+        return '<div class="tj-squad-card">'
+          +'<div class="tj-sq-head"><div class="tj-sq-dot" style="background:'+SQUAD_BG_TJ[sq]+'"></div>'
+          +'<div class="tj-sq-name" style="color:'+SQUAD_COLOR_TJ[sq]+'">'+sq+'</div>'
+          +'<div class="tj-sq-total">'+totalPts+' pts total</div></div>'
+          +'<div class="tj-sq-row"><div class="tj-sq-row-lbl">Reflections</div><div class="tj-bar-track"><div class="tj-bar-fill" style="width:'+Math.round((tjCount/maxTJ)*100)+'%;background:'+SQUAD_BG_TJ[sq]+'"></div></div><div class="tj-sq-row-val">'+tjCount+'</div></div>'
+          +'<div class="tj-sq-row"><div class="tj-sq-row-lbl">High Insight</div><div class="tj-bar-track"><div class="tj-bar-fill" style="width:'+Math.round((hiCount/maxHi)*100)+'%;background:#4ade80"></div></div><div class="tj-sq-row-val" style="color:#4ade80">'+hiPct+'%</div></div>'
+          +'<div class="tj-sq-row"><div class="tj-sq-row-lbl">TJ Points</div><div class="tj-bar-track"><div class="tj-bar-fill" style="width:'+Math.min(100,tjPts*10)+'%;background:'+SQUAD_BG_TJ[sq]+'"></div></div><div class="tj-sq-row-val" style="color:'+SQUAD_COLOR_TJ[sq]+'">+'+tjPts+'</div></div>'
+          +(panCount>0?'<div class="tj-panel-badge">🏔️ '+panCount+' panel'+(panCount>1?'s':'')+' · +'+panelPts+' pts</div>':'')
+          +(bonus>0?'<div class="tj-panel-badge" style="background:rgba(255,225,0,.08);border-color:rgba(255,225,0,.25);color:var(--gold-soft);margin-top:4px">🎯 +'+bonus+' community bonus</div>':'')
+          +'</div>';
+      }).join('');
+      const thresh=document.getElementById('tj-thresholds');
+      thresh.innerHTML=BONUS_THRESHOLDS.map(t=>{
+        const earned=total>=t.min;
+        return '<div class="tj-threshold-row"><div class="tj-threshold-label">'+t.label+'</div>'
+          +'<div class="tj-threshold-val '+(earned?'earned':'pending')+'">'+(earned?'✓ +'+t.pts+' pts earned':(t.min-total)+' more needed')+'</div></div>';
+      }).join('')+'<div style="font-size:.72rem;color:var(--text3);margin-top:10px;font-family:\'DM Mono\',monospace">Community bonuses are awarded manually as a Growth event in the CoC admin panel.</div>';
+      const freudenLog=(coc.freudenLog||[]).slice(-10).reverse();
+      const feed=document.getElementById('frd-feed');
+      if(freudenLog.length){
+        feed.innerHTML=freudenLog.map(entry=>{
+          const icon=entry.type==='trailback_panel'?'🏔️':'🌱';
+          const color=SQUAD_BG_TJ[entry.squad]||'var(--text3)';
+          return '<div class="frd-entry"><span class="frd-icon">'+icon+'</span><span><span class="frd-squad" style="color:'+color+'">'+entry.squad+'</span> — '+entry.message+'</span><span class="frd-time">'+timeAgo(entry.ts)+'</span></div>';
+        }).join('');
+      } else {
+        feed.innerHTML='<div style="color:var(--text3);font-size:.8rem;padding:8px 0;font-family:\'DM Mono\',monospace">No growth moments recorded yet. Complete a Trail Journal or Trailback Panel to see entries here.</div>';
+      }
+      if(total>=BONUS_THRESHOLDS[0].min){
+        const maxT=BONUS_THRESHOLDS.filter(t=>total>=t.min).pop();
+        document.getElementById('tj-bonus-note').style.display='flex';
+        document.getElementById('tj-bonus-text').textContent='Community milestone reached: '+total+' reflections completed school-wide. Award the +'+maxT.pts+' community bonus manually as a Growth event.';
+      }
+    }catch(e){
+      console.error('Community stats error:',e);
+      const g=document.getElementById('tj-squad-grid');
+      if(g) g.innerHTML='<div style="color:#f87171;font-size:.8rem;font-family:\'DM Mono\',monospace">Could not load data. Check Supabase connection.</div>';
+    }
+  };
+  window.loadTJStats();
 }
 
 function renderSotm(){
@@ -7876,7 +8069,7 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   saveSquadColors,applyThemePreset,saveCustomTheme,printCertificate,undoLastEvent,markTraitDone,unmarkTraitDone,
   generateEmailDigest,copyEmailDigest,printSubGuide,showEventBreakdown,
   saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,saveHomeStats,
-  renderWheel,renderTraitDough,renderSotm,
+  renderWheel,renderTraitDough,renderSotm,renderGrowth,loadTJStats:function(){if(window.loadTJStats)window.loadTJStats();},
   openWheelSpinner,closeWheelSpinner,wDoSpin,wDoBank,wDoRisk,wSaveToTracker,wSetSq,
   spinAuth,spinLogout,spinSetSq,sDoSpin,sDoBank,sDoRisk,sSavePoints,sResetSpin,openSpinTV,closeSpinTV,spShowGivePicker,spConfirmGive,
   renderSpinPage,
