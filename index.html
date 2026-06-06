@@ -1004,7 +1004,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   .mini-board { gap:8px; }
 }
 
-/* -- GROWTH / TRAIL JOURNAL PANEL -- */
+/* -- GROWTH PANEL -- */
 
 .tj-panel {
   background: #0d1117; border: 1px solid #2a3040;
@@ -4532,181 +4532,7 @@ function printSubGuide(){
     +'<li>Live standings: <strong>clashofclasses.org</strong></li></ul>'
     +'<footer>Generated from clashofclasses.org · '+new Date().toLocaleString()+'</footer>'
     +'<br><button onclick="window.print()">🖨 Print</button>'
-    +'<script>
-/* Freudenfreude Ticker */
-(function() {
-  const COC_URL  = 'https://yvutgnpgnthvnonhgdux.supabase.co';
-  const COC_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak';
-
-  const SQUAD_COLOR = {
-    GOLD:   '#c9a84c', GREY: '#9ca3af',
-    BLACK:  '#e5e7eb', PURPLE: '#9f7aea',
-    Gold:   '#c9a84c', Grey: '#9ca3af',
-    Black:  '#e5e7eb', Purple: '#9f7aea',
-  };
-  const SQUAD_PTS_COLOR = {
-    trail_journal:   { bg:'rgba(44,74,53,.4)',   text:'#7dd3a8' },
-    trailback_panel: { bg:'rgba(92,61,143,.4)',  text:'#c4b5fd' },
-  };
-
-  function timeAgo(ts) {
-    const diff = Date.now() - ts;
-    const m = Math.floor(diff / 60000);
-    if (m < 1)  return 'just now';
-    if (m < 60) return `${m}m ago`;
-    const h = Math.floor(m / 60);
-    if (h < 24) return `${h}h ago`;
-    const d = Math.floor(h / 24);
-    return d === 1 ? 'yesterday' : `${d} days ago`;
-  }
-
-  function typeLabel(type) {
-    if (type === 'trailback_panel') return '🏔️';
-    return '🌱';
-  }
-
-  async function loadTicker() {
-    try {
-      const res = await fetch(
-        `${COC_URL}/rest/v1/app_data?key=eq.coc&select=value`,
-        { headers: { apikey: COC_ANON, Authorization: 'Bearer ' + COC_ANON } }
-      );
-      const rows = await res.json();
-      const coc = rows?.[0]?.value || {};
-      const log = (coc.freudenLog || []).slice(-8).reverse();
-
-      const scroll = document.getElementById('frd-scroll');
-      if (!log.length) {
-        scroll.innerHTML = '<div class="frd-empty">No growth moments yet — be the first to earn one.</div>';
-        return;
-      }
-
-      const ptsConfig = SQUAD_PTS_COLOR;
-      scroll.innerHTML = log.map((entry, i) => {
-        const color  = SQUAD_COLOR[entry.squad] || '#9ca3af';
-        const ptsCfg = ptsConfig[entry.type] || ptsConfig.trail_journal;
-        const icon   = typeLabel(entry.type);
-        const delay  = i * 0.06;
-        return `<div class="frd-item" style="animation-delay:${delay}s">
-          <div class="frd-item-icon">${icon}</div>
-          <div class="frd-item-body">
-            <div class="frd-item-msg">
-              <span class="frd-item-squad" style="color:${color}">${entry.squad}</span>
-              — ${entry.message || 'A Mountaineer earned a growth point'}
-            </div>
-            <div class="frd-item-time">${timeAgo(entry.ts)}</div>
-          </div>
-          <div class="frd-item-pts" style="background:${ptsCfg.bg};color:${ptsCfg.text}">
-            +${entry.pts || 1}
-          </div>
-        </div>`;
-      }).join('');
-
-    } catch(e) {
-      console.error('Freudenfreude ticker error:', e);
-      document.getElementById('frd-scroll').innerHTML =
-        '<div class="frd-empty">Could not load growth moments.</div>';
-    }
-  }
-
-  loadTicker();
-  // Auto-refresh every 60 seconds
-  setInterval(loadTicker, 60000);
-  window.loadFrdTicker = loadTicker;
-})();
-</script>
-<script>
-/* Growth Leaderboard */
-(function() {
-  const COC_URL  = 'https://yvutgnpgnthvnonhgdux.supabase.co';
-  const COC_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak';
-
-  const SQUADS = ['Gold','Grey','Black','Purple'];
-  const SQUAD_COLOR = { Gold:'#c9a84c', Grey:'#9ca3af', Black:'#e5e7eb', Purple:'#9f7aea' };
-  const SQUAD_BG    = { Gold:'#c9a84c', Grey:'#6b7280', Black:'#374151', Purple:'#7c5db5' };
-  const MEDALS      = ['🥇','🥈','🥉','4️⃣'];
-
-  async function loadGrowth() {
-    try {
-      const res = await fetch(
-        `${COC_URL}/rest/v1/app_data?key=eq.coc&select=value`,
-        { headers: { apikey: COC_ANON, Authorization: 'Bearer ' + COC_ANON } }
-      );
-      const rows = await res.json();
-      const coc  = rows?.[0]?.value || {};
-
-      // Tally growth points per squad by event type
-      const tjPts    = { Gold:0, Grey:0, Black:0, Purple:0 };
-      const panelPts = { Gold:0, Grey:0, Black:0, Purple:0 };
-      const bonusPts = { Gold:0, Grey:0, Black:0, Purple:0 };
-
-      (coc.events || []).forEach(evt => {
-        if (!evt.pts) return;
-        SQUADS.forEach(sq => {
-          const p = evt.pts[sq.toUpperCase()] || 0;
-          if (!p) return;
-          if (evt.type === 'trail_journal')   tjPts[sq]    += p;
-          if (evt.type === 'trailback_panel') panelPts[sq] += p;
-          if (evt.type === 'community_bonus') bonusPts[sq] += p;
-        });
-      });
-
-      // Sort by total growth pts
-      const sorted = SQUADS.map(sq => ({
-        squad: sq,
-        tj: tjPts[sq],
-        panel: panelPts[sq],
-        bonus: bonusPts[sq],
-        total: tjPts[sq] + panelPts[sq] + bonusPts[sq],
-      })).sort((a,b) => b.total - a.total);
-
-      const maxTotal = Math.max(...sorted.map(s => s.total), 1);
-      const hasAny   = sorted.some(s => s.total > 0);
-
-      const container = document.getElementById('growth-rows');
-      if (!hasAny) {
-        container.innerHTML = '<div class="growth-empty">No growth points yet — complete a Trail Journal or Trailback Panel to get started.</div>';
-        return;
-      }
-
-      container.innerHTML = sorted.map((s, i) => {
-        const barW  = Math.round((s.total / maxTotal) * 100);
-        const color = SQUAD_COLOR[s.squad];
-        const bg    = SQUAD_BG[s.squad];
-        const chips = [
-          s.tj    > 0 ? `<span class="growth-chip chip-tj">🌱 +${s.tj} TJ</span>` : '',
-          s.panel > 0 ? `<span class="growth-chip chip-panel">🏔️ +${s.panel} Panel</span>` : '',
-          s.bonus > 0 ? `<span class="growth-chip chip-bonus">🎯 +${s.bonus} Bonus</span>` : '',
-        ].filter(Boolean).join('');
-
-        return `<div class="growth-row ${i===0?'rank-1':''}">
-          <div class="growth-rank">${MEDALS[i] || i+1}</div>
-          <div class="growth-squad-dot" style="background:${bg}"></div>
-          <div class="growth-squad-name" style="color:${color}">${s.squad}</div>
-          <div class="growth-bar-wrap">
-            <div class="growth-bar-track">
-              <div class="growth-bar-fill" style="width:${barW}%;background:${color}"></div>
-            </div>
-            <div class="growth-pts" style="color:${color}">${s.total}</div>
-            <div class="growth-pts-label">pts</div>
-          </div>
-          ${chips ? `<div class="growth-chips">${chips}</div>` : ''}
-        </div>`;
-      }).join('');
-
-    } catch(e) {
-      console.error('Growth board error:', e);
-      document.getElementById('growth-rows').innerHTML =
-        '<div class="growth-empty">Could not load growth standings.</div>';
-    }
-  }
-
-  loadGrowth();
-  setInterval(loadGrowth, 90000);
-  window.loadGrowthBoard = loadGrowth;
-})();
-</script>
-</body></html>');
+    +'</body></html>');
   win.document.close();
 }
 
@@ -6198,30 +6024,21 @@ function renderGrowth(){
   if(!wrap) return;
   if(wrap._loaded) return;
   wrap._loaded=true;
-
-  var TJ_URL  = 'https://kduypmpqkirvjkbnmuha.supabase.co';
-  var TJ_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkdXlwbXBxa2lydmprYm5tdWhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjksImV4cCI6MjA5NTk1MjY2OX0.nyjvSvfqsdCJIghlmrwXvL0z1dK1dp2AznPD1CoSvJE';
-  var COC_URL  = 'https://yvutgnpgnthvnonhgdux.supabase.co';
-  var COC_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak';
-  var SQUADS_TJ = ['Gold','Grey','Black','Purple'];
-  var SQUAD_COLOR_TJ = { Gold:'var(--sq-gold)', Grey:'var(--sq-grey)', Black:'var(--sq-black)', Purple:'var(--sq-purple)' };
-  var SQUAD_BG_TJ    = { Gold:'#ffe100', Grey:'#99a8bb', Black:'#c5c9d1', Purple:'#bb8ef5' };
-  var BONUS_THRESHOLDS = [
-    { min:5,  pts:25,  label:'5 reflections' },
-    { min:10, pts:50,  label:'10 reflections' },
-    { min:25, pts:150, label:'25 reflections' },
-    { min:50, pts:300, label:'50 reflections' },
-  ];
-  function timeAgo(ts){ var d=Date.now()-ts,m=Math.floor(d/60000); if(m<1)return'just now'; if(m<60)return m+'m ago'; var h=Math.floor(m/60); if(h<24)return h+'h ago'; return Math.floor(h/24)+'d ago'; }
-
-  wrap.innerHTML='<div class="tj-panel" id="tj-panel">'
-    +'<div class="tj-panel-head">'
-    +'<span style="font-size:1.4rem">&#x26F0;&#xFE0F;</span>'
+  var TJ_URL='https://kduypmpqkirvjkbnmuha.supabase.co';
+  var TJ_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkdXlwbXBxa2lydmprYm5tdWhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjksImV4cCI6MjA5NTk1MjY2OX0.nyjvSvfqsdCJIghlmrwXvL0z1dK1dp2AznPD1CoSvJE';
+  var COC_URL='https://yvutgnpgnthvnonhgdux.supabase.co';
+  var COC_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak';
+  var SQUADS_TJ=['Gold','Grey','Black','Purple'];
+  var SQ_CLR={Gold:'var(--sq-gold)',Grey:'var(--sq-grey)',Black:'var(--sq-black)',Purple:'var(--sq-purple)'};
+  var SQ_BG={Gold:'#ffe100',Grey:'#99a8bb',Black:'#c5c9d1',Purple:'#bb8ef5'};
+  var THRESHOLDS=[{min:5,pts:25,label:'5 reflections'},{min:10,pts:50,label:'10 reflections'},{min:25,pts:150,label:'25 reflections'},{min:50,pts:300,label:'50 reflections'}];
+  function ago(ts){var d=Date.now()-ts,m=Math.floor(d/60000);if(m<1)return'just now';if(m<60)return m+'m ago';var h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';}
+  wrap.innerHTML='<div class="tj-panel">'
+    +'<div class="tj-panel-head"><span style="font-size:1.4rem">&#x26F0;&#xFE0F;</span>'
     +'<h3>Community Culture Stats</h3>'
     +'<span class="tj-badge">Trail Journal</span>'
     +'<span class="tj-badge-panel">Trailback Panel</span>'
-    +'<button class="tj-refresh" onclick="loadTJStats()">&#8635; Refresh</button>'
-    +'</div>'
+    +'<button class="tj-refresh" onclick="loadTJStats()">&#8635; Refresh</button></div>'
     +'<div class="tj-stat-row">'
     +'<div class="tj-stat"><div class="tj-stat-val" id="tj-total">&mdash;</div><div class="tj-stat-lbl">Reflections</div></div>'
     +'<div class="tj-stat"><div class="tj-stat-val" id="tj-high" style="color:#4ade80">&mdash;</div><div class="tj-stat-lbl">High Insight</div></div>'
@@ -6231,106 +6048,82 @@ function renderGrowth(){
     +'<div class="tj-stat"><div class="tj-stat-val" id="tj-bonus-total" style="color:var(--gold-soft)">&mdash;</div><div class="tj-stat-lbl">Bonus Pts</div></div>'
     +'</div>'
     +'<div class="tj-section-head">Per-Squad Breakdown</div>'
-    +'<div class="tj-squad-grid" id="tj-squad-grid"><div class="tj-loading">Loading squad data&#8230;</div></div>'
-    +'<div class="tj-section-head">Community Bonus Thresholds</div>'
+    +'<div class="tj-squad-grid" id="tj-squad-grid"><div class="tj-loading">Loading&#8230;</div></div>'
+    +'<div class="tj-section-head">Bonus Thresholds</div>'
     +'<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px" id="tj-thresholds"><div class="tj-loading">Loading&#8230;</div></div>'
     +'<div class="tj-section-head">Recent Growth Moments</div>'
-    +'<div class="frd-feed" id="frd-feed"><div class="tj-loading">Loading&#8230;</div></div>'
-    +'<div class="tj-bonus" id="tj-bonus-note" style="display:none">'
-    +'<span class="tj-bonus-icon">&#129334;</span>'
-    +'<span id="tj-bonus-text"></span>'
-    +'</div>'
+    +'<div class="frd-feed" id="tj-frd-feed"><div class="tj-loading">Loading&#8230;</div></div>'
+    +'<div class="tj-bonus" id="tj-bonus-note" style="display:none"><span class="tj-bonus-icon">&#129334;</span><span id="tj-bonus-text"></span></div>'
     +'</div>';
-
-  window.loadTJStats = async function(){
+  window.loadTJStats=async function(){
     try{
-      var r1=await fetch(TJ_URL+'/rest/v1/reflections?select=insight_level,clash_points_awarded,created_at&limit=1000',{headers:{apikey:TJ_ANON,Authorization:'Bearer '+TJ_ANON}});
-      var r2=await fetch(TJ_URL+'/rest/v1/panel_sessions?select=clash_squad,created_at,status&limit=500',{headers:{apikey:TJ_ANON,Authorization:'Bearer '+TJ_ANON}});
+      var r1=await fetch(TJ_URL+'/rest/v1/reflections?select=insight_level,created_at&limit=1000',{headers:{apikey:TJ_ANON,Authorization:'Bearer '+TJ_ANON}});
+      var r2=await fetch(TJ_URL+'/rest/v1/panel_sessions?select=clash_squad,status&limit=500',{headers:{apikey:TJ_ANON,Authorization:'Bearer '+TJ_ANON}});
       var r3=await fetch(COC_URL+'/rest/v1/app_data?key=eq.coc&select=value',{headers:{apikey:COC_ANON,Authorization:'Bearer '+COC_ANON}});
-      var reflections=await r1.json();
-      var panels=await r2.json();
-      var cocRows=await r3.json();
-      if(!Array.isArray(reflections)) return;
-      var coc=(cocRows&&cocRows[0])?cocRows[0].value:{};
-      var total=reflections.length;
-      var highCount=reflections.filter(function(r){return r.insight_level==='High';}).length;
-      var panelCount=Array.isArray(panels)?panels.filter(function(p){return p.status==='complete';}).length:0;
-      var weekAgo=Date.now()-7*24*60*60*1000;
-      var weekCount=reflections.filter(function(r){return new Date(r.created_at).getTime()>weekAgo;}).length;
-      var squadTJPts={Gold:0,Grey:0,Black:0,Purple:0};
-      var squadPanelPts={Gold:0,Grey:0,Black:0,Purple:0};
-      var squadTJCount={Gold:0,Grey:0,Black:0,Purple:0};
-      var squadPanelCount={Gold:0,Grey:0,Black:0,Purple:0};
-      var squadHighCount={Gold:0,Grey:0,Black:0,Purple:0};
-      (coc.events||[]).forEach(function(evt){
-        if(!evt.pts||!evt.type) return;
+      var refs=await r1.json(),pnls=await r2.json(),cocR=await r3.json();
+      if(!Array.isArray(refs))return;
+      var coc=(cocR&&cocR[0])?cocR[0].value:{};
+      var total=refs.length;
+      var hi=refs.filter(function(r){return r.insight_level==='High';}).length;
+      var pc=Array.isArray(pnls)?pnls.filter(function(p){return p.status==='complete';}).length:0;
+      var wago=Date.now()-7*24*60*60*1000;
+      var wk=refs.filter(function(r){return new Date(r.created_at).getTime()>wago;}).length;
+      var tjP={Gold:0,Grey:0,Black:0,Purple:0},plP={Gold:0,Grey:0,Black:0,Purple:0};
+      var tjC={Gold:0,Grey:0,Black:0,Purple:0},hiC={Gold:0,Grey:0,Black:0,Purple:0};
+      var plC={Gold:0,Grey:0,Black:0,Purple:0};
+      (coc.events||[]).forEach(function(e){
+        if(!e.pts||!e.type)return;
         SQUADS_TJ.forEach(function(sq){
-          var p=evt.pts[sq.toUpperCase()]||0; if(!p) return;
-          if(evt.type==='trail_journal'){ squadTJPts[sq]+=p; squadTJCount[sq]++; if(evt.name&&evt.name.indexOf('High')>-1) squadHighCount[sq]++; }
-          else if(evt.type==='trailback_panel'){ squadPanelPts[sq]+=p; squadPanelCount[sq]++; }
+          var p=e.pts[sq.toUpperCase()]||0;if(!p)return;
+          if(e.type==='trail_journal'){tjP[sq]+=p;tjC[sq]++;if(e.name&&e.name.indexOf('High')>-1)hiC[sq]++;}
+          else if(e.type==='trailback_panel'){plP[sq]+=p;plC[sq]++;}
         });
       });
-      var totalGrowthPts=0,totalBonusPts=0;
-      SQUADS_TJ.forEach(function(sq){ totalGrowthPts+=squadTJPts[sq]+squadPanelPts[sq]; var c=squadTJCount[sq]; BONUS_THRESHOLDS.forEach(function(t){if(c>=t.min)totalBonusPts+=t.pts;}); });
-      var el;
-      el=document.getElementById('tj-total'); if(el) el.textContent=total;
-      el=document.getElementById('tj-high'); if(el) el.textContent=highCount;
-      el=document.getElementById('tj-panels'); if(el) el.textContent=panelCount;
-      el=document.getElementById('tj-pts-total'); if(el) el.textContent=totalGrowthPts;
-      el=document.getElementById('tj-week'); if(el) el.textContent=weekCount;
-      el=document.getElementById('tj-bonus-total'); if(el) el.textContent=totalBonusPts||'--';
+      var tgp=0,tbp=0;
+      SQUADS_TJ.forEach(function(sq){tgp+=tjP[sq]+plP[sq];var c=tjC[sq];THRESHOLDS.forEach(function(t){if(c>=t.min)tbp+=t.pts;});});
+      function setEl(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+      setEl('tj-total',total);setEl('tj-high',hi);setEl('tj-panels',pc);
+      setEl('tj-pts-total',tgp);setEl('tj-week',wk);setEl('tj-bonus-total',tbp||'--');
       var grid=document.getElementById('tj-squad-grid');
       if(grid){
-        var maxTJ=Math.max.apply(null,SQUADS_TJ.map(function(sq){return squadTJCount[sq];})); maxTJ=Math.max(maxTJ,1);
-        var maxHi=Math.max.apply(null,SQUADS_TJ.map(function(sq){return squadHighCount[sq];})); maxHi=Math.max(maxHi,1);
+        var mxT=Math.max.apply(null,SQUADS_TJ.map(function(sq){return tjC[sq];}));mxT=Math.max(mxT,1);
+        var mxH=Math.max.apply(null,SQUADS_TJ.map(function(sq){return hiC[sq];}));mxH=Math.max(mxH,1);
         grid.innerHTML=SQUADS_TJ.map(function(sq){
-          var tjPts=squadTJPts[sq],panelPts=squadPanelPts[sq],tjCount=squadTJCount[sq],hiCount=squadHighCount[sq],panCount=squadPanelCount[sq];
-          var totalPts=tjPts+panelPts,hiPct=tjCount?Math.round((hiCount/tjCount)*100):0;
-          var bonus=0; BONUS_THRESHOLDS.forEach(function(t){if(tjCount>=t.min)bonus=t.pts;});
-          return '<div class="tj-squad-card">'
-            +'<div class="tj-sq-head"><div class="tj-sq-dot" style="background:'+SQUAD_BG_TJ[sq]+'"></div>'
-            +'<div class="tj-sq-name" style="color:'+SQUAD_COLOR_TJ[sq]+'">'+sq+'</div>'
-            +'<div class="tj-sq-total">'+totalPts+' pts total</div></div>'
-            +'<div class="tj-sq-row"><div class="tj-sq-row-lbl">Reflections</div><div class="tj-bar-track"><div class="tj-bar-fill" style="width:'+Math.round((tjCount/maxTJ)*100)+'%;background:'+SQUAD_BG_TJ[sq]+'"></div></div><div class="tj-sq-row-val">'+tjCount+'</div></div>'
-            +'<div class="tj-sq-row"><div class="tj-sq-row-lbl">High Insight</div><div class="tj-bar-track"><div class="tj-bar-fill" style="width:'+Math.round((hiCount/maxHi)*100)+'%;background:#4ade80"></div></div><div class="tj-sq-row-val" style="color:#4ade80">'+hiPct+'%</div></div>'
-            +'<div class="tj-sq-row"><div class="tj-sq-row-lbl">TJ Points</div><div class="tj-bar-track"><div class="tj-bar-fill" style="width:'+Math.min(100,tjPts*10)+'%;background:'+SQUAD_BG_TJ[sq]+'"></div></div><div class="tj-sq-row-val" style="color:'+SQUAD_COLOR_TJ[sq]+'">'+tjPts+'</div></div>'
-            +(panCount>0?'<div class="tj-panel-badge">Panel x'+panCount+' &middot; +'+panelPts+' pts</div>':'')
-            +(bonus>0?'<div class="tj-panel-badge" style="background:rgba(255,225,0,.08);border-color:rgba(255,225,0,.25);color:var(--gold-soft);margin-top:4px">+'+bonus+' community bonus</div>':'')
+          var tp=tjP[sq]+plP[sq],hp=tjC[sq]?Math.round((hiC[sq]/tjC[sq])*100):0;
+          var bn=0;THRESHOLDS.forEach(function(t){if(tjC[sq]>=t.min)bn=t.pts;});
+          return '<div class="tj-squad-card"><div class="tj-sq-head">'
+            +'<div class="tj-sq-dot" style="background:'+SQ_BG[sq]+'"></div>'
+            +'<div class="tj-sq-name" style="color:'+SQ_CLR[sq]+'">'+sq+'</div>'
+            +'<div class="tj-sq-total">'+tp+' pts</div></div>'
+            +'<div class="tj-sq-row"><div class="tj-sq-row-lbl">Reflections</div><div class="tj-bar-track"><div class="tj-bar-fill" style="width:'+Math.round((tjC[sq]/mxT)*100)+'%;background:'+SQ_BG[sq]+'"></div></div><div class="tj-sq-row-val">'+tjC[sq]+'</div></div>'
+            +'<div class="tj-sq-row"><div class="tj-sq-row-lbl">High Insight</div><div class="tj-bar-track"><div class="tj-bar-fill" style="width:'+Math.round((hiC[sq]/mxH)*100)+'%;background:#4ade80"></div></div><div class="tj-sq-row-val" style="color:#4ade80">'+hp+'%</div></div>'
+            +'<div class="tj-sq-row"><div class="tj-sq-row-lbl">TJ Points</div><div class="tj-bar-track"><div class="tj-bar-fill" style="width:'+Math.min(100,tjP[sq]*10)+'%;background:'+SQ_BG[sq]+'"></div></div><div class="tj-sq-row-val" style="color:'+SQ_CLR[sq]+'">'+tjP[sq]+'</div></div>'
+            +(plC[sq]>0?'<div class="tj-panel-badge">Panel x'+plC[sq]+' &middot; +'+plP[sq]+' pts</div>':'')
+            +(bn>0?'<div class="tj-panel-badge" style="background:rgba(255,225,0,.08);color:var(--gold-soft);border-color:rgba(255,225,0,.25);margin-top:4px">+'+bn+' bonus</div>':'')
             +'</div>';
         }).join('');
       }
-      var thresh=document.getElementById('tj-thresholds');
-      if(thresh){
-        thresh.innerHTML=BONUS_THRESHOLDS.map(function(t){
-          var earned=total>=t.min;
-          return '<div class="tj-threshold-row"><div class="tj-threshold-label">'+t.label+'</div>'
-            +'<div class="tj-threshold-val '+(earned?'earned':'pending')+'">'+(earned?'&#10003; +'+t.pts+' pts earned':(t.min-total)+' more needed')+'</div></div>';
-        }).join('');
+      var tr=document.getElementById('tj-thresholds');
+      if(tr)tr.innerHTML=THRESHOLDS.map(function(t){
+        var ok=total>=t.min;
+        return '<div class="tj-threshold-row"><div class="tj-threshold-label">'+t.label+'</div><div class="tj-threshold-val '+(ok?'earned':'pending')+'">'+(ok?'&#10003; +'+t.pts+' pts':(t.min-total)+' more needed')+'</div></div>';
+      }).join('');
+      var fl=(coc.freudenLog||[]).slice(-8).reverse();
+      var fd=document.getElementById('tj-frd-feed');
+      if(fd)fd.innerHTML=fl.length?fl.map(function(e){
+        var ic=e.type==='trailback_panel'?'&#x26F0;&#xFE0F;':'&#127807;';
+        return '<div class="frd-entry"><span class="frd-icon">'+ic+'</span><span><span class="frd-squad" style="color:'+SQ_BG[e.squad||'Black']+'">'+e.squad+'</span> &mdash; '+(e.message||'A Mountaineer earned a growth point')+'</span><span class="frd-time">'+ago(e.ts)+'</span></div>';
+      }).join(''):'<div style="color:var(--text3);font-size:.8rem;padding:8px 0">No growth moments recorded yet.</div>';
+      if(total>=THRESHOLDS[0].min){
+        var mx=null;THRESHOLDS.forEach(function(t){if(total>=t.min)mx=t;});
+        var bn=document.getElementById('tj-bonus-note');if(bn)bn.style.display='flex';
+        var bt=document.getElementById('tj-bonus-text');if(bt)bt.textContent='Milestone: '+total+' reflections. Award +'+mx.pts+' pts as a Growth event.';
       }
-      var freudenLog=(coc.freudenLog||[]).slice(-10).reverse();
-      var feed=document.getElementById('frd-feed');
-      if(feed){
-        if(freudenLog.length){
-          feed.innerHTML=freudenLog.map(function(entry){
-            var icon=entry.type==='trailback_panel'?'&#x26F0;&#xFE0F;':'&#127807;';
-            var color=SQUAD_BG_TJ[entry.squad]||'var(--text3)';
-            return '<div class="frd-entry"><span class="frd-icon">'+icon+'</span><span><span class="frd-squad" style="color:'+color+'">'+entry.squad+'</span> &mdash; '+(entry.message||'A Mountaineer earned a growth point')+'</span><span class="frd-time">'+timeAgo(entry.ts)+'</span></div>';
-          }).join('');
-        } else {
-          feed.innerHTML='<div style="color:var(--text3);font-size:.8rem;padding:8px 0">No growth moments recorded yet.</div>';
-        }
-      }
-      if(total>=BONUS_THRESHOLDS[0].min){
-        var maxT=null; BONUS_THRESHOLDS.forEach(function(t){if(total>=t.min)maxT=t;});
-        var bn=document.getElementById('tj-bonus-note'); if(bn) bn.style.display='flex';
-        var bt=document.getElementById('tj-bonus-text'); if(bt) bt.textContent='Community milestone: '+total+' reflections. Award the +'+maxT.pts+' bonus as a Growth event.';
-      }
-      if(window.loadFrdTicker) window.loadFrdTicker();
-      if(window.loadGrowthBoard) window.loadGrowthBoard();
-    }catch(e){
-      console.error('Community stats error:',e);
+      if(window.loadFrdTicker)window.loadFrdTicker();
+      if(window.loadGrowthBoard)window.loadGrowthBoard();
+    }catch(er){
       var g=document.getElementById('tj-squad-grid');
-      if(g) g.innerHTML='<div style="color:#f87171;font-size:.8rem">Could not load data.</div>';
+      if(g)g.innerHTML='<div style="color:#f87171;font-size:.8rem">Could not load data.</div>';
     }
   };
   window.loadTJStats();
@@ -8559,6 +8352,181 @@ window.__moduleReady=true;
 // Now that all functions are live, re-render whatever page the user navigated to
 goTo(window.__currentPage || currentPage);
 </script>
+<script>
+/* Freudenfreude Ticker */
+(function() {
+  const COC_URL  = 'https://yvutgnpgnthvnonhgdux.supabase.co';
+  const COC_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak';
+
+  const SQUAD_COLOR = {
+    GOLD:   '#c9a84c', GREY: '#9ca3af',
+    BLACK:  '#e5e7eb', PURPLE: '#9f7aea',
+    Gold:   '#c9a84c', Grey: '#9ca3af',
+    Black:  '#e5e7eb', Purple: '#9f7aea',
+  };
+  const SQUAD_PTS_COLOR = {
+    trail_journal:   { bg:'rgba(44,74,53,.4)',   text:'#7dd3a8' },
+    trailback_panel: { bg:'rgba(92,61,143,.4)',  text:'#c4b5fd' },
+  };
+
+  function timeAgo(ts) {
+    const diff = Date.now() - ts;
+    const m = Math.floor(diff / 60000);
+    if (m < 1)  return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h / 24);
+    return d === 1 ? 'yesterday' : `${d} days ago`;
+  }
+
+  function typeLabel(type) {
+    if (type === 'trailback_panel') return '🏔️';
+    return '🌱';
+  }
+
+  async function loadTicker() {
+    try {
+      const res = await fetch(
+        `${COC_URL}/rest/v1/app_data?key=eq.coc&select=value`,
+        { headers: { apikey: COC_ANON, Authorization: 'Bearer ' + COC_ANON } }
+      );
+      const rows = await res.json();
+      const coc = rows?.[0]?.value || {};
+      const log = (coc.freudenLog || []).slice(-8).reverse();
+
+      const scroll = document.getElementById('frd-scroll');
+      if (!log.length) {
+        scroll.innerHTML = '<div class="frd-empty">No growth moments yet — be the first to earn one.</div>';
+        return;
+      }
+
+      const ptsConfig = SQUAD_PTS_COLOR;
+      scroll.innerHTML = log.map((entry, i) => {
+        const color  = SQUAD_COLOR[entry.squad] || '#9ca3af';
+        const ptsCfg = ptsConfig[entry.type] || ptsConfig.trail_journal;
+        const icon   = typeLabel(entry.type);
+        const delay  = i * 0.06;
+        return `<div class="frd-item" style="animation-delay:${delay}s">
+          <div class="frd-item-icon">${icon}</div>
+          <div class="frd-item-body">
+            <div class="frd-item-msg">
+              <span class="frd-item-squad" style="color:${color}">${entry.squad}</span>
+              — ${entry.message || 'A Mountaineer earned a growth point'}
+            </div>
+            <div class="frd-item-time">${timeAgo(entry.ts)}</div>
+          </div>
+          <div class="frd-item-pts" style="background:${ptsCfg.bg};color:${ptsCfg.text}">
+            +${entry.pts || 1}
+          </div>
+        </div>`;
+      }).join('');
+
+    } catch(e) {
+      console.error('Freudenfreude ticker error:', e);
+      document.getElementById('frd-scroll').innerHTML =
+        '<div class="frd-empty">Could not load growth moments.</div>';
+    }
+  }
+
+  loadTicker();
+  // Auto-refresh every 60 seconds
+  setInterval(loadTicker, 60000);
+  window.loadFrdTicker = loadTicker;
+})();
+</script>
+<script>
+/* Growth Leaderboard */
+(function() {
+  const COC_URL  = 'https://yvutgnpgnthvnonhgdux.supabase.co';
+  const COC_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak';
+
+  const SQUADS = ['Gold','Grey','Black','Purple'];
+  const SQUAD_COLOR = { Gold:'#c9a84c', Grey:'#9ca3af', Black:'#e5e7eb', Purple:'#9f7aea' };
+  const SQUAD_BG    = { Gold:'#c9a84c', Grey:'#6b7280', Black:'#374151', Purple:'#7c5db5' };
+  const MEDALS      = ['🥇','🥈','🥉','4️⃣'];
+
+  async function loadGrowth() {
+    try {
+      const res = await fetch(
+        `${COC_URL}/rest/v1/app_data?key=eq.coc&select=value`,
+        { headers: { apikey: COC_ANON, Authorization: 'Bearer ' + COC_ANON } }
+      );
+      const rows = await res.json();
+      const coc  = rows?.[0]?.value || {};
+
+      // Tally growth points per squad by event type
+      const tjPts    = { Gold:0, Grey:0, Black:0, Purple:0 };
+      const panelPts = { Gold:0, Grey:0, Black:0, Purple:0 };
+      const bonusPts = { Gold:0, Grey:0, Black:0, Purple:0 };
+
+      (coc.events || []).forEach(evt => {
+        if (!evt.pts) return;
+        SQUADS.forEach(sq => {
+          const p = evt.pts[sq.toUpperCase()] || 0;
+          if (!p) return;
+          if (evt.type === 'trail_journal')   tjPts[sq]    += p;
+          if (evt.type === 'trailback_panel') panelPts[sq] += p;
+          if (evt.type === 'community_bonus') bonusPts[sq] += p;
+        });
+      });
+
+      // Sort by total growth pts
+      const sorted = SQUADS.map(sq => ({
+        squad: sq,
+        tj: tjPts[sq],
+        panel: panelPts[sq],
+        bonus: bonusPts[sq],
+        total: tjPts[sq] + panelPts[sq] + bonusPts[sq],
+      })).sort((a,b) => b.total - a.total);
+
+      const maxTotal = Math.max(...sorted.map(s => s.total), 1);
+      const hasAny   = sorted.some(s => s.total > 0);
+
+      const container = document.getElementById('growth-rows');
+      if (!hasAny) {
+        container.innerHTML = '<div class="growth-empty">No growth points yet — complete a Trail Journal or Trailback Panel to get started.</div>';
+        return;
+      }
+
+      container.innerHTML = sorted.map((s, i) => {
+        const barW  = Math.round((s.total / maxTotal) * 100);
+        const color = SQUAD_COLOR[s.squad];
+        const bg    = SQUAD_BG[s.squad];
+        const chips = [
+          s.tj    > 0 ? `<span class="growth-chip chip-tj">🌱 +${s.tj} TJ</span>` : '',
+          s.panel > 0 ? `<span class="growth-chip chip-panel">🏔️ +${s.panel} Panel</span>` : '',
+          s.bonus > 0 ? `<span class="growth-chip chip-bonus">🎯 +${s.bonus} Bonus</span>` : '',
+        ].filter(Boolean).join('');
+
+        return `<div class="growth-row ${i===0?'rank-1':''}">
+          <div class="growth-rank">${MEDALS[i] || i+1}</div>
+          <div class="growth-squad-dot" style="background:${bg}"></div>
+          <div class="growth-squad-name" style="color:${color}">${s.squad}</div>
+          <div class="growth-bar-wrap">
+            <div class="growth-bar-track">
+              <div class="growth-bar-fill" style="width:${barW}%;background:${color}"></div>
+            </div>
+            <div class="growth-pts" style="color:${color}">${s.total}</div>
+            <div class="growth-pts-label">pts</div>
+          </div>
+          ${chips ? `<div class="growth-chips">${chips}</div>` : ''}
+        </div>`;
+      }).join('');
+
+    } catch(e) {
+      console.error('Growth board error:', e);
+      document.getElementById('growth-rows').innerHTML =
+        '<div class="growth-empty">Could not load growth standings.</div>';
+    }
+  }
+
+  loadGrowth();
+  setInterval(loadGrowth, 90000);
+  window.loadGrowthBoard = loadGrowth;
+})();
+</script>
+
 <div class="overlay" id="embedOverlay" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal" style="max-width:560px">
     <button class="modal-close" onclick="document.getElementById('embedOverlay').classList.remove('open')">✕</button>
