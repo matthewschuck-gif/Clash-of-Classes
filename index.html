@@ -1048,6 +1048,163 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 .tj-threshold-val { font-weight:700; font-family:'DM Mono',monospace; font-size:.72rem; }
 .tj-threshold-val.earned { color:#4ade80; }
 .tj-threshold-val.pending { color:var(--text3); }
+
+/* ── FREUDENFREUDE TICKER ── */
+.frd-ticker-wrap {
+  background: #0a1a0d;
+  border: 1px solid #2c4a35;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin: 16px 0;
+  overflow: hidden;
+}
+.frd-ticker-head {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px;
+}
+.frd-ticker-head-label {
+  font-size: .62rem; font-weight: 800; letter-spacing: .1em;
+  text-transform: uppercase; color: #7dd3a8;
+  font-family: 'Barlow', sans-serif;
+}
+.frd-live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #7dd3a8;
+  animation: frd-pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes frd-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .4; transform: scale(.85); }
+}
+.frd-scroll {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.frd-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  animation: frd-slide-in .4s ease both;
+}
+@keyframes frd-slide-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.frd-item-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+.frd-item-body { flex: 1; }
+.frd-item-msg {
+  font-family: 'Barlow', sans-serif;
+  font-size: .83rem; color: rgba(255,255,255,.82);
+  line-height: 1.45;
+}
+.frd-item-squad {
+  font-weight: 800;
+}
+.frd-item-time {
+  font-family: 'Barlow', sans-serif;
+  font-size: .65rem; color: #4b5563;
+  margin-top: 2px;
+}
+.frd-item-pts {
+  font-family: 'Barlow', sans-serif;
+  font-size: .68rem; font-weight: 800;
+  padding: 2px 7px; border-radius: 20px;
+  flex-shrink: 0; margin-top: 2px;
+}
+.frd-empty {
+  font-family: 'Barlow', sans-serif;
+  font-size: .8rem; color: #4b5563;
+  font-style: italic; padding: 8px 0;
+}
+.frd-ticker-foot {
+  margin-top: 10px; padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  font-family: 'Barlow', sans-serif;
+  font-size: .65rem; color: #374151;
+  text-align: center;
+}
+
+/* ── GROWTH LEADERBOARD ── */
+.growth-board {
+  background: #0a1a0d;
+  border: 1px solid #2c4a35;
+  border-radius: 14px;
+  padding: 20px;
+  margin: 16px 0;
+  font-family: 'Barlow', sans-serif;
+}
+.growth-board-head {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 18px; padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.growth-board-title {
+  font-weight: 800; font-size: .95rem; color: white;
+}
+.growth-board-sub {
+  font-size: .72rem; color: #4b5563; margin-top: 2px;
+}
+.growth-live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #7dd3a8; animation: gpulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes gpulse {
+  0%,100% { opacity:1; } 50% { opacity:.35; }
+}
+/* Squad rows */
+.growth-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 9px;
+  margin-bottom: 8px; transition: background .2s;
+}
+.growth-row:hover { background: rgba(255,255,255,.03); }
+.growth-row.rank-1 { background: rgba(201,168,76,.08); border: 1px solid rgba(201,168,76,.2); }
+.growth-rank {
+  font-family: 'Barlow', sans-serif;
+  font-size: 1rem; font-weight: 800;
+  width: 28px; text-align: center; flex-shrink: 0;
+}
+.growth-squad-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.growth-squad-name {
+  font-weight: 800; font-size: .9rem; flex: 1;
+}
+/* Bar + points */
+.growth-bar-wrap { flex: 2; display: flex; align-items: center; gap: 8px; }
+.growth-bar-track {
+  flex: 1; height: 6px; background: rgba(255,255,255,.06);
+  border-radius: 3px; overflow: hidden;
+}
+.growth-bar-fill {
+  height: 100%; border-radius: 3px; transition: width .8s ease;
+}
+.growth-pts {
+  font-weight: 800; font-size: .9rem; min-width: 36px; text-align: right;
+}
+.growth-pts-label {
+  font-size: .62rem; color: #6b7280; min-width: 24px;
+}
+/* Sub-breakdown chips */
+.growth-chips { display: flex; gap: 5px; flex-shrink: 0; }
+.growth-chip {
+  font-size: .62rem; font-weight: 700;
+  padding: 2px 7px; border-radius: 20px; white-space: nowrap;
+}
+.chip-tj     { background: rgba(44,74,53,.5);   color: #7dd3a8; }
+.chip-panel  { background: rgba(92,61,143,.5);  color: #c4b5fd; }
+.chip-bonus  { background: rgba(245,158,11,.2); color: #fbbf24; }
+/* Explanation */
+.growth-explainer {
+  margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  font-size: .7rem; color: #4b5563; line-height: 1.6;
+  display: flex; gap: 16px; flex-wrap: wrap;
+}
+.growth-legend-item { display: flex; align-items: center; gap: 5px; }
+.growth-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+/* Empty */
+.growth-empty { font-size: .8rem; color: #4b5563; font-style: italic; padding: 12px 0; text-align: center; }
+
 </style>
 </head>
 <body>
@@ -2309,6 +2466,47 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
     <h1 class="page-title">Community <span>Culture</span></h1>
     <div class="page-subtitle">Trail Journal · Trailback Panel · Growth Points</div>
   </div>
+  <!-- Growth Leaderboard -->
+  <div class="growth-board" id="growth-board">
+  <div class="growth-board-head">
+    <div class="growth-live-dot"></div>
+    <div>
+      <div class="growth-board-title">🏔️ Community Growth Leaderboard</div>
+      <div class="growth-board-sub">Trail Journal reflections · Trailback Panel · Restoration points — separate from competition</div>
+    </div>
+  </div>
+  <div id="growth-rows">
+    <div class="growth-empty">Loading growth standings…</div>
+  </div>
+  <div class="growth-explainer">
+    <div class="growth-legend-item">
+      <div class="growth-legend-dot" style="background:#7dd3a8"></div>
+      Trail Journal (+1 pt per High insight reflection)
+    </div>
+    <div class="growth-legend-item">
+      <div class="growth-legend-dot" style="background:#c4b5fd"></div>
+      Trailback Panel (+2 pts per completed panel)
+    </div>
+    <div class="growth-legend-item">
+      <div class="growth-legend-dot" style="background:#fbbf24"></div>
+      Community Bonus (awarded for volume milestones)
+    </div>
+  </div>
+</div>
+  <!-- Freudenfreude Ticker -->
+  <div class="frd-ticker-wrap" id="frd-ticker-wrap">
+  <div class="frd-ticker-head">
+    <div class="frd-live-dot"></div>
+    <div class="frd-ticker-head-label">🌱 Community Growth Moments</div>
+  </div>
+  <div class="frd-scroll" id="frd-scroll">
+    <div class="frd-empty">Loading growth moments…</div>
+  </div>
+  <div class="frd-ticker-foot">
+    Growth points are earned through restorative reflection — no names, no incident details.
+  </div>
+</div>
+  <!-- Trail Journal Stats Panel -->
   <div id="growth-panel-wrap"></div>
 </div>
 
@@ -4087,7 +4285,7 @@ function buildTicker(){
       +'</div>';
   }).join('');
   var curMonth=new Date().toLocaleString('en-US',{month:'long'});
-  var t=TRAITS.find(function(x){ return x.month===curMonth; })||TRAITS[6];
+  var t=TRAITS.find(function(x){ return x.month===curMonth; })||TRAITS[TRAITS.length-1];
   var items=r.map(function(sq,i){ return '<span class="ticker-item" style="color:'+SQ_HEX[sq]+'">#'+(i+1)+' '+sq+' — '+grand(sq).toLocaleString()+' pts</span><span class="ticker-divider">·</span>'; }).join('')
     +'<span class="ticker-item" style="color:rgba(255,255,255,0.5)">This Month: '+t.trait+'</span><span class="ticker-divider">·</span>';
   document.getElementById('tickerTape').innerHTML=items+items;
@@ -4219,7 +4417,7 @@ function showEventBreakdown(evtId){
 function printSubGuide(){
   var r=ranked();
   var curMonth=new Date().toLocaleString('en-US',{month:'long'});
-  var t=TRAITS.find(function(x){ return x.month===curMonth; })||TRAITS[6];
+  var t=TRAITS.find(function(x){ return x.month===curMonth; })||TRAITS[TRAITS.length-1];
   var events=D.countdownEvents||[];
   var now=new Date(); now.setHours(0,0,0,0);
   var next=events.find(function(e){ return new Date(e.date+'T00:00:00')>=now; });
@@ -4246,7 +4444,182 @@ function printSubGuide(){
     +'<li>Live standings: <strong>clashofclasses.org</strong></li></ul>'
     +'<footer>Generated from clashofclasses.org · '+new Date().toLocaleString()+'</footer>'
     +'<br><button onclick="window.print()">🖨 Print</button>'
-    +'</body></html>');
+    +'
+<script>
+/* Freudenfreude Ticker */
+(function() {
+  const COC_URL  = 'https://yvutgnpgnthvnonhgdux.supabase.co';
+  const COC_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak';
+
+  const SQUAD_COLOR = {
+    GOLD:   '#c9a84c', GREY: '#9ca3af',
+    BLACK:  '#e5e7eb', PURPLE: '#9f7aea',
+    Gold:   '#c9a84c', Grey: '#9ca3af',
+    Black:  '#e5e7eb', Purple: '#9f7aea',
+  };
+  const SQUAD_PTS_COLOR = {
+    trail_journal:   { bg:'rgba(44,74,53,.4)',   text:'#7dd3a8' },
+    trailback_panel: { bg:'rgba(92,61,143,.4)',  text:'#c4b5fd' },
+  };
+
+  function timeAgo(ts) {
+    const diff = Date.now() - ts;
+    const m = Math.floor(diff / 60000);
+    if (m < 1)  return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h / 24);
+    return d === 1 ? 'yesterday' : `${d} days ago`;
+  }
+
+  function typeLabel(type) {
+    if (type === 'trailback_panel') return '🏔️';
+    return '🌱';
+  }
+
+  async function loadTicker() {
+    try {
+      const res = await fetch(
+        `${COC_URL}/rest/v1/app_data?key=eq.coc&select=value`,
+        { headers: { apikey: COC_ANON, Authorization: 'Bearer ' + COC_ANON } }
+      );
+      const rows = await res.json();
+      const coc = rows?.[0]?.value || {};
+      const log = (coc.freudenLog || []).slice(-8).reverse();
+
+      const scroll = document.getElementById('frd-scroll');
+      if (!log.length) {
+        scroll.innerHTML = '<div class="frd-empty">No growth moments yet — be the first to earn one.</div>';
+        return;
+      }
+
+      const ptsConfig = SQUAD_PTS_COLOR;
+      scroll.innerHTML = log.map((entry, i) => {
+        const color  = SQUAD_COLOR[entry.squad] || '#9ca3af';
+        const ptsCfg = ptsConfig[entry.type] || ptsConfig.trail_journal;
+        const icon   = typeLabel(entry.type);
+        const delay  = i * 0.06;
+        return `<div class="frd-item" style="animation-delay:${delay}s">
+          <div class="frd-item-icon">${icon}</div>
+          <div class="frd-item-body">
+            <div class="frd-item-msg">
+              <span class="frd-item-squad" style="color:${color}">${entry.squad}</span>
+              — ${entry.message || 'A Mountaineer earned a growth point'}
+            </div>
+            <div class="frd-item-time">${timeAgo(entry.ts)}</div>
+          </div>
+          <div class="frd-item-pts" style="background:${ptsCfg.bg};color:${ptsCfg.text}">
+            +${entry.pts || 1}
+          </div>
+        </div>`;
+      }).join('');
+
+    } catch(e) {
+      console.error('Freudenfreude ticker error:', e);
+      document.getElementById('frd-scroll').innerHTML =
+        '<div class="frd-empty">Could not load growth moments.</div>';
+    }
+  }
+
+  loadTicker();
+  // Auto-refresh every 60 seconds
+  setInterval(loadTicker, 60000);
+  window.loadFrdTicker = loadTicker;
+})();
+</script>
+<script>
+/* Growth Leaderboard */
+(function() {
+  const COC_URL  = 'https://yvutgnpgnthvnonhgdux.supabase.co';
+  const COC_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak';
+
+  const SQUADS = ['Gold','Grey','Black','Purple'];
+  const SQUAD_COLOR = { Gold:'#c9a84c', Grey:'#9ca3af', Black:'#e5e7eb', Purple:'#9f7aea' };
+  const SQUAD_BG    = { Gold:'#c9a84c', Grey:'#6b7280', Black:'#374151', Purple:'#7c5db5' };
+  const MEDALS      = ['🥇','🥈','🥉','4️⃣'];
+
+  async function loadGrowth() {
+    try {
+      const res = await fetch(
+        `${COC_URL}/rest/v1/app_data?key=eq.coc&select=value`,
+        { headers: { apikey: COC_ANON, Authorization: 'Bearer ' + COC_ANON } }
+      );
+      const rows = await res.json();
+      const coc  = rows?.[0]?.value || {};
+
+      // Tally growth points per squad by event type
+      const tjPts    = { Gold:0, Grey:0, Black:0, Purple:0 };
+      const panelPts = { Gold:0, Grey:0, Black:0, Purple:0 };
+      const bonusPts = { Gold:0, Grey:0, Black:0, Purple:0 };
+
+      (coc.events || []).forEach(evt => {
+        if (!evt.pts) return;
+        SQUADS.forEach(sq => {
+          const p = evt.pts[sq.toUpperCase()] || 0;
+          if (!p) return;
+          if (evt.type === 'trail_journal')   tjPts[sq]    += p;
+          if (evt.type === 'trailback_panel') panelPts[sq] += p;
+          if (evt.type === 'community_bonus') bonusPts[sq] += p;
+        });
+      });
+
+      // Sort by total growth pts
+      const sorted = SQUADS.map(sq => ({
+        squad: sq,
+        tj: tjPts[sq],
+        panel: panelPts[sq],
+        bonus: bonusPts[sq],
+        total: tjPts[sq] + panelPts[sq] + bonusPts[sq],
+      })).sort((a,b) => b.total - a.total);
+
+      const maxTotal = Math.max(...sorted.map(s => s.total), 1);
+      const hasAny   = sorted.some(s => s.total > 0);
+
+      const container = document.getElementById('growth-rows');
+      if (!hasAny) {
+        container.innerHTML = '<div class="growth-empty">No growth points yet — complete a Trail Journal or Trailback Panel to get started.</div>';
+        return;
+      }
+
+      container.innerHTML = sorted.map((s, i) => {
+        const barW  = Math.round((s.total / maxTotal) * 100);
+        const color = SQUAD_COLOR[s.squad];
+        const bg    = SQUAD_BG[s.squad];
+        const chips = [
+          s.tj    > 0 ? `<span class="growth-chip chip-tj">🌱 +${s.tj} TJ</span>` : '',
+          s.panel > 0 ? `<span class="growth-chip chip-panel">🏔️ +${s.panel} Panel</span>` : '',
+          s.bonus > 0 ? `<span class="growth-chip chip-bonus">🎯 +${s.bonus} Bonus</span>` : '',
+        ].filter(Boolean).join('');
+
+        return `<div class="growth-row ${i===0?'rank-1':''}">
+          <div class="growth-rank">${MEDALS[i] || i+1}</div>
+          <div class="growth-squad-dot" style="background:${bg}"></div>
+          <div class="growth-squad-name" style="color:${color}">${s.squad}</div>
+          <div class="growth-bar-wrap">
+            <div class="growth-bar-track">
+              <div class="growth-bar-fill" style="width:${barW}%;background:${color}"></div>
+            </div>
+            <div class="growth-pts" style="color:${color}">${s.total}</div>
+            <div class="growth-pts-label">pts</div>
+          </div>
+          ${chips ? `<div class="growth-chips">${chips}</div>` : ''}
+        </div>`;
+      }).join('');
+
+    } catch(e) {
+      console.error('Growth board error:', e);
+      document.getElementById('growth-rows').innerHTML =
+        '<div class="growth-empty">Could not load growth standings.</div>';
+    }
+  }
+
+  loadGrowth();
+  setInterval(loadGrowth, 90000);
+  window.loadGrowthBoard = loadGrowth;
+})();
+</script>
+</body></html>');
   win.document.close();
 }
 
@@ -4256,7 +4629,7 @@ function printSubGuide(){
 function generateEmailDigest(){
   var r=ranked();
   var curMonth=new Date().toLocaleString('en-US',{month:'long'});
-  var t=TRAITS.find(function(x){ return x.month===curMonth; })||TRAITS[6];
+  var t=TRAITS.find(function(x){ return x.month===curMonth; })||TRAITS[TRAITS.length-1];
   var recentEvts=(D.events||[]).slice(-5).reverse();
   var NL='\n';
   var text='CLASH OF CLASSES — STAFF DIGEST'+NL
@@ -4557,7 +4930,7 @@ async function saveFooter(){
 
 function renderTraitBanner(){
   const curMonth=new Date().toLocaleString('en-US',{month:'long'});
-  const t=TRAITS.find(x=>x.month===curMonth)||TRAITS[6];
+  const t=TRAITS.find(x=>x.month===curMonth)||TRAITS[TRAITS.length-1];
   const el=document.getElementById('traitBannerName');
   if(el) el.textContent=t.trait;
 }
@@ -5282,7 +5655,7 @@ function renderTrait(){
       onclick="if(window.setTrait)window.setTrait('${t.month}')">
       ${t.month}${t.month===curMonth?'<span class="now-dot"></span>':''}
     </button>`).join('');
-  const t=TRAITS.find(x=>x.month===currentTrait)||TRAITS[6];
+  const t=TRAITS.find(x=>x.month===currentTrait)||TRAITS[TRAITS.length-1];
   const isCurrent=t.month===curMonth;
   document.getElementById('traitMain').innerHTML=`
     <div class="trait-main">
@@ -5867,6 +6240,8 @@ function renderGrowth(){
     }
   };
   window.loadTJStats();
+  if(window.loadFrdTicker) window.loadFrdTicker();
+  if(window.loadGrowthBoard) window.loadGrowthBoard();
 }
 
 function renderSotm(){
@@ -6829,7 +7204,7 @@ function toggleMode(){
 
 function renderTraitPillar(){
   const curMonth=new Date().toLocaleString('en-US',{month:'long'});
-  const t=TRAITS.find(x=>x.month===curMonth)||TRAITS[6];
+  const t=TRAITS.find(x=>x.month===curMonth)||TRAITS[TRAITS.length-1];
   const n=document.getElementById('traitPillarName');
   const d=document.getElementById('traitPillarDesc');
   if(n) n.textContent=t.trait;
