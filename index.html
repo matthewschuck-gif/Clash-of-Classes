@@ -4157,7 +4157,7 @@ function buildNav(){
   mob.innerHTML=orderedPages.map(p=>{
     const icon=(D&&D.navIcons&&D.navIcons[p.id])||p.icon;
     const label=(D&&D.navLabels&&D.navLabels[p.id])||p.label;
-    return `<button class="mob-tab ${p.id===currentPage?'active':''}" id="mobtab-${p.id}" onclick="goTo('${p.id}')">${icon} ${label}</button>`;
+    return `<button class="nav-tab mob-tab ${p.id===currentPage?'active':''}" id="mobtab-${p.id}" onclick="goTo('${p.id}')"><span class="tab-icon">${icon}</span><span class="tab-label">${label}</span></button>`;
   }).join('');
   // Wire scroll listener for arrow visibility
   const nt=document.getElementById('navTabs');
@@ -4642,14 +4642,20 @@ function applySeasonTheme(theme){
 // ══ HERO SCORE STRIP ══
 function renderHeroStrip(){
   var el=document.getElementById('heroScoreStrip'); if(!el) return;
-  var r=ranked(), mx=maxGrand();
+  var r=ranked(), mx=maxGrand()||1;
   el.innerHTML=r.map(function(sq,i){
-    return '<div class="hero-sq-card'+(i===0?' rank-1':'')+'">'
+    var pts=grand(sq), pct=Math.round(pts/mx*100);
+    return '<div class="hero-sq-card'+(i===0?' rank-1':'')+'" data-rank="'+(i+1)+'" data-sq="'+sq+'">'
       +'<div class="hero-sq-rank">'+(i===0?'👑 ':'')+'#'+(i+1)+'</div>'
-      +'<div class="hero-sq-num" style="color:'+SQ_HEX[sq]+'">'+grand(sq).toLocaleString()+'</div>'
+      +'<div class="hero-sq-num" style="color:'+SQ_HEX[sq]+'">'+pts.toLocaleString()+'</div>'
       +'<div class="hero-sq-lbl" style="color:'+SQ_HEX[sq]+'">'+sq+'</div>'
+      +'<div class="hero-sq-bar-wrap"><div class="hero-sq-bar" style="background:'+SQ_HEX[sq]+';width:0%" data-pct="'+pct+'%"></div></div>'
       +'</div>';
   }).join('');
+  // Animate bars after paint
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){
+    el.querySelectorAll('.hero-sq-bar').forEach(function(b){ b.style.width=b.dataset.pct; });
+  }); });
 }
 
 // ══ MILESTONE CHECK ══
@@ -6281,6 +6287,8 @@ async function addEvent(){
   D.history.unshift({type:'event',name:evtName,pts:finalPts,time:new Date().toISOString()});
   logActivity('Added event: '+evtName+(multiplier!==1?' ['+multiplier+'x]':''));
   await save();
+  const _topSq=SQUADS.filter(sq=>finalPts[sq]>0).sort((a,b)=>finalPts[b]-finalPts[a])[0];
+  if(_topSq) showToast(evtName+' saved — '+_topSq+' +'+finalPts[_topSq]+' pts','save','✓');
   flash('evtOk'); document.getElementById('evtName').value=''; document.getElementById('evtNote').value='';
   SQUADS.forEach(sq=>document.getElementById('pts'+sq).value=0);
 }
@@ -6805,6 +6813,20 @@ async function changePw(){
 }
 
 function flash(id){ const el=document.getElementById(id); if(!el) return; el.className='fmsg ok'; el.style.display='block'; setTimeout(()=>el.style.display='none',2500); }
+
+let _toastTimer=null;
+function showToast(msg, type='save', icon='✓'){
+  const wrap=document.getElementById('cocToast');
+  const lbl=document.getElementById('toastLabel');
+  const ic=document.getElementById('toastIcon');
+  if(!wrap||!lbl) return;
+  wrap.className='toast-'+type;
+  lbl.textContent=msg;
+  if(ic) ic.textContent=icon;
+  wrap.classList.add('show');
+  if(_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>{ wrap.classList.remove('show'); },2800);
+}
 
 // ── AUTH ──
 function openLogin(){ document.getElementById('loginModal').classList.add('open'); document.getElementById('loginErr').style.display='none'; document.getElementById('pwIn').value=''; setTimeout(()=>document.getElementById('pwIn').focus(),80); }
@@ -8174,6 +8196,7 @@ async function sSavePoints(){
   logActivity('Wheel spin: +'+spBanked+' to '+spSquad);
   await save();renderAll();
   flash('sSaveOk');
+  if(spBanked>0) showToast('+'+spBanked+' pts saved for '+nm+' Squad 🎉','earn','⚡');
   spLog.unshift({sq:spSquad,pts:spBanked,nm});spSessTotal+=spBanked;
   const sb=document.getElementById('sSessionBadge');if(sb) sb.textContent='session: '+spSessTotal+' pts';
   spRenderLog();spTVSync();
@@ -8308,7 +8331,8 @@ function spRenderLog(){
   const el=document.getElementById('sSpinLog'),tl=document.getElementById('sSessionTotal');
   if(tl) tl.textContent=spSessTotal+' pts';
   if(!spLog.length){ el.innerHTML='<div style="color:var(--text3);font-size:11px;padding:4px">No spins this session</div>'; return; }
-  el.innerHTML=spLog.slice(0,6).map(h=>`<div class="sp-log-item" style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:var(--surface2);border-radius:7px;font-size:10px;margin-bottom:3px"><span style="color:${SP_HEX[h.sq]};letter-spacing:1px">${h.nm}</span><span style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:${h.pts>0?'#4ade80':'#606080'}">${h.pts>0?'+'+h.pts:h.pts} pts</span></div>`).join('');
+  el.innerHTML=spLog.slice(0,6).map(h=>`<div class="sp-log-item" data-sq="${h.sq}" style="display:flex;justify-content:space-between;align-items:center;font-size:10px"><span style="color:${SP_HEX[h.sq]};letter-spacing:1px">${h.nm}</span><span style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:${h.pts>0?'#4ade80':'#606080'}">${h.pts>0?'+'+h.pts:h.pts} pts</span></div>`).join('')
+    +(spSessTotal>0?`<div class="sp-log-total"><span>Session Total</span><span class="sp-log-total-pts">+${spSessTotal} pts</span></div>`:'');
 }
 
 // ── TV ────────────────────────────────────────
@@ -8590,6 +8614,14 @@ goTo(window.__currentPage || currentPage);
 
 <div id="milestoneBanner"></div>
 <canvas id="confettiCanvas" style="display:none"></canvas>
+
+<!-- TOAST NOTIFICATION -->
+<div id="cocToast">
+  <div class="toast-inner">
+    <div class="toast-icon" id="toastIcon"></div>
+    <span class="toast-label" id="toastLabel"></span>
+  </div>
+</div>
 
 <!-- ── MOBILE BOTTOM NAV BAR ── -->
 <div id="mobileBottomBar" style="display:none"></div>

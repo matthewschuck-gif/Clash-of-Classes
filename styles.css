@@ -1759,3 +1759,317 @@ body.edit-mode [contenteditable="true"]:focus {
   align-items: center; justify-content: center;
   gap: 24px;
 }
+
+/* ══════════════════════════════════
+   1. HERO SCOREBOARD — PODIUM STYLE
+═══════════════════════════════════ */
+.hero-score-strip {
+  align-items: end; /* podium effect — cards grow from bottom */
+}
+
+.hero-sq-card {
+  padding: 16px 12px 12px;
+  border-bottom-width: 3px;
+  border-bottom-style: solid;
+  border-bottom-color: transparent;
+}
+
+/* rank-specific accent colors injected via data-sq on each card */
+.hero-sq-card[data-sq="GOLD"]   { border-bottom-color: var(--sq-gold);   }
+.hero-sq-card[data-sq="PURPLE"] { border-bottom-color: var(--sq-purple); }
+.hero-sq-card[data-sq="BLACK"]  { border-bottom-color: var(--sq-black);  }
+.hero-sq-card[data-sq="GREY"]   { border-bottom-color: var(--sq-grey);   }
+
+/* Score bar fill inside each card */
+.hero-sq-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 3px;
+  width: var(--pct, 0%);
+  border-radius: 0 0 12px 12px;
+  transition: width 1.4s cubic-bezier(.22,.68,0,1.2);
+}
+
+/* Podium heights */
+.hero-sq-card[data-rank="1"] { padding-top: 28px; }
+.hero-sq-card[data-rank="2"] { padding-top: 20px; }
+.hero-sq-card[data-rank="3"] { padding-top: 14px; }
+.hero-sq-card[data-rank="4"] { padding-top: 10px; }
+
+/* Larger leader number */
+.hero-sq-card[data-rank="1"] .hero-sq-num {
+  font-size: 36px;
+}
+.hero-sq-card[data-rank="1"] {
+  border-color: rgba(255,225,0,.4);
+  background: rgba(255,225,0,.07);
+  box-shadow: 0 0 28px rgba(255,225,0,.13);
+}
+
+/* Crown pulse on rank 1 */
+.hero-sq-card[data-rank="1"] .hero-sq-rank {
+  color: var(--gold-soft);
+  font-size: 14px;
+  animation: coc-crown-float 3s ease-in-out infinite;
+}
+
+/* Animated score bar under the card */
+.hero-sq-bar-wrap {
+  height: 4px;
+  background: rgba(255,255,255,.06);
+  border-radius: 2px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+.hero-sq-bar {
+  height: 100%;
+  border-radius: 2px;
+  width: 0%;
+  transition: width 1.4s cubic-bezier(.22,.68,0,1.2);
+}
+
+/* ══════════════════════════════════
+   2. TOAST NOTIFICATIONS
+═══════════════════════════════════ */
+#cocToast {
+  position: fixed;
+  bottom: 32px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  z-index: 9999;
+  pointer-events: none;
+  transition: transform 0.4s cubic-bezier(.34,1.56,.64,1), opacity 0.35s ease;
+  opacity: 0;
+}
+#cocToast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+.toast-inner {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 40px;
+  padding: 10px 20px 10px 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+}
+.toast-icon {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.toast-earn .toast-icon  { background: rgba(74,222,128,.15); }
+.toast-save .toast-icon  { background: rgba(109,43,159,.2); }
+.toast-warn .toast-icon  { background: rgba(248,113,113,.15); }
+.toast-earn .toast-label { color: #4ade80; }
+.toast-save .toast-label { color: var(--gold-soft); }
+.toast-warn .toast-label { color: #f87171; }
+
+/* on mobile push toast above bottom nav */
+@media (max-width: 700px) {
+  #cocToast { bottom: 80px; }
+}
+
+/* ══════════════════════════════════
+   3. TV DISPLAY — SPIN OVERLAY POLISH
+═══════════════════════════════════ */
+#tvSpinOverlay {
+  background: rgba(6,4,18,0.96) !important;
+  backdrop-filter: blur(8px);
+}
+
+/* Big result text on TV */
+#tvResVal {
+  font-family: 'Fraunces', serif !important;
+  font-size: clamp(48px, 8vw, 96px) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  text-align: center;
+  text-shadow: 0 0 40px currentColor;
+  animation: coc-result-pop 0.5s cubic-bezier(.34,1.56,.64,1) both;
+}
+#tvResSub {
+  font-size: clamp(16px, 2.5vw, 28px) !important;
+  text-align: center;
+  color: var(--text2) !important;
+}
+
+/* Squad score strip on TV */
+#tvSquadStrip {
+  gap: 24px !important;
+}
+#tvSquadStrip .tv-sq-chip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 18px;
+  text-align: center;
+  min-width: 100px;
+}
+#tvSquadStrip .tv-sq-pts {
+  font-family: 'Fraunces', serif;
+  font-size: 28px; font-weight: 900;
+}
+#tvSquadStrip .tv-sq-lbl {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+/* Canvas glow on TV matches squad */
+#spinTVCanvas {
+  box-shadow: 0 0 80px rgba(109,43,159,.25), 0 0 160px rgba(73,14,111,.15) !important;
+}
+
+/* ══════════════════════════════════
+   4. MOBILE BOTTOM NAV
+═══════════════════════════════════ */
+@media (max-width: 700px) {
+  /* Hide horizontal scroll nav on mobile */
+  .nav-tabs-wrap { display: none !important; }
+  .nav { padding-bottom: 0 !important; }
+
+  .nav-mobile-row {
+    position: fixed !important;
+    bottom: 0; left: 0; right: 0;
+    height: 62px;
+    padding: 0 4px env(safe-area-inset-bottom, 8px);
+    background: rgba(13,6,26,0.97) !important;
+    backdrop-filter: blur(16px) !important;
+    border-top: 1px solid rgba(255,255,255,.07) !important;
+    box-shadow: 0 -4px 24px rgba(0,0,0,.5) !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-around;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 0;
+    z-index: 500;
+  }
+  .nav-mobile-row::-webkit-scrollbar { display: none; }
+
+  /* Each mobile tab pill */
+  .nav-mobile-row .nav-tab {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    flex: 0 0 auto;
+    min-width: 56px;
+    padding: 6px 8px !important;
+    border-radius: 12px !important;
+    font-size: 10px !important;
+    height: 48px;
+    border: none !important;
+    background: none !important;
+    color: var(--text3) !important;
+    transition: color 0.2s, background 0.2s !important;
+  }
+  .nav-mobile-row .nav-tab .tab-icon {
+    font-size: 18px;
+    line-height: 1;
+  }
+  .nav-mobile-row .nav-tab .tab-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+  .nav-mobile-row .nav-tab.active,
+  .nav-mobile-row .nav-tab[data-active="true"] {
+    color: var(--gold) !important;
+    background: rgba(255,225,0,.08) !important;
+  }
+
+  /* Page body doesn't go under bottom nav */
+  .page { padding-bottom: 80px !important; }
+  main, #pageWrap { padding-bottom: 80px; }
+}
+
+/* ══════════════════════════════════
+   5. ADMIN PANEL UX
+═══════════════════════════════════ */
+
+/* Section headings inside admin panels */
+.admin-section-head {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 14px 0 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+
+/* Admin tab bar — more distinct active state */
+#adminModal .a-tab {
+  transition: all 0.2s !important;
+  border-radius: 8px !important;
+}
+#adminModal .a-tab.on {
+  background: var(--purple) !important;
+  color: #fff !important;
+  border-color: var(--purple) !important;
+}
+#adminModal .a-tab:not(.on):hover {
+  background: var(--surface) !important;
+  border-color: var(--border2) !important;
+}
+
+/* Score summary in admin — nicer rows */
+#scoreSummary > div {
+  border-radius: 8px !important;
+  padding: 12px 14px !important;
+  border-bottom: none !important;
+  background: var(--surface) !important;
+  margin-bottom: 6px !important;
+  transition: background 0.2s;
+}
+#scoreSummary > div:hover { background: var(--surface2) !important; }
+
+/* ══════════════════════════════════
+   6. SPIN RESULT HISTORY
+═══════════════════════════════════ */
+.sp-log-item {
+  border-radius: 8px !important;
+  padding: 7px 10px !important;
+  background: var(--surface2) !important;
+  margin-bottom: 4px !important;
+  border-left: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+/* Color-coded left border per squad */
+.sp-log-item[data-sq="GOLD"]   { border-left-color: var(--sq-gold); }
+.sp-log-item[data-sq="PURPLE"] { border-left-color: var(--sq-purple); }
+.sp-log-item[data-sq="BLACK"]  { border-left-color: var(--sq-black); }
+.sp-log-item[data-sq="GREY"]   { border-left-color: var(--sq-grey); }
+
+/* Session total chip at bottom of log */
+.sp-log-total {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(255,225,0,.06);
+  border: 1px solid rgba(255,225,0,.15);
+  margin-top: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+}
+.sp-log-total-pts {
+  font-family: 'Fraunces', serif;
+  font-size: 14px; font-weight: 700;
+  color: var(--gold-soft);
+}
