@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <!-- CoC v2.4 (Supabase) -->
 <html lang="en">
 <head>
@@ -2306,7 +2306,10 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       <h1 class="page-title"><span>Spin!</span></h1>
       <div class="page-subtitle">Admin-only wheel — results save directly to the tracker</div>
     </div>
-    <button class="btn" onclick="openSpinTV()" style="color:var(--gold-soft);border-color:rgba(232,200,64,0.3)">&#128250; TV Display</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="openSpinTV()" style="color:var(--gold-soft);border-color:rgba(232,200,64,0.3)" title="Overlay TV view on this screen">&#128250; TV Overlay</button>
+      <button class="btn" onclick="popOutTV()" style="color:var(--purple-lt);border-color:rgba(187,142,245,0.3)" title="Open TV in a new window &mdash; drag to projector screen">&#8599; Pop Out TV</button>
+    </div>
   </div>
 
   <!-- AUTH GATE -->
@@ -3566,7 +3569,7 @@ window.toggleMode = function(){
     {id:'mindset',icon:'📚',label:'Mindset'},{id:'wheel',icon:'🎡',label:'Wheel'},
     {id:'traitdough',icon:'💵',label:'Trait Dough'},{id:'sotm',icon:'🌟',label:'Student of Month'},
     {id:'kickoff',icon:'🚀',label:'Kick Off'},{id:'mayhem',icon:'⚡',label:'Mayhem'},{id:'champs',icon:'🏆',label:'Champs'},
-    {id:'gallery',icon:'📸',label:'Gallery'},{id:'staff',icon:'👤',label:'Staff'},{id:'spin',icon:'🎰',label:'Spin!'},
+    {id:'gallery',icon:'📸',label:'Gallery'},{id:'staff',icon:'👤',label:'Staff'},{id:'spin',icon:'🌀',label:'Spin!'},
   ];
   var tabs=document.getElementById('navTabs');
   var mob=document.getElementById('mobileNav');
@@ -3713,7 +3716,7 @@ const PAGES_DEF = [
   { id:'champs',     icon:'🏆', label:'Champs'         },
   { id:'gallery',    icon:'📸', label:'Gallery'        },
   { id:'staff',      icon:'👤', label:'Staff'          },
-  { id:'spin',       icon:'🎰', label:'Spin!'          },
+  { id:'spin',       icon:'🌀', label:'Spin!'          },
   { id:'growth',     icon:'🏔️', label:'Growth'         },
 ];
 
@@ -4077,6 +4080,8 @@ async function sbLoad(){
   document.getElementById('evtDate').value=new Date().toISOString().split('T')[0];
   const pg=params.get('page');
   if(pg) goTo(pg); else goTo('home');
+  // ?tv=1 auto-launches TV display (for pop-out window on projector/second screen)
+  if(params.get('tv')==='1') setTimeout(()=>openDisplay(),600);
   if(ADMIN_URL){ authed=true; openAdmin(); }
   if(window._pendingTrait){ currentTrait=window._pendingTrait; window._pendingTrait=null; renderTrait(); }
   renderAll();
@@ -8276,6 +8281,11 @@ function openSpinTV(){
   if(tc) spDrawWheel(tc.getContext('2d'),spAngle,420);
 }
 function closeSpinTV(){spTVOpen=false;const el=document.getElementById('spinTV');if(el) el.style.display='none';}
+function popOutTV(){
+  const url=location.origin+location.pathname+'?tv=1';
+  const w=window.open(url,'coc-tv','width=1920,height=1080,left=0,top=0');
+  if(!w) alert('Pop-up blocked — please allow pop-ups for this site, then try again.');
+}
 function spTVSync(){
   if(!spTVOpen) return;
   const badge=document.getElementById('spinTVSquadBadge');
@@ -8332,7 +8342,7 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,saveHomeStats,
   renderWheel,renderTraitDough,renderSotm,renderGrowth,loadTJStats:function(){if(window.loadTJStats)window.loadTJStats();},
   openWheelSpinner,closeWheelSpinner,wDoSpin,wDoBank,wDoRisk,wSaveToTracker,wSetSq,
-  spinAuth,spinLogout,spinSetSq,sDoSpin,sDoBank,sDoRisk,sSavePoints,sResetSpin,openSpinTV,closeSpinTV,spShowGivePicker,spConfirmGive,
+  spinAuth,spinLogout,spinSetSq,sDoSpin,sDoBank,sDoRisk,sSavePoints,sResetSpin,openSpinTV,closeSpinTV,popOutTV,spShowGivePicker,spConfirmGive,
   renderSpinPage,
   renderH2H,openHeadToHead,
   saveEditEvent,deleteEditEvent,
