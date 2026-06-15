@@ -6122,7 +6122,7 @@ function renderGrowth(){
         if(!e.pts||!e.type)return;
         SQUADS_TJ.forEach(function(sq){
           var p=e.pts[sq.toUpperCase()]||0;if(!p)return;
-          if(e.type==='trail_journal'){tjP[sq]+=p;tjC[sq]++;if(e.name&&e.name.indexOf('High')>-1)hiC[sq]++;}
+          if(e.type==='trail_journal'){tjP[sq]+=p;tjC[sq]++;hiC[sq]++;} // all TJ events are High insight (awardClashPoints only fires on High)
           else if(e.type==='trailback_panel'){plP[sq]+=p;plC[sq]++;}
         });
       });
