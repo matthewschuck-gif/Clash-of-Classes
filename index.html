@@ -3940,10 +3940,10 @@ const DEF = {
   photoOfWeek: { url:'', caption:'', active:false },
   activityLog: [],
   footer: { brand:'Clash of Classes', sub:'Ephrata Middle School · Mountaineers · #490e6f · #ffe100' },
-  countdownEvents: [ { label:'Last Day of School', date:'2026-06-04' } ],
+  countdownEvents: [ { label:'Last Day of School', date:'2027-06-09' } ],
   homeStats: { stat1num:'4', stat1lbl:'Color Squads', stat2num:'9', stat2lbl:'LRG Traits' },
-  lastDay: '2026-06-04',
-  schoolStart: '2025-09-02',
+  lastDay: '2027-06-09',
+  schoolStart: '2026-08-31',
   snapshots: [],
   staffLinks: [],
   sotmData: {
@@ -4863,15 +4863,50 @@ function renderAnnouncement(){
   else { bar.classList.remove('has-msg'); }
 }
 
+// 2026-2027 EASD non-pupil days (holidays, breaks, conferences, records days)
+// Half-days for students are still counted as school days.
+const SCHOOL_HOLIDAYS_2627=new Set([
+  '2026-09-04', // No school (pre-Labor Day)
+  '2026-09-07', // Labor Day
+  '2026-10-12', // Columbus Day / Indigenous Peoples Day
+  '2026-10-23', // Parent-Teacher Conferences — no students
+  '2026-11-23','2026-11-24','2026-11-25','2026-11-26','2026-11-27','2026-11-30', // Thanksgiving break
+  '2026-12-23','2026-12-24','2026-12-25','2026-12-28','2026-12-29','2026-12-30','2026-12-31', // Winter break
+  '2027-01-01', // New Year's Day
+  '2027-01-18', // MLK Day
+  '2027-01-19', // Records Day — teachers only, no students
+  '2027-02-15', // Presidents Day
+  '2027-03-22','2027-03-23', // Parent-Teacher Conferences — no students
+  '2027-03-24','2027-03-25','2027-03-26', // Spring break
+  '2027-03-29', // Weather make-up / vacation day
+  '2027-05-28', // Weather make-up / vacation day
+  '2027-05-31', // Memorial Day
+]);
+function countSchoolDays(startStr, toDate){
+  // Count Mon-Fri school days from startStr through toDate, excluding holidays
+  const start=new Date(startStr+'T00:00:00');
+  const end=new Date(toDate); end.setHours(0,0,0,0);
+  if(end<start) return 0;
+  let count=0;
+  const cur=new Date(start);
+  while(cur<=end){
+    const dow=cur.getDay();
+    if(dow!==0&&dow!==6){
+      const ds=cur.toISOString().split('T')[0];
+      if(!SCHOOL_HOLIDAYS_2627.has(ds)) count++;
+    }
+    cur.setDate(cur.getDate()+1);
+  }
+  return count;
+}
 function renderCountdown(){
   const el=document.getElementById('countdownStrip'); if(!el) return;
   const now=new Date(); now.setHours(0,0,0,0);
-  const startStr=D.schoolStart||DEF.schoolStart||'2025-09-02';
-  const endStr=D.lastDay||DEF.lastDay||'2026-06-04';
-  const schoolStart=new Date(startStr+'T00:00:00');
+  const startStr=D.schoolStart||DEF.schoolStart||'2026-08-31';
+  const endStr=D.lastDay||DEF.lastDay||'2027-06-09';
   const lastDay=new Date(endStr+'T00:00:00');
-  const daysSinceStart=Math.max(0,Math.floor((now-schoolStart)/864e5));
-  const daysToEnd=Math.max(0,Math.floor((lastDay-now)/864e5));
+  const daysSinceStart=countSchoolDays(startStr, now);
+  const daysToEnd=Math.max(0,countSchoolDays(now.toISOString().split('T')[0], endStr)-1);
   const events=D.countdownEvents||DEF.countdownEvents||[];
   const nextEvt=events.find(function(e){ return new Date(e.date+'T00:00:00')>=now; });
   const daysToNext=nextEvt?Math.max(0,Math.floor((new Date(nextEvt.date+'T00:00:00')-now)/864e5)):null;
@@ -4884,7 +4919,7 @@ function renderCountdown(){
   // Build countdown cards without nested template literals
   var card1='<div class="countdown-card"><div class="countdown-num">'+daysSinceStart+'</div>'
     +'<div class="countdown-lbl">Days of School</div>'
-    +'<div class="countdown-sub">Since '+startStr+'</div></div>';
+    +'<div class="countdown-sub">Mon–Fri, excl. holidays</div></div>';
   var card2=daysToNext!==null
     ?'<div class="countdown-card" style="border-top-color:var(--purple-lt)"><div class="countdown-num" style="color:var(--purple-lt)">'+daysToNext+'</div>'
       +'<div class="countdown-lbl">Days Until</div><div class="countdown-sub">'+nextEvt.label+'</div></div>'
@@ -7948,11 +7983,14 @@ function spLand(seg){
     if(seg.n==='GIVE'){
       // GIVE only active on spins 2 & 3 (spSpinNum 1 or 2)
       if(spSpinNum===1||spSpinNum===2){
+        const givePts=spCapVal(seg.v);
+        window._spGivePts=givePts; // captured for spConfirmGive
         spPlayLand('earn');
         if(cv) cv.style.boxShadow='0 0 50px rgba(232,160,32,.3)';
-        spSetResult('GIVE \u2014 50 pts','Choose a squad to give 50 points to!','give');
+        spSetResult('GIVE \u2014 '+givePts+' pts','Choose a squad to give '+givePts+' points to!','give');
         spShowGivePicker();
       } else {
+        window._spGivePts=0;
         spPlayLand('zero');
         if(cv) cv.style.boxShadow='0 0 50px rgba(248,113,113,.2)';
         spSetResult('GIVE \u2014 0 pts','GIVE only applies on spins 2 & 3. No points.','zero');
@@ -8114,14 +8152,15 @@ function spShowGivePicker(){
 async function spConfirmGive(targetSq){
   const box=document.getElementById('sGiveBox');if(box)box.style.display='none';
   const nm=SP_SQNAME[targetSq];
-  const label='Wheel GIVE — '+nm+' Squad (+50 pts)';
-  const pts={};SQUADS.forEach(s=>pts[s]=0);pts[targetSq]=50;
+  const givePts=window._spGivePts||spCapVal(50); // use captured value from landing
+  const label='Wheel GIVE — '+nm+' Squad (+'+givePts+' pts)';
+  const pts={};SQUADS.forEach(s=>pts[s]=0);pts[targetSq]=givePts;
   if(!D.nextId)D.nextId=100;if(!Array.isArray(D.events))D.events=[];
   D.events.push({id:D.nextId++,name:label,type:'event',date:new Date().toISOString().split('T')[0],note:'Wheel GIVE',pts});
   D.history.unshift({type:'event',name:label,pts,time:new Date().toISOString()});
-  logActivity('Wheel GIVE: +50 to '+targetSq);
+  logActivity('Wheel GIVE: +'+givePts+' to '+targetSq);
   await save();renderAll();
-  sSetResult('GIVE → '+nm+' +50 pts','50 points given to '+nm+' Squad — saved!','earn');
+  sSetResult('GIVE → '+nm+' +'+givePts+' pts',givePts+' points given to '+nm+' Squad — saved!','earn');
   spPipDone();
   setTimeout(spShowSave,1200);
 }
