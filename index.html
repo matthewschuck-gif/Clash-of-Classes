@@ -908,6 +908,40 @@ body.light-mode .tab.active { color:var(--text); border-bottom-color:var(--gold-
 .tv-exit { position:fixed; top:14px; right:16px; z-index:950; background:rgba(28,25,23,0.8); border:1px solid var(--border); color:var(--text3); font-size:12px; padding:7px 14px; cursor:pointer; border-radius:6px; font-family:'DM Mono',monospace; letter-spacing:2px; transition:all 0.2s; }
 .tv-exit:hover { color:var(--text); border-color:var(--border2); }
 
+/* ── TV LIGHT MODE OVERRIDES ── */
+#tvView {
+  --bg: #f5f3f8; --surface: #ffffff; --surface2: #ede8f5; --border: rgba(73,14,111,0.12); --border2: rgba(73,14,111,0.28);
+  --text: #1a0030; --text2: #4a2d6e; --text3: #7c5fa0;
+  --purple-lt: #7c3aed; --purple-dim: rgba(73,14,111,0.06); --gold-soft: #b06000;
+  background: #f5f3f8;
+}
+#tvView .tv-accent { background: linear-gradient(90deg,#490e6f,#9333ea,#c47f00,#9333ea,#490e6f); }
+#tvView .tv-prog-wrap { background: rgba(73,14,111,0.08); }
+#tvView .tv-hdr { background: #fff; border-bottom-color: rgba(73,14,111,0.12); }
+#tvView .tv-e { background: #490e6f; }
+#tvView .tv-cat-bwrap { background: rgba(73,14,111,0.06); }
+#tvView .tv-cat-bval { color: rgba(255,255,255,0.85); }
+#tvView .tv-cat-bval.lt { color: rgba(0,0,0,0.5); }
+#tvView .tv-met-bw { background: rgba(73,14,111,0.08); }
+#tvView .tv-exit { background: rgba(255,255,255,0.9); border-color: rgba(73,14,111,0.2); color: #7c5fa0; }
+#tvView .tv-exit:hover { color: #490e6f; border-color: rgba(73,14,111,0.5); }
+#tvView .tv-live { color: #16a34a; }
+#tvView .live-dot { background: #16a34a; }
+#tvView .tv-date { color: #7c5fa0; }
+.tv-nav { display: none !important; }
+
+/* Podium slide */
+.tv-podium { display:flex; align-items:flex-end; justify-content:center; gap:16px; flex:1; padding:20px 40px 30px; }
+.tv-podium-place { border-radius:12px 12px 0 0; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:24px 16px 16px; width:clamp(120px,18vw,220px); }
+.tv-podium-place.p1 { height:clamp(180px,30vh,340px); }
+.tv-podium-place.p2 { height:clamp(140px,23vh,260px); }
+.tv-podium-place.p3 { height:clamp(110px,17vh,200px); }
+.tv-podium-place.p4 { height:clamp(90px,13vh,160px); }
+.tv-podium-rank { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:3px; color:rgba(255,255,255,0.5); margin-bottom:8px; text-transform:uppercase; }
+.tv-podium-sqname { font-family:'Fraunces',serif; font-size:clamp(18px,2.8vw,36px); font-weight:900; color:#fff; line-height:1; text-align:center; }
+.tv-podium-sqpts { font-family:'Fraunces',serif; font-size:clamp(26px,4.5vw,60px); font-weight:900; color:rgba(255,255,255,0.9); line-height:1; margin-top:8px; }
+.tv-podium-sublbl { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:3px; color:rgba(255,255,255,0.45); margin-top:4px; text-transform:uppercase; }
+
 /* ── MODAL / ADMIN ── */
 .overlay { display:none; position:fixed; inset:0; background:rgba(10,8,6,0.85); z-index:500; align-items:center; justify-content:center; backdrop-filter:blur(6px); }
 .edit-evt-modal { display:none; position:fixed; inset:0; background:rgba(10,8,6,0.85); z-index:500; align-items:center; justify-content:center; backdrop-filter:blur(6px); overflow-y:auto; }
@@ -2718,8 +2752,12 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   </div>
   <div class="tv-slides">
     <div class="tv-slide active" id="tvS0"><div class="tv-rank-grid" id="tvRanks"></div></div>
-    <div class="tv-slide" id="tvS1"><div class="tv-cat-title">Points by Category</div><div class="tv-cat-rows" id="tvCats"></div></div>
-    <div class="tv-slide" id="tvS2"><div class="tv-met-grid" id="tvMets"></div></div>
+    <div class="tv-slide" id="tvS1">
+      <div class="tv-cat-title" style="margin-bottom:8px">Squad Standings — Podium</div>
+      <div class="tv-podium" id="tvPodium"></div>
+    </div>
+    <div class="tv-slide" id="tvS2"><div class="tv-cat-title">Points by Category</div><div class="tv-cat-rows" id="tvCats"></div></div>
+    <div class="tv-slide" id="tvS3"><div class="tv-met-grid" id="tvMets"></div></div>
   </div>
   <div class="tv-nav" id="tvNav"></div>
   <!-- Remote spin overlay -->
@@ -2735,45 +2773,45 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 <!-- ═══ TICKER TAPE ═══ -->
 
 <!-- SPIN TV DISPLAY -->
-<div id="spinTV" style="display:none;position:fixed;inset:0;z-index:950;background:#06060f;flex-direction:column;align-items:center;justify-content:center;gap:0">
-  <button onclick="closeSpinTV()" style="position:absolute;top:16px;right:20px;background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.3);cursor:pointer;padding:8px 18px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;z-index:10">&#10005; Exit TV</button>
+<div id="spinTV" style="display:none;position:fixed;inset:0;z-index:950;background:#f5f3f8;flex-direction:column;align-items:center;justify-content:center;gap:0">
+  <button onclick="closeSpinTV()" style="position:absolute;top:16px;right:20px;background:rgba(255,255,255,.9);border:1px solid rgba(73,14,111,.2);color:#7c5fa0;cursor:pointer;padding:8px 18px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;z-index:10">&#10005; Exit TV</button>
 
   <!-- Live squad scores strip -->
-  <div id="spinTVScores" style="display:flex;width:100%;border-bottom:2px solid rgba(255,255,255,.06)"></div>
+  <div id="spinTVScores" style="display:flex;width:100%;border-bottom:2px solid rgba(73,14,111,.1);background:#fff"></div>
 
   <!-- Center: wheel + result -->
-  <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:60px;padding:24px;flex-wrap:wrap">
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:48px;padding:24px;flex-wrap:wrap">
 
-    <!-- Wheel -->
+    <!-- Wheel (fills screen more) -->
     <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
       <div style="position:relative">
-        <div id="spinTVPtr" style="position:absolute;top:-26px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:32px solid #e8c840;z-index:5"></div>
-        <canvas id="spinTVCanvas" width="420" height="420" style="display:block;border-radius:50%;box-shadow:0 0 60px rgba(187,142,245,.18)"></canvas>
+        <div id="spinTVPtr" style="position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:20px solid transparent;border-right:20px solid transparent;border-top:38px solid #490e6f;z-index:5"></div>
+        <canvas id="spinTVCanvas" width="580" height="580" style="display:block;border-radius:50%;box-shadow:0 4px 40px rgba(73,14,111,.15);max-width:min(55vw,580px);max-height:min(55vw,580px)"></canvas>
       </div>
       <!-- Ring dots -->
       <div style="display:flex;gap:10px;align-items:center">
-        <div id="tvDot0" style="width:14px;height:14px;border-radius:50%;background:#e8c840;box-shadow:0 0 10px rgba(232,200,64,.6);transition:all .3s"></div>
-        <div id="tvDot1" style="width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);transition:all .3s"></div>
-        <div id="tvDot2" style="width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);transition:all .3s"></div>
-        <div id="tvDot3" style="width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);transition:all .3s"></div>
+        <div id="tvDot0" style="width:14px;height:14px;border-radius:50%;background:#490e6f;box-shadow:0 0 10px rgba(73,14,111,.5);transition:all .3s"></div>
+        <div id="tvDot1" style="width:14px;height:14px;border-radius:50%;background:rgba(73,14,111,.15);border:1.5px solid rgba(73,14,111,.2);transition:all .3s"></div>
+        <div id="tvDot2" style="width:14px;height:14px;border-radius:50%;background:rgba(73,14,111,.15);border:1.5px solid rgba(73,14,111,.2);transition:all .3s"></div>
+        <div id="tvDot3" style="width:14px;height:14px;border-radius:50%;background:rgba(73,14,111,.15);border:1.5px solid rgba(73,14,111,.2);transition:all .3s"></div>
       </div>
     </div>
 
     <!-- Result panel -->
     <div style="max-width:360px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px">
-      <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:rgba(255,255,255,.25)">Clash of Classes · The Wheel</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:rgba(73,14,111,.4)">Clash of Classes · The Wheel</div>
       <!-- Squad badge -->
-      <div id="spinTVSquadBadge" style="padding:10px 28px;border-radius:40px;font-family:'DM Mono',monospace;font-size:13px;letter-spacing:3px;text-transform:uppercase;font-weight:700;background:rgba(197,201,209,.1);color:#c5c9d1;border:1.5px solid rgba(197,201,209,.25)">Black Squad</div>
+      <div id="spinTVSquadBadge" style="padding:10px 28px;border-radius:40px;font-family:'DM Mono',monospace;font-size:13px;letter-spacing:3px;text-transform:uppercase;font-weight:700;background:rgba(73,14,111,.08);color:#490e6f;border:1.5px solid rgba(73,14,111,.2)">Black Squad</div>
       <!-- Big result -->
-      <div id="spinTVResult" style="font-family:'Fraunces',serif;font-size:clamp(60px,12vw,120px);font-weight:900;color:#e8c840;line-height:1;transition:all .3s">—</div>
-      <div id="spinTVSub" style="font-family:'DM Mono',monospace;font-size:clamp(13px,2vw,18px);letter-spacing:2px;color:rgba(255,255,255,.45);text-transform:uppercase">Waiting to spin</div>
+      <div id="spinTVResult" style="font-family:'Fraunces',serif;font-size:clamp(60px,12vw,120px);font-weight:900;color:#490e6f;line-height:1;transition:all .3s">—</div>
+      <div id="spinTVSub" style="font-family:'DM Mono',monospace;font-size:clamp(13px,2vw,18px);letter-spacing:2px;color:#7c5fa0;text-transform:uppercase">Waiting to spin</div>
       <!-- Points banked -->
-      <div id="spinTVBanked" style="display:none;font-family:'Fraunces',serif;font-size:24px;font-weight:700;color:rgba(255,255,255,.4)">0 pts banked</div>
+      <div id="spinTVBanked" style="display:none;font-family:'Fraunces',serif;font-size:24px;font-weight:700;color:#7c5fa0">0 pts banked</div>
     </div>
   </div>
 
   <!-- Bottom: scrolling ticker -->
-  <div style="width:100%;border-top:1px solid rgba(255,255,255,.06);padding:14px 0;overflow:hidden">
+  <div style="width:100%;border-top:1px solid rgba(73,14,111,.1);padding:14px 0;overflow:hidden;background:#fff">
     <div id="spinTVTicker" style="display:flex;gap:0;animation:tickerScroll 35s linear infinite;white-space:nowrap;width:max-content"></div>
   </div>
 </div>
@@ -7026,17 +7064,34 @@ function buildTV(){
     <div class="tv-met-rows">${SQUADS.map(sq=>{const v=D.metrics[d.key][sq]||0;return`<div class="tv-met-row"><span class="tv-met-sq" style="color:${SQ_HEX[sq]}">${sq}</span><div class="tv-met-bw"><div class="tv-met-bf" style="width:${Math.round(v/mx2*100)}%;background:${SQ_HEX[sq]}"></div></div><span class="tv-met-pct">${v}%</span></div>`;}).join('')}</div></div>`;
   }).join('')+`<div class="tv-week-card"><div class="tv-week-lbl">Current Week</div><div class="tv-week-val">${D.metrics.weekLabel||'—'}</div></div>`;
 
-  document.getElementById('tvNav').innerHTML=[0,1,2].map(i=>`<div class="tv-dot${i===tvSlide?' on':''}" onclick="showSlide(${i})"></div>`).join('');
+  // Podium slide
+  const rp=ranked();
+  const podiumOrder=[1,0,2,3]; // visual order: 2nd, 1st, 3rd, 4th
+  const ranks={};rp.forEach((sq,i)=>{ranks[sq]=i;});
+  document.getElementById('tvPodium').innerHTML=podiumOrder.map(pos=>{
+    const sq=rp[pos]; if(!sq) return '';
+    const pts=grand(sq), pLabel=['1st','2nd','3rd','4th'][pos];
+    return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:10px">
+      <div style="font-family:'Fraunces',serif;font-size:clamp(14px,2vw,26px);font-weight:900;color:${SQ_HEX[sq]}">${sq}</div>
+      <div style="font-family:'Fraunces',serif;font-size:clamp(20px,3.5vw,48px);font-weight:900;color:${SQ_HEX[sq]}">${pts.toLocaleString()}</div>
+      <div class="tv-podium-place p${pos+1}" style="background:${SQ_HEX[sq]};opacity:0.92">
+        <div class="tv-podium-rank">${pLabel} Place</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('tvNav').innerHTML=[0,1,2,3].map(i=>`<div class="tv-dot${i===tvSlide?' on':''}" onclick="showSlide(${i})"></div>`).join('');
 }
 
+const TV_SLIDE_COUNT=4;
 function showSlide(n){ tvSlide=n; document.querySelectorAll('.tv-slide').forEach((s,i)=>s.classList.toggle('active',i===n)); document.querySelectorAll('.tv-dot').forEach((d,i)=>d.classList.toggle('on',i===n)); tvPct=0; document.getElementById('tvProg').style.width='0%'; }
-function startAuto(){ clearInterval(tvTimer); clearInterval(tvPTimer); const step=80,inc=step/TV_MS*100; tvPTimer=setInterval(()=>{tvPct=Math.min(tvPct+inc,100);document.getElementById('tvProg').style.width=tvPct+'%';},step); tvTimer=setInterval(()=>{showSlide((tvSlide+1)%3);startAuto();},TV_MS); }
+function startAuto(){ clearInterval(tvTimer); clearInterval(tvPTimer); const step=80,inc=step/TV_MS*100; tvPTimer=setInterval(()=>{tvPct=Math.min(tvPct+inc,100);document.getElementById('tvProg').style.width=tvPct+'%';},step); tvTimer=setInterval(()=>{showSlide((tvSlide+1)%TV_SLIDE_COUNT);startAuto();},TV_MS); }
 
 document.addEventListener('keydown',e=>{
   if(!document.getElementById('tvView').classList.contains('active')) return;
   if(e.key==='Escape') closeDisplay();
-  if(e.key==='ArrowRight'||e.key===' '){showSlide((tvSlide+1)%3);startAuto();}
-  if(e.key==='ArrowLeft'){showSlide((tvSlide+2)%3);startAuto();}
+  if(e.key==='ArrowRight'||e.key===' '){showSlide((tvSlide+1)%TV_SLIDE_COUNT);startAuto();}
+  if(e.key==='ArrowLeft'){showSlide((tvSlide+TV_SLIDE_COUNT-1)%TV_SLIDE_COUNT);startAuto();}
 });
 
 function setTrait(m){ currentTrait=m; renderTrait(); }
@@ -8106,7 +8161,7 @@ function sDoRisk(){
   const _cv2=document.getElementById('spinCanvas');
   if(_cv2) spDrawWheel(_cv2.getContext('2d'),spAngle,380);
   const _tc2=document.getElementById('spinTVCanvas');
-  if(_tc2&&spTVOpen) spDrawWheel(_tc2.getContext('2d'),spAngle,420);
+  if(_tc2&&spTVOpen) spDrawWheel(_tc2.getContext('2d'),spAngle,580);
   setTimeout(sDoSpin,300);
 }
 
@@ -8132,7 +8187,7 @@ function sResetSpin(){
   const cv=document.getElementById('spinCanvas');
   if(cv){cv.style.boxShadow='0 0 40px rgba(187,142,245,.1)';cv.style.cursor='pointer';spDrawWheel(cv.getContext('2d'),0,380);}
   const tc=document.getElementById('spinTVCanvas');
-  if(tc) spDrawWheel(tc.getContext('2d'),0,420);
+  if(tc) spDrawWheel(tc.getContext('2d'),0,580);
   // Reset pips
   for(let i=0;i<4;i++){
     const p=document.getElementById('sPip'+i),a=document.getElementById('sPipArr'+i),tp=document.getElementById('tvDot'+i);
@@ -8341,7 +8396,7 @@ function openSpinTV(){
   const el=document.getElementById('spinTV');if(el) el.style.display='flex';
   spTVSync();
   const tc=document.getElementById('spinTVCanvas');
-  if(tc) spDrawWheel(tc.getContext('2d'),spAngle,420);
+  if(tc) spDrawWheel(tc.getContext('2d'),spAngle,580);
 }
 function closeSpinTV(){spTVOpen=false;const el=document.getElementById('spinTV');if(el) el.style.display='none';}
 function popOutTV(){
@@ -8354,9 +8409,9 @@ function spTVSync(){
   const badge=document.getElementById('spinTVSquadBadge');
   if(badge){ badge.textContent=SP_SQNAME[spSquad]+' Squad'; badge.style.background=SP_HEX[spSquad]+'22'; badge.style.color=SP_HEX[spSquad]; badge.style.border='1.5px solid '+SP_HEX[spSquad]+'55'; }
   const strip=document.getElementById('spinTVScores');
-  if(strip){ const r=ranked(); strip.innerHTML=r.map((sq,i)=>`<div style="flex:1;text-align:center;padding:14px 8px;background:${i===0?'rgba(232,200,64,0.05)':'transparent'};border-right:1px solid rgba(255,255,255,0.05)"><div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:4px">${i===0?'\u25b2 ':' '}${sq}${i===0?' \u25b2':''}</div><div style="font-family:'Fraunces',serif;font-size:clamp(28px,5vw,52px);font-weight:900;color:${SQ_HEX[sq]};line-height:1">${grand(sq).toLocaleString()}</div></div>`).join(''); }
+  if(strip){ const r=ranked(); strip.innerHTML=r.map((sq,i)=>`<div style="flex:1;text-align:center;padding:14px 8px;background:${i===0?'rgba(73,14,111,0.05)':'transparent'};border-right:1px solid rgba(73,14,111,0.08)"><div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(73,14,111,.4);margin-bottom:4px">${i===0?'\u25b2 ':' '}${sq}${i===0?' \u25b2':''}</div><div style="font-family:'Fraunces',serif;font-size:clamp(28px,5vw,52px);font-weight:900;color:${SQ_HEX[sq]};line-height:1">${grand(sq).toLocaleString()}</div></div>`).join(''); }
   const tape=document.getElementById('spinTVTicker');
-  if(tape){ const r2=ranked(); const items=r2.map(sq=>`<span style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:${SQ_HEX[sq]};padding:0 32px">${sq} \u2014 ${grand(sq).toLocaleString()} pts</span><span style="font-family:'DM Mono',monospace;font-size:12px;color:rgba(255,255,255,.15);padding:0 16px">\u00b7</span>`).join(''); tape.innerHTML=items+items; }
+  if(tape){ const r2=ranked(); const items=r2.map(sq=>`<span style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:${SQ_HEX[sq]};padding:0 32px">${sq} \u2014 ${grand(sq).toLocaleString()} pts</span><span style="font-family:'DM Mono',monospace;font-size:12px;color:rgba(73,14,111,.2);padding:0 16px">\u00b7</span>`).join(''); tape.innerHTML=items+items; }
   spUpdBanked();
 }
 function spTVResult(){
