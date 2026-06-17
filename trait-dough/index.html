@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#490e6f" />
+  <title>Trait Dough</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+  <style>
+    :root {
+      --purple: #490e6f;
+      --purple-mid: #6b1fa3;
+      --gold: #c47f00;
+      --gold-dim: rgba(196,127,0,0.10);
+      --bg: #f5f3f8;
+      --card: #ffffff;
+      --border: rgba(73,14,111,0.15);
+      --text: #1a0030;
+      --muted: #7c5fa0;
+      --sq-black:  #4b5a6e;
+      --sq-gold:   #b07200;
+      --sq-grey:   #5a6a7a;
+      --sq-purple: #7c3aed;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Geist', system-ui, sans-serif; }
+
+    /* ── GATE ── */
+    #gate {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .gate-box {
+      text-align: center; padding: 2rem 1.75rem;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 18px; width: 100%; max-width: 300px;
+      box-shadow: 0 4px 24px rgba(73,14,111,0.1);
+    }
+    .gate-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .gate-title { font-size: 1.1rem; font-weight: 800; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.25rem; }
+    .gate-sub { font-size: 0.78rem; color: var(--muted); margin-bottom: 1.25rem; }
+    #gate-pin {
+      width: 100%; padding: 0.7rem; border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: #f9f7fc; color: var(--text);
+      font-size: 1.5rem; letter-spacing: 0.35em; text-align: center;
+      outline: none; margin-bottom: 0.75rem; font-family: inherit;
+    }
+    #gate-pin:focus { border-color: var(--purple); }
+    #gate-err { color: #f87171; font-size: 0.78rem; min-height: 1.2em; margin-bottom: 0.5rem; }
+    .gate-btn {
+      width: 100%; padding: 0.7rem; border-radius: 10px; border: none;
+      background: var(--purple); color: #fff; font-weight: 900;
+      font-size: 0.95rem; cursor: pointer; letter-spacing: 0.04em; font-family: inherit;
+      transition: opacity 0.2s;
+    }
+    .gate-btn:hover { opacity: 0.88; }
+
+    /* QR toggle link */
+    .gate-qr-link {
+      display: block; margin-top: 1.1rem;
+      font-size: 0.72rem; color: var(--muted); cursor: pointer;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      font-weight: 700; transition: color 0.2s; border: none;
+      background: none; font-family: inherit; width: 100%;
+    }
+    .gate-qr-link:hover { color: var(--gold); }
+    .qr-panel {
+      display: none; margin-top: 1.25rem;
+      padding-top: 1.25rem; border-top: 1px solid var(--border);
+    }
+    .qr-panel.open { display: block; }
+    .qr-label { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; margin-bottom: 0.75rem; }
+    .qr-img-wrap {
+      display: flex; justify-content: center;
+      background: #fff; border-radius: 12px; padding: 12px;
+    }
+    .qr-img-wrap img { width: 160px; height: 160px; display: block; }
+    .qr-hint { font-size: 0.68rem; color: var(--muted); margin-top: 0.6rem; opacity: 0.75; }
+
+    /* ── APP ── */
+    .app { max-width: 520px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 1.75rem; }
+    .header-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(73,14,111,0.07); border: 1px solid rgba(73,14,111,0.18);
+      border-radius: 20px; padding: 3px 12px 3px 8px;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+      color: var(--purple); text-transform: uppercase; margin-bottom: 0.75rem;
+    }
+    .badge-dot { background: var(--purple) !important; }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+    .header h1 { font-size: 2rem; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 0.25rem;
+      background: linear-gradient(135deg, #490e6f 0%, #7c3aed 60%, #b07200 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .header p { font-size: 0.82rem; color: var(--muted); }
+
+    /* Tally bar */
+    .tally-strip {
+      display: grid; grid-template-columns: repeat(4,1fr); gap: 8px;
+      margin-bottom: 1.5rem;
+    }
+    .tally-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 0.75rem 0.5rem; text-align: center;
+      transition: border-color 0.2s;
+    }
+    .tally-card.active { border-color: var(--sq-color, var(--gold)); box-shadow: 0 0 14px var(--sq-glow, rgba(255,225,0,0.2)); }
+    .tally-label { font-size: 9px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+    .tally-num { font-size: 1.5rem; font-weight: 900; color: var(--text); }
+
+    /* Form */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem; margin-bottom: 1rem; }
+    .card-title { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; }
+    .field { margin-bottom: 0.9rem; }
+    .field label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6b5a8a; margin-bottom: 4px; }
+    .field input, .field select {
+      width: 100%; padding: 0.6rem 0.85rem; border-radius: 9px;
+      border: 1.5px solid rgba(73,14,111,0.2);
+      background: #f9f7fc; color: var(--text);
+      font-size: 0.9rem; outline: none; font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .field input:focus, .field select:focus { border-color: var(--purple); }
+    .field select option { background: #fff; color: var(--text); }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* Squad selector */
+    .squad-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-top: 4px; }
+    .squad-btn {
+      padding: 0.6rem 0.25rem; border-radius: 9px; border: 1.5px solid rgba(73,14,111,0.15);
+      background: #f9f7fc; cursor: pointer;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--text); font-family: inherit; transition: all 0.15s; text-align: center;
+    }
+    .squad-btn:hover { border-color: var(--sq-color); background: rgba(73,14,111,0.06); }
+    .squad-btn.selected { border-color: var(--sq-color); background: rgba(73,14,111,0.07); color: var(--sq-color); box-shadow: 0 2px 8px var(--sq-glow); }
+
+    /* Submit */
+    .submit-btn {
+      width: 100%; padding: 0.9rem; border-radius: 12px; border: none;
+      background: linear-gradient(135deg, var(--purple-mid), var(--purple));
+      color: #fff; font-size: 1rem; font-weight: 900;
+      cursor: pointer; letter-spacing: 0.05em; font-family: inherit;
+      transition: opacity 0.2s, transform 0.15s;
+      box-shadow: 0 4px 20px rgba(73,14,111,0.3);
+    }
+    .submit-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 0.9rem 1.5rem; text-align: center;
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      z-index: 100; min-width: 260px; box-shadow: 0 8px 32px rgba(73,14,111,0.15);
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    .toast-sq { font-size: 1.1rem; font-weight: 900; margin-bottom: 2px; }
+    .toast-msg { font-size: 0.8rem; color: var(--muted); }
+
+    /* Log table */
+    .log-wrap { overflow-x: auto; }
+    .log-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    .log-table th { font-size: 9px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+    .log-table td { padding: 7px 10px; border-bottom: 1px solid rgba(73,14,111,0.2); color: var(--text); vertical-align: middle; }
+    .log-table tr:last-child td { border-bottom: none; }
+    .sq-pill { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 9px; font-weight: 800; letter-spacing: 0.06em; }
+
+    /* Header image */
+    .header-img-wrap {
+      margin: 0 auto 1.25rem; width: 120px; height: 120px;
+      border-radius: 50%; overflow: hidden;
+      border: 2px solid rgba(73,14,111,0.2);
+      box-shadow: 0 4px 16px rgba(73,14,111,0.12);
+      position: relative; cursor: pointer;
+    }
+    .header-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .header-img-placeholder {
+      width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      background: rgba(73,14,111,0.06); color: rgba(73,14,111,0.3); font-size: 2rem;
+    }
+    .header-img-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.2s; border-radius: 50%;
+      font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--gold);
+    }
+    .header-img-wrap:hover .header-img-overlay { opacity: 1; }
+    #header-img-input { display: none; }
+
+    /* Scan QR button */
+    .scan-btn {
+      display: flex; align-items: center; gap: 7px;
+      padding: 0.55rem 1rem; border-radius: 9px;
+      border: 1.5px solid rgba(73,14,111,0.25);
+      background: rgba(73,14,111,0.06); color: var(--purple);
+      font-size: 0.78rem; font-weight: 800; letter-spacing: 0.06em;
+      text-transform: uppercase; cursor: pointer; font-family: inherit;
+      transition: all 0.18s; margin-bottom: 0.75rem;
+    }
+    .scan-btn:hover { background: rgba(73,14,111,0.1); border-color: var(--purple); }
+
+    /* Camera modal */
+    #camera-modal {
+      display: none; position: fixed; inset: 0; z-index: 9000;
+      background: rgba(0,0,0,0.92); align-items: flex-start; justify-content: center;
+      overflow-y: auto; padding: 1rem;
+    }
+    #camera-modal.open { display: flex; }
+    .cam-box {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 1.25rem; width: 100%; max-width: 420px;
+      display: flex; flex-direction: column; gap: 0.9rem;
+      margin: auto; box-shadow: 0 8px 32px rgba(73,14,111,0.15);
+    }
+    .cam-header { display: flex; align-items: flex-start; justify-content: space-between; }
+    .cam-title { font-size: 0.88rem; font-weight: 800; color: var(--purple); letter-spacing: 0.06em; text-transform: uppercase; }
+    .cam-sub   { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .cam-x { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; padding: 0; line-height: 1; }
+    .cam-x:hover { color: var(--text); }
+    #cam-video { width: 100%; border-radius: 12px; background: #000; display: block; max-height: 260px; object-fit: cover; }
+    #cam-canvas { display: none; }
+    .cam-status { font-size: 0.78rem; color: var(--muted); text-align: center; min-height: 1.2em; }
+    .cam-status.found { color: #22c55e; }
+
+    /* Review panel */
+    .cam-student-card {
+      background: rgba(73,14,111,0.05); border: 1px solid rgba(73,14,111,0.15);
+      border-radius: 12px; padding: 0.85rem 1rem;
+    }
+    .cam-student-name { font-size: 1rem; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+    .cam-student-meta { font-size: 0.78rem; color: var(--muted); }
+    .cam-squad-pill {
+      display: inline-block; padding: 1px 8px; border-radius: 20px;
+      font-size: 9px; font-weight: 800; letter-spacing: 0.06em;
+      margin-left: 6px; vertical-align: middle;
+    }
+    .cam-field label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6b5a8a; margin-bottom: 4px; }
+    .cam-field select, .cam-field input {
+      width: 100%; padding: 0.55rem 0.75rem; border-radius: 9px;
+      border: 1.5px solid rgba(73,14,111,0.2);
+      background: #f9f7fc; color: var(--text);
+      font-size: 0.85rem; outline: none; font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .cam-field select:focus, .cam-field input:focus { border-color: var(--purple); }
+    .cam-field select option { background: #fff; color: var(--text); }
+    .cam-review-actions { display: flex; gap: 8px; }
+    .cam-scan-next {
+      flex: 1; padding: 0.6rem; border-radius: 10px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--muted); font-family: inherit; font-size: 0.8rem; font-weight: 700;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .cam-scan-next:hover { border-color: var(--purple); color: var(--purple); }
+    .cam-use-this {
+      flex: 1; padding: 0.6rem; border-radius: 10px; border: none;
+      background: var(--purple); color: #fff;
+      font-family: inherit; font-size: 0.8rem; font-weight: 900;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .cam-use-this:hover { opacity: 0.88; }
+
+    /* Queue */
+    .cam-queue-header {
+      display: flex; align-items: center; justify-content: space-between;
+      border-top: 1px solid var(--border); padding-top: 0.75rem;
+    }
+    .cam-queue-label { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .cam-queue-clear { background: none; border: none; color: var(--muted); font-size: 0.7rem; font-weight: 700; cursor: pointer; letter-spacing: 0.06em; text-transform: uppercase; }
+    .cam-queue-clear:hover { color: #f87171; }
+    .cam-queue-list { display: flex; flex-direction: column; gap: 6px; }
+    .cam-queue-item {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(73,14,111,0.04); border-radius: 9px; padding: 6px 10px;
+      border: 1px solid var(--border);
+    }
+    .cam-queue-item-info { flex: 1; font-size: 0.78rem; }
+    .cam-queue-item-name { font-weight: 700; color: var(--text); }
+    .cam-queue-item-trait { font-size: 0.68rem; color: var(--muted); margin-top: 1px; }
+    .cam-queue-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; padding: 0 2px; }
+    .cam-queue-remove:hover { color: #f87171; }
+
+    .cam-actions { display: flex; gap: 8px; border-top: 1px solid var(--border); padding-top: 0.75rem; }
+    .cam-close { flex: 1; padding: 0.65rem; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+    .cam-close:hover { border-color: var(--purple); color: var(--purple); }
+    .cam-submit-all {
+      flex: 2; padding: 0.65rem; border-radius: 10px; border: none;
+      background: linear-gradient(135deg, var(--purple-mid), var(--purple));
+      color: var(--gold); font-family: inherit; font-size: 0.82rem; font-weight: 900;
+      cursor: pointer; transition: opacity 0.15s; letter-spacing: 0.04em;
+    }
+    .cam-submit-all:hover { opacity: 0.88; }
+    .cam-submit-all:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Master list */
+    .master-toggle {
+      width: 100%; padding: 0.7rem; border-radius: 10px; margin-bottom: 1rem;
+      border: 1px solid var(--border); background: var(--card);
+      color: var(--muted); font-family: inherit; font-size: 0.8rem;
+      font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .master-toggle:hover { border-color: rgba(73,14,111,0.4); color: var(--purple); }
+    #masterList { display: none; }
+    #masterList.open { display: block; }
+    .export-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+    .export-bar span { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .csv-btn { padding: 0.45rem 1rem; border-radius: 8px; border: none; background: var(--purple); color: #fff; font-weight: 900; font-size: 0.72rem; letter-spacing: 0.06em; cursor: pointer; font-family: inherit; transition: opacity 0.2s; }
+    .csv-btn:hover { opacity: 0.85; }
+
+    .ocr-spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(73,14,111,0.15);
+      border-top-color: var(--purple);
+      border-radius: 50%;
+      animation: ocr-spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes ocr-spin { to { transform: rotate(360deg); } }
+
+    .cam-sq-btn.selected { border-color: var(--sq-color); background: rgba(73,14,111,0.07); color: var(--sq-color); box-shadow: 0 2px 8px var(--sq-glow); }
+  </style>
+</head>
+<body>
+
+<!-- Gate -->
+<div id="gate">
+  <div class="gate-box">
+    <div class="gate-icon">💵</div>
+    <div class="gate-title">Trait Dough</div>
+    <div class="gate-sub">Staff access only</div>
+    <input id="gate-pin" type="password" inputmode="text" maxlength="30" placeholder="Password" autocomplete="off" style="letter-spacing:0.1em" />
+    <div id="gate-err"></div>
+    <button class="gate-btn" id="gate-submit">Unlock</button>
+
+    <button class="gate-qr-link" onclick="toggleQR()">Scan to open on another device</button>
+
+    <div class="qr-panel" id="qr-panel">
+      <div class="qr-label">Scan with your camera app</div>
+      <div class="qr-img-wrap">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?data=https%3A%2F%2Fbit.ly%2Ftraitdough&size=160x160&margin=6" alt="QR code for Trait Dough" />
+      </div>
+      <div class="qr-hint">Opens bit.ly/traitdough &mdash; staff password required</div>
+    </div>
+  </div>
+</div>
+
+<!-- App -->
+<div class="app" id="app" style="display:none">
+  <div class="header">
+    <div class="header-img-wrap" onclick="document.getElementById('header-img-input').click()" title="Click to update header photo">
+      <img id="header-img" src="" alt="Trait Dough" style="display:none" />
+      <div class="header-img-placeholder" id="header-img-placeholder">💵</div>
+      <div class="header-img-overlay">Change Photo</div>
+    </div>
+    <input type="file" id="header-img-input" accept="image/*" onchange="uploadHeaderImage(this)" />
+    <div class="header-badge"><span class="badge-dot"></span>EMS · Trait Tracker</div>
+    <h1>Trait Dough</h1>
+    <p>Log a trait → award your squad 1 point in Clash of Classes</p>
+  </div>
+
+  <!-- Live tally strip -->
+  <div class="tally-strip" id="tallyStrip">
+    <div class="tally-card" style="--sq-color:var(--sq-black);--sq-glow:rgba(139,155,180,0.25)"><div class="tally-label">Black</div><div class="tally-num" id="t-BLACK">—</div></div>
+    <div class="tally-card" style="--sq-color:var(--sq-gold);--sq-glow:rgba(255,225,0,0.25)"><div class="tally-label">Gold</div><div class="tally-num" id="t-GOLD">—</div></div>
+    <div class="tally-card" style="--sq-color:var(--sq-grey);--sq-glow:rgba(153,168,187,0.25)"><div class="tally-label">Grey</div><div class="tally-num" id="t-GREY">—</div></div>
+    <div class="tally-card" style="--sq-color:var(--sq-purple);--sq-glow:rgba(187,142,245,0.25)"><div class="tally-label">Purple</div><div class="tally-num" id="t-PURPLE">—</div></div>
+  </div>
+
+  <!-- Form -->
+  <form class="card" id="tdForm" onsubmit="return false">
+    <div class="card-title">New Trait Dough Submission</div>
+
+    <div class="field">
+      <label>Staff Name *</label>
+      <input id="staffName" type="text" placeholder="Your name" required autocomplete="name" />
+    </div>
+
+    <button type="button" class="scan-btn" onclick="openCamera()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Scan Trait Dough
+    </button>
+
+    <div class="grid2">
+      <div class="field">
+        <label>Student Name *</label>
+        <input id="studentName" type="text" placeholder="Student's name" required />
+      </div>
+      <div class="field">
+        <label>Grade *</label>
+        <select id="grade" required>
+          <option value="">Grade</option>
+          <option value="7">7th</option>
+          <option value="8">8th</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Trait Demonstrated *</label>
+      <select id="trait" required>
+        <option value="">Select a trait…</option>
+        <option>Continual Learning &amp; Growth Mindset</option>
+        <option>Critical Thinking &amp; Problem Solving</option>
+        <option>Creativity &amp; Innovation</option>
+        <option>Adaptability &amp; Flexibility</option>
+        <option>Resilience &amp; Grit</option>
+        <option>Communication &amp; Empathy</option>
+        <option>Collaboration &amp; Teamwork</option>
+        <option>Honesty, Integrity, &amp; Responsibility</option>
+        <option>Healthy Living, Wellness, &amp; Self-Awareness</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Student's Squad *</label>
+      <div class="squad-grid">
+        <button type="button" class="squad-btn" data-squad="BLACK" style="--sq-color:var(--sq-black);--sq-glow:rgba(139,155,180,0.3)">Black</button>
+        <button type="button" class="squad-btn" data-squad="GOLD"  style="--sq-color:var(--sq-gold);--sq-glow:rgba(255,225,0,0.35)">Gold</button>
+        <button type="button" class="squad-btn" data-squad="GREY"  style="--sq-color:var(--sq-grey);--sq-glow:rgba(153,168,187,0.3)">Grey</button>
+        <button type="button" class="squad-btn" data-squad="PURPLE" style="--sq-color:var(--sq-purple);--sq-glow:rgba(187,142,245,0.35)">Purple</button>
+      </div>
+      <input type="hidden" id="squad" required />
+    </div>
+
+    <div class="field">
+      <label>Notes (optional)</label>
+      <input id="notes" type="text" placeholder="Brief description of what they did…" />
+    </div>
+
+    <button class="submit-btn" id="submitBtn" type="button" onclick="submitDough()">
+      Award Trait Dough 💵
+    </button>
+  </form>
+
+  <!-- Recent log -->
+  <div class="card">
+    <div class="card-title">Recent Submissions</div>
+    <div class="log-wrap">
+      <table class="log-table" id="logTable">
+        <thead><tr>
+          <th>Time</th><th>Staff</th><th>Student</th><th>Gr</th><th>Squad</th><th>Trait</th>
+        </tr></thead>
+        <tbody id="logBody"><tr><td colspan="6" style="color:var(--muted);text-align:center;padding:1rem">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Master list + CSV -->
+  <button class="master-toggle" onclick="toggleMaster()">View All Submissions &amp; Export CSV</button>
+  <div id="masterList">
+    <div class="card">
+      <div class="export-bar">
+        <span id="masterCount">All submissions</span>
+        <button class="csv-btn" onclick="exportCSV()">Download CSV</button>
+      </div>
+      <div class="log-wrap">
+        <table class="log-table" id="masterTable">
+          <thead><tr>
+            <th>Date</th><th>Time</th><th>Staff</th><th>Student</th><th>Gr</th><th>Squad</th><th>Trait</th><th>Notes</th>
+          </tr></thead>
+          <tbody id="masterBody"><tr><td colspan="8" style="color:var(--muted);text-align:center;padding:1rem">Click above to load…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Camera modal -->
+<div id="camera-modal">
+  <div class="cam-box">
+
+    <div class="cam-header">
+      <div>
+        <div class="cam-title" id="cam-title">Scan Trait Dough</div>
+        <div class="cam-sub" id="cam-sub">Take a photo of the Trait Dough bill</div>
+      </div>
+      <button class="cam-x" onclick="closeCamera()">✕</button>
+    </div>
+
+    <!-- Capture panel -->
+    <div id="cam-scan-panel">
+      <div style="position:relative;border-radius:12px;overflow:hidden;background:#000">
+        <video id="cam-video" autoplay playsinline muted></video>
+        <img id="cam-captured" style="display:none;width:100%;border-radius:12px;max-height:300px;object-fit:contain;background:#f5f3f8" />
+      </div>
+      <canvas id="cam-canvas" style="display:none"></canvas>
+      <div class="cam-status" id="cam-status">Starting camera…</div>
+      <div style="display:flex;gap:8px;margin-top:8px" id="cam-btn-row">
+        <button class="cam-use-this" id="cam-capture-btn" onclick="capturePhoto()" style="flex:1">📸 Take Photo</button>
+        <button class="cam-scan-next" id="cam-retake-btn" onclick="retakePhoto()" style="display:none;flex:1">🔄 Retake</button>
+      </div>
+      <!-- OCR progress -->
+      <div id="cam-ocr-status" style="display:none;margin-top:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="ocr-spinner"></div>
+          <span style="font-size:0.78rem;color:var(--muted)" id="cam-ocr-text">Scanning image…</span>
+        </div>
+        <div style="height:3px;background:rgba(73,14,111,0.1);border-radius:2px;margin-top:6px;overflow:hidden">
+          <div id="cam-ocr-bar" style="height:100%;width:0%;background:var(--purple);border-radius:2px;transition:width 0.3s"></div>
+        </div>
+      </div>
+      <!-- Or upload a file -->
+      <div style="text-align:center;margin-top:10px">
+        <button style="background:none;border:none;color:var(--muted);font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;font-family:inherit" onclick="document.getElementById('cam-file-input').click()">Or upload a photo</button>
+        <input type="file" id="cam-file-input" accept="image/*" onchange="handleFileUpload(this)" style="display:none" />
+      </div>
+    </div>
+
+    <!-- Review panel (shown after OCR) -->
+    <div id="cam-review-panel" style="display:none">
+      <div id="cam-ocr-result" style="background:rgba(73,14,111,0.05);border:1px solid rgba(73,14,111,0.15);border-radius:12px;padding:0.85rem 1rem;margin-bottom:0.6rem">
+        <div style="font-size:10px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Scanner Detected</div>
+        <div id="cam-ocr-detected" style="font-size:0.82rem;color:var(--text);line-height:1.5"></div>
+      </div>
+      <div class="cam-field">
+        <label>Student Name *</label>
+        <input id="cam-student" type="text" placeholder="Student's name" />
+      </div>
+      <div class="cam-field" style="margin-top:6px">
+        <label>Grade *</label>
+        <select id="cam-grade"><option value="">Grade</option><option value="7">7th</option><option value="8">8th</option></select>
+      </div>
+      <div class="cam-field" style="margin-top:6px">
+        <label>Trait Demonstrated *</label>
+        <select id="cam-trait">
+          <option value="">Select a trait…</option>
+          <option>Continual Learning &amp; Growth Mindset</option>
+          <option>Critical Thinking &amp; Problem Solving</option>
+          <option>Creativity &amp; Innovation</option>
+          <option>Adaptability &amp; Flexibility</option>
+          <option>Resilience &amp; Grit</option>
+          <option>Communication &amp; Empathy</option>
+          <option>Collaboration &amp; Teamwork</option>
+          <option>Honesty, Integrity, &amp; Responsibility</option>
+          <option>Healthy Living, Wellness, &amp; Self-Awareness</option>
+        </select>
+      </div>
+      <div class="cam-field" style="margin-top:6px">
+        <label>Student's Squad *</label>
+        <div class="squad-grid">
+          <button type="button" class="squad-btn cam-sq-btn" data-squad="BLACK" style="--sq-color:var(--sq-black);--sq-glow:rgba(139,155,180,0.3)">Black</button>
+          <button type="button" class="squad-btn cam-sq-btn" data-squad="GOLD"  style="--sq-color:var(--sq-gold);--sq-glow:rgba(255,225,0,0.35)">Gold</button>
+          <button type="button" class="squad-btn cam-sq-btn" data-squad="GREY"  style="--sq-color:var(--sq-grey);--sq-glow:rgba(153,168,187,0.3)">Grey</button>
+          <button type="button" class="squad-btn cam-sq-btn" data-squad="PURPLE" style="--sq-color:var(--sq-purple);--sq-glow:rgba(187,142,245,0.35)">Purple</button>
+        </div>
+        <input type="hidden" id="cam-squad" />
+      </div>
+      <div class="cam-field" style="margin-top:6px">
+        <label>Notes (optional)</label>
+        <input id="cam-notes" type="text" placeholder="Brief description of what they did…" />
+      </div>
+      <div class="cam-review-actions" style="margin-top:10px">
+        <button class="cam-scan-next" onclick="addToQueueAndRescan()">＋ Scan Another</button>
+        <button class="cam-use-this" onclick="addToQueueAndDone()">Submit This →</button>
+      </div>
+    </div>
+
+    <!-- Queue -->
+    <div id="cam-queue-wrap" style="display:none">
+      <div class="cam-queue-header">
+        <span class="cam-queue-label" id="cam-queue-label">Queue</span>
+        <button class="cam-queue-clear" onclick="clearQueue()">Clear all</button>
+      </div>
+      <div class="cam-queue-list" id="cam-queue-list"></div>
+    </div>
+
+    <div class="cam-actions">
+      <button class="cam-close" onclick="closeCamera()">Cancel</button>
+      <button class="cam-submit-all" id="cam-submit-all" onclick="submitQueue()" style="display:none">Submit All (0)</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast">
+  <div class="toast-sq" id="toastSq"></div>
+  <div class="toast-msg" id="toastMsg"></div>
+</div>
+
+<script>
+  const SB_URL  = 'https://yvutgnpgnthvnonhgdux.supabase.co';
+  const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak';
+  const HEADERS = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
+  const WRITE_H = { ...HEADERS, 'Prefer': 'resolution=merge-duplicates,return=minimal' };
+
+  const SQ_COLORS = { BLACK: 'var(--sq-black)', GOLD: 'var(--sq-gold)', GREY: 'var(--sq-grey)', PURPLE: 'var(--sq-purple)' };
+  const SQ_HEX   = { BLACK: '#8b9bb4', GOLD: '#ffe100', GREY: '#99a8bb', PURPLE: '#bb8ef5' };
+
+  // ── Gate ──
+  let selectedSquad = '';
+
+  (function() {
+    if (sessionStorage.getItem('td_auth') === '1') unlock();
+    document.getElementById('gate-submit').onclick = tryPin;
+    document.getElementById('gate-pin').onkeydown = e => { if (e.key === 'Enter') tryPin(); };
+  })();
+
+  function toggleQR() {
+    const p = document.getElementById('qr-panel');
+    p.classList.toggle('open');
+  }
+
+  function tryPin() {
+    if (document.getElementById('gate-pin').value.trim() === 'togetherweclimb') {
+      sessionStorage.setItem('td_auth', '1');
+      unlock();
+    } else {
+      document.getElementById('gate-err').textContent = 'Incorrect PIN.';
+      document.getElementById('gate-pin').value = '';
+    }
+  }
+
+  function unlock() {
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadTally();
+    loadLog();
+    loadHeaderImage();
+  }
+
+  // ── Squad buttons ──
+  document.querySelectorAll('.squad-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.squad-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedSquad = btn.dataset.squad;
+      document.getElementById('squad').value = selectedSquad;
+    };
+  });
+
+  // ── Load live tally from CoC app_data ──
+  async function loadTally() {
+    try {
+      const r = await fetch(SB_URL + '/rest/v1/app_data?select=value&key=eq.coc&limit=1', { headers: HEADERS });
+      const arr = await r.json();
+      const D = arr && arr[0] ? arr[0].value : null;
+      const tally = (D && D.traitDoughTally) || { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
+      ['BLACK','GOLD','GREY','PURPLE'].forEach(sq => {
+        document.getElementById('t-' + sq).textContent = tally[sq] || 0;
+      });
+    } catch(e) { console.error('Tally load failed', e); }
+  }
+
+  // ── Submit ──
+  async function submitDough() {
+    const staffName   = document.getElementById('staffName').value.trim();
+    const studentName = document.getElementById('studentName').value.trim();
+    const grade       = document.getElementById('grade').value;
+    const trait       = document.getElementById('trait').value;
+    const notes       = document.getElementById('notes').value.trim();
+
+    if (!staffName || !studentName || !grade || !trait || !selectedSquad) {
+      showToast('Missing fields', 'Fill in all required fields before submitting.', '#f87171');
+      return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      // 1. Log the submission
+      await fetch(SB_URL + '/rest/v1/trait_dough_log', {
+        method: 'POST', headers: WRITE_H,
+        body: JSON.stringify({ staff_name: staffName, student_name: studentName, grade, squad: selectedSquad, trait, notes })
+      });
+
+      // 2. Fetch current CoC data and increment tally
+      const r = await fetch(SB_URL + '/rest/v1/app_data?select=value&key=eq.coc&limit=1', { headers: HEADERS });
+      const arr = await r.json();
+      const D = arr && arr[0] ? arr[0].value : {};
+      if (!D.traitDoughTally) D.traitDoughTally = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
+      D.traitDoughTally[selectedSquad] = (D.traitDoughTally[selectedSquad] || 0) + 1;
+      await fetch(SB_URL + '/rest/v1/app_data', {
+        method: 'POST', headers: WRITE_H,
+        body: JSON.stringify({ key: 'coc', value: D, updated_at: new Date().toISOString() })
+      });
+
+      const newCount = D.traitDoughTally[selectedSquad];
+      showToast(
+        selectedSquad + ' SQUAD +1 💵',
+        `${studentName} · ${trait} · Total: ${newCount}`,
+        SQ_HEX[selectedSquad]
+      );
+
+      // Reset form
+      document.getElementById('staffName').value = '';
+      document.getElementById('studentName').value = '';
+      document.getElementById('grade').value = '';
+      document.getElementById('trait').value = '';
+      document.getElementById('notes').value = '';
+      document.querySelectorAll('.squad-btn').forEach(b => b.classList.remove('selected'));
+      selectedSquad = '';
+
+      loadTally();
+      loadLog();
+    } catch(e) {
+      showToast('Error', 'Could not save. Check connection.', '#f87171');
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Award Trait Dough 💵';
+  }
+
+  // ── Load recent log ──
+  async function loadLog() {
+    try {
+      const r = await fetch(SB_URL + '/rest/v1/trait_dough_log?select=*&order=created_at.desc&limit=20', { headers: HEADERS });
+      const rows = await r.json();
+      const body = document.getElementById('logBody');
+      if (!rows || !rows.length) {
+        body.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:1rem">No submissions yet</td></tr>';
+        return;
+      }
+      body.innerHTML = rows.map(row => {
+        const time = new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const sqColor = SQ_HEX[row.squad] || '#888';
+        const pill = `<span class="sq-pill" style="background:${sqColor}22;color:${sqColor};border:1px solid ${sqColor}55">${row.squad}</span>`;
+        const trait = row.trait.length > 28 ? row.trait.slice(0,26) + '…' : row.trait;
+        return `<tr><td style="color:var(--muted)">${time}</td><td>${row.staff_name}</td><td>${row.student_name}</td><td style="color:var(--muted)">${row.grade}</td><td>${pill}</td><td style="color:var(--muted)">${trait}</td></tr>`;
+      }).join('');
+    } catch(e) { console.error('Log load failed', e); }
+  }
+
+  // ── Toast ──
+  function showToast(title, msg, color) {
+    document.getElementById('toastSq').textContent = title;
+    document.getElementById('toastSq').style.color = color || 'var(--gold)';
+    document.getElementById('toastMsg').textContent = msg;
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  // ── Camera Image Scanner ──
+  let camStream     = null;
+  let currentScan   = null;
+  let scanQueue     = [];
+  let camSelectedSquad = '';
+
+  // Squad buttons inside camera modal
+  document.querySelectorAll('.cam-sq-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.cam-sq-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      camSelectedSquad = btn.dataset.squad;
+      document.getElementById('cam-squad').value = camSelectedSquad;
+    };
+  });
+
+  // Trait keywords for OCR matching
+  const TRAIT_KEYWORDS = [
+    { trait: 'Continual Learning & Growth Mindset', keys: ['continual','learning','growth','mindset'] },
+    { trait: 'Critical Thinking & Problem Solving', keys: ['critical','thinking','problem','solving'] },
+    { trait: 'Creativity & Innovation',             keys: ['creativity','innovation','creative'] },
+    { trait: 'Adaptability & Flexibility',          keys: ['adaptability','flexibility','adaptable','flexible'] },
+    { trait: 'Resilience & Grit',                   keys: ['resilience','grit','resilient'] },
+    { trait: 'Communication & Empathy',             keys: ['communication','empathy','communicate'] },
+    { trait: 'Collaboration & Teamwork',            keys: ['collaboration','teamwork','collaborate'] },
+    { trait: 'Honesty, Integrity, & Responsibility',keys: ['honesty','integrity','responsibility','honest','responsible'] },
+    { trait: 'Healthy Living, Wellness, & Self-Awareness', keys: ['healthy','wellness','self-awareness','self','awareness','living'] },
+  ];
+
+  async function openCamera() {
+    document.getElementById('camera-modal').classList.add('open');
+    showScanPanel();
+    updateQueueUI();
+    const status = document.getElementById('cam-status');
+    status.textContent = 'Starting camera…';
+    status.className = 'cam-status';
+    document.getElementById('cam-captured').style.display = 'none';
+    document.getElementById('cam-video').style.display = 'block';
+    document.getElementById('cam-capture-btn').style.display = 'block';
+    document.getElementById('cam-retake-btn').style.display = 'none';
+    document.getElementById('cam-ocr-status').style.display = 'none';
+    try {
+      camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const video = document.getElementById('cam-video');
+      video.srcObject = camStream;
+      await video.play();
+      status.textContent = 'Position the Trait Dough bill in view, then tap capture';
+    } catch(e) {
+      status.textContent = 'Camera access denied. Use the upload option below.';
+    }
+  }
+
+  function showScanPanel() {
+    document.getElementById('cam-scan-panel').style.display = 'block';
+    document.getElementById('cam-review-panel').style.display = 'none';
+    document.getElementById('cam-title').textContent = 'Scan Trait Dough';
+    document.getElementById('cam-sub').textContent = 'Take a photo of the Trait Dough bill';
+  }
+
+  function capturePhoto() {
+    const video  = document.getElementById('cam-video');
+    const canvas = document.getElementById('cam-canvas');
+    const ctx    = canvas.getContext('2d');
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+
+    const dataUrl = canvas.toDataURL('image/png');
+    const captured = document.getElementById('cam-captured');
+    captured.src = dataUrl;
+    captured.style.display = 'block';
+    video.style.display = 'none';
+
+    document.getElementById('cam-capture-btn').style.display = 'none';
+    document.getElementById('cam-retake-btn').style.display = 'block';
+    document.getElementById('cam-status').textContent = '';
+
+    runOCR(dataUrl);
+  }
+
+  function retakePhoto() {
+    document.getElementById('cam-captured').style.display = 'none';
+    document.getElementById('cam-video').style.display = 'block';
+    document.getElementById('cam-capture-btn').style.display = 'block';
+    document.getElementById('cam-retake-btn').style.display = 'none';
+    document.getElementById('cam-ocr-status').style.display = 'none';
+    document.getElementById('cam-status').textContent = 'Position the Trait Dough bill in view, then tap capture';
+  }
+
+  function handleFileUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (!document.getElementById('camera-modal').classList.contains('open')) {
+      document.getElementById('camera-modal').classList.add('open');
+      showScanPanel();
+      updateQueueUI();
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      const dataUrl = e.target.result;
+      const captured = document.getElementById('cam-captured');
+      captured.src = dataUrl;
+      captured.style.display = 'block';
+      document.getElementById('cam-video').style.display = 'none';
+      document.getElementById('cam-capture-btn').style.display = 'none';
+      document.getElementById('cam-retake-btn').style.display = 'block';
+      document.getElementById('cam-status').textContent = '';
+      runOCR(dataUrl);
+    };
+    reader.readAsDataURL(file);
+    input.value = '';
+  }
+
+  async function runOCR(imageSource) {
+    const ocrStatus = document.getElementById('cam-ocr-status');
+    const ocrText   = document.getElementById('cam-ocr-text');
+    const ocrBar    = document.getElementById('cam-ocr-bar');
+    ocrStatus.style.display = 'block';
+    ocrText.textContent = 'Scanning image for text…';
+    ocrBar.style.width = '10%';
+
+    try {
+      const result = await Tesseract.recognize(imageSource, 'eng', {
+        logger: m => {
+          if (m.status === 'recognizing text') {
+            ocrBar.style.width = Math.round(m.progress * 100) + '%';
+          }
+        }
+      });
+
+      ocrBar.style.width = '100%';
+      const text = result.data.text || '';
+      ocrText.textContent = text.trim() ? 'Text detected — review below' : 'No text found — fill in manually';
+      processOCRResult(text);
+    } catch(e) {
+      ocrText.textContent = 'Scan failed — fill in the form manually';
+      ocrBar.style.width = '0%';
+      showReviewPanel({ name: '', grade: '', squad: '', trait: '', ocrText: '' });
+    }
+  }
+
+  function processOCRResult(rawText) {
+    const lower = rawText.toLowerCase();
+    const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+    // Try to match a trait
+    let bestTrait = '';
+    let bestScore = 0;
+    TRAIT_KEYWORDS.forEach(tk => {
+      let score = 0;
+      tk.keys.forEach(k => { if (lower.includes(k)) score++; });
+      if (score > bestScore) { bestScore = score; bestTrait = tk.trait; }
+    });
+
+    // Try to find a student name — look for lines that don't match traits or common form labels
+    const skipWords = ['trait','dough','name','student','teacher','staff','date','grade','squad','circle','ems','ephrata','middle','school','mountaineer'];
+    let candidateName = '';
+    for (const line of lines) {
+      const lineLower = line.toLowerCase();
+      const isTraitLine = TRAIT_KEYWORDS.some(tk => tk.keys.some(k => lineLower.includes(k)));
+      const isLabel = skipWords.some(w => lineLower.includes(w));
+      if (!isTraitLine && !isLabel && line.length > 2 && line.length < 40 && /[a-zA-Z]/.test(line)) {
+        candidateName = line;
+        break;
+      }
+    }
+
+    // Try to detect grade
+    let grade = '';
+    if (/\b7th\b|\bgrade\s*7\b|\b7\s*grade\b/i.test(rawText)) grade = '7';
+    else if (/\b8th\b|\bgrade\s*8\b|\b8\s*grade\b/i.test(rawText)) grade = '8';
+
+    // Try to detect squad
+    let squad = '';
+    const squadTest = lower.replace(/[^a-z]/g,' ');
+    if (/\bgold\b/.test(squadTest)) squad = 'GOLD';
+    else if (/\bpurple\b/.test(squadTest)) squad = 'PURPLE';
+    else if (/\bgrey\b|\bgray\b/.test(squadTest)) squad = 'GREY';
+    else if (/\bblack\b/.test(squadTest)) squad = 'BLACK';
+
+    showReviewPanel({
+      name: candidateName,
+      grade: grade,
+      squad: squad,
+      trait: bestScore >= 1 ? bestTrait : '',
+      ocrText: rawText.trim()
+    });
+  }
+
+  function showReviewPanel(data) {
+    currentScan = data;
+    document.getElementById('cam-scan-panel').style.display = 'none';
+    document.getElementById('cam-review-panel').style.display = 'block';
+    document.getElementById('cam-title').textContent = 'Review & Complete';
+    document.getElementById('cam-sub').textContent = 'Confirm or edit the detected info, then submit';
+
+    // Show raw OCR text
+    const detected = document.getElementById('cam-ocr-detected');
+    if (data.ocrText) {
+      const preview = data.ocrText.length > 200 ? data.ocrText.slice(0,200) + '…' : data.ocrText;
+      detected.innerHTML = '<span style="font-style:italic;color:var(--muted)">"' +
+        preview.replace(/\n/g, ' · ').replace(/</g,'&lt;') + '"</span>';
+      document.getElementById('cam-ocr-result').style.display = 'block';
+    } else {
+      document.getElementById('cam-ocr-result').style.display = 'none';
+    }
+
+    // Fill in detected values
+    document.getElementById('cam-student').value = data.name || '';
+    document.getElementById('cam-grade').value = data.grade || '';
+    document.getElementById('cam-trait').value = data.trait || '';
+    document.getElementById('cam-notes').value = '';
+
+    // Set squad if detected
+    camSelectedSquad = data.squad || '';
+    document.getElementById('cam-squad').value = camSelectedSquad;
+    document.querySelectorAll('.cam-sq-btn').forEach(b => {
+      b.classList.toggle('selected', b.dataset.squad === camSelectedSquad);
+    });
+  }
+
+  function addToQueueAndRescan() {
+    const name  = document.getElementById('cam-student').value.trim();
+    const grade = document.getElementById('cam-grade').value;
+    const trait = document.getElementById('cam-trait').value;
+    const squad = camSelectedSquad;
+    if (!name) { document.getElementById('cam-student').focus(); return; }
+    if (!grade) { document.getElementById('cam-grade').focus(); return; }
+    if (!trait) { document.getElementById('cam-trait').focus(); return; }
+    if (!squad) { showToast('Select squad', 'Pick the student\'s squad color.', '#f87171'); return; }
+    const notes = document.getElementById('cam-notes').value.trim();
+    scanQueue.push({ name, grade, squad, trait, notes });
+    currentScan = null;
+    camSelectedSquad = '';
+    updateQueueUI();
+    showScanPanel();
+    // Restart camera
+    document.getElementById('cam-captured').style.display = 'none';
+    document.getElementById('cam-video').style.display = 'block';
+    document.getElementById('cam-capture-btn').style.display = 'block';
+    document.getElementById('cam-retake-btn').style.display = 'none';
+    document.getElementById('cam-ocr-status').style.display = 'none';
+    const status = document.getElementById('cam-status');
+    if (camStream) {
+      status.textContent = 'Position the next Trait Dough bill, then tap capture';
+    } else {
+      status.textContent = 'Use capture or upload to scan the next bill';
+    }
+  }
+
+  async function addToQueueAndDone() {
+    const name  = document.getElementById('cam-student').value.trim();
+    const grade = document.getElementById('cam-grade').value;
+    const trait = document.getElementById('cam-trait').value;
+    const squad = camSelectedSquad;
+    if (!name) { document.getElementById('cam-student').focus(); return; }
+    if (!grade) { document.getElementById('cam-grade').focus(); return; }
+    if (!trait) { document.getElementById('cam-trait').focus(); return; }
+    if (!squad) { showToast('Select squad', 'Pick the student\'s squad color.', '#f87171'); return; }
+    const notes = document.getElementById('cam-notes').value.trim();
+    scanQueue.push({ name, grade, squad, trait, notes });
+    currentScan = null;
+    camSelectedSquad = '';
+    updateQueueUI();
+    await submitQueue();
+  }
+
+  function updateQueueUI() {
+    const wrap = document.getElementById('cam-queue-wrap');
+    const list = document.getElementById('cam-queue-list');
+    const btn  = document.getElementById('cam-submit-all');
+    const lbl  = document.getElementById('cam-queue-label');
+
+    if (!scanQueue.length) {
+      wrap.style.display = 'none';
+      btn.style.display = 'none';
+      return;
+    }
+    wrap.style.display = 'block';
+    btn.style.display = 'block';
+    btn.textContent = `Submit All (${scanQueue.length})`;
+    lbl.textContent = `Queue — ${scanQueue.length} student${scanQueue.length > 1 ? 's' : ''}`;
+
+    list.innerHTML = scanQueue.map((item, i) => {
+      const sqHex = SQ_HEX[item.squad] || '#888';
+      const pill = `<span class="cam-squad-pill" style="background:${sqHex}22;color:${sqHex};border:1px solid ${sqHex}55;font-size:8px;padding:1px 5px;border-radius:10px">${item.squad}</span>`;
+      const traitShort = item.trait.length > 30 ? item.trait.slice(0,28)+'…' : item.trait;
+      return `<div class="cam-queue-item">
+        <div class="cam-queue-item-info">
+          <div class="cam-queue-item-name">${item.name} ${pill}</div>
+          <div class="cam-queue-item-trait">Gr ${item.grade} · ${traitShort}</div>
+        </div>
+        <button class="cam-queue-remove" onclick="removeFromQueue(${i})">✕</button>
+      </div>`;
+    }).join('');
+  }
+
+  function removeFromQueue(i) {
+    scanQueue.splice(i, 1);
+    updateQueueUI();
+  }
+
+  function clearQueue() {
+    scanQueue = [];
+    updateQueueUI();
+  }
+
+  async function submitQueue() {
+    if (!scanQueue.length) return;
+    const staffName = document.getElementById('staffName').value.trim();
+    if (!staffName) {
+      closeCamera();
+      document.getElementById('staffName').focus();
+      showToast('Missing staff name', 'Enter your name in the form first.', '#f87171');
+      return;
+    }
+    const btn = document.getElementById('cam-submit-all');
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+
+    try {
+      // Fetch current CoC data once
+      const r = await fetch(SB_URL + '/rest/v1/app_data?select=value&key=eq.coc&limit=1', { headers: HEADERS });
+      const arr = await r.json();
+      const D = arr && arr[0] ? arr[0].value : {};
+      if (!D.traitDoughTally) D.traitDoughTally = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
+
+      // Submit each item in order
+      for (const item of scanQueue) {
+        await fetch(SB_URL + '/rest/v1/trait_dough_log', {
+          method: 'POST', headers: WRITE_H,
+          body: JSON.stringify({
+            staff_name: staffName, student_name: item.name,
+            grade: item.grade, squad: item.squad,
+            trait: item.trait, notes: item.notes
+          })
+        });
+        D.traitDoughTally[item.squad] = (D.traitDoughTally[item.squad] || 0) + 1;
+      }
+
+      // Save updated tally once
+      await fetch(SB_URL + '/rest/v1/app_data', {
+        method: 'POST', headers: WRITE_H,
+        body: JSON.stringify({ key: 'coc', value: D, updated_at: new Date().toISOString() })
+      });
+
+      const count = scanQueue.length;
+      const squads = [...new Set(scanQueue.map(i => i.squad))].join(', ');
+      showToast(`${count} trait${count > 1 ? 's' : ''} awarded 💵`, `Squads credited: ${squads}`, '#22c55e');
+      scanQueue = [];
+      closeCamera();
+      loadTally();
+      loadLog();
+    } catch(e) {
+      showToast('Error', 'Could not save. Check connection.', '#f87171');
+      btn.disabled = false;
+      btn.textContent = `Submit All (${scanQueue.length})`;
+    }
+  }
+
+  function closeCamera() {
+    if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+    document.getElementById('cam-video').srcObject = null;
+    document.getElementById('camera-modal').classList.remove('open');
+    showScanPanel();
+  }
+
+  // ── Header image ──
+  async function loadHeaderImage() {
+    try {
+      const r = await fetch(SB_URL + '/rest/v1/app_data?select=value&key=eq.td_header_img&limit=1', { headers: HEADERS });
+      const arr = await r.json();
+      if (arr && arr[0] && arr[0].value && arr[0].value.url) {
+        setHeaderImg(arr[0].value.url);
+      }
+    } catch(e) {}
+  }
+
+  function setHeaderImg(url) {
+    const img = document.getElementById('header-img');
+    const placeholder = document.getElementById('header-img-placeholder');
+    img.src = url;
+    img.style.display = 'block';
+    placeholder.style.display = 'none';
+  }
+
+  async function uploadHeaderImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    showToast('Uploading…', 'Saving your photo to Supabase', '#9b7fc0');
+    try {
+      // Try Supabase Storage
+      const ext  = file.name.split('.').pop();
+      const path = `header.${ext}`;
+      const storageUrl = `${SB_URL}/storage/v1/object/trait-dough/${path}`;
+      const uploadRes = await fetch(storageUrl, {
+        method: 'POST',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': file.type, 'x-upsert': 'true' },
+        body: file
+      });
+      let publicUrl;
+      if (uploadRes.ok) {
+        publicUrl = `${SB_URL}/storage/v1/object/public/trait-dough/${path}`;
+      } else {
+        // Fallback: store as base64 data URL in app_data directly
+        publicUrl = await new Promise(res => {
+          const reader = new FileReader();
+          reader.onload = e => res(e.target.result);
+          reader.readAsDataURL(file);
+        });
+      }
+      // Save URL to app_data
+      await fetch(SB_URL + '/rest/v1/app_data', {
+        method: 'POST', headers: WRITE_H,
+        body: JSON.stringify({ key: 'td_header_img', value: { url: publicUrl }, updated_at: new Date().toISOString() })
+      });
+      setHeaderImg(publicUrl);
+      showToast('Photo saved! 📸', 'Header image updated', '#22c55e');
+    } catch(e) {
+      showToast('Upload failed', 'Could not save photo', '#f87171');
+    }
+    input.value = '';
+  }
+
+  // ── Master list ──
+  let masterLoaded = false;
+  let allRows = [];
+
+  async function toggleMaster() {
+    const el = document.getElementById('masterList');
+    const open = el.classList.toggle('open');
+    if (open && !masterLoaded) await loadMaster();
+  }
+
+  async function loadMaster() {
+    const body = document.getElementById('masterBody');
+    body.innerHTML = '<tr><td colspan="8" style="color:var(--muted);text-align:center;padding:1rem">Loading…</td></tr>';
+    try {
+      const r = await fetch(SB_URL + '/rest/v1/trait_dough_log?select=*&order=created_at.desc&limit=1000', { headers: HEADERS });
+      allRows = await r.json();
+      masterLoaded = true;
+      document.getElementById('masterCount').textContent = allRows.length + ' submissions';
+      renderMaster();
+    } catch(e) {
+      body.innerHTML = '<tr><td colspan="8" style="color:#f87171;text-align:center;padding:1rem">Load failed</td></tr>';
+    }
+  }
+
+  function renderMaster() {
+    const body = document.getElementById('masterBody');
+    if (!allRows.length) {
+      body.innerHTML = '<tr><td colspan="8" style="color:var(--muted);text-align:center;padding:1rem">No submissions yet</td></tr>';
+      return;
+    }
+    body.innerHTML = allRows.map(row => {
+      const dt    = new Date(row.created_at);
+      const date  = dt.toLocaleDateString();
+      const time  = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const sqHex = SQ_HEX[row.squad] || '#888';
+      const pill  = `<span class="sq-pill" style="background:${sqHex}22;color:${sqHex};border:1px solid ${sqHex}55">${row.squad}</span>`;
+      return `<tr>
+        <td style="color:var(--muted);white-space:nowrap">${date}</td>
+        <td style="color:var(--muted);white-space:nowrap">${time}</td>
+        <td>${row.staff_name}</td>
+        <td>${row.student_name}</td>
+        <td style="color:var(--muted)">${row.grade}</td>
+        <td>${pill}</td>
+        <td style="color:var(--muted)">${row.trait}</td>
+        <td style="color:var(--muted)">${row.notes || ''}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function exportCSV() {
+    if (!allRows.length) { alert('No data to export.'); return; }
+    const headers = ['Date','Time','Staff Name','Student Name','Grade','Squad','Trait','Notes'];
+    const rows = allRows.map(r => {
+      const dt = new Date(r.created_at);
+      return [
+        dt.toLocaleDateString(),
+        dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        r.staff_name, r.student_name, r.grade, r.squad, r.trait,
+        (r.notes || '').replace(/,/g, ';')
+      ].map(v => `"${v}"`).join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'trait-dough-submissions.csv';
+    a.click(); URL.revokeObjectURL(url);
+  }
+</script>
+</body>
+</html>
