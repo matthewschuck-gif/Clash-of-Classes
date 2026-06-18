@@ -9,7 +9,6 @@
   <title>Trait Dough</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
     :root {
@@ -321,17 +320,18 @@
     .csv-btn { padding: 0.45rem 1rem; border-radius: 8px; border: none; background: var(--purple); color: #fff; font-weight: 900; font-size: 0.72rem; letter-spacing: 0.06em; cursor: pointer; font-family: inherit; transition: opacity 0.2s; }
     .csv-btn:hover { opacity: 0.85; }
 
-    .ocr-spinner {
-      width: 14px; height: 14px;
-      border: 2px solid rgba(73,14,111,0.15);
-      border-top-color: var(--purple);
-      border-radius: 50%;
-      animation: ocr-spin 0.8s linear infinite;
-      flex-shrink: 0;
-    }
-    @keyframes ocr-spin { to { transform: rotate(360deg); } }
-
     .cam-sq-btn.selected { border-color: var(--sq-color); background: rgba(73,14,111,0.07); color: var(--sq-color); box-shadow: 0 2px 8px var(--sq-glow); }
+    .cam-grade-btn.selected { border-color: var(--sq-color); background: rgba(73,14,111,0.07); color: var(--purple); box-shadow: 0 2px 8px var(--sq-glow); }
+
+    .cam-trait-btn {
+      padding: 0.55rem 0.75rem; border-radius: 9px;
+      border: 1.5px solid rgba(73,14,111,0.15);
+      background: #f9f7fc; color: var(--text);
+      font-size: 0.78rem; font-weight: 600; text-align: left;
+      cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .cam-trait-btn:hover { border-color: var(--gold); background: rgba(196,127,0,0.06); }
+    .cam-trait-btn.selected { border-color: var(--gold); background: rgba(196,127,0,0.1); color: var(--gold); font-weight: 800; box-shadow: 0 2px 8px rgba(196,127,0,0.2); }
   </style>
 </head>
 <body>
@@ -503,16 +503,6 @@
         <button class="cam-use-this" id="cam-capture-btn" onclick="capturePhoto()" style="flex:1">📸 Take Photo</button>
         <button class="cam-scan-next" id="cam-retake-btn" onclick="retakePhoto()" style="display:none;flex:1">🔄 Retake</button>
       </div>
-      <!-- OCR progress -->
-      <div id="cam-ocr-status" style="display:none;margin-top:8px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="ocr-spinner"></div>
-          <span style="font-size:0.78rem;color:var(--muted)" id="cam-ocr-text">Scanning image…</span>
-        </div>
-        <div style="height:3px;background:rgba(73,14,111,0.1);border-radius:2px;margin-top:6px;overflow:hidden">
-          <div id="cam-ocr-bar" style="height:100%;width:0%;background:var(--purple);border-radius:2px;transition:width 0.3s"></div>
-        </div>
-      </div>
       <!-- Or upload a file -->
       <div style="text-align:center;margin-top:10px">
         <button style="background:none;border:none;color:var(--muted);font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;font-family:inherit" onclick="document.getElementById('cam-file-input').click()">Or upload a photo</button>
@@ -520,11 +510,12 @@
       </div>
     </div>
 
-    <!-- Review panel (shown after OCR) -->
+    <!-- Review panel (shown after photo) -->
     <div id="cam-review-panel" style="display:none">
-      <div id="cam-ocr-result" style="background:rgba(73,14,111,0.05);border:1px solid rgba(73,14,111,0.15);border-radius:12px;padding:0.85rem 1rem;margin-bottom:0.6rem">
-        <div style="font-size:10px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Scanner Detected</div>
-        <div id="cam-ocr-detected" style="font-size:0.82rem;color:var(--text);line-height:1.5"></div>
+      <!-- Show captured image as reference -->
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(73,14,111,0.15);margin-bottom:0.6rem">
+        <img id="cam-review-img" style="width:100%;display:block;max-height:220px;object-fit:contain;background:#f5f3f8" />
+        <div style="padding:6px 10px;background:rgba(73,14,111,0.05);font-size:0.68rem;font-weight:700;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;text-align:center">Reference — select what's circled below</div>
       </div>
       <div class="cam-field">
         <label>Student Name *</label>
@@ -532,22 +523,26 @@
       </div>
       <div class="cam-field" style="margin-top:6px">
         <label>Grade *</label>
-        <select id="cam-grade"><option value="">Grade</option><option value="7">7th</option><option value="8">8th</option></select>
+        <div style="display:flex;gap:8px">
+          <button type="button" class="squad-btn cam-grade-btn" data-grade="7" style="flex:1;--sq-color:var(--purple);--sq-glow:rgba(73,14,111,0.25)">7th</button>
+          <button type="button" class="squad-btn cam-grade-btn" data-grade="8" style="flex:1;--sq-color:var(--purple);--sq-glow:rgba(73,14,111,0.25)">8th</button>
+        </div>
+        <input type="hidden" id="cam-grade" />
       </div>
       <div class="cam-field" style="margin-top:6px">
-        <label>Trait Demonstrated *</label>
-        <select id="cam-trait">
-          <option value="">Select a trait…</option>
-          <option>Continual Learning &amp; Growth Mindset</option>
-          <option>Critical Thinking &amp; Problem Solving</option>
-          <option>Creativity &amp; Innovation</option>
-          <option>Adaptability &amp; Flexibility</option>
-          <option>Resilience &amp; Grit</option>
-          <option>Communication &amp; Empathy</option>
-          <option>Collaboration &amp; Teamwork</option>
-          <option>Honesty, Integrity, &amp; Responsibility</option>
-          <option>Healthy Living, Wellness, &amp; Self-Awareness</option>
-        </select>
+        <label>Trait Demonstrated * <span style="font-weight:400;text-transform:none;font-size:9px;color:var(--muted)">(tap the circled trait)</span></label>
+        <div style="display:flex;flex-direction:column;gap:5px" id="cam-trait-list">
+          <button type="button" class="cam-trait-btn" data-trait="Continual Learning &amp; Growth Mindset">Continual Learning &amp; Growth Mindset</button>
+          <button type="button" class="cam-trait-btn" data-trait="Critical Thinking &amp; Problem Solving">Critical Thinking &amp; Problem Solving</button>
+          <button type="button" class="cam-trait-btn" data-trait="Creativity &amp; Innovation">Creativity &amp; Innovation</button>
+          <button type="button" class="cam-trait-btn" data-trait="Adaptability &amp; Flexibility">Adaptability &amp; Flexibility</button>
+          <button type="button" class="cam-trait-btn" data-trait="Resilience &amp; Grit">Resilience &amp; Grit</button>
+          <button type="button" class="cam-trait-btn" data-trait="Communication &amp; Empathy">Communication &amp; Empathy</button>
+          <button type="button" class="cam-trait-btn" data-trait="Collaboration &amp; Teamwork">Collaboration &amp; Teamwork</button>
+          <button type="button" class="cam-trait-btn" data-trait="Honesty, Integrity, &amp; Responsibility">Honesty, Integrity, &amp; Responsibility</button>
+          <button type="button" class="cam-trait-btn" data-trait="Healthy Living, Wellness, &amp; Self-Awareness">Healthy Living, Wellness, &amp; Self-Awareness</button>
+        </div>
+        <input type="hidden" id="cam-trait" />
       </div>
       <div class="cam-field" style="margin-top:6px">
         <label>Student's Squad *</label>
@@ -747,7 +742,6 @@
 
   // ── Camera Image Scanner ──
   let camStream     = null;
-  let currentScan   = null;
   let scanQueue     = [];
   let camSelectedSquad = '';
 
@@ -761,18 +755,28 @@
     };
   });
 
-  // Trait keywords for OCR matching
-  const TRAIT_KEYWORDS = [
-    { trait: 'Continual Learning & Growth Mindset', keys: ['continual','learning','growth','mindset'] },
-    { trait: 'Critical Thinking & Problem Solving', keys: ['critical','thinking','problem','solving'] },
-    { trait: 'Creativity & Innovation',             keys: ['creativity','innovation','creative'] },
-    { trait: 'Adaptability & Flexibility',          keys: ['adaptability','flexibility','adaptable','flexible'] },
-    { trait: 'Resilience & Grit',                   keys: ['resilience','grit','resilient'] },
-    { trait: 'Communication & Empathy',             keys: ['communication','empathy','communicate'] },
-    { trait: 'Collaboration & Teamwork',            keys: ['collaboration','teamwork','collaborate'] },
-    { trait: 'Honesty, Integrity, & Responsibility',keys: ['honesty','integrity','responsibility','honest','responsible'] },
-    { trait: 'Healthy Living, Wellness, & Self-Awareness', keys: ['healthy','wellness','self-awareness','self','awareness','living'] },
-  ];
+  let camSelectedGrade = '';
+  let camSelectedTrait = '';
+
+  // Grade buttons inside camera modal
+  document.querySelectorAll('.cam-grade-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.cam-grade-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      camSelectedGrade = btn.dataset.grade;
+      document.getElementById('cam-grade').value = camSelectedGrade;
+    };
+  });
+
+  // Trait buttons inside camera modal
+  document.querySelectorAll('.cam-trait-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.cam-trait-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      camSelectedTrait = btn.dataset.trait;
+      document.getElementById('cam-trait').value = camSelectedTrait;
+    };
+  });
 
   async function openCamera() {
     document.getElementById('camera-modal').classList.add('open');
@@ -785,7 +789,6 @@
     document.getElementById('cam-video').style.display = 'block';
     document.getElementById('cam-capture-btn').style.display = 'block';
     document.getElementById('cam-retake-btn').style.display = 'none';
-    document.getElementById('cam-ocr-status').style.display = 'none';
     try {
       camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       const video = document.getElementById('cam-video');
@@ -813,24 +816,15 @@
     ctx.drawImage(video, 0, 0);
 
     const dataUrl = canvas.toDataURL('image/png');
-    const captured = document.getElementById('cam-captured');
-    captured.src = dataUrl;
-    captured.style.display = 'block';
-    video.style.display = 'none';
-
-    document.getElementById('cam-capture-btn').style.display = 'none';
-    document.getElementById('cam-retake-btn').style.display = 'block';
-    document.getElementById('cam-status').textContent = '';
-
-    runOCR(dataUrl);
+    showReviewPanel(dataUrl);
   }
 
   function retakePhoto() {
+    showScanPanel();
     document.getElementById('cam-captured').style.display = 'none';
     document.getElementById('cam-video').style.display = 'block';
     document.getElementById('cam-capture-btn').style.display = 'block';
     document.getElementById('cam-retake-btn').style.display = 'none';
-    document.getElementById('cam-ocr-status').style.display = 'none';
     document.getElementById('cam-status').textContent = 'Position the Trait Dough bill in view, then tap capture';
   }
 
@@ -839,154 +833,60 @@
     if (!file) return;
     if (!document.getElementById('camera-modal').classList.contains('open')) {
       document.getElementById('camera-modal').classList.add('open');
-      showScanPanel();
       updateQueueUI();
     }
     const reader = new FileReader();
     reader.onload = e => {
-      const dataUrl = e.target.result;
-      const captured = document.getElementById('cam-captured');
-      captured.src = dataUrl;
-      captured.style.display = 'block';
-      document.getElementById('cam-video').style.display = 'none';
-      document.getElementById('cam-capture-btn').style.display = 'none';
-      document.getElementById('cam-retake-btn').style.display = 'block';
-      document.getElementById('cam-status').textContent = '';
-      runOCR(dataUrl);
+      showReviewPanel(e.target.result);
     };
     reader.readAsDataURL(file);
     input.value = '';
   }
 
-  async function runOCR(imageSource) {
-    const ocrStatus = document.getElementById('cam-ocr-status');
-    const ocrText   = document.getElementById('cam-ocr-text');
-    const ocrBar    = document.getElementById('cam-ocr-bar');
-    ocrStatus.style.display = 'block';
-    ocrText.textContent = 'Scanning image for text…';
-    ocrBar.style.width = '10%';
-
-    try {
-      const result = await Tesseract.recognize(imageSource, 'eng', {
-        logger: m => {
-          if (m.status === 'recognizing text') {
-            ocrBar.style.width = Math.round(m.progress * 100) + '%';
-          }
-        }
-      });
-
-      ocrBar.style.width = '100%';
-      const text = result.data.text || '';
-      ocrText.textContent = text.trim() ? 'Text detected — review below' : 'No text found — fill in manually';
-      processOCRResult(text);
-    } catch(e) {
-      ocrText.textContent = 'Scan failed — fill in the form manually';
-      ocrBar.style.width = '0%';
-      showReviewPanel({ name: '', grade: '', squad: '', trait: '', ocrText: '' });
-    }
-  }
-
-  function processOCRResult(rawText) {
-    const lower = rawText.toLowerCase();
-    const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-
-    // Try to match a trait
-    let bestTrait = '';
-    let bestScore = 0;
-    TRAIT_KEYWORDS.forEach(tk => {
-      let score = 0;
-      tk.keys.forEach(k => { if (lower.includes(k)) score++; });
-      if (score > bestScore) { bestScore = score; bestTrait = tk.trait; }
-    });
-
-    // Try to find a student name — look for lines that don't match traits or common form labels
-    const skipWords = ['trait','dough','name','student','teacher','staff','date','grade','squad','circle','ems','ephrata','middle','school','mountaineer'];
-    let candidateName = '';
-    for (const line of lines) {
-      const lineLower = line.toLowerCase();
-      const isTraitLine = TRAIT_KEYWORDS.some(tk => tk.keys.some(k => lineLower.includes(k)));
-      const isLabel = skipWords.some(w => lineLower.includes(w));
-      if (!isTraitLine && !isLabel && line.length > 2 && line.length < 40 && /[a-zA-Z]/.test(line)) {
-        candidateName = line;
-        break;
-      }
-    }
-
-    // Try to detect grade
-    let grade = '';
-    if (/\b7th\b|\bgrade\s*7\b|\b7\s*grade\b/i.test(rawText)) grade = '7';
-    else if (/\b8th\b|\bgrade\s*8\b|\b8\s*grade\b/i.test(rawText)) grade = '8';
-
-    // Try to detect squad
-    let squad = '';
-    const squadTest = lower.replace(/[^a-z]/g,' ');
-    if (/\bgold\b/.test(squadTest)) squad = 'GOLD';
-    else if (/\bpurple\b/.test(squadTest)) squad = 'PURPLE';
-    else if (/\bgrey\b|\bgray\b/.test(squadTest)) squad = 'GREY';
-    else if (/\bblack\b/.test(squadTest)) squad = 'BLACK';
-
-    showReviewPanel({
-      name: candidateName,
-      grade: grade,
-      squad: squad,
-      trait: bestScore >= 1 ? bestTrait : '',
-      ocrText: rawText.trim()
-    });
-  }
-
-  function showReviewPanel(data) {
-    currentScan = data;
+  function showReviewPanel(imageDataUrl) {
     document.getElementById('cam-scan-panel').style.display = 'none';
     document.getElementById('cam-review-panel').style.display = 'block';
-    document.getElementById('cam-title').textContent = 'Review & Complete';
-    document.getElementById('cam-sub').textContent = 'Confirm or edit the detected info, then submit';
+    document.getElementById('cam-title').textContent = 'Fill In From Bill';
+    document.getElementById('cam-sub').textContent = 'Look at the photo and select what\'s circled';
 
-    // Show raw OCR text
-    const detected = document.getElementById('cam-ocr-detected');
-    if (data.ocrText) {
-      const preview = data.ocrText.length > 200 ? data.ocrText.slice(0,200) + '…' : data.ocrText;
-      detected.innerHTML = '<span style="font-style:italic;color:var(--muted)">"' +
-        preview.replace(/\n/g, ' · ').replace(/</g,'&lt;') + '"</span>';
-      document.getElementById('cam-ocr-result').style.display = 'block';
-    } else {
-      document.getElementById('cam-ocr-result').style.display = 'none';
-    }
+    // Show captured image as reference
+    document.getElementById('cam-review-img').src = imageDataUrl;
 
-    // Fill in detected values
-    document.getElementById('cam-student').value = data.name || '';
-    document.getElementById('cam-grade').value = data.grade || '';
-    document.getElementById('cam-trait').value = data.trait || '';
+    // Reset all fields
+    document.getElementById('cam-student').value = '';
     document.getElementById('cam-notes').value = '';
+    camSelectedGrade = '';
+    camSelectedTrait = '';
+    camSelectedSquad = '';
+    document.getElementById('cam-grade').value = '';
+    document.getElementById('cam-trait').value = '';
+    document.getElementById('cam-squad').value = '';
+    document.querySelectorAll('.cam-grade-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('.cam-trait-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('.cam-sq-btn').forEach(b => b.classList.remove('selected'));
 
-    // Set squad if detected
-    camSelectedSquad = data.squad || '';
-    document.getElementById('cam-squad').value = camSelectedSquad;
-    document.querySelectorAll('.cam-sq-btn').forEach(b => {
-      b.classList.toggle('selected', b.dataset.squad === camSelectedSquad);
-    });
+    // Focus student name input
+    setTimeout(() => document.getElementById('cam-student').focus(), 200);
   }
 
   function addToQueueAndRescan() {
     const name  = document.getElementById('cam-student').value.trim();
-    const grade = document.getElementById('cam-grade').value;
-    const trait = document.getElementById('cam-trait').value;
+    const grade = camSelectedGrade;
+    const trait = camSelectedTrait;
     const squad = camSelectedSquad;
     if (!name) { document.getElementById('cam-student').focus(); return; }
-    if (!grade) { document.getElementById('cam-grade').focus(); return; }
-    if (!trait) { document.getElementById('cam-trait').focus(); return; }
+    if (!grade) { showToast('Select grade', 'Tap 7th or 8th.', '#f87171'); return; }
+    if (!trait) { showToast('Select trait', 'Tap the circled trait.', '#f87171'); return; }
     if (!squad) { showToast('Select squad', 'Pick the student\'s squad color.', '#f87171'); return; }
     const notes = document.getElementById('cam-notes').value.trim();
     scanQueue.push({ name, grade, squad, trait, notes });
-    currentScan = null;
-    camSelectedSquad = '';
     updateQueueUI();
     showScanPanel();
-    // Restart camera
+    // Restart camera view
     document.getElementById('cam-captured').style.display = 'none';
     document.getElementById('cam-video').style.display = 'block';
     document.getElementById('cam-capture-btn').style.display = 'block';
     document.getElementById('cam-retake-btn').style.display = 'none';
-    document.getElementById('cam-ocr-status').style.display = 'none';
     const status = document.getElementById('cam-status');
     if (camStream) {
       status.textContent = 'Position the next Trait Dough bill, then tap capture';
@@ -997,17 +897,15 @@
 
   async function addToQueueAndDone() {
     const name  = document.getElementById('cam-student').value.trim();
-    const grade = document.getElementById('cam-grade').value;
-    const trait = document.getElementById('cam-trait').value;
+    const grade = camSelectedGrade;
+    const trait = camSelectedTrait;
     const squad = camSelectedSquad;
     if (!name) { document.getElementById('cam-student').focus(); return; }
-    if (!grade) { document.getElementById('cam-grade').focus(); return; }
-    if (!trait) { document.getElementById('cam-trait').focus(); return; }
+    if (!grade) { showToast('Select grade', 'Tap 7th or 8th.', '#f87171'); return; }
+    if (!trait) { showToast('Select trait', 'Tap the circled trait.', '#f87171'); return; }
     if (!squad) { showToast('Select squad', 'Pick the student\'s squad color.', '#f87171'); return; }
     const notes = document.getElementById('cam-notes').value.trim();
     scanQueue.push({ name, grade, squad, trait, notes });
-    currentScan = null;
-    camSelectedSquad = '';
     updateQueueUI();
     await submitQueue();
   }
