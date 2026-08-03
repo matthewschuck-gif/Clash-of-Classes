@@ -2,14 +2,22 @@
  * Clash of Classes -- Apps Script backend
  * File 2 of 2: doPost/doGet router + chunked read/write of the single app_data blob.
  *
- * DESIGN NOTE ON CORS (read before touching index.html):
- * Apps Script web apps don't let you set custom response headers, and they don't handle CORS
- * preflight (OPTIONS) requests. The fix: send requests with `Content-Type:
- * text/plain;charset=utf-8` instead of `application/json`. That keeps the browser from sending
- * a preflight at all, and Google's infrastructure serves script.google.com/exec responses
- * cross-origin without extra headers. The body is still just JSON.stringify(...) text; only
- * the header name changes. handleRequest_ below parses the body as JSON regardless of what
- * Content-Type was declared. Same pattern used for the Trail Journal migration.
+ * DESIGN NOTE ON TRANSPORT (read before touching index.html) -- this deployment needed THREE
+ * escalating workarounds before something actually worked, in this order:
+ *   1. fetch() with Content-Type: text/plain (avoids a CORS preflight) -- FAILED. Every
+ *      fetch() call, GET or POST, returned a generic Google Drive "unable to open the file"
+ *      error, even though the identical URL worked fine pasted directly into a browser
+ *      address bar (a plain top-level navigation).
+ *   2. A dynamically-inserted <script src="..."> tag (classic JSONP) -- FAILED too. The
+ *      script's onerror fired outright; it couldn't even load, let alone execute.
+ *   3. A hidden <iframe> navigated to the URL (GET), or a hidden <form target="iframe">
+ *      submission (POST), with the response using window.parent.postMessage(...) to hand
+ *      data back to the page -- WORKS. An iframe load is a genuine document navigation in
+ *      its own browsing context, not a fetch()/script-tag resource load, which is the one
+ *      thing that was reliably working throughout all this testing.
+ * So: every response here can be asked (via a `transport=postmessage` param) to render as a
+ * tiny self-contained HTML page that posts its result to window.parent instead of returning
+ * plain JSON/JS. See gasIframeCall_ in index.html for the frontend side.
  *
  * DESIGN NOTE ON SECURITY (unchanged from the live Supabase version, on purpose):
  * The current site protects writes with nothing but a Supabase anon key -- any browser can
@@ -48,18 +56,22 @@ function doGet(e) {
 }
 
 function handleRequest_(e, method) {
-  // JSONP support: when a GET request includes a `callback` param, the frontend is loading
-  // this via a <script> tag instead of fetch() -- see gasJsonp_ in index.html. That's a
-  // deliberate workaround, not a mistake: on this deployment, fetch() to script.google.com
-  // returned a Google-side "unable to open the file" error on the redirect it follows
-  // internally (script.googleusercontent.com/macros/echo?...), even though the IDENTICAL URL
-  // worked fine as a plain browser navigation. A <script> tag load isn't subject to CORS or
-  // that redirect-following behavior at all, so it sidesteps the problem entirely. Response
-  // must be wrapped as callback(...) and served as JavaScript, not JSON, for this to work.
   const callback = (method !== 'POST' && e.parameter.callback) ? e.parameter.callback : null;
+  const usePostMessage = e.parameter && e.parameter.transport === 'postmessage';
+  // Echoed back verbatim in the postMessage payload so the frontend can tell which of
+  // possibly several concurrent in-flight iframe calls a given 'message' event belongs to --
+  // window's 'message' listeners are global to the page, not scoped to one iframe, so without
+  // this a response could get delivered to the wrong caller's Promise. See gasIframeCall_ in
+  // index.html.
+  const reqId = (e.parameter && e.parameter.reqId) ? e.parameter.reqId : null;
   try {
     let body;
-    if (method === 'POST' && e.postData && e.postData.contents) {
+    if (method === 'POST' && e.parameter && e.parameter.payload) {
+      // Hidden-form POST (see gasIframeCall_ in index.html): the browser submits the request
+      // as application/x-www-form-urlencoded, so the JSON body arrives as a form field
+      // instead of a raw request body.
+      body = JSON.parse(e.parameter.payload);
+    } else if (method === 'POST' && e.postData && e.postData.contents) {
       body = JSON.parse(e.postData.contents);
     } else {
       body = {
@@ -85,10 +97,23 @@ function handleRequest_(e, method) {
         throw new Error('Unknown action: ' + body.action);
     }
 
-    return jsonOut_({ ok: true, data: result }, callback);
+    return respondOut_({ ok: true, data: result, reqId: reqId }, callback, usePostMessage);
   } catch (err) {
-    return jsonOut_({ ok: false, error: String(err && err.message ? err.message : err) }, callback);
+    return respondOut_({ ok: false, error: String(err && err.message ? err.message : err), reqId: reqId }, callback, usePostMessage);
   }
+}
+
+function respondOut_(obj, callback, usePostMessage) {
+  if (usePostMessage) {
+    // Escape </script>-breaking sequences so the JSON payload can't prematurely close the
+    // inline <script> tag it's embedded in.
+    const safeJson = JSON.stringify(obj).replace(/</g, '\u003c').replace(/>/g, '\u003e');
+    const html = '<!DOCTYPE html><html><body><script>' +
+      'window.parent.postMessage(' + safeJson + ", '*');" +
+      '</' + 'script></body></html>';
+    return HtmlService.createHtmlOutput(html);
+  }
+  return jsonOut_(obj, callback);
 }
 
 function jsonOut_(obj, callback) {

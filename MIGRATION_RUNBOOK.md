@@ -107,21 +107,28 @@ a teacher would want to hand-edit as spreadsheet rows.
    access (a wrong theory floated and then ruled out during this migration, based on Trail
    Journal's own history showing plain "Anyone" deployments work fine on this domain).
 
-   **A second, deeper issue past the URL format: `fetch()` itself doesn't work reliably against
-   this deployment, even to the correct plain URL.** The exact same URL that returned real JSON
-   when pasted directly into a browser address bar (a plain navigation) returned Google's
-   generic "unable to open the file" error when called via JavaScript `fetch()` from the page
-   — for both POST and GET, every time, reproducibly. The distinguishing factor is specifically
-   navigation vs. `fetch()`, not the HTTP method or URL format. The fix that actually worked:
-   load/meta (read-only, no request body needed) now go through a dynamically-inserted
-   `<script>` tag (the classic JSONP technique — see `gasJsonp_` in `index.html` and the
-   `callback` param handling in `jsonOut_`/`handleRequest_` in `02_Router.gs`) instead of
-   `fetch()`. A `<script src="...">` load isn't a `fetch()` at all, so it isn't subject to
-   whatever this deployment's redirect chain does differently for JS-initiated requests.
-   `save()` still uses a real `fetch()` POST, since a `<script>` tag can't carry a request body
-   and `D` is far too large for a URL query string — test the "Add Event" flow specifically to
-   confirm writes work; if `save()` turns out to have the same problem, it'll need its own
-   workaround (e.g., a hidden form POST to a hidden iframe) as a follow-up.
+   **A much deeper issue past the URL format: no JavaScript-initiated request works against
+   this deployment at all, only a real browser navigation.** Three things were tried, in order:
+
+   1. `fetch()` (both GET and POST) — failed every time, with Google's generic "unable to open
+      the file" error, even though the identical URL worked fine pasted directly into a browser
+      address bar.
+   2. A dynamically-inserted `<script src="...">` tag (classic JSONP) — also failed; the
+      script's `onerror` fired outright, it couldn't even load.
+   3. A hidden `<iframe>` navigated to the URL (for reads), and a hidden `<form target="an
+      iframe">` submission (for writes), with the Apps Script response rendering as a tiny HTML
+      page that calls `window.parent.postMessage(...)` to hand data back — **this is what
+      actually works.** An iframe load is a genuine document navigation in its own browsing
+      context, not a `fetch()`/script-tag resource load, so it's the one mechanism that behaves
+      like the thing that was reliably succeeding all along.
+
+   See `gasIframeCall_` in `index.html` (and the duplicated copies in the Freudenfreude Ticker
+   and Growth Leaderboard widgets) and `respondOut_`/`handleRequest_` in `02_Router.gs` for how
+   this works, including a `reqId` on every call — `window`'s `message` event listener is
+   global to the whole page, not scoped to one iframe, so without a request id to match a
+   response back to the specific call that asked for it, a reply meant for one in-flight call
+   (say, the 5-second `meta` poll) could get delivered to a different concurrent call (say, a
+   user clicking "Add Event" at the same moment) instead.
 
 ## Part 2 — Point the frontend at your URLs
 

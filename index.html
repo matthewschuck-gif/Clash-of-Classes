@@ -3647,55 +3647,88 @@ const GAS_TOKEN='togetherweclimb4444HOPE';
 // school-scale audience. Tune in MIGRATION_RUNBOOK.md if needed.
 const GAS_POLL_MS=5000;
 
-// JSONP loader: on this deployment, fetch() to script.google.com returned a Google-side
-// "unable to open the file" error on the redirect it follows internally
-// (script.googleusercontent.com/macros/echo?...) -- confirmed by testing, even though the
-// IDENTICAL URL worked fine pasted directly into a browser address bar (a plain navigation,
-// not a fetch()). A <script> tag load isn't a fetch() at all -- no CORS, no redirect-following
-// behavior to trip over -- so it sidesteps the problem completely. Only usable for GET
-// (there's no way to send a request body via a script tag), which is fine: load/meta never
-// need one. See jsonOut_/handleRequest_ in 02_Router.gs for the matching backend side.
-let _gasJsonpSeq=0;
-function gasJsonp_(action){
+// Hidden-iframe + postMessage transport. Both fetch() (Content-Type: text/plain, avoiding a
+// CORS preflight) and a dynamically-inserted <script src> (classic JSONP) were tried against
+// this deployment first and both failed outright -- fetch() got a Google-side "unable to open
+// the file" error on every call, and the <script> tag's onerror fired without even loading --
+// even though the IDENTICAL URL worked fine pasted directly into a browser address bar (a
+// plain top-level navigation). An <iframe> load IS a real document navigation in its own
+// browsing context, not a fetch()/script-tag resource load, so it's the one mechanism that
+// behaves like the thing that was actually working. The Apps Script response renders as a
+// tiny HTML page that does window.parent.postMessage(...) to hand the result back -- see
+// respondOut_ in 02_Router.gs for the matching backend side. GET (load/meta) navigates a
+// hidden iframe directly; POST (save) submits a hidden form targeting a hidden iframe, since
+// there's no way to attach a request body to a plain iframe navigation and D can be far too
+// large for a URL query string.
+let _gasReqSeq=0;
+function gasIframeCall_(action, formPayload){
   return new Promise((resolve,reject)=>{
-    const cbName='_gasCb'+(_gasJsonpSeq++)+'_'+Date.now();
-    const timeoutId=setTimeout(()=>{cleanup();reject(new Error('Request timed out'));},15000);
+    // Every in-flight call gets its own reqId so a 'message' event can be matched back to the
+    // right Promise -- window's message listener is global to the page, so without this, a
+    // response meant for one call (e.g. the 5s meta poll) could get delivered to a different
+    // concurrent call (e.g. a user-triggered save() a moment later) instead. The backend
+    // echoes this back verbatim -- see handleRequest_/respondOut_ in 02_Router.gs.
+    const reqId='r'+(_gasReqSeq++)+'_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    const frameName='_gasFrame'+Math.random().toString(36).slice(2)+Date.now();
+    const iframe=document.createElement('iframe');
+    iframe.name=frameName;
+    iframe.style.display='none';
+    let form=null;
+    let done=false;
     function cleanup(){
+      window.removeEventListener('message',onMessage);
       clearTimeout(timeoutId);
-      delete window[cbName];
-      if(script.parentNode) script.parentNode.removeChild(script);
+      if(iframe.parentNode) iframe.parentNode.removeChild(iframe);
+      if(form&&form.parentNode) form.parentNode.removeChild(form);
     }
-    window[cbName]=function(json){
-      cleanup();
-      if(!json.ok){reject(new Error(json.error||'Request failed'));return;}
-      resolve(json.data);
-    };
-    const script=document.createElement('script');
-    script.src=GAS_URL+'?action='+encodeURIComponent(action)+'&token='+encodeURIComponent(GAS_TOKEN)+'&callback='+cbName;
-    script.onerror=()=>{cleanup();reject(new Error('Failed to load script (network or deployment issue)'));};
-    document.head.appendChild(script);
+    function onMessage(ev){
+      if(done) return;
+      // Google may serve this from script.google.com or script.googleusercontent.com
+      // depending on its internal redirect, so the exact origin isn't pinned down here --
+      // instead, match on reqId (see comment above) before trusting a message.
+      const d=ev.data;
+      if(!d||typeof d!=='object'||!('ok' in d)||d.reqId!==reqId) return;
+      done=true; cleanup();
+      if(!d.ok){reject(new Error(d.error||'Request failed'));return;}
+      resolve(d.data);
+    }
+    const timeoutId=setTimeout(()=>{
+      if(done) return;
+      done=true; cleanup();
+      reject(new Error('Request timed out'));
+    },20000);
+    window.addEventListener('message',onMessage);
+    document.body.appendChild(iframe);
+    if(formPayload){
+      form=document.createElement('form');
+      form.method='POST';
+      form.action=GAS_URL;
+      form.target=frameName;
+      form.style.display='none';
+      const fields=Object.assign({reqId:reqId},formPayload);
+      Object.keys(fields).forEach(k=>{
+        const inp=document.createElement('input');
+        inp.type='hidden'; inp.name=k; inp.value=fields[k];
+        form.appendChild(inp);
+      });
+      document.body.appendChild(form);
+      form.submit();
+    } else {
+      iframe.src=GAS_URL+'?action='+encodeURIComponent(action)+'&token='+encodeURIComponent(GAS_TOKEN)+'&transport=postmessage&reqId='+encodeURIComponent(reqId);
+    }
   });
 }
-window.gasJsonp_=gasJsonp_; // see window.gasCall_ note below -- same module-scope reason
+window.gasIframeCall_=gasIframeCall_; // see window.gasCall_ note below -- same module-scope reason
 
 async function gasCall_(body){
-  // load/meta go through the JSONP loader above (see its comment for why). Only save() uses
-  // a real POST, since it must carry the full D blob -- far too large for a URL query string,
-  // and there's no way to send a body via a <script> tag.
   if(body.action==='load'||body.action==='meta'){
-    return gasJsonp_(body.action);
+    return gasIframeCall_(body.action);
   }
-  const r=await fetch(GAS_URL,{
-    method:'POST',
-    // text/plain avoids a CORS preflight (OPTIONS) that Apps Script can't answer -- the body
-    // is still JSON.stringify'd, only the declared Content-Type changes.
-    headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body:JSON.stringify(Object.assign({token:GAS_TOKEN},body))
+  // save -> hidden form POST (see gasIframeCall_ above for why, not a plain fetch()).
+  return gasIframeCall_(null,{
+    payload:JSON.stringify(Object.assign({token:GAS_TOKEN},body)),
+    transport:'postmessage'
   });
-  if(!r.ok){const txt=await r.text();throw new Error('HTTP '+r.status+': '+txt);}
-  const json=await r.json();
-  if(!json.ok) throw new Error(json.error||'Request failed');
-  return json.data;
 }
 window.gasCall_=gasCall_; // exposed because this const lives inside a <script type="module">
 // (module scope isn't shared with the later classic <script> tags that also need it --
@@ -8641,31 +8674,45 @@ goTo(window.__currentPage || currentPage);
   // duplicated locally in every widget before the migration.
   const GAS_URL='https://script.google.com/macros/s/AKfycbyRCm58vW1HMZ6NefMzdgNBzJHwd3wbZ4mscPPqlr8Z6oRe769B101hWJe12xC2GAmMjQ/exec';
   const GAS_TOKEN='togetherweclimb4444HOPE';
-  // JSONP, not fetch() -- see the matching comment on the main gasJsonp_ definition earlier
-  // in the page (in the <script type="module">). fetch() to this deployment consistently hit
-  // a Google-side "unable to open the file" error on its internal redirect, even for a plain
-  // GET, while the identical URL worked fine as a script-tag load / direct navigation.
-  // Duplicated locally (not calling window.gasJsonp_) for the same module-timing reason
-  // GAS_URL/GAS_TOKEN are duplicated here instead of reused from the module.
-  let _localJsonpSeq=0;
+  // Hidden-iframe + postMessage, not fetch() or JSONP -- see the matching comment on the
+  // main gasIframeCall_ definition earlier in the page (in the <script type="module">). Both
+  // fetch() and a <script src> JSONP load failed against this deployment; an iframe load is a
+  // real navigation, which is the one thing that reliably worked. Duplicated locally (not
+  // calling window.gasIframeCall_) for the same module-timing reason GAS_URL/GAS_TOKEN are
+  // duplicated here instead of reused from the module. This widget only ever reads (action:
+  // 'load'), so no form/POST path is needed here.
+  let _localReqSeq=0;
   function gasCallLocal_(body){
     return new Promise((resolve,reject)=>{
-      const cbName='_gasCbW'+(_localJsonpSeq++)+'_'+Date.now();
-      const timeoutId=setTimeout(()=>{cleanup();reject(new Error('Request timed out'));},15000);
+      // reqId matches this call's response to this call specifically -- window's message
+      // listener is global to the page, shared with every other widget and the main sb shim,
+      // so without this a response meant for a different concurrent call could get delivered
+      // here instead (or vice versa). See the matching comment on the main gasIframeCall_.
+      const reqId='rw'+(_localReqSeq++)+'_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+      const iframe=document.createElement('iframe');
+      iframe.style.display='none';
+      let done=false;
       function cleanup(){
+        window.removeEventListener('message',onMessage);
         clearTimeout(timeoutId);
-        delete window[cbName];
-        if(script.parentNode) script.parentNode.removeChild(script);
+        if(iframe.parentNode) iframe.parentNode.removeChild(iframe);
       }
-      window[cbName]=function(json){
-        cleanup();
-        if(!json.ok){reject(new Error(json.error||'Request failed'));return;}
-        resolve(json.data);
-      };
-      const script=document.createElement('script');
-      script.src=GAS_URL+'?action='+encodeURIComponent(body.action)+'&token='+encodeURIComponent(GAS_TOKEN)+'&callback='+cbName;
-      script.onerror=()=>{cleanup();reject(new Error('Failed to load script (network or deployment issue)'));};
-      document.head.appendChild(script);
+      function onMessage(ev){
+        if(done) return;
+        const d=ev.data;
+        if(!d||typeof d!=='object'||!('ok' in d)||d.reqId!==reqId) return;
+        done=true; cleanup();
+        if(!d.ok){reject(new Error(d.error||'Request failed'));return;}
+        resolve(d.data);
+      }
+      const timeoutId=setTimeout(()=>{
+        if(done) return;
+        done=true; cleanup();
+        reject(new Error('Request timed out'));
+      },20000);
+      window.addEventListener('message',onMessage);
+      document.body.appendChild(iframe);
+      iframe.src=GAS_URL+'?action='+encodeURIComponent(body.action)+'&token='+encodeURIComponent(GAS_TOKEN)+'&transport=postmessage&reqId='+encodeURIComponent(reqId);
     });
   }
 
@@ -8754,31 +8801,45 @@ goTo(window.__currentPage || currentPage);
   // duplicated locally in every widget before the migration.
   const GAS_URL='https://script.google.com/macros/s/AKfycbyRCm58vW1HMZ6NefMzdgNBzJHwd3wbZ4mscPPqlr8Z6oRe769B101hWJe12xC2GAmMjQ/exec';
   const GAS_TOKEN='togetherweclimb4444HOPE';
-  // JSONP, not fetch() -- see the matching comment on the main gasJsonp_ definition earlier
-  // in the page (in the <script type="module">). fetch() to this deployment consistently hit
-  // a Google-side "unable to open the file" error on its internal redirect, even for a plain
-  // GET, while the identical URL worked fine as a script-tag load / direct navigation.
-  // Duplicated locally (not calling window.gasJsonp_) for the same module-timing reason
-  // GAS_URL/GAS_TOKEN are duplicated here instead of reused from the module.
-  let _localJsonpSeq=0;
+  // Hidden-iframe + postMessage, not fetch() or JSONP -- see the matching comment on the
+  // main gasIframeCall_ definition earlier in the page (in the <script type="module">). Both
+  // fetch() and a <script src> JSONP load failed against this deployment; an iframe load is a
+  // real navigation, which is the one thing that reliably worked. Duplicated locally (not
+  // calling window.gasIframeCall_) for the same module-timing reason GAS_URL/GAS_TOKEN are
+  // duplicated here instead of reused from the module. This widget only ever reads (action:
+  // 'load'), so no form/POST path is needed here.
+  let _localReqSeq=0;
   function gasCallLocal_(body){
     return new Promise((resolve,reject)=>{
-      const cbName='_gasCbW'+(_localJsonpSeq++)+'_'+Date.now();
-      const timeoutId=setTimeout(()=>{cleanup();reject(new Error('Request timed out'));},15000);
+      // reqId matches this call's response to this call specifically -- window's message
+      // listener is global to the page, shared with every other widget and the main sb shim,
+      // so without this a response meant for a different concurrent call could get delivered
+      // here instead (or vice versa). See the matching comment on the main gasIframeCall_.
+      const reqId='rw'+(_localReqSeq++)+'_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+      const iframe=document.createElement('iframe');
+      iframe.style.display='none';
+      let done=false;
       function cleanup(){
+        window.removeEventListener('message',onMessage);
         clearTimeout(timeoutId);
-        delete window[cbName];
-        if(script.parentNode) script.parentNode.removeChild(script);
+        if(iframe.parentNode) iframe.parentNode.removeChild(iframe);
       }
-      window[cbName]=function(json){
-        cleanup();
-        if(!json.ok){reject(new Error(json.error||'Request failed'));return;}
-        resolve(json.data);
-      };
-      const script=document.createElement('script');
-      script.src=GAS_URL+'?action='+encodeURIComponent(body.action)+'&token='+encodeURIComponent(GAS_TOKEN)+'&callback='+cbName;
-      script.onerror=()=>{cleanup();reject(new Error('Failed to load script (network or deployment issue)'));};
-      document.head.appendChild(script);
+      function onMessage(ev){
+        if(done) return;
+        const d=ev.data;
+        if(!d||typeof d!=='object'||!('ok' in d)||d.reqId!==reqId) return;
+        done=true; cleanup();
+        if(!d.ok){reject(new Error(d.error||'Request failed'));return;}
+        resolve(d.data);
+      }
+      const timeoutId=setTimeout(()=>{
+        if(done) return;
+        done=true; cleanup();
+        reject(new Error('Request timed out'));
+      },20000);
+      window.addEventListener('message',onMessage);
+      document.body.appendChild(iframe);
+      iframe.src=GAS_URL+'?action='+encodeURIComponent(body.action)+'&token='+encodeURIComponent(GAS_TOKEN)+'&transport=postmessage&reqId='+encodeURIComponent(reqId);
     });
   }
 
