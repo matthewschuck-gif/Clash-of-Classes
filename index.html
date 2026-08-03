@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<!-- CoC v2.4 (Supabase) -->
+<!-- CoC v2.5 (Google Sheets + Apps Script) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -2699,7 +2699,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         <div class="guide-step"><div class="step-num">1</div><div class="step-text">Click <strong>⚙ Admin</strong> in the top navigation</div></div>
         <div class="guide-step"><div class="step-num">2</div><div class="step-text">Enter the admin password to unlock</div></div>
         <div class="guide-step"><div class="step-num">3</div><div class="step-text">Go to <strong>Points</strong> tab — enter event name, type, and points per squad</div></div>
-        <div class="guide-step"><div class="step-num">4</div><div class="step-text">Click Add Event — syncs live to all devices instantly via Supabase</div></div>
+        <div class="guide-step"><div class="step-num">4</div><div class="step-text">Click Add Event — syncs live to all devices in a few seconds</div></div>
       </div>
       <button class="btn btn-purple btn-full" style="margin-top:16px" onclick="openLogin()">Open Admin Panel →</button>
     </div>
@@ -3635,16 +3635,37 @@ window.toggleMode = function(){
   }
 })();
 
-// ── Supabase native client (no SDK dependency) ──
-const SB_URL='https://yvutgnpgnthvnonhgdux.supabase.co';
-const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak';
-const _sbAuthHeaders={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
-const _sbReadHeaders={..._sbAuthHeaders,'Content-Type':'application/json'};
-const _sbWriteHeaders={..._sbAuthHeaders,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'};
+// ── Google Apps Script backend client (replaces Supabase; keeps the same sb.from/channel shape) ──
+// Migrated from Supabase -> Google Sheets + Apps Script. See MIGRATION_RUNBOOK.md.
+// PASTE YOUR DEPLOYMENT'S /exec URL AND APP_TOKEN HERE (from Apps Script Deploy > Web app,
+// and Project Settings > Script Properties, respectively -- see MIGRATION_RUNBOOK.md Part 1).
+const GAS_URL='PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+const GAS_TOKEN='PASTE_YOUR_APP_TOKEN_HERE';
+// How often each open tab checks whether the data changed (polling replaces Supabase
+// Realtime's WebSocket push -- Apps Script Web Apps have no push equivalent). Lower = more
+// "live" but more requests to your Apps Script quota; 5s is a reasonable default for a
+// school-scale audience. Tune in MIGRATION_RUNBOOK.md if needed.
+const GAS_POLL_MS=5000;
+
+async function gasCall_(body){
+  const r=await fetch(GAS_URL,{
+    method:'POST',
+    // text/plain avoids a CORS preflight (OPTIONS) that Apps Script can't answer -- the body
+    // is still JSON.stringify'd, only the declared Content-Type changes.
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify(Object.assign({token:GAS_TOKEN},body))
+  });
+  if(!r.ok){const txt=await r.text();throw new Error('HTTP '+r.status+': '+txt);}
+  const json=await r.json();
+  if(!json.ok) throw new Error(json.error||'Request failed');
+  return json.data;
+}
+window.gasCall_=gasCall_; // exposed because this const lives inside a <script type="module">
+// (module scope isn't shared with the later classic <script> tags that also need it --
+// the Freudenfreude Ticker and Growth Leaderboard widgets further down the page)
 
 const sb={
   from:(table)=>{
-    const _t=table;
     return {
       select:(cols)=>{
         return {
@@ -3652,11 +3673,8 @@ const sb={
             return {
               single:async()=>{
                 try{
-                  const url=SB_URL+'/rest/v1/'+_t+'?select='+encodeURIComponent(cols)+'&'+col+'=eq.'+encodeURIComponent(val)+'&limit=1';
-                  const r=await fetch(url,{headers:_sbReadHeaders});
-                  if(!r.ok){const txt=await r.text();return {data:null,error:{code:''+r.status,message:txt}};}
-                  const arr=await r.json();
-                  return {data:arr&&arr[0]?arr[0]:null,error:null};
+                  const res=await gasCall_({action:'load'});
+                  return {data:res&&res.value!=null?{value:res.value}:null,error:null};
                 }catch(e){return {data:null,error:{code:'network',message:e.message}};}
               }
             };
@@ -3665,8 +3683,7 @@ const sb={
       },
       upsert:async(body)=>{
         try{
-          const r=await fetch(SB_URL+'/rest/v1/'+_t,{method:'POST',headers:_sbWriteHeaders,body:JSON.stringify(body)});
-          if(!r.ok){const txt=await r.text();return {error:{message:txt}};}
+          await gasCall_({action:'save',value:body.value});
           return {error:null};
         }catch(e){return {error:{message:e.message}};}
       }
@@ -3674,43 +3691,31 @@ const sb={
   },
   channel:(name)=>{
     let _handlers=[];
-    let _ws=null;
+    let _lastUpdatedAt=null;
+    let _stopped=false;
     const _ch={
       on:(event,filter,handler)=>{_handlers.push({event,filter,handler});return _ch;},
       subscribe:()=>{
-        const _connect=()=>{
+        const _poll=async()=>{
+          if(_stopped) return;
           try{
-            const wsUrl=SB_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+SB_KEY+'&vsn=1.0.0';
-            _ws=new WebSocket(wsUrl);
-            _ws.onopen=()=>{
-              _ws.send(JSON.stringify({
-                topic:'realtime:'+name,
-                event:'phx_join',
-                payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:_handlers.map(h=>h.filter)}},
-                ref:'1'
-              }));
-              // Heartbeat every 25s to keep connection alive
-              setInterval(()=>{if(_ws&&_ws.readyState===1)_ws.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:'hb'}));},25000);
-            };
-            _ws.onmessage=(e)=>{
-              try{
-                const msg=JSON.parse(e.data);
-                // Supabase Realtime sends: {event:'postgres_changes', payload:{data:{record:{...}, old_record:{...}, type:'UPDATE'}}}
-                if(msg.event==='postgres_changes'&&msg.payload&&msg.payload.data){
-                  const d=msg.payload.data;
-                  // Build SDK-compatible payload: {new: record, old: old_record}
-                  const sdkPayload={new:d.record,old:d.old_record,eventType:d.type};
-                  _handlers.forEach(h=>{try{h.handler(sdkPayload);}catch(err){}});
-                }
-              }catch(err){}
-            };
-            _ws.onerror=()=>{};
-            _ws.onclose=()=>{setTimeout(_connect,3000);};
-          }catch(e){setTimeout(_connect,3000);}
+            const meta=await gasCall_({action:'meta'});
+            const seenBefore=_lastUpdatedAt!==null;
+            if(meta&&meta.updated_at&&meta.updated_at!==_lastUpdatedAt){
+              _lastUpdatedAt=meta.updated_at;
+              if(seenBefore){
+                const full=await gasCall_({action:'load'});
+                const sdkPayload={new:full.value,old:null,eventType:'UPDATE'};
+                _handlers.forEach(h=>{try{h.handler(sdkPayload);}catch(err){}});
+              }
+            }
+          }catch(e){ /* transient network hiccup -- next poll will retry */ }
+          setTimeout(_poll,GAS_POLL_MS);
         };
-        _connect();
+        _poll();
         return _ch;
-      }
+      },
+      unsubscribe:()=>{_stopped=true;}
     };
     return _ch;
   }
@@ -4039,7 +4044,7 @@ async function save(){
 }
 
 // Fallback: if Firebase doesn't connect in 5 seconds, render with default data
-// ── SUPABASE BOOT ──
+// ── APP BOOT (loads from Google Sheets via Apps Script) ──
 document.addEventListener('visibilitychange', function(){
   if(document.visibilityState==='visible' && fbReady) renderAll();
 });
@@ -6215,8 +6220,11 @@ function renderGrowth(){
   wrap._loaded=true;
   var TJ_URL='https://kduypmpqkirvjkbnmuha.supabase.co';
   var TJ_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkdXlwbXBxa2lydmprYm5tdWhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjksImV4cCI6MjA5NTk1MjY2OX0.nyjvSvfqsdCJIghlmrwXvL0z1dK1dp2AznPD1CoSvJE';
-  var COC_URL='https://yvutgnpgnthvnonhgdux.supabase.co';
-  var COC_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak';
+  // COC's own data now comes from window.gasCall_({action:'load'}) (Apps Script), not a
+  // direct Supabase fetch -- see the sb shim migration above. TJ_URL/TJ_ANON below still point
+  // at Trail Journal's ORIGINAL Supabase project -- if/when Trail Journal itself cuts over to
+  // its own Apps Script backend, this widget needs a matching follow-up update or it will
+  // start failing once that Supabase project pauses/is deleted. See MIGRATION_RUNBOOK.md.
   var SQUADS_TJ=['Gold','Grey','Black','Purple'];
   var SQ_CLR={Gold:'var(--sq-gold)',Grey:'var(--sq-grey)',Black:'var(--sq-black)',Purple:'var(--sq-purple)'};
   var SQ_BG={Gold:'#ffe100',Grey:'#99a8bb',Black:'#c5c9d1',Purple:'#bb8ef5'};
@@ -6248,10 +6256,10 @@ function renderGrowth(){
     try{
       var r1=await fetch(TJ_URL+'/rest/v1/reflections?select=insight_level,created_at&limit=1000',{headers:{apikey:TJ_ANON,Authorization:'Bearer '+TJ_ANON}});
       var r2=await fetch(TJ_URL+'/rest/v1/panel_sessions?select=clash_squad,status&limit=500',{headers:{apikey:TJ_ANON,Authorization:'Bearer '+TJ_ANON}});
-      var r3=await fetch(COC_URL+'/rest/v1/app_data?key=eq.coc&select=value',{headers:{apikey:COC_ANON,Authorization:'Bearer '+COC_ANON}});
-      var refs=await r1.json(),pnls=await r2.json(),cocR=await r3.json();
+      var cocLoad=await window.gasCall_({action:'load'});
+      var refs=await r1.json(),pnls=await r2.json();
       if(!Array.isArray(refs))return;
-      var coc=(cocR&&cocR[0])?cocR[0].value:{};
+      var coc=(cocLoad&&cocLoad.value)?cocLoad.value:{};
       var total=refs.length;
       var hi=refs.filter(function(r){return r.insight_level==='High';}).length;
       var pc=Array.isArray(pnls)?pnls.filter(function(p){return p.status==='complete';}).length:0;
@@ -8126,7 +8134,7 @@ function sDoSpin(){
       spLand(landed.seg);
     }
   }
-  // ── BROADCAST spin to Supabase for remote TV ──
+  // ── BROADCAST spin for remote TV (saved via Apps Script, same app_data blob) ──
   if(!D.spinState) D.spinState={};
   D.spinState={id:Date.now(),squad:spSquad,spinNum:spSpinNum,a0,delta,dur,easeExp,startedAt:Date.now(),result:null,quadsIdx:Math.min(spSpinNum,3)};
   _lastSaveId=SESSION_ID+'-spin-'+Date.now(); D._saveId=_lastSaveId;
@@ -8229,7 +8237,7 @@ function spLand(seg){
     }
   }
   spTVResult();
-  // Broadcast result to Supabase for remote TV
+  // Broadcast result for remote TV (saved via Apps Script, same app_data blob)
   if(D.spinState){
     D.spinState.result={
       label:document.getElementById('sResultVal')?document.getElementById('sResultVal').textContent:'',
@@ -8588,8 +8596,7 @@ goTo(window.__currentPage || currentPage);
 <script>
 /* Freudenfreude Ticker */
 (function() {
-  const COC_URL  = 'https://yvutgnpgnthvnonhgdux.supabase.co';
-  const COC_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak';
+  // migrated: COC data now comes from window.gasCall_({action:'load'}) (Apps Script)
 
   const SQUAD_COLOR = {
     GOLD:   '#c9a84c', GREY: '#9ca3af',
@@ -8620,11 +8627,8 @@ goTo(window.__currentPage || currentPage);
 
   async function loadTicker() {
     try {
-      const res = await fetch(
-        `${COC_URL}/rest/v1/app_data?key=eq.coc&select=value`,
-        { headers: { apikey: COC_ANON, Authorization: 'Bearer ' + COC_ANON } }
-      );
-      const rows = await res.json();
+      const loaded = await window.gasCall_({ action: 'load' });
+      const rows = loaded && loaded.value != null ? [{ value: loaded.value }] : [];
       const coc = rows?.[0]?.value || {};
       const log = (coc.freudenLog || []).slice(-8).reverse();
 
@@ -8671,8 +8675,7 @@ goTo(window.__currentPage || currentPage);
 <script>
 /* Growth Leaderboard */
 (function() {
-  const COC_URL  = 'https://yvutgnpgnthvnonhgdux.supabase.co';
-  const COC_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2dXRnbnBnbnRodm5vbmhnZHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIzNzgsImV4cCI6MjA5NTMxODM3OH0.bX5eI0EgnlQEjThX0CVpWFj1SNI726OxBwKpTgAv2Ak';
+  // migrated: COC data now comes from window.gasCall_({action:'load'}) (Apps Script)
 
   const SQUADS = ['Gold','Grey','Black','Purple'];
   const SQUAD_COLOR = { Gold:'#c9a84c', Grey:'#9ca3af', Black:'#e5e7eb', Purple:'#9f7aea' };
@@ -8681,11 +8684,8 @@ goTo(window.__currentPage || currentPage);
 
   async function loadGrowth() {
     try {
-      const res = await fetch(
-        `${COC_URL}/rest/v1/app_data?key=eq.coc&select=value`,
-        { headers: { apikey: COC_ANON, Authorization: 'Bearer ' + COC_ANON } }
-      );
-      const rows = await res.json();
+      const loaded = await window.gasCall_({ action: 'load' });
+      const rows = loaded && loaded.value != null ? [{ value: loaded.value }] : [];
       const coc  = rows?.[0]?.value || {};
 
       // Tally growth points per squad by event type
