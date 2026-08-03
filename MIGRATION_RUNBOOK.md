@@ -35,6 +35,38 @@ wheel, live leaderboard, etc.). If not, `GAS_POLL_MS` near the top of the rewire
 is the one number to change — lower it for snappier updates, at the cost of more requests
 against your Apps Script quota.
 
+## Yes — editing the Sheet directly updates the site's points
+
+One deliberate addition beyond a straight port: squad points (`D.events` in the original code)
+get their own tab, **`events`**, with plain columns — `id, name, type, date, note, multiplier,
+BLACK, GOLD, GREY, PURPLE` — instead of being buried inside the opaque JSON blob in `app_data`.
+That's what makes hand-editing actually work: nobody can usefully type into an opaque chunked
+JSON cell, but typing a number into a normal spreadsheet column is exactly the point.
+
+What this means in practice:
+- Add a new row to `events` (any squad's points, a name, a date) → it becomes a real scored
+  event on the site within about 5 seconds, no admin login needed. Leave `id` blank — the
+  backend assigns one automatically the first time it's read and writes it back into the row.
+- Edit a points cell on an existing row → that event's contribution to the squad total updates.
+- Delete a row → that event is gone from the site, same as deleting it from the admin UI.
+- The site's own admin actions (Add Event, spin wheel, Squad Generals, etc.) still work exactly
+  as before and write into this same tab — editing from the Sheet and editing from the site are
+  two doors into the same room, not two separate systems to keep in sync.
+- The polling `meta` check (`getAppDataMeta_` in `02_Router.gs`) now looks at the whole
+  spreadsheet **file's** last-modified time (via `DriveApp`), not one cell — that's what lets a
+  manual edit to `events` get picked up by the same 5-second poll as a site-initiated save, with
+  no extra trigger to set up. This does mean `setupSpreadsheet()`'s permission prompt now
+  includes a Drive scope; approve it like the others.
+- Small, acceptable trade-off: every site-initiated save fully replaces all rows in `events` (to
+  cleanly handle events being deleted, not just added). If someone is mid-edit in the `events`
+  tab at the exact moment the site saves, that edit could be overwritten — the same kind of risk
+  any shared spreadsheet has when two people touch it at once. Not expected to matter for normal
+  classroom-pace use, just worth knowing.
+
+Everything else — theme colors, gallery photos, links, spin wheel config, admin password, squad
+names — stays in the chunked `app_data` blob, not a plain tab, because that data isn't the kind
+a teacher would want to hand-edit as spreadsheet rows.
+
 ## Part 1 — One-time Google setup
 
 1. In your school Workspace Drive, create a new Google Sheet (any name — e.g. "Clash of Classes Data").
@@ -51,10 +83,12 @@ against your Apps Script quota.
    That's the only Script Property this one needs — no AI key, no email key, no admin
    password (see the security note below for why).
 6. In the function dropdown at the top, select `setupSpreadsheet`, click **Run**. Approve the
-   permission prompts. This creates the single `app_data` tab with correct headers. Unlike
-   Trail Journal's `incident_reports` tab, there's no separate PII tab here to lock down —
-   `app_data` doesn't contain individual student names tied to disciplinary records, just the
-   site's public content and squad point totals.
+   permission prompts — this now includes a Drive scope (used only to check the spreadsheet
+   file's last-modified time for the polling/live-update check, see below). This creates the
+   `app_data` and `events` tabs with correct headers. Unlike Trail Journal's `incident_reports`
+   tab, there's no separate PII tab here to lock down — nothing in either tab contains
+   individual student names tied to disciplinary records, just the site's public content and
+   squad point totals.
 7. **Deploy once** (Deploy → New deployment → type "Web app"): Execute as **Me**, Who has access
    **Anyone**. Copy this single URL.
 
@@ -87,9 +121,12 @@ domain.
 Checklist:
 - [ ] Site loads with existing data (or starts fresh with defaults if the Sheet is empty —
       confirm a first save populates the `app_data` tab).
-- [ ] Add an event / award points from Admin → confirm the score updates on screen and a new
-      set of chunk rows appears in `app_data` (old chunk rows for the same key get replaced,
-      not accumulated — check row count doesn't grow forever after repeated saves).
+- [ ] Add an event / award points from Admin → confirm the score updates on screen and a
+      matching row appears in the `events` tab (not `app_data` — see the section above).
+- [ ] Type a new row directly into the `events` tab (fill in a squad's points, leave `id`
+      blank) → confirm it appears on the site within ~5 seconds AND that an id got written back
+      into that row. Then edit one of its point values directly in the Sheet → confirm the
+      squad total updates on the site too.
 - [ ] Open the site in two tabs/devices at once: make a change in one, confirm the other
       reflects it within ~5 seconds (this is the polling replacing Realtime — see note above).
 - [ ] Spin wheel: enter the admin password, spin, confirm result saves and broadcasts to the
