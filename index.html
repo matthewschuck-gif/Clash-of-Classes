@@ -3639,7 +3639,7 @@ window.toggleMode = function(){
 // Migrated from Supabase -> Google Sheets + Apps Script. See MIGRATION_RUNBOOK.md.
 // PASTE YOUR DEPLOYMENT'S /exec URL AND APP_TOKEN HERE (from Apps Script Deploy > Web app,
 // and Project Settings > Script Properties, respectively -- see MIGRATION_RUNBOOK.md Part 1).
-const GAS_URL='https://script.google.com/a/macros/easdpa.org/s/AKfycbyRCm58vW1HMZ6NefMzdgNBzJHwd3wbZ4mscPPqlr8Z6oRe769B101hWJe12xC2GAmMjQ/exec';
+const GAS_URL='https://script.google.com/macros/s/AKfycbyRCm58vW1HMZ6NefMzdgNBzJHwd3wbZ4mscPPqlr8Z6oRe769B101hWJe12xC2GAmMjQ/exec';
 const GAS_TOKEN='togetherweclimb4444HOPE';
 // How often each open tab checks whether the data changed (polling replaces Supabase
 // Realtime's WebSocket push -- Apps Script Web Apps have no push equivalent). Lower = more
@@ -8596,7 +8596,21 @@ goTo(window.__currentPage || currentPage);
 <script>
 /* Freudenfreude Ticker */
 (function() {
-  // migrated: COC data now comes from window.gasCall_({action:'load'}) (Apps Script)
+  // Self-contained on purpose -- do NOT call window.gasCall_ here. This is a plain <script>
+  // tag that runs immediately as the parser reaches it; the big <script type="module"> that
+  // defines window.gasCall_ is implicitly deferred (module scripts always execute after the
+  // whole page has parsed), so window.gasCall_ doesn't exist yet at this point. Duplicating a
+  // tiny local copy avoids that race entirely -- same reason COC_URL/COC_ANON used to be
+  // duplicated locally in every widget before the migration.
+  const GAS_URL='https://script.google.com/macros/s/AKfycbyRCm58vW1HMZ6NefMzdgNBzJHwd3wbZ4mscPPqlr8Z6oRe769B101hWJe12xC2GAmMjQ/exec';
+  const GAS_TOKEN='togetherweclimb4444HOPE';
+  async function gasCallLocal_(body){
+    const r=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({token:GAS_TOKEN},body))});
+    if(!r.ok){const txt=await r.text();throw new Error('HTTP '+r.status+': '+txt);}
+    const json=await r.json();
+    if(!json.ok) throw new Error(json.error||'Request failed');
+    return json.data;
+  }
 
   const SQUAD_COLOR = {
     GOLD:   '#c9a84c', GREY: '#9ca3af',
@@ -8627,7 +8641,7 @@ goTo(window.__currentPage || currentPage);
 
   async function loadTicker() {
     try {
-      const loaded = await window.gasCall_({ action: 'load' });
+      const loaded = await gasCallLocal_({ action: 'load' });
       const rows = loaded && loaded.value != null ? [{ value: loaded.value }] : [];
       const coc = rows?.[0]?.value || {};
       const log = (coc.freudenLog || []).slice(-8).reverse();
@@ -8675,7 +8689,21 @@ goTo(window.__currentPage || currentPage);
 <script>
 /* Growth Leaderboard */
 (function() {
-  // migrated: COC data now comes from window.gasCall_({action:'load'}) (Apps Script)
+  // Self-contained on purpose -- do NOT call window.gasCall_ here. This is a plain <script>
+  // tag that runs immediately as the parser reaches it; the big <script type="module"> that
+  // defines window.gasCall_ is implicitly deferred (module scripts always execute after the
+  // whole page has parsed), so window.gasCall_ doesn't exist yet at this point. Duplicating a
+  // tiny local copy avoids that race entirely -- same reason COC_URL/COC_ANON used to be
+  // duplicated locally in every widget before the migration.
+  const GAS_URL='https://script.google.com/macros/s/AKfycbyRCm58vW1HMZ6NefMzdgNBzJHwd3wbZ4mscPPqlr8Z6oRe769B101hWJe12xC2GAmMjQ/exec';
+  const GAS_TOKEN='togetherweclimb4444HOPE';
+  async function gasCallLocal_(body){
+    const r=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({token:GAS_TOKEN},body))});
+    if(!r.ok){const txt=await r.text();throw new Error('HTTP '+r.status+': '+txt);}
+    const json=await r.json();
+    if(!json.ok) throw new Error(json.error||'Request failed');
+    return json.data;
+  }
 
   const SQUADS = ['Gold','Grey','Black','Purple'];
   const SQUAD_COLOR = { Gold:'#c9a84c', Grey:'#9ca3af', Black:'#e5e7eb', Purple:'#9f7aea' };
@@ -8684,7 +8712,7 @@ goTo(window.__currentPage || currentPage);
 
   async function loadGrowth() {
     try {
-      const loaded = await window.gasCall_({ action: 'load' });
+      const loaded = await gasCallLocal_({ action: 'load' });
       const rows = loaded && loaded.value != null ? [{ value: loaded.value }] : [];
       const coc  = rows?.[0]?.value || {};
 

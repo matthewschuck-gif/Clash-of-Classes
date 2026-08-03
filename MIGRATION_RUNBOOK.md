@@ -97,6 +97,20 @@ a teacher would want to hand-edit as spreadsheet rows.
    auth-check hop that never returns CORS headers, so `clashofclasses.org` could never read the
    response. Confirmed by testing on the Trail Journal migration, applies identically here.
 
+   **Use the plain URL, not the domain-vanity one.** After deploying, Google may show you the
+   URL in the form `https://script.google.com/a/macros/easdpa.org/s/DEPLOYMENT_ID/exec`. Do NOT
+   use that one — for this district it returned a generic "unable to open the file" error for
+   every request, even fully logged out, even with the deployment correctly set to "Anyone".
+   Use the plain canonical form instead: `https://script.google.com/macros/s/DEPLOYMENT_ID/exec`
+   (same deployment ID, just without the `/a/macros/easdpa.org` prefix) — confirmed working via
+   a logged-out incognito test. This was NOT a district Workspace/IT policy blocking anonymous
+   access (a wrong theory floated and then ruled out during this migration, based on Trail
+   Journal's own history showing plain "Anyone" deployments work fine on this domain) — it's
+   specifically the domain-vanity URL *format* that's unreliable, regardless of deployment
+   access settings. If you ever get a "Sorry, unable to open the file at this time" /
+   "Page Not Found" Google Drive-style error again, check the URL format first before assuming
+   anything is broken on the backend.
+
 ## Part 2 — Point the frontend at your URLs
 
 In `index.html`, find these two lines (near the top of the big `<script type="module">` block,
