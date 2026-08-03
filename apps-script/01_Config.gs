@@ -42,6 +42,7 @@
 const TABS = {
   APP_DATA: 'app_data',
   EVENTS: 'events',
+  HELP: 'How To Use This Sheet',
 };
 
 // Mirrors the original Postgres `app_data` table's columns (key, value, updated_at), plus
@@ -74,7 +75,84 @@ function setupSpreadsheet() {
   });
   const def = ss.getSheetByName('Sheet1');
   if (def && ss.getSheets().length > 1) ss.deleteSheet(def);
-  SpreadsheetApp.getUi().alert('Done -- app_data and events tabs created with headers. Clash of Classes has no separate PII tab (unlike Trail Journal), so there is no extra sharing/protection step required here. You can now add/edit rows directly in the events tab and the site will pick them up within a few seconds.');
+  setupHelpTab_();
+  SpreadsheetApp.getUi().alert('Done -- app_data, events, and "How To Use This Sheet" tabs are set up. Clash of Classes has no separate PII tab (unlike Trail Journal), so there is no extra sharing/protection step required here. You can now add/edit rows directly in the events tab and the site will pick them up within a few seconds. Staff directions live in the "How To Use This Sheet" tab -- start there.');
+}
+
+// Human-readable directions for whoever is actually entering events/points day to day --
+// deliberately plain-language, not aimed at whoever set up the Apps Script backend. Safe to
+// re-run (setupSpreadsheet is idempotent): this rewrites the instructions text but never
+// touches app_data or events rows.
+function setupHelpTab_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(TABS.HELP);
+  if (!sheet) sheet = ss.insertSheet(TABS.HELP);
+  else sheet.clear();
+
+  const rows = [
+    ['Clash of Classes -- How To Use This Sheet'],
+    [''],
+    ['This spreadsheet is the live backend for clashofclasses.org. Only two tabs matter for'],
+    ['day-to-day use: "events" (below) is where you add points. Changes here show up on the'],
+    ['website automatically within about 5-10 seconds -- no need to tell anyone or refresh'],
+    ['anything on your end.'],
+    [''],
+    ['HOW TO ADD AN EVENT / GIVE POINTS'],
+    ['1. Open the "events" tab (the tab bar is at the very bottom of this spreadsheet).'],
+    ['2. Add a NEW ROW at the bottom of the data (do not insert rows in the middle).'],
+    ['3. Fill in these columns for that row:'],
+    ['     id       -- leave BLANK. The sheet fills this in automatically.'],
+    ['     name     -- what the event/activity was called, e.g. "Spirit Week Kickoff"'],
+    ['     type     -- a short category label, e.g. "spirit", "academic", "attendance"'],
+    ['     date     -- the date of the event, format YYYY-MM-DD, e.g. 2026-09-15'],
+    ['     note     -- optional, any extra context'],
+    ['     multiplier -- optional, leave blank unless you specifically want to double/triple'],
+    ['                   this event\'s points (e.g. enter 2 for double points)'],
+    ['     BLACK / GOLD / GREY / PURPLE -- the number of points EACH squad earned for this'],
+    ['                   specific event. Enter 0 for a squad that did not earn points here.'],
+    ['4. That\'s it -- do not touch any other tab. The website will update on its own.'],
+    [''],
+    ['HOW TO FIX A MISTAKE'],
+    ['- Wrong number? Just edit the number in that cell directly -- the site will pick up the'],
+    ['  correction automatically, same as any other edit.'],
+    ['- Need to remove an event entirely? Delete that whole row (right-click the row number ->'],
+    ['  Delete row). Don\'t just clear the cells and leave a blank row behind.'],
+    [''],
+    ['HOW TO RESET/START A NEW SCHOOL YEAR -- IMPORTANT, READ THIS FIRST'],
+    ['Do NOT reset the season by deleting all the rows in the "events" tab yourself. Because of'],
+    ['how this sheet talks to the website, clearing the tab by hand will NOT actually reset the'],
+    ['scores -- the website will just quietly restore the old numbers back into this tab within'],
+    ['moments, and it will look like nothing happened (or like your edit got undone).'],
+    [''],
+    ['Instead: go to clashofclasses.org, log into Admin, and use the "Reset All Scores" button'],
+    ['there. That is the only way that safely resets everything (it clears this tab AND the'],
+    ['website\'s stored data together, in sync). If you\'re not sure how to get into Admin, ask'],
+    ['whoever manages the site.'],
+    [''],
+    ['DO NOT TOUCH'],
+    ['The "app_data" tab is not meant to be edited by hand -- it stores the rest of the site\'s'],
+    ['settings (theme, gallery, admin password, etc.) as encoded data, not as plain readable'],
+    ['numbers or text. Editing it directly can break the site. If something there needs to'],
+    ['change, do it through the website\'s own Admin panel instead.'],
+  ];
+
+  sheet.getRange(1, 1, rows.length, 1).setValues(rows);
+  sheet.getRange(1, 1).setFontWeight('bold').setFontSize(14).setFontColor('#490e6f');
+
+  // Bold section headers by matching text rather than hardcoded row numbers, so this
+  // doesn't silently drift out of sync if the copy above ever gets edited.
+  const boldSections = ['HOW TO ADD AN EVENT / GIVE POINTS', 'HOW TO FIX A MISTAKE', 'DO NOT TOUCH'];
+  const warnSections = ['HOW TO RESET/START A NEW SCHOOL YEAR -- IMPORTANT, READ THIS FIRST'];
+  rows.forEach(function (r, i) {
+    const text = r[0];
+    if (boldSections.indexOf(text) !== -1) sheet.getRange(i + 1, 1).setFontWeight('bold');
+    if (warnSections.indexOf(text) !== -1) sheet.getRange(i + 1, 1).setFontWeight('bold').setFontColor('#b91c1c');
+  });
+
+  sheet.setColumnWidth(1, 760);
+  sheet.setFrozenRows(1);
+  ss.setActiveSheet(sheet);
+  ss.moveActiveSheet(1);
 }
 
 function getSheet_(tabName) {

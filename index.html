@@ -151,7 +151,7 @@ body.light-mode::before { display:none; }
 .ticker-trait { font-family:'DM Mono',monospace;font-size:13px;letter-spacing:4px;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:12px; }
 .ticker-countdown { font-family:'Fraunces',serif;font-size:clamp(28px,4vw,48px);font-weight:700;color:#4ade80;letter-spacing:2px; }
 .ticker-cd-label { font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:6px; }
-.ticker-exit { position:absolute;top:16px;right:20px;background:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.4);cursor:pointer;padding:8px 16px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px; }
+.ticker-exit { position:absolute;top:16px;right:20px;z-index:10;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.35);color:rgba(255,255,255,0.85);cursor:pointer;padding:9px 18px;border-radius:6px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;letter-spacing:1px;transition:background .15s,color .15s; } .ticker-exit:hover { background:rgba(255,255,255,0.2);color:#fff; }
 
 /* ── CATEGORY CHART ── */
 .cat-chart { background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px; }
@@ -1443,7 +1443,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
   </div>
   <footer style="margin-top:60px">
     <div class="footer-brand" id="footerBrand">Clash <em>of</em> Classes</div>
-    <div class="footer-sub" id="footerSub">Ephrata Middle School · Mountaineers · #490e6f · #ffe100</div>
+    <div class="footer-sub" id="footerSub">Ephrata Middle School · Mountaineers</div>
   </footer>
 </div>
 
@@ -4148,7 +4148,7 @@ async function sbLoad(){
       if(!D.tvCustomSlide) D.tvCustomSlide={active:false,image:'',message:''};
       if(!D.photoOfWeek) D.photoOfWeek={url:'',caption:'',active:false};
       if(!Array.isArray(D.activityLog)) D.activityLog=[];
-      if(!D.footer) D.footer={brand:'Clash of Classes',sub:'Ephrata Middle School · Mountaineers · #490e6f · #ffe100'};
+      if(!D.footer) D.footer={brand:'Clash of Classes',sub:'Ephrata Middle School · Mountaineers'};
       if(!D.traitDoughTally) D.traitDoughTally={BLACK:0,GOLD:0,GREY:0,PURPLE:0};
       if(!D.countdownEvents) D.countdownEvents=[{label:'Last Day of School',date:'2026-06-04'}];
       if(!D.mottos) D.mottos={BLACK:'',GOLD:'',GREY:'',PURPLE:''};
@@ -4498,6 +4498,9 @@ function closeTicker(){
   document.getElementById('tickerView').classList.remove('active');
   clearInterval(tickerClockInterval);
 }
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape' && document.getElementById('tickerView').classList.contains('active')) closeTicker();
+});
 function buildTicker(){
   var r=ranked();
   document.getElementById('tickerScores').innerHTML=r.map(function(sq,i){
