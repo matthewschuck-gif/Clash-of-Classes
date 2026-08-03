@@ -136,6 +136,17 @@ a teacher would want to hand-edit as spreadsheet rows.
    XFrameOptionsMode.ALLOWALL)` on the response in `respondOut_` — without it, the whole
    iframe/postMessage approach can't work no matter how correct everything else is.
 
+   **And one more layer past the 403 fix: `postMessage` aimed at `window.parent` gets silently
+   dropped.** After the 403 was fixed, calls still timed out, and devtools showed lines like
+   `...-mae_html_user_bin_i18n_mae_html_user.js: dropping postMessage.. was from unexpected
+   window`. That script is Google's own — `HtmlService`'s sandbox mode (mandatory since 2020,
+   can't be disabled) wraps every served page in a Google-controlled bridge/wrapper frame, so
+   from inside our injected `<script>`, `window.parent` is that wrapper, not the real host page,
+   and the wrapper's own bridge script intercepts and discards postMessage calls that don't
+   match its internal protocol. The fix is to target `window.top` instead (falling back to
+   `window.parent` only if it differs) — `window.top` always resolves to the true outermost
+   page (clashofclasses.org), skipping the wrapper frame entirely.
+
 ## Part 2 — Point the frontend at your URLs
 
 In `index.html`, find these two lines (near the top of the big `<script type="module">` block,

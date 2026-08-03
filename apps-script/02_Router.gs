@@ -2,7 +2,7 @@
  * Clash of Classes -- Apps Script backend
  * File 2 of 2: doPost/doGet router + chunked read/write of the single app_data blob.
  *
- * DESIGN NOTE ON TRANSPORT (read before touching index.html) -- this deployment needed THREE
+ * DESIGN NOTE ON TRANSPORT (read before touching index.html) -- this deployment needed FIVE
  * escalating workarounds before something actually worked, in this order:
  *   1. fetch() with Content-Type: text/plain (avoids a CORS preflight) -- FAILED. Every
  *      fetch() call, GET or POST, returned a generic Google Drive "unable to open the file"
@@ -12,12 +12,25 @@
  *      script's onerror fired outright; it couldn't even load, let alone execute.
  *   3. A hidden <iframe> navigated to the URL (GET), or a hidden <form target="iframe">
  *      submission (POST), with the response using window.parent.postMessage(...) to hand
- *      data back to the page -- WORKS. An iframe load is a genuine document navigation in
- *      its own browsing context, not a fetch()/script-tag resource load, which is the one
- *      thing that was reliably working throughout all this testing.
+ *      data back to the page -- got further (a real document load), but HtmlService's
+ *      default cross-origin-framing block returned a 403 for the iframe navigation itself.
+ *   4. .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL) on the response fixed
+ *      the 403 -- but then postMessage calls started getting silently dropped by Google's
+ *      OWN internal HtmlService sandbox bridge script (visible in devtools as
+ *      ...-mae_html_user_bin_i18n_mae_html_user.js, logging "dropping postMessage.. was
+ *      from unexpected window"). HtmlService's mandatory IFRAME sandbox mode wraps every
+ *      served page in a Google-controlled wrapper frame; from inside our injected script,
+ *      window.parent IS that wrapper, not the real host page, and the wrapper's own bridge
+ *      script intercepts and discards postMessage calls that don't match its internal
+ *      protocol.
+ *   5. Targeting window.top instead of window.parent -- WORKS. window.top always resolves
+ *      to the real outermost page (clashofclasses.org), skipping the intermediate Google
+ *      wrapper frame entirely, so the message is delivered straight to our own listener
+ *      instead of being intercepted along the way.
  * So: every response here can be asked (via a `transport=postmessage` param) to render as a
- * tiny self-contained HTML page that posts its result to window.parent instead of returning
- * plain JSON/JS. See gasIframeCall_ in index.html for the frontend side.
+ * tiny self-contained HTML page that posts its result to window.top (falling back to
+ * window.parent only if it differs) instead of returning plain JSON/JS. See gasIframeCall_
+ * in index.html for the frontend side.
  *
  * DESIGN NOTE ON SECURITY (unchanged from the live Supabase version, on purpose):
  * The current site protects writes with nothing but a Supabase anon key -- any browser can
@@ -107,9 +120,24 @@ function respondOut_(obj, callback, usePostMessage) {
   if (usePostMessage) {
     // Escape </script>-breaking sequences so the JSON payload can't prematurely close the
     // inline <script> tag it's embedded in.
+    //
+    // IMPORTANT: target window.top (falling back to window.parent only if it differs), not
+    // window.parent alone. Apps Script's HtmlService always wraps served content in its own
+    // internal sandbox iframe -- baked into the mandatory IFRAME sandbox mode, cannot be
+    // turned off. That wrapper runs its own bridge script (visible in devtools as
+    // ...-mae_html_user_bin_i18n_mae_html_user.js) which intercepts postMessage calls aimed
+    // at window.parent -- since from inside our injected script, .parent IS that
+    // Google-controlled wrapper frame, not the real host page -- and silently drops anything
+    // that doesn't match its own internal protocol ("dropping postMessage.. was from
+    // unexpected window"). window.top always resolves to the outermost browsing context
+    // (our real host page, which owns the whole iframe chain), so postMessage sent there is
+    // delivered directly to that Window object, bypassing the intermediate wrapper entirely.
     const safeJson = JSON.stringify(obj).replace(/</g, '\u003c').replace(/>/g, '\u003e');
     const html = '<!DOCTYPE html><html><body><script>' +
-      'window.parent.postMessage(' + safeJson + ", '*');" +
+      '(function(){var msg=' + safeJson + ';' +
+      'try{window.top.postMessage(msg, "*");}catch(e){}' +
+      'try{if(window.top!==window.parent){window.parent.postMessage(msg, "*");}}catch(e){}' +
+      '})();' +
       '</' + 'script></body></html>';
     // HtmlService output defaults to disallowing cross-origin framing (the equivalent of
     // X-Frame-Options: SAMEORIGIN) -- exactly what was causing the 403 when clashofclasses.org
