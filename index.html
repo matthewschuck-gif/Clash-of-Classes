@@ -3647,19 +3647,43 @@ const GAS_TOKEN='togetherweclimb4444HOPE';
 // school-scale audience. Tune in MIGRATION_RUNBOOK.md if needed.
 const GAS_POLL_MS=5000;
 
+// JSONP loader: on this deployment, fetch() to script.google.com returned a Google-side
+// "unable to open the file" error on the redirect it follows internally
+// (script.googleusercontent.com/macros/echo?...) -- confirmed by testing, even though the
+// IDENTICAL URL worked fine pasted directly into a browser address bar (a plain navigation,
+// not a fetch()). A <script> tag load isn't a fetch() at all -- no CORS, no redirect-following
+// behavior to trip over -- so it sidesteps the problem completely. Only usable for GET
+// (there's no way to send a request body via a script tag), which is fine: load/meta never
+// need one. See jsonOut_/handleRequest_ in 02_Router.gs for the matching backend side.
+let _gasJsonpSeq=0;
+function gasJsonp_(action){
+  return new Promise((resolve,reject)=>{
+    const cbName='_gasCb'+(_gasJsonpSeq++)+'_'+Date.now();
+    const timeoutId=setTimeout(()=>{cleanup();reject(new Error('Request timed out'));},15000);
+    function cleanup(){
+      clearTimeout(timeoutId);
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cbName]=function(json){
+      cleanup();
+      if(!json.ok){reject(new Error(json.error||'Request failed'));return;}
+      resolve(json.data);
+    };
+    const script=document.createElement('script');
+    script.src=GAS_URL+'?action='+encodeURIComponent(action)+'&token='+encodeURIComponent(GAS_TOKEN)+'&callback='+cbName;
+    script.onerror=()=>{cleanup();reject(new Error('Failed to load script (network or deployment issue)'));};
+    document.head.appendChild(script);
+  });
+}
+window.gasJsonp_=gasJsonp_; // see window.gasCall_ note below -- same module-scope reason
+
 async function gasCall_(body){
-  // GET for read-only actions (load/meta) -- a manual browser test showed GET to this
-  // deployment works fine while POST to the identical URL returned a Google-side "unable to
-  // open the file" error. load/meta never need to send a body, so there's no downside to
-  // using GET for them; only save() actually needs POST, since it must carry the full D blob
-  // which can be far too large for a URL query string.
+  // load/meta go through the JSONP loader above (see its comment for why). Only save() uses
+  // a real POST, since it must carry the full D blob -- far too large for a URL query string,
+  // and there's no way to send a body via a <script> tag.
   if(body.action==='load'||body.action==='meta'){
-    const url=GAS_URL+'?action='+encodeURIComponent(body.action)+'&token='+encodeURIComponent(GAS_TOKEN);
-    const r=await fetch(url,{method:'GET'});
-    if(!r.ok){const txt=await r.text();throw new Error('HTTP '+r.status+': '+txt);}
-    const json=await r.json();
-    if(!json.ok) throw new Error(json.error||'Request failed');
-    return json.data;
+    return gasJsonp_(body.action);
   }
   const r=await fetch(GAS_URL,{
     method:'POST',
@@ -8617,16 +8641,32 @@ goTo(window.__currentPage || currentPage);
   // duplicated locally in every widget before the migration.
   const GAS_URL='https://script.google.com/macros/s/AKfycbyRCm58vW1HMZ6NefMzdgNBzJHwd3wbZ4mscPPqlr8Z6oRe769B101hWJe12xC2GAmMjQ/exec';
   const GAS_TOKEN='togetherweclimb4444HOPE';
-  async function gasCallLocal_(body){
-    // GET, not POST -- see the matching comment on the main gasCall_ definition earlier in
-    // the page. This widget only ever calls action:'load', which needs no body, so GET is a
-    // strict improvement here (confirmed: POST to this deployment failed, GET worked).
-    const url=GAS_URL+'?action='+encodeURIComponent(body.action)+'&token='+encodeURIComponent(GAS_TOKEN);
-    const r=await fetch(url,{method:'GET'});
-    if(!r.ok){const txt=await r.text();throw new Error('HTTP '+r.status+': '+txt);}
-    const json=await r.json();
-    if(!json.ok) throw new Error(json.error||'Request failed');
-    return json.data;
+  // JSONP, not fetch() -- see the matching comment on the main gasJsonp_ definition earlier
+  // in the page (in the <script type="module">). fetch() to this deployment consistently hit
+  // a Google-side "unable to open the file" error on its internal redirect, even for a plain
+  // GET, while the identical URL worked fine as a script-tag load / direct navigation.
+  // Duplicated locally (not calling window.gasJsonp_) for the same module-timing reason
+  // GAS_URL/GAS_TOKEN are duplicated here instead of reused from the module.
+  let _localJsonpSeq=0;
+  function gasCallLocal_(body){
+    return new Promise((resolve,reject)=>{
+      const cbName='_gasCbW'+(_localJsonpSeq++)+'_'+Date.now();
+      const timeoutId=setTimeout(()=>{cleanup();reject(new Error('Request timed out'));},15000);
+      function cleanup(){
+        clearTimeout(timeoutId);
+        delete window[cbName];
+        if(script.parentNode) script.parentNode.removeChild(script);
+      }
+      window[cbName]=function(json){
+        cleanup();
+        if(!json.ok){reject(new Error(json.error||'Request failed'));return;}
+        resolve(json.data);
+      };
+      const script=document.createElement('script');
+      script.src=GAS_URL+'?action='+encodeURIComponent(body.action)+'&token='+encodeURIComponent(GAS_TOKEN)+'&callback='+cbName;
+      script.onerror=()=>{cleanup();reject(new Error('Failed to load script (network or deployment issue)'));};
+      document.head.appendChild(script);
+    });
   }
 
   const SQUAD_COLOR = {
@@ -8714,16 +8754,32 @@ goTo(window.__currentPage || currentPage);
   // duplicated locally in every widget before the migration.
   const GAS_URL='https://script.google.com/macros/s/AKfycbyRCm58vW1HMZ6NefMzdgNBzJHwd3wbZ4mscPPqlr8Z6oRe769B101hWJe12xC2GAmMjQ/exec';
   const GAS_TOKEN='togetherweclimb4444HOPE';
-  async function gasCallLocal_(body){
-    // GET, not POST -- see the matching comment on the main gasCall_ definition earlier in
-    // the page. This widget only ever calls action:'load', which needs no body, so GET is a
-    // strict improvement here (confirmed: POST to this deployment failed, GET worked).
-    const url=GAS_URL+'?action='+encodeURIComponent(body.action)+'&token='+encodeURIComponent(GAS_TOKEN);
-    const r=await fetch(url,{method:'GET'});
-    if(!r.ok){const txt=await r.text();throw new Error('HTTP '+r.status+': '+txt);}
-    const json=await r.json();
-    if(!json.ok) throw new Error(json.error||'Request failed');
-    return json.data;
+  // JSONP, not fetch() -- see the matching comment on the main gasJsonp_ definition earlier
+  // in the page (in the <script type="module">). fetch() to this deployment consistently hit
+  // a Google-side "unable to open the file" error on its internal redirect, even for a plain
+  // GET, while the identical URL worked fine as a script-tag load / direct navigation.
+  // Duplicated locally (not calling window.gasJsonp_) for the same module-timing reason
+  // GAS_URL/GAS_TOKEN are duplicated here instead of reused from the module.
+  let _localJsonpSeq=0;
+  function gasCallLocal_(body){
+    return new Promise((resolve,reject)=>{
+      const cbName='_gasCbW'+(_localJsonpSeq++)+'_'+Date.now();
+      const timeoutId=setTimeout(()=>{cleanup();reject(new Error('Request timed out'));},15000);
+      function cleanup(){
+        clearTimeout(timeoutId);
+        delete window[cbName];
+        if(script.parentNode) script.parentNode.removeChild(script);
+      }
+      window[cbName]=function(json){
+        cleanup();
+        if(!json.ok){reject(new Error(json.error||'Request failed'));return;}
+        resolve(json.data);
+      };
+      const script=document.createElement('script');
+      script.src=GAS_URL+'?action='+encodeURIComponent(body.action)+'&token='+encodeURIComponent(GAS_TOKEN)+'&callback='+cbName;
+      script.onerror=()=>{cleanup();reject(new Error('Failed to load script (network or deployment issue)'));};
+      document.head.appendChild(script);
+    });
   }
 
   const SQUADS = ['Gold','Grey','Black','Purple'];

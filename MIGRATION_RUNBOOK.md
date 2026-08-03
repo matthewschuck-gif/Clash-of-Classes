@@ -105,11 +105,23 @@ a teacher would want to hand-edit as spreadsheet rows.
    (same deployment ID, just without the `/a/macros/easdpa.org` prefix) — confirmed working via
    a logged-out incognito test. This was NOT a district Workspace/IT policy blocking anonymous
    access (a wrong theory floated and then ruled out during this migration, based on Trail
-   Journal's own history showing plain "Anyone" deployments work fine on this domain) — it's
-   specifically the domain-vanity URL *format* that's unreliable, regardless of deployment
-   access settings. If you ever get a "Sorry, unable to open the file at this time" /
-   "Page Not Found" Google Drive-style error again, check the URL format first before assuming
-   anything is broken on the backend.
+   Journal's own history showing plain "Anyone" deployments work fine on this domain).
+
+   **A second, deeper issue past the URL format: `fetch()` itself doesn't work reliably against
+   this deployment, even to the correct plain URL.** The exact same URL that returned real JSON
+   when pasted directly into a browser address bar (a plain navigation) returned Google's
+   generic "unable to open the file" error when called via JavaScript `fetch()` from the page
+   — for both POST and GET, every time, reproducibly. The distinguishing factor is specifically
+   navigation vs. `fetch()`, not the HTTP method or URL format. The fix that actually worked:
+   load/meta (read-only, no request body needed) now go through a dynamically-inserted
+   `<script>` tag (the classic JSONP technique — see `gasJsonp_` in `index.html` and the
+   `callback` param handling in `jsonOut_`/`handleRequest_` in `02_Router.gs`) instead of
+   `fetch()`. A `<script src="...">` load isn't a `fetch()` at all, so it isn't subject to
+   whatever this deployment's redirect chain does differently for JS-initiated requests.
+   `save()` still uses a real `fetch()` POST, since a `<script>` tag can't carry a request body
+   and `D` is far too large for a URL query string — test the "Add Event" flow specifically to
+   confirm writes work; if `save()` turns out to have the same problem, it'll need its own
+   workaround (e.g., a hidden form POST to a hidden iframe) as a follow-up.
 
 ## Part 2 — Point the frontend at your URLs
 

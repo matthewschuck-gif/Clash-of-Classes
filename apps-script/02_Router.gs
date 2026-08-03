@@ -48,6 +48,15 @@ function doGet(e) {
 }
 
 function handleRequest_(e, method) {
+  // JSONP support: when a GET request includes a `callback` param, the frontend is loading
+  // this via a <script> tag instead of fetch() -- see gasJsonp_ in index.html. That's a
+  // deliberate workaround, not a mistake: on this deployment, fetch() to script.google.com
+  // returned a Google-side "unable to open the file" error on the redirect it follows
+  // internally (script.googleusercontent.com/macros/echo?...), even though the IDENTICAL URL
+  // worked fine as a plain browser navigation. A <script> tag load isn't subject to CORS or
+  // that redirect-following behavior at all, so it sidesteps the problem entirely. Response
+  // must be wrapped as callback(...) and served as JavaScript, not JSON, for this to work.
+  const callback = (method !== 'POST' && e.parameter.callback) ? e.parameter.callback : null;
   try {
     let body;
     if (method === 'POST' && e.postData && e.postData.contents) {
@@ -76,13 +85,20 @@ function handleRequest_(e, method) {
         throw new Error('Unknown action: ' + body.action);
     }
 
-    return jsonOut_({ ok: true, data: result });
+    return jsonOut_({ ok: true, data: result }, callback);
   } catch (err) {
-    return jsonOut_({ ok: false, error: String(err && err.message ? err.message : err) });
+    return jsonOut_({ ok: false, error: String(err && err.message ? err.message : err) }, callback);
   }
 }
 
-function jsonOut_(obj) {
+function jsonOut_(obj, callback) {
+  if (callback) {
+    // Basic sanitization: only allow identifier-safe callback names, since this string gets
+    // written directly into a JavaScript response that the browser executes.
+    const safeCallback = String(callback).replace(/[^A-Za-z0-9_$]/g, '');
+    return ContentService.createTextOutput(safeCallback + '(' + JSON.stringify(obj) + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
