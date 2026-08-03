@@ -130,6 +130,12 @@ a teacher would want to hand-edit as spreadsheet rows.
    (say, the 5-second `meta` poll) could get delivered to a different concurrent call (say, a
    user clicking "Add Event" at the same moment) instead.
 
+   **One more piece was needed even after switching to iframes: `HtmlService` output blocks
+   cross-origin framing by default** (the `X-Frame-Options` equivalent), which showed up as the
+   iframe requests failing with a 403. The fix is `.setXFrameOptionsMode(HtmlService.
+   XFrameOptionsMode.ALLOWALL)` on the response in `respondOut_` — without it, the whole
+   iframe/postMessage approach can't work no matter how correct everything else is.
+
 ## Part 2 — Point the frontend at your URLs
 
 In `index.html`, find these two lines (near the top of the big `<script type="module">` block,

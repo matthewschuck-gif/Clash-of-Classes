@@ -111,7 +111,12 @@ function respondOut_(obj, callback, usePostMessage) {
     const html = '<!DOCTYPE html><html><body><script>' +
       'window.parent.postMessage(' + safeJson + ", '*');" +
       '</' + 'script></body></html>';
-    return HtmlService.createHtmlOutput(html);
+    // HtmlService output defaults to disallowing cross-origin framing (the equivalent of
+    // X-Frame-Options: SAMEORIGIN) -- exactly what was causing the 403 when clashofclasses.org
+    // tried to load this response inside a hidden iframe. ALLOWALL is the documented way to
+    // permit that; without it, this whole iframe/postMessage approach can't work at all.
+    return HtmlService.createHtmlOutput(html)
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
   return jsonOut_(obj, callback);
 }
