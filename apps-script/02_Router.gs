@@ -208,6 +208,7 @@ function loadAppData_(key) {
   }
 
   const events = readEventsTab_();
+  const metricsFromSheet = readMetricsTab_();
   if (value) {
     // One-time self-migration: if this blob still has events embedded from before the events
     // tab existed, and the events tab is empty, seed the tab from the blob instead of silently
@@ -217,6 +218,18 @@ function loadAppData_(key) {
       writeEventsTab_(value.events);
     } else {
       value.events = events;
+    }
+
+    // Same pattern for the metrics tab (attendance/referral/grades %). The `month` label is
+    // NOT part of the sheet schema (see SCHEMA.metrics comment in 01_Config.gs) -- it's
+    // admin-entered on the site and just carried through here from whatever was already
+    // stored in the blob.
+    const prevMonth = (value.metrics && value.metrics.month) || '';
+    if (metricsFromSheet) {
+      value.metrics = Object.assign({ month: prevMonth }, metricsFromSheet);
+    } else if (value.metrics) {
+      writeMetricsTab_(value.metrics);
+      value.metrics = Object.assign({ month: prevMonth }, value.metrics);
     }
   }
 
@@ -242,6 +255,14 @@ function saveAppData_(key, value) {
   const rest = Object.assign({}, value);
   delete rest.events;
   writeEventsTab_(events);
+
+  // Same split for metrics: the attendance/referral/grades numbers live in their own tab;
+  // only the free-text month label stays in the blob (see the matching comment in
+  // loadAppData_ and the SCHEMA.metrics comment in 01_Config.gs).
+  if (value.metrics) {
+    writeMetricsTab_(value.metrics);
+    rest.metrics = { month: value.metrics.month || '' };
+  }
 
   // Delete existing app_data rows for this key, bottom-up so row indices stay valid mid-loop.
   for (let i = data.length - 1; i >= 1; i--) {
@@ -337,6 +358,53 @@ function writeEventsTab_(events) {
       const v = evt[h];
       return v === undefined || v === null ? '' : v;
     });
+  });
+  sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+}
+
+/**
+ * Reads the metrics tab (one row per squad: squad, attendance, referral, grades -- see
+ * SCHEMA.metrics in 01_Config.gs) into {attendance:{SQUAD:pct}, referral:{...}, grades:{...}}.
+ * Returns null if the tab doesn't exist yet (existing deployments haven't re-run
+ * setupSpreadsheet() since this feature was added -- see getSheetSafe_) or has no squad rows,
+ * so callers can fall back to whatever's already in the blob instead of wiping it out.
+ */
+function readMetricsTab_() {
+  const sheet = getSheetSafe_(TABS.METRICS);
+  if (!sheet) return null;
+  const data = sheet.getDataRange().getValues();
+  const headers = SCHEMA[TABS.METRICS];
+  const squadCol = headers.indexOf('squad');
+  const metrics = { attendance: {}, referral: {}, grades: {} };
+  let found = false;
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const squad = String(row[squadCol] || '').trim().toUpperCase();
+    if (!squad) continue;
+    found = true;
+    metrics.attendance[squad] = Number(row[headers.indexOf('attendance')]) || 0;
+    metrics.referral[squad] = Number(row[headers.indexOf('referral')]) || 0;
+    metrics.grades[squad] = Number(row[headers.indexOf('grades')]) || 0;
+  }
+  return found ? metrics : null;
+}
+
+/**
+ * Writes {attendance,referral,grades} back into the metrics tab, one row per squad. No-ops
+ * (instead of throwing) if the tab doesn't exist yet, for the same reason as readMetricsTab_.
+ */
+function writeMetricsTab_(metrics) {
+  const sheet = getSheetSafe_(TABS.METRICS);
+  if (!sheet) return;
+  const headers = SCHEMA[TABS.METRICS];
+  const squads = ['BLACK', 'GOLD', 'GREY', 'PURPLE'];
+  const rows = squads.map(function (sq) {
+    return [
+      sq,
+      (metrics.attendance && metrics.attendance[sq]) || 0,
+      (metrics.referral && metrics.referral[sq]) || 0,
+      (metrics.grades && metrics.grades[sq]) || 0,
+    ];
   });
   sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
 }

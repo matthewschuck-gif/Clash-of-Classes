@@ -244,3 +244,40 @@ backend. `archive/supabase-original` stays as your rollback point indefinitely.
   projects auto-pause after about 7 days idle and are *permanently deleted* after about 90 days
   paused. If Clash of Classes' current data needs to survive as a long-term archive, either open
   the project every couple months, export it, or ask me to set up a scheduled reminder.
+
+## Post-migration feature additions (after initial cutover)
+
+- **Monthly metrics rework**: the old model directly added 1 point per 1% (attendance +
+  referral + grades summed straight into the grand total). Replaced with rank-based scoring:
+  highest squad in each of the 3 metrics earns 250 pts, 2nd 125, 3rd 50, last 0 (ties share the
+  higher rank's points -- see `rankPoints_` in `index.html`). Percentages entered via Admin ->
+  Metrics or the new `metrics` sheet tab are just a live, non-scoring preview (`D.metrics`)
+  until an admin clicks "Finalize This Month & Award Points," which locks the computed points
+  into `D.monthlyMetrics` permanently (same idea as `D.events` -- once awarded, a month's points
+  don't change even if the sheet is edited afterward). `metTotal()` now sums only finalized
+  months, not the live preview.
+- **Metrics sheet tab**: added a `metrics` tab (one row per squad: squad, attendance, referral,
+  grades) so staff can type percentages directly into the sheet instead of only through Admin.
+  Wired into `loadAppData_`/`saveAppData_` in `02_Router.gs` the same way the `events` tab is.
+  Existing deployments need to re-run `setupSpreadsheet()` once after redeploying the updated
+  `01_Config.gs`/`02_Router.gs` to create this tab (`getSheetSafe_` makes reads/writes no-op
+  gracefully in the meantime rather than throwing, so redeploying before re-running setup won't
+  break the site).
+- **Google Doc landing-page embed**: added an Admin -> Settings -> "Landing Page (Google Doc)"
+  field. Paste a Docs/Slides/Sheets share link and it renders embedded on the home page (via
+  Google's `/preview` embeddable view) with an "Open in Google Docs" button. Frontend-only,
+  no backend change needed.
+- **Digital wheel / Trail Journal audit findings** (from a code audit, not a bug fix):
+  - The spin wheel *does* award real points directly -- both the self-serve "Wheel" page and
+    the staff/booth "Spin" page write a real entry into `D.events` the moment someone clicks
+    Save/Bank, same as a manually-entered event.
+  - The "Community Culture Stats" panel and Freudenfreude ticker read `type:'trail_journal'` /
+    `type:'trailback_panel'` events and `D.freudenLog` entries, but nothing in *this* codebase
+    ever writes them -- that's done by Trail Journal's own backend calling
+    `awardClashPoints` (referenced only in a comment here, not defined in this repo). Since
+    Clash of Classes no longer runs on Supabase, if that integration still targets Clash of
+    Classes' old Supabase project, "High Insight" reflections and Trailback Panel completions
+    are no longer reaching this site's scores. Fixing this needs either access to Trail
+    Journal's current backend code to repoint it at this site's new Apps Script endpoint, or a
+    small dedicated "award points" action added here for Trail Journal to call -- flagged for a
+    decision rather than guessed at.

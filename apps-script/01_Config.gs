@@ -42,6 +42,7 @@
 const TABS = {
   APP_DATA: 'app_data',
   EVENTS: 'events',
+  METRICS: 'metrics',
   HELP: 'How To Use This Sheet',
 };
 
@@ -58,6 +59,15 @@ const TABS = {
 const SCHEMA = {
   [TABS.APP_DATA]: ['key', 'chunk_index', 'value_chunk', 'updated_at'],
   [TABS.EVENTS]: ['id', 'name', 'type', 'date', 'note', 'multiplier', 'BLACK', 'GOLD', 'GREY', 'PURPLE'],
+  // One row per squad. Mirrors D.metrics.{attendance,referral,grades}[SQUAD] -- the current,
+  // in-progress month's percentages (see the monthly-metrics ranking design in index.html:
+  // rankPoints_/finalizeMonth). Editing a percentage here updates the site's live preview the
+  // same way editing it in Admin -> Metrics does; it does NOT award points by itself. Points
+  // only lock in when an admin clicks "Finalize This Month" on the site, same as if the
+  // numbers had been typed into the Admin form instead of this tab. The month LABEL (e.g.
+  // "September 2026") is intentionally not a column here -- it stays admin-entered on the site
+  // since it changes far less often than the percentages do.
+  [TABS.METRICS]: ['squad', 'attendance', 'referral', 'grades'],
 };
 
 // Stay safely under Sheets' 50,000-char single-cell limit.
@@ -75,8 +85,29 @@ function setupSpreadsheet() {
   });
   const def = ss.getSheetByName('Sheet1');
   if (def && ss.getSheets().length > 1) ss.deleteSheet(def);
+  ensureMetricsRows_();
   setupHelpTab_();
-  SpreadsheetApp.getUi().alert('Done -- app_data, events, and "How To Use This Sheet" tabs are set up. Clash of Classes has no separate PII tab (unlike Trail Journal), so there is no extra sharing/protection step required here. You can now add/edit rows directly in the events tab and the site will pick them up within a few seconds. Staff directions live in the "How To Use This Sheet" tab -- start there.');
+  SpreadsheetApp.getUi().alert('Done -- app_data, events, metrics, and "How To Use This Sheet" tabs are set up. Clash of Classes has no separate PII tab (unlike Trail Journal), so there is no extra sharing/protection step required here. You can now add/edit rows directly in the events and metrics tabs and the site will pick them up within a few seconds. Staff directions live in the "How To Use This Sheet" tab -- start there.');
+}
+
+// Pre-seeds the metrics tab with one row per squad (BLACK/GOLD/GREY/PURPLE) so staff just
+// overwrite numbers instead of having to know which squads to add. Only adds rows for squads
+// that aren't already present, so re-running setupSpreadsheet never overwrites percentages
+// someone already entered.
+function ensureMetricsRows_() {
+  const sheet = getSheet_(TABS.METRICS);
+  const squads = ['BLACK', 'GOLD', 'GREY', 'PURPLE'];
+  const data = sheet.getDataRange().getValues();
+  const existing = {};
+  for (let i = 1; i < data.length; i++) {
+    const sq = String(data[i][0] || '').trim().toUpperCase();
+    if (sq) existing[sq] = true;
+  }
+  const missing = squads.filter(function (sq) { return !existing[sq]; });
+  if (missing.length) {
+    const rows = missing.map(function (sq) { return [sq, 0, 0, 0]; });
+    sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 4).setValues(rows);
+  }
 }
 
 // Human-readable directions for whoever is actually entering events/points day to day --
@@ -92,10 +123,11 @@ function setupHelpTab_() {
   const rows = [
     ['Clash of Classes -- How To Use This Sheet'],
     [''],
-    ['This spreadsheet is the live backend for clashofclasses.org. Only two tabs matter for'],
-    ['day-to-day use: "events" (below) is where you add points. Changes here show up on the'],
-    ['website automatically within about 5-10 seconds -- no need to tell anyone or refresh'],
-    ['anything on your end.'],
+    ['This spreadsheet is the live backend for clashofclasses.org. Two tabs matter for'],
+    ['day-to-day use: "events" is where you add points for activities, and "metrics" is where'],
+    ['you enter each month\'s attendance / referral / grades percentages. Changes here show up'],
+    ['on the website automatically within about 5-10 seconds -- no need to tell anyone or'],
+    ['refresh anything on your end.'],
     [''],
     ['HOW TO ADD AN EVENT / GIVE POINTS'],
     ['1. Open the "events" tab (the tab bar is at the very bottom of this spreadsheet).'],
@@ -117,6 +149,22 @@ function setupHelpTab_() {
     ['  correction automatically, same as any other edit.'],
     ['- Need to remove an event entirely? Delete that whole row (right-click the row number ->'],
     ['  Delete row). Don\'t just clear the cells and leave a blank row behind.'],
+    [''],
+    ['HOW TO ENTER MONTHLY METRICS (ATTENDANCE / REFERRAL / GRADES)'],
+    ['1. Open the "metrics" tab. There\'s already one row per squad (Black, Gold, Grey,'],
+    ['   Purple) -- don\'t add or delete rows here, just edit the numbers.'],
+    ['2. Enter each squad\'s percentage for that month in the attendance / referral / grades'],
+    ['   columns (whole numbers or decimals both work, e.g. 94 or 94.5).'],
+    ['3. That\'s it for entering the numbers -- the website\'s "Monthly Metrics" preview'],
+    ['   updates automatically, same as the events tab.'],
+    ['4. IMPORTANT: entering numbers here does NOT award points by itself. Points only lock'],
+    ['   in when an admin goes to clashofclasses.org -> Admin -> Metrics tab and clicks'],
+    ['   "Finalize This Month & Award Points." That is on purpose -- it means you can update'],
+    ['   these numbers throughout the month as new reports come in without accidentally'],
+    ['   awarding points early. The highest squad in each of the 3 metrics earns 250 points,'],
+    ['   2nd place 125, 3rd place 50, and last place 0 (a tie splits the higher spot\'s points).'],
+    ['5. The month LABEL (e.g. "September 2026") is entered on the website, not in this sheet'],
+    ['   -- Admin -> Metrics tab -> Month Label.'],
     [''],
     ['HOW TO RESET/START A NEW SCHOOL YEAR -- IMPORTANT, READ THIS FIRST'],
     ['Do NOT reset the season by deleting all the rows in the "events" tab yourself. Because of'],
@@ -141,7 +189,7 @@ function setupHelpTab_() {
 
   // Bold section headers by matching text rather than hardcoded row numbers, so this
   // doesn't silently drift out of sync if the copy above ever gets edited.
-  const boldSections = ['HOW TO ADD AN EVENT / GIVE POINTS', 'HOW TO FIX A MISTAKE', 'DO NOT TOUCH'];
+  const boldSections = ['HOW TO ADD AN EVENT / GIVE POINTS', 'HOW TO FIX A MISTAKE', 'HOW TO ENTER MONTHLY METRICS (ATTENDANCE / REFERRAL / GRADES)', 'DO NOT TOUCH'];
   const warnSections = ['HOW TO RESET/START A NEW SCHOOL YEAR -- IMPORTANT, READ THIS FIRST'];
   rows.forEach(function (r, i) {
     const text = r[0];
@@ -160,6 +208,16 @@ function getSheet_(tabName) {
   const sheet = ss.getSheetByName(tabName);
   if (!sheet) throw new Error('Sheet tab not found: ' + tabName + ' -- run setupSpreadsheet() first.');
   return sheet;
+}
+
+// Same as getSheet_ but returns null instead of throwing when the tab doesn't exist yet.
+// Used for tabs added after the initial setup (like METRICS) so that a deployment redeployed
+// with newer router code doesn't immediately break every request just because the user
+// hasn't re-run setupSpreadsheet() on their existing sheet yet -- it just behaves as if that
+// feature's data isn't there yet, same as a brand new site.
+function getSheetSafe_(tabName) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  return ss.getSheetByName(tabName) || null;
 }
 
 function getProp_(key) {

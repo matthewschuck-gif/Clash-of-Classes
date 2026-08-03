@@ -1402,11 +1402,14 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
     <div class="stat-card"><div class="stat-num" id="homeStat1Num">4</div><div class="stat-label" id="homeStat1Lbl">Color Squads</div></div>
     <div class="stat-card"><div class="stat-num" id="homeStat2Num">9</div><div class="stat-label" id="homeStat2Lbl">LRG Traits</div></div>
     <div class="stat-card"><div class="stat-num" id="statEvents">—</div><div class="stat-label">Events This Year</div></div>
-    <div class="stat-card"><div class="stat-num" id="statWeek">—</div><div class="stat-label">Current Week</div></div>
+    <div class="stat-card"><div class="stat-num" id="statWeek">—</div><div class="stat-label">Current Month</div></div>
   </div>
 
   <!-- COUNTDOWN -->
   <div class="countdown-strip" id="countdownStrip" style="margin-top:24px"></div>
+
+  <!-- LANDING PAGE DOC (Google Doc embed, set via Admin -> Settings) -->
+  <div id="landingDocSection" style="display:none;margin-top:28px"></div>
 
   <!-- PHOTO OF THE WEEK -->
   <div id="potwSection" style="display:none;margin-top:28px"></div>
@@ -1566,7 +1569,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
     <div>
       <div class="metrics-card">
         <div class="metrics-header">
-          <div class="metrics-title">Weekly Metrics</div>
+          <div class="metrics-title">Monthly Metrics</div>
           <button class="btn btn-sm" onclick="requireAdmin(()=>{openAdmin();aTab('metrics')})" style="color:var(--purple-lt);border-color:rgba(157,95,204,0.3)">Update</button>
         </div>
         <div id="metricsDisplay"></div>
@@ -2715,12 +2718,13 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       </div>
     </div>
     <div class="guide-card">
-      <div class="guide-title">📅 Weekly Metrics</div>
+      <div class="guide-title">📅 Monthly Metrics</div>
       <div class="guide-steps">
         <div class="guide-step"><div class="step-num">1</div><div class="step-text">Pull attendance % for each squad from your system</div></div>
         <div class="guide-step"><div class="step-num">2</div><div class="step-text">Calculate % of students without an office referral</div></div>
         <div class="guide-step"><div class="step-num">3</div><div class="step-text">Calculate % of students without a failing grade</div></div>
-        <div class="guide-step"><div class="step-num">4</div><div class="step-text">Admin → Metrics tab → enter values → Save (1pt per 1%)</div></div>
+        <div class="guide-step"><div class="step-num">4</div><div class="step-text">Admin → Metrics tab → enter this month's values → Save</div></div>
+        <div class="guide-step"><div class="step-num">5</div><div class="step-text">When the month ends, click Finalize — highest squad in each metric earns 250 pts, 2nd 125, 3rd 50, last 0</div></div>
       </div>
     </div>
     <div class="guide-card">
@@ -2924,7 +2928,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 
     <!-- METRICS -->
     <div class="a-panel" id="ap-metrics">
-      <p style="font-size:13px;color:var(--text3);margin-bottom:16px">Enter raw percentages — 1 point per 1%. Replaces previous week.</p>
+      <p style="font-size:13px;color:var(--text3);margin-bottom:16px">Enter this month's percentages. Highest squad in each metric earns 250 pts, 2nd 125, 3rd 50, last 0 (ties share the higher rank's points). Nothing counts toward scores until you click Finalize below.</p>
       <div class="fr"><label>📅 Avg Attendance Rate (%)</label>
         <div class="g4">
           <div><span class="sq-lbl" style="color:var(--sq-black)">Black</span><input class="sq-in" type="number" id="attBLACK" min="0" max="100" step="0.1" placeholder="0"></div>
@@ -2949,7 +2953,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
           <div><span class="sq-lbl" style="color:var(--sq-purple)">Purple</span><input class="sq-in" type="number" id="gradPURPLE" min="0" max="100" step="0.1" placeholder="0"></div>
         </div>
       </div>
-      <div class="fr"><label>Week Label</label><input type="text" id="weekLabel" placeholder="e.g. Week of March 17"></div>
+      <div class="fr"><label>Month Label</label><input type="text" id="monthLabel" placeholder="e.g. September 2026"></div>
       <div class="fr" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
         <label>💵 Trait Dough Tally — Total Bills Turned In</label>
         <div class="g4">
@@ -2961,6 +2965,8 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
       </div>
       <div class="fmsg" id="metOk">✓ Saved!</div>
       <button class="btn-submit" onclick="saveMetrics()">Save Metrics &amp; Tally</button>
+      <button class="btn-submit danger" style="margin-top:10px" onclick="finalizeMonth()">✅ Finalize This Month &amp; Award Points</button>
+      <p style="font-size:11px;color:var(--text3);margin-top:8px">Finalizing locks in points for Attendance, No Referral, and No Fail Grade based on the percentages above, adds them permanently to each squad's score, and clears this form for next month. This cannot be undone.</p>
     </div>
 
     <!-- PAGES -->
@@ -3258,6 +3264,13 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
         <div class="fr"><label>Sub Line</label><input type="text" id="footerSubInput" placeholder="Ephrata Middle School · …"></div>
         <div class="fmsg" id="footerOk">✓ Saved!</div>
         <button class="btn-submit" onclick="saveFooter()">Save Footer</button>
+      </div>
+      <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">📄 Landing Page (Google Doc)</div>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:10px">Paste the shareable link to the Clash of Classes landing page doc (Google Docs → Share → "Anyone with the link" → Viewer). It'll show embedded on the home page with a button to open it in Google Docs. Leave blank to hide this section.</p>
+        <div class="fr"><label>Google Doc Link</label><input type="text" id="landingDocInput" placeholder="https://docs.google.com/document/d/…/edit?usp=sharing"></div>
+        <div class="fmsg" id="landingDocOk">✓ Saved!</div>
+        <button class="btn-submit" onclick="saveLandingDoc()">Save Landing Page Link</button>
       </div>
       <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
         <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">💬 Trait Spotlights</div>
@@ -3947,7 +3960,9 @@ const SEED_EVENTS = [
 const DEF = {
   password: 'ephrata2026',
   events: SEED_EVENTS,
-  metrics: { attendance:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, referral:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, grades:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, weekLabel:'' },
+  metrics: { attendance:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, referral:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, grades:{BLACK:0,GOLD:0,GREY:0,PURPLE:0}, month:'' },
+  monthlyMetrics: [],
+  landingDoc: { url:'' },
   gallery: { photos:[], quotes:[], spotlights:[], calendar:[] },
   links: { mindset:[], wheel:[], traitdough:[], sotm:[], kickoff:[], mayhem:[], champs:[] },
   photos: { mayhem:[], champs:[], kickoff:[] },
@@ -4130,6 +4145,9 @@ async function sbLoad(){
       if(!Array.isArray(D.history)) D.history=[];
       if(!D.metrics) D.metrics=JSON.parse(JSON.stringify(DEF.metrics));
       ['attendance','referral','grades'].forEach(k=>{ if(!D.metrics[k]) D.metrics[k]={BLACK:0,GOLD:0,GREY:0,PURPLE:0}; });
+      if(D.metrics.month===undefined) D.metrics.month=D.metrics.weekLabel||'';
+      if(!Array.isArray(D.monthlyMetrics)) D.monthlyMetrics=[];
+      if(!D.landingDoc) D.landingDoc={url:''};
       if(!D.gallery) D.gallery={photos:[],quotes:[],spotlights:[],calendar:[]};
       ['photos','quotes','spotlights','calendar'].forEach(k=>{ if(!Array.isArray(D.gallery[k])) D.gallery[k]=[]; });
       if(!D.links) D.links={};
@@ -4227,6 +4245,8 @@ async function sbLoad(){
         if(!Array.isArray(D.events)) D.events=[];
         if(!D.metrics) D.metrics=JSON.parse(JSON.stringify(DEF.metrics));
         ['attendance','referral','grades'].forEach(k=>{ if(!D.metrics[k]) D.metrics[k]={BLACK:0,GOLD:0,GREY:0,PURPLE:0}; });
+        if(!Array.isArray(D.monthlyMetrics)) D.monthlyMetrics=[];
+        if(!D.landingDoc) D.landingDoc={url:''};
         if(!D.squadColors) D.squadColors={BLACK:'#c5c9d1',GOLD:'#ffe100',GREY:'#99a8bb',PURPLE:'#bb8ef5'};
         if(!D.seasonTheme) D.seasonTheme={primary:'#6d2b9f',accent:'#ffe100',name:'Default'};
         if(!D.squadNames) D.squadNames={BLACK:'Black',GOLD:'Gold',GREY:'Grey',PURPLE:'Purple'};
@@ -4257,7 +4277,30 @@ async function sbLoad(){
 
 // ── CALCS ──
 const evtTotal=sq=>(D.events||[]).reduce((s,e)=>s+(e.pts[sq]||0),0);
-const metTotal=sq=>Math.round((D.metrics.attendance[sq]||0)+(D.metrics.referral[sq]||0)+(D.metrics.grades[sq]||0));
+
+// Rank-based points for the 3 monthly metrics (attendance / no-referral / no-fail-grade):
+// highest % gets 250, 2nd 125, 3rd 50, last 0. Ties share the higher rank's point value and
+// the next distinct value skips the intervening rank(s) -- standard competition ranking.
+const METRIC_RANK_POINTS=[250,125,50,0];
+function rankPoints_(valsBySquad){
+  const sorted=SQUADS.slice().sort((a,b)=>(valsBySquad[b]||0)-(valsBySquad[a]||0));
+  const pts={};
+  let i=0;
+  while(i<sorted.length){
+    let j=i;
+    while(j+1<sorted.length && (valsBySquad[sorted[j+1]]||0)===(valsBySquad[sorted[i]]||0)) j++;
+    const shareValue=METRIC_RANK_POINTS[i];
+    for(let k=i;k<=j;k++) pts[sorted[k]]=shareValue;
+    i=j+1;
+  }
+  return pts;
+}
+// Only FINALIZED months count toward a squad's total -- the current, in-progress month's
+// percentages (D.metrics) are shown live as a preview but don't score until finalized (see
+// finalizeMonth()). This keeps a month's points locked in permanently once awarded, the same
+// way D.events entries are permanent, instead of a live snapshot that can silently change the
+// grand total whenever someone edits a percentage.
+const metTotal=sq=>(D.monthlyMetrics||[]).reduce((s,m)=>s+((m.pts&&m.pts[sq])||0),0);
 let sheetEvents=[];
 const sheetTotal=sq=>sheetEvents.reduce((s,e)=>s+(e.pts[sq]||0),0);
 const grand=sq=>evtTotal(sq)+metTotal(sq)+sheetTotal(sq);
@@ -4658,7 +4701,7 @@ function printSubGuide(){
     +'<h1>Clash of Classes</h1>'
     +'<div style="font-size:13px;color:#666">Ephrata Middle School · Substitute Teacher Guide · Printed '+new Date().toLocaleDateString()+'</div>'
     +'<h2>What is Clash of Classes?</h2>'
-    +'<p>Clash of Classes is a school-wide squad competition where 7th and 8th grade students are placed into four color squads. Each month focuses on a Life Ready Graduate (LRG) trait. Squads earn points through events, weekly metrics, and Trait Dough.</p>'
+    +'<p>Clash of Classes is a school-wide squad competition where 7th and 8th grade students are placed into four color squads. Each month focuses on a Life Ready Graduate (LRG) trait. Squads earn points through events, monthly metrics, and Trait Dough.</p>'
     +'<h2>Current Standings</h2>'
     +r.map(function(sq,i){ return '<div class="sq-row"><span class="sq-name" style="color:'+SQ_HEX[sq]+'">#'+(i+1)+' '+sq+' Squad</span><span class="sq-pts">'+grand(sq).toLocaleString()+' pts</span></div>'; }).join('')
     +'<h2>Trait of the Month: '+t.trait+'</h2>'
@@ -4692,7 +4735,7 @@ function generateEmailDigest(){
     +t.desc+NL+NL
     +'=== RECENT EVENTS ==='+NL
     +(recentEvts.length?recentEvts.map(function(ev){ return ev.name+' ('+ev.date+'): '+SQUADS.map(function(sq){ return sq+' '+ev.pts[sq]; }).join(' | '); }).join(NL):'No events yet')+NL+NL
-    +'=== WEEKLY METRICS ('+D.metrics.weekLabel+') ==='+NL
+    +'=== MONTHLY METRICS ('+D.metrics.month+') ==='+NL
     +SQUADS.map(function(sq){ return sq+': Att '+Math.round(D.metrics.attendance[sq]||0)+'% | Referral '+Math.round(D.metrics.referral[sq]||0)+'% | Grades '+Math.round(D.metrics.grades[sq]||0)+'%'; }).join(NL)+NL+NL
     +'Visit clashofclasses.org for live updates.'+NL+'— EMS Clash of Classes Team';
   document.getElementById('emailDigestText').value=text;
@@ -4983,6 +5026,42 @@ async function saveFooter(){
   D.footer.brand=document.getElementById('footerBrandInput')?.value.trim()||'Clash of Classes';
   D.footer.sub=document.getElementById('footerSubInput')?.value.trim()||'Ephrata Middle School';
   await save(); flash('footerOk'); renderFooter();
+}
+
+// Converts a normal Google Docs/Slides/Sheets "share" link (…/edit?usp=sharing, …/view, etc.)
+// into the /preview form Google explicitly supports embedding in an iframe. Docs served via
+// /edit refuse to render inside an iframe (same cross-origin-framing restriction we ran into
+// with Apps Script's HtmlService); /preview is the documented embeddable view. Returns null if
+// the input doesn't look like a recognizable Google Docs/Slides/Sheets link, so callers can
+// fall back to just linking out instead of guessing at a broken embed.
+function gdocEmbedUrl_(url){
+  if(!url) return null;
+  const m=url.match(/docs\.google\.com\/(document|presentation|spreadsheets)\/d\/([a-zA-Z0-9_-]+)/);
+  if(!m) return null;
+  return 'https://docs.google.com/'+m[1]+'/d/'+m[2]+'/preview';
+}
+
+function renderLandingDoc(){
+  const wrap=document.getElementById('landingDocSection'); if(!wrap) return;
+  const url=(D.landingDoc&&D.landingDoc.url||'').trim();
+  if(!url){ wrap.style.display='none'; wrap.innerHTML=''; return; }
+  const embed=gdocEmbedUrl_(url);
+  wrap.style.display='block';
+  wrap.innerHTML=`<div class="metrics-card">
+    <div class="metrics-header">
+      <div class="metrics-title">📄 Clash of Classes Landing Page</div>
+      <a class="btn btn-sm" href="${url}" target="_blank" rel="noopener" style="color:var(--purple-lt);border-color:rgba(157,95,204,0.3)">Open in Google Docs ↗</a>
+    </div>
+    ${embed
+      ? `<iframe src="${embed}" style="width:100%;height:600px;border:none;display:block" loading="lazy" title="Clash of Classes Landing Page"></iframe>`
+      : `<div style="padding:20px;color:var(--text3);font-size:13px">This link isn't in a recognized Google Docs/Slides/Sheets format, so it can't be embedded here — use "Open in Google Docs" above instead.</div>`}
+  </div>`;
+}
+
+async function saveLandingDoc(){
+  if(!D.landingDoc) D.landingDoc={};
+  D.landingDoc.url=document.getElementById('landingDocInput')?.value.trim()||'';
+  await save(); flash('landingDocOk'); renderLandingDoc();
 }
 
 function renderTraitBanner(){
@@ -5308,14 +5387,14 @@ function renderAll(){
   renderSquads();
   renderGallery();
   renderHomeText();
-  renderTraitBanner(); renderAnnouncement(); renderCountdown(); renderTally(); renderTimeline(); renderFooter();
+  renderTraitBanner(); renderAnnouncement(); renderCountdown(); renderTally(); renderTimeline(); renderFooter(); renderLandingDoc();
   renderNextEventBadge(); renderChallenge(); renderPotw(); renderTraitSpotlight();
   checkConfetti(); checkMilestone(); renderCatChart(); renderSeasonCal();
   renderHeroStrip(); renderTraitTracker();
   renderTraitPillar(); renderPoll(); renderStaffLinks(); renderSnapshots();
   applyBranding();
   document.getElementById('statEvents').textContent=(D.events||[]).length;
-  document.getElementById('statWeek').textContent=D.metrics.weekLabel||'—';
+  document.getElementById('statWeek').textContent=D.metrics.month||'—';
   if(currentPage==='trait') renderTrait();
   if(currentPage==='mindset') renderMindset();
   if(currentPage==='mayhem') renderMayhem();
@@ -5416,14 +5495,16 @@ async function deleteEditEvent(){
 
 function renderMetrics(){
   const defs=[{key:'attendance',icon:'📅',label:'Attendance'},{key:'referral',icon:'⭐',label:'No Referral'},{key:'grades',icon:'📚',label:'No Fail Grade'}];
-  const wl=D.metrics.weekLabel;
+  const wl=D.metrics.month;
   document.getElementById('metricsDisplay').innerHTML=defs.map(d=>{
-    const vals=SQUADS.map(sq=>D.metrics[d.key][sq]||0), mx=Math.max(...vals,1);
+    const vals={}; SQUADS.forEach(sq=>{ vals[sq]=D.metrics[d.key][sq]||0; });
+    const mx=Math.max(...SQUADS.map(sq=>vals[sq]),1);
+    const projectedPts=rankPoints_(vals); // preview only -- doesn't count until finalized
     return `<div class="metric-block"><div class="metric-lbl">${d.icon} ${d.label}${wl?`<span class="week-chip">${wl}</span>`:''}</div>
-    <div class="metric-rows">${SQUADS.map(sq=>{const v=D.metrics[d.key][sq]||0,pct=Math.round(v/mx*100);
-      return `<div class="metric-row sq-${sq}"><span class="met-name">${sq}</span><div class="met-bar-wrap"><div class="met-bar" style="width:${pct}%"></div></div><span class="met-val">${v}%</span><span class="met-pts">${Math.round(v)}</span></div>`;
+    <div class="metric-rows">${SQUADS.map(sq=>{const v=vals[sq],pct=Math.round(v/mx*100);
+      return `<div class="metric-row sq-${sq}"><span class="met-name">${sq}</span><div class="met-bar-wrap"><div class="met-bar" style="width:${pct}%"></div></div><span class="met-val">${v}%</span><span class="met-pts">${projectedPts[sq]}</span></div>`;
     }).join('')}</div></div>`;
-  }).join('');
+  }).join('')+'<div style="font-size:10px;color:var(--text3);padding:8px 2px 0;font-family:\'DM Mono\',monospace">Points shown are projected for the current month and lock in once an admin finalizes the month.</div>';
 }
 
 // ── SQUADS ──
@@ -6594,13 +6675,43 @@ async function saveMetrics(){
     D.metrics.referral[sq]=parseFloat(document.getElementById('ref'+sq).value)||0;
     D.metrics.grades[sq]=parseFloat(document.getElementById('grad'+sq).value)||0;
   });
-  D.metrics.weekLabel=document.getElementById('weekLabel').value.trim();
+  D.metrics.month=document.getElementById('monthLabel').value.trim();
   if(!D.traitDoughTally) D.traitDoughTally={BLACK:0,GOLD:0,GREY:0,PURPLE:0};
   SQUADS.forEach(sq=>{ const v=document.getElementById('tally'+sq); if(v&&v.value!=='') D.traitDoughTally[sq]=parseInt(v.value)||0; });
-  if(!D.traitDoughTally) D.traitDoughTally={BLACK:0,GOLD:0,GREY:0,PURPLE:0};
-  SQUADS.forEach(sq=>{ const v=document.getElementById('tally'+sq); if(v&&v.value!=='') D.traitDoughTally[sq]=parseInt(v.value)||0; });
-  D.history.unshift({type:'metrics',label:D.metrics.weekLabel,time:new Date().toISOString()});
-  await save(); flash('metOk'); renderTally(); renderTally();
+  D.history.unshift({type:'metrics',label:D.metrics.month,time:new Date().toISOString()});
+  await save(); flash('metOk'); renderTally(); renderMetrics();
+}
+
+// Locks in this month's percentages as permanent points (see rankPoints_/metTotal above),
+// then clears the form so the next month starts blank. Separate from saveMetrics() -- saving
+// is just persisting in-progress percentages as they trickle in; finalizing is the one-way
+// action that actually awards points.
+async function finalizeMonth(){
+  const monthLabel=(document.getElementById('monthLabel').value||D.metrics.month||'').trim();
+  if(!monthLabel){ alert('Enter a Month Label first (e.g. "September 2026").'); return; }
+  if(!confirm('Finalize "'+monthLabel+'"? This locks in points for Attendance, No Referral, and No Fail Grade based on the current percentages, adds them permanently to each squad\'s score, and clears the metrics form for next month. This cannot be undone.')) return;
+  D.metrics.month=monthLabel;
+  const metricDefs=[{key:'attendance',label:'Attendance'},{key:'referral',label:'No Referral'},{key:'grades',label:'No Fail Grade'}];
+  const totalPts={BLACK:0,GOLD:0,GREY:0,PURPLE:0};
+  const breakdown={};
+  metricDefs.forEach(d=>{
+    const vals={}; SQUADS.forEach(sq=>{ vals[sq]=D.metrics[d.key][sq]||0; });
+    const rp=rankPoints_(vals);
+    breakdown[d.key]=rp;
+    SQUADS.forEach(sq=>{ totalPts[sq]+=rp[sq]; });
+  });
+  if(!Array.isArray(D.monthlyMetrics)) D.monthlyMetrics=[];
+  D.monthlyMetrics.push({
+    id:Date.now(), month:monthLabel,
+    attendance:{...D.metrics.attendance}, referral:{...D.metrics.referral}, grades:{...D.metrics.grades},
+    metricPts:breakdown, pts:totalPts, finalizedAt:new Date().toISOString(),
+  });
+  D.history.unshift({type:'metrics-finalized',label:monthLabel,pts:totalPts,time:new Date().toISOString()});
+  D.metrics={attendance:{BLACK:0,GOLD:0,GREY:0,PURPLE:0},referral:{BLACK:0,GOLD:0,GREY:0,PURPLE:0},grades:{BLACK:0,GOLD:0,GREY:0,PURPLE:0},month:''};
+  await save();
+  flash('metOk');
+  renderTally(); renderMetrics(); renderScoreSummary(); renderHistList();
+  aTab('metrics');
 }
 
 async function savePageContent(){
@@ -6993,7 +7104,7 @@ async function addGItem(type){
 }
 
 async function resetAll(){
-  D.events=[]; D.metrics=JSON.parse(JSON.stringify(DEF.metrics));
+  D.events=[]; D.metrics=JSON.parse(JSON.stringify(DEF.metrics)); D.monthlyMetrics=[];
   D.history.unshift({type:'reset',time:new Date().toISOString()});
   await save(); renderScoreSummary();
 }
@@ -7015,6 +7126,7 @@ function renderHistList(){
       return `<div class="h-item"><div><div class="h-name">${h.name}</div><div class="h-meta">${s}<br>${d.toLocaleString()}</div></div><button class="undo-btn" onclick="undoEvt(${i})">Undo</button></div>`; }
     if(h.type==='metrics') return `<div class="h-item"><div><div class="h-name">📊 Metrics Updated</div><div class="h-meta">${h.label||''} · ${d.toLocaleString()}</div></div></div>`;
     if(h.type==='reset') return `<div class="h-item"><div><div class="h-name" style="color:#f87171">⚠ All Scores Reset</div><div class="h-meta">${d.toLocaleString()}</div></div></div>`;
+    if(h.type==='metrics-finalized') return `<div class="h-item"><div><div class="h-name" style="color:#4ade80">✅ ${h.label||'Month'} Finalized</div><div class="h-meta">${SQUADS.map(sq=>sq+': +'+((h.pts&&h.pts[sq])||0)).join(' · ')}<br>${d.toLocaleString()}</div></div></div>`;
     return '';
   }).join('');
 }
@@ -7108,6 +7220,7 @@ function aTab(name){
     const ftr=D.footer||DEF.footer||{};
     const fbi=document.getElementById('footerBrandInput'); if(fbi) fbi.value=ftr.brand||'';
     const fsi=document.getElementById('footerSubInput'); if(fsi) fsi.value=ftr.sub||'';
+    const ldi=document.getElementById('landingDocInput'); if(ldi) ldi.value=(D.landingDoc&&D.landingDoc.url)||'';
     const evt=(D.countdownEvents||[])[0];
     const cl=document.getElementById('cdLabel'); if(cl) cl.value=evt?evt.label:'';
     const cd=document.getElementById('cdDate'); if(cd) cd.value=evt?evt.date:'';
@@ -7141,7 +7254,7 @@ function aTab(name){
       const g=document.getElementById('grad'+sq); if(g) g.value=D.metrics.grades[sq]||'';
       const t=document.getElementById('tally'+sq); if(t) t.value=(D.traitDoughTally&&D.traitDoughTally[sq])||'';
     });
-    const wl=document.getElementById('weekLabel'); if(wl) wl.value=D.metrics.weekLabel||'';
+    const ml=document.getElementById('monthLabel'); if(ml) ml.value=D.metrics.month||'';
   }
 }
 
@@ -7247,7 +7360,7 @@ function buildTV(){
     const vals=SQUADS.map(sq=>D.metrics[d.key][sq]||0), mx2=Math.max(...vals,1);
     return `<div class="tv-met-card"><div class="tv-met-icon">${d.icon}</div><div class="tv-met-name">${d.label}</div>
     <div class="tv-met-rows">${SQUADS.map(sq=>{const v=D.metrics[d.key][sq]||0;return`<div class="tv-met-row"><span class="tv-met-sq" style="color:${SQ_HEX[sq]}">${sq}</span><div class="tv-met-bw"><div class="tv-met-bf" style="width:${Math.round(v/mx2*100)}%;background:${SQ_HEX[sq]}"></div></div><span class="tv-met-pct">${v}%</span></div>`;}).join('')}</div></div>`;
-  }).join('')+`<div class="tv-week-card"><div class="tv-week-lbl">Current Week</div><div class="tv-week-val">${D.metrics.weekLabel||'—'}</div></div>`;
+  }).join('')+`<div class="tv-week-card"><div class="tv-week-lbl">Current Month</div><div class="tv-week-val">${D.metrics.month||'—'}</div></div>`;
 
   // Podium slide
   const rp=ranked();
@@ -8633,7 +8746,7 @@ async function saveSpinCaps(){
 }
 const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePhoto,
   __scrollMindset:scrollMindset,previewPhoto,openLogin,tryLogin,close1,
-  requireAdmin,openAddEvent,openAdmin,aTab,addEvent,saveMetrics,
+  requireAdmin,openAddEvent,openAdmin,aTab,addEvent,saveMetrics,finalizeMonth,
   savePageContent,loadPageContent,addLink,removeLink,addGItem,
   resetAll,undoEvt,changePw,openDisplay,closeDisplay,showSlide,
   lTab,saveMindsetLinks,addLinkSection,removeLinkSection,pTab,loadPageContent,
@@ -8642,7 +8755,7 @@ const _fns = {goTo,__goTo:goTo,gTab,gATab,setTrait,__setTrait:setTrait,deletePho
   saveSpotlights,saveTVSlide,openTicker,closeTicker,openBulkEntry,addBulkRow,saveBulkEvents,
   saveSquadColors,applyThemePreset,saveCustomTheme,printCertificate,undoLastEvent,markTraitDone,unmarkTraitDone,
   generateEmailDigest,copyEmailDigest,printSubGuide,showEventBreakdown,
-  saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,saveHomeStats,
+  saveMottos,savePoll,castVote,takeSnapshot,addStaffLink,removeStaffLink,saveHomeStats,saveLandingDoc,
   renderWheel,renderTraitDough,renderSotm,renderGrowth,loadTJStats:function(){if(window.loadTJStats)window.loadTJStats();},
   openWheelSpinner,closeWheelSpinner,wDoSpin,wDoBank,wDoRisk,wSaveToTracker,wSetSq,
   spinAuth,spinLogout,spinSetSq,sDoSpin,sDoBank,sDoRisk,sSavePoints,sResetSpin,openSpinTV,closeSpinTV,popOutTV,spShowGivePicker,spConfirmGive,
