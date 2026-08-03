@@ -3648,6 +3648,19 @@ const GAS_TOKEN='togetherweclimb4444HOPE';
 const GAS_POLL_MS=5000;
 
 async function gasCall_(body){
+  // GET for read-only actions (load/meta) -- a manual browser test showed GET to this
+  // deployment works fine while POST to the identical URL returned a Google-side "unable to
+  // open the file" error. load/meta never need to send a body, so there's no downside to
+  // using GET for them; only save() actually needs POST, since it must carry the full D blob
+  // which can be far too large for a URL query string.
+  if(body.action==='load'||body.action==='meta'){
+    const url=GAS_URL+'?action='+encodeURIComponent(body.action)+'&token='+encodeURIComponent(GAS_TOKEN);
+    const r=await fetch(url,{method:'GET'});
+    if(!r.ok){const txt=await r.text();throw new Error('HTTP '+r.status+': '+txt);}
+    const json=await r.json();
+    if(!json.ok) throw new Error(json.error||'Request failed');
+    return json.data;
+  }
   const r=await fetch(GAS_URL,{
     method:'POST',
     // text/plain avoids a CORS preflight (OPTIONS) that Apps Script can't answer -- the body
@@ -8605,7 +8618,11 @@ goTo(window.__currentPage || currentPage);
   const GAS_URL='https://script.google.com/macros/s/AKfycbyRCm58vW1HMZ6NefMzdgNBzJHwd3wbZ4mscPPqlr8Z6oRe769B101hWJe12xC2GAmMjQ/exec';
   const GAS_TOKEN='togetherweclimb4444HOPE';
   async function gasCallLocal_(body){
-    const r=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({token:GAS_TOKEN},body))});
+    // GET, not POST -- see the matching comment on the main gasCall_ definition earlier in
+    // the page. This widget only ever calls action:'load', which needs no body, so GET is a
+    // strict improvement here (confirmed: POST to this deployment failed, GET worked).
+    const url=GAS_URL+'?action='+encodeURIComponent(body.action)+'&token='+encodeURIComponent(GAS_TOKEN);
+    const r=await fetch(url,{method:'GET'});
     if(!r.ok){const txt=await r.text();throw new Error('HTTP '+r.status+': '+txt);}
     const json=await r.json();
     if(!json.ok) throw new Error(json.error||'Request failed');
@@ -8698,7 +8715,11 @@ goTo(window.__currentPage || currentPage);
   const GAS_URL='https://script.google.com/macros/s/AKfycbyRCm58vW1HMZ6NefMzdgNBzJHwd3wbZ4mscPPqlr8Z6oRe769B101hWJe12xC2GAmMjQ/exec';
   const GAS_TOKEN='togetherweclimb4444HOPE';
   async function gasCallLocal_(body){
-    const r=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({token:GAS_TOKEN},body))});
+    // GET, not POST -- see the matching comment on the main gasCall_ definition earlier in
+    // the page. This widget only ever calls action:'load', which needs no body, so GET is a
+    // strict improvement here (confirmed: POST to this deployment failed, GET worked).
+    const url=GAS_URL+'?action='+encodeURIComponent(body.action)+'&token='+encodeURIComponent(GAS_TOKEN);
+    const r=await fetch(url,{method:'GET'});
     if(!r.ok){const txt=await r.text();throw new Error('HTTP '+r.status+': '+txt);}
     const json=await r.json();
     if(!json.ok) throw new Error(json.error||'Request failed');
