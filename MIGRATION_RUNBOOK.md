@@ -113,10 +113,30 @@ That's the only edit needed anywhere in the file.
 ## Part 3 — Test before touching production
 
 **Do this on a separate test copy of the site first**, not on clashofclasses.org directly.
-Easiest way: enable GitHub Pages for the `migration/google-appscript` branch temporarily
-(Settings → Pages → Branch), which gives you a
-`matthewschuck-gif.github.io/Clash-of-Classes/` URL to test against without affecting the live
-domain.
+
+Correction from an earlier draft of this runbook: do **not** enable GitHub Pages on the
+`migration/google-appscript` branch to test it. This repo serves clashofclasses.org as a GitHub
+Pages **custom domain** (see the `CNAME` file) — Pages only serves one branch at a time for the
+whole site, so switching the Pages source branch would put the untested migration code on the
+live domain immediately, not a safe side-by-side preview.
+
+The actually-safe way: run it locally on your own computer, completely outside GitHub Pages.
+
+1. Get the `migration/google-appscript` branch onto your computer:
+   - No git needed: go to the repo on GitHub, switch the branch dropdown (top-left) to
+     `migration/google-appscript`, then **Code → Download ZIP**. Unzip it.
+   - Or, if you're comfortable with git: `git clone -b migration/google-appscript
+     https://github.com/matthewschuck-gif/Clash-of-Classes.git coc-test`
+2. `index.html` references `/styles.css`, `/manifest.json`, etc. with root-absolute paths, so
+   just double-clicking `index.html` to open it as a `file://` URL will load with no styling —
+   it needs to be served from a tiny local web server instead, which takes one command:
+   - Open Terminal / Command Prompt in that folder.
+   - Run: `python3 -m http.server 8000` (Mac/Linux) or `py -m http.server 8000` (Windows, if
+     Python's installed). No Python? `npx serve` works too if Node is installed.
+   - Open `http://localhost:8000/` in your browser.
+3. This talks to your real Apps Script backend and real Google Sheet over the internet — it's
+   only the frontend that's local. Nothing here touches clashofclasses.org or its Pages
+   deployment at all.
 
 Checklist:
 - [ ] Site loads with existing data (or starts fresh with defaults if the Sheet is empty —
