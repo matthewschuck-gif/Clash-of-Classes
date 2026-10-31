@@ -2616,7 +2616,7 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
     <div class="growth-live-dot"></div>
     <div>
       <div class="growth-board-title">🏔️ Community Growth Leaderboard</div>
-      <div class="growth-board-sub">Trail Journal reflections · Trailback Panel · Restoration points — separate from competition</div>
+      <div class="growth-board-sub">Trail Journal reflections · Trailback Panel · STAR growth · Restoration points</div>
     </div>
   </div>
   <div id="growth-rows">
@@ -2634,6 +2634,10 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
     <div class="growth-legend-item">
       <div class="growth-legend-dot" style="background:#fbbf24"></div>
       Community Bonus (awarded for volume milestones)
+    </div>
+    <div class="growth-legend-item">
+      <div class="growth-legend-dot" style="background:#60a5fa"></div>
+      STAR Growth (each STAR cycle: SGP 40+ = 1, 65+ = 2, 85+ = 3 per subject, evened out by squad size)
     </div>
   </div>
 </div>
@@ -8974,6 +8978,7 @@ goTo(window.__currentPage || currentPage);
       const tjPts    = { Gold:0, Grey:0, Black:0, Purple:0 };
       const panelPts = { Gold:0, Grey:0, Black:0, Purple:0 };
       const bonusPts = { Gold:0, Grey:0, Black:0, Purple:0 };
+      const starPts  = { Gold:0, Grey:0, Black:0, Purple:0 }; // STAR growth (sent by Define a Climb-er)
 
       (coc.events || []).forEach(evt => {
         if (!evt.pts) return;
@@ -8983,6 +8988,7 @@ goTo(window.__currentPage || currentPage);
           if (evt.type === 'trail_journal')   tjPts[sq]    += p;
           if (evt.type === 'trailback_panel') panelPts[sq] += p;
           if (evt.type === 'community_bonus') bonusPts[sq] += p;
+          if (evt.type === 'star_growth')     starPts[sq]  += p;
         });
       });
 
@@ -8992,7 +8998,8 @@ goTo(window.__currentPage || currentPage);
         tj: tjPts[sq],
         panel: panelPts[sq],
         bonus: bonusPts[sq],
-        total: tjPts[sq] + panelPts[sq] + bonusPts[sq],
+        star: starPts[sq],
+        total: tjPts[sq] + panelPts[sq] + bonusPts[sq] + starPts[sq],
       })).sort((a,b) => b.total - a.total);
 
       const maxTotal = Math.max(...sorted.map(s => s.total), 1);
@@ -9012,6 +9019,7 @@ goTo(window.__currentPage || currentPage);
           s.tj    > 0 ? `<span class="growth-chip chip-tj">🌱 +${s.tj} TJ</span>` : '',
           s.panel > 0 ? `<span class="growth-chip chip-panel">🏔️ +${s.panel} Panel</span>` : '',
           s.bonus > 0 ? `<span class="growth-chip chip-bonus">🎯 +${s.bonus} Bonus</span>` : '',
+          s.star  > 0 ? `<span class="growth-chip chip-star">📈 +${s.star} STAR</span>` : '',
         ].filter(Boolean).join('');
 
         return `<div class="growth-row ${i===0?'rank-1':''}">
