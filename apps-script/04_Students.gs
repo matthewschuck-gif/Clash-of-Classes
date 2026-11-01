@@ -235,7 +235,7 @@ function clashTvFeed() {
   const latest = readEventsTab_().slice().sort(function (a, b) {
     return String(b.date).localeCompare(String(a.date)) || (Number(b.id) - Number(a.id));
   }).slice(0, 8).map(function (e) {
-    return { name: e.name, label: labels[e.type] || ({ duel_bonus: '⚔️ Squad Duel', mayhem_week: '🏔️ Mayhem Week', shirt_sales: '👕 Shirt Sales', squad_night: '🌙 Squad Night' })[e.type] || '', date: e.date, pts: e.pts };
+    return { name: publicEvent_(e).name, label: labels[e.type] || ({ duel_bonus: '⚔️ Squad Duel', mayhem_week: '🏔️ Mayhem Week', shirt_sales: '👕 Shirt Sales', squad_night: '🌙 Squad Night' })[e.type] || '', date: e.date, pts: e.pts };
   });
   const out = { latest: latest, stars: [], lore: recentLoreUnlocks_(), duels: JSON.parse(clashDuels()) };
   if (String(getSetting_('TV_SHOW_NAMES')).toUpperCase() === 'ON') {

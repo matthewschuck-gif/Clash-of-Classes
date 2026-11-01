@@ -95,7 +95,7 @@ const GAS_POLL_MS=(window.CLASH_CONFIG&&window.CLASH_CONFIG.pollMs)||5000;
 
 async function gasCall_(body){
   if(body.action==='load'){
-    return window.gasRun_('clashLoad');
+    return window.gasRun_('clashLoad', window.ADMIN_SESSION||''); // admin: full rows (03_Web.gs publicEvent_)
   }
   if(body.action==='meta') return window.gasRun_('clashMeta');
   if(body.action==='save'){

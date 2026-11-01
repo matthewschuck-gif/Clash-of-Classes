@@ -173,7 +173,7 @@ function clashGeneralsHq(token) {
   const totals = squadTotals_();
   const recent = readEventsTab_().filter(function (e) { return (Number(e.pts[squad]) || 0) > 0; })
     .sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); }).slice(0, 5)
-    .map(function (e) { return { name: e.name, date: e.date, pts: Number(e.pts[squad]) || 0 }; });
+    .map(function (e) { return { name: publicEvent_(e).name, date: e.date, pts: Number(e.pts[squad]) || 0 }; }); // no student names (03_Web.gs)
   const leaders = sheetRows_('MLC Roster').filter(function (r) { return squadOf_(r['Squad']) === squad && !/vanguard/i.test(String(r['Role'])); })
     .map(function (r) { return { name: String(r['Name'] || ''), role: String(r['Role'] || '') }; });
   let month = '', trait = '';

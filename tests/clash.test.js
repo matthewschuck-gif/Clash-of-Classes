@@ -622,6 +622,38 @@ test('Shirt designs: Generals upload to a private folder, staff approve, one cha
   assert.strictEqual(designs.rows[2][7], 1, 'the Votes column stays current for staff');
 });
 
+test('Privacy: the public site and TV never show a student name on behavior rows; positive rows show "First L."; admin saves keep the real names', () => {
+  const w = world();
+  w.ensureSettings_();
+  const ev = w.book.getSheetByName('events');
+  ev.rows.push([140, 'Trail Journal Growth — Jamie Doe', 'trail_journal', '2026-10-20', 'High insight reflection, staff-approved', '', 0, 1, 0, 0],
+    [141, 'Trait Dough turn-in: Alex Sam Roe', 'trait_dough', '2026-10-21', '2 bill(s), team M', '', 0, 0, 2, 0],
+    [142, 'Mountaineer Mindset Summit: Pat Lee', 'mountaineer_mindset', '2026-10-22', 'Oct Grit (Applying), HR 12, approved by staff', '', 1, 0, 0, 0]);
+  const pub = JSON.parse(w.clashLoad()).value.events;
+  const byId = id => pub.find(e => e.id === id);
+  assert.deepStrictEqual([byId(140).name, byId(140).note], ['Trail Journal', ''], 'behavior row: label only');
+  assert.strictEqual(byId(141).name, 'Trait Dough turn-in: Alex R.');
+  assert.strictEqual(byId(142).name, 'Mountaineer Mindset Summit: Pat L.');
+  assert.ok(!JSON.stringify(pub).includes('Jamie') && !JSON.stringify(pub).includes('Doe'), 'no trace of the name anywhere');
+  w.setSettingValue_('TV_SHOW_NAMES', 'OFF');
+  assert.strictEqual(JSON.parse(w.clashLoad()).value.events.find(e => e.id === 141).name, 'Trait Dough turn-in');
+  assert.ok(!JSON.stringify(JSON.parse(w.clashTvFeed())).includes('Jamie'), 'TV feed too');
+  // Admin sees the full rows.
+  const t = login(w, 'oldpw');
+  assert.strictEqual(JSON.parse(w.clashLoad(t)).value.events.find(e => e.id === 140).name, 'Trail Journal Growth — Jamie Doe');
+  // A page that loaded publicly, then signed in and saved: real names kept, nothing duplicated.
+  const D = JSON.parse(w.clashLoad()).value;
+  const sync = { seen: D.events.map(e => e.id + '|' + e.name) };
+  D.events.push({ id: 150, name: 'New admin event', type: 'event', date: '2026-10-25', note: '', pts: { BLACK: 5, GOLD: 0, GREY: 0, PURPLE: 0 } });
+  w.clashSave(t, JSON.stringify(D), JSON.stringify(sync));
+  const rows = ev.rows.slice(1);
+  assert.strictEqual(rows.filter(r => r[0] === 140).length, 1, 'no duplicate row');
+  assert.strictEqual(rows.find(r => r[0] === 140)[1], 'Trail Journal Growth — Jamie Doe');
+  assert.strictEqual(rows.find(r => r[0] === 140)[4], 'High insight reflection, staff-approved', 'note kept');
+  assert.strictEqual(rows.find(r => r[0] === 141)[1], 'Trait Dough turn-in: Alex Sam Roe');
+  assert.ok(rows.some(r => r[1] === 'New admin event'));
+});
+
 test('page files: scripts parse, no old token or Supabase key left', () => {
   for (const f of ['App.html', 'Widgets.html', 'Index.html', 'Student.html', 'Generals.html']) {
     const h = fs.readFileSync(path.join(dir, f), 'utf8');

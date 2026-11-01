@@ -39,16 +39,45 @@ function include(name) {
 
 // ── DATA ────────────────────────────────────────────────────────────
 // The site data with the password taken out (anyone can open the site).
-function publicLoad_() {
+function publicLoad_(raw) {
   const res = loadAppData_('coc');
   if (res.value) {
     delete res.value.password;
     res.value.freezes = activeFreezes_(); // read-only, from the Point Freezes tab
+    if (!raw && Array.isArray(res.value.events)) res.value.events = res.value.events.map(publicEvent_);
   }
   return res;
 }
 
-function clashLoad() { return JSON.stringify(publicLoad_()); }
+// The site is public. Points rows other tools write can hold a student's name (Trait Dough,
+// Mindset, Trail Journal). Behavior-related types (PRIVATE_EVENT_TYPES) show only their label,
+// with no name or note. Other rows named "Something: First Last" show "First L." when
+// TV_SHOW_NAMES is ON, otherwise just "Something". Staff signed in as admin get the full rows.
+function publicEvent_(e) {
+  const out = Object.assign({}, e);
+  const priv = String(getSetting_('PRIVATE_EVENT_TYPES') || 'trail_journal, trailback_panel, camp_mountaineer')
+    .split(',').map(function (s) { return s.trim(); }).filter(String);
+  if (priv.indexOf(String(e.type)) > -1) {
+    const labels = parsePairsSetting_('EVENT_LABELS');
+    out.name = (labels[e.type] || String(e.type).replace(/_/g, ' ')).replace(/^[^\w]+\s*/, '');
+    out.note = '';
+    return out;
+  }
+  const m = String(e.name || '').match(/^(.*?(?:turn-in|winner|Summit|Growth))\s*[:—-]\s*(.+)$/i);
+  if (m) {
+    const parts = m[2].trim().split(/\s+/);
+    const short = parts.length > 1 ? parts[0] + ' ' + parts[parts.length - 1].charAt(0) + '.' : parts[0];
+    out.name = String(getSetting_('TV_SHOW_NAMES')).toUpperCase() === 'ON' ? m[1] + ': ' + short : m[1];
+  }
+  return out;
+}
+
+/** The site's data. With a valid admin session the rows come back unfiltered. */
+function clashLoad(token) {
+  let admin = false;
+  try { if (token) { requireAdmin_(token); admin = true; } } catch (e) { admin = false; }
+  return JSON.stringify(publicLoad_(admin));
+}
 
 function clashMeta() { return JSON.stringify(getAppDataMeta_('coc')); }
 
@@ -69,10 +98,23 @@ function clashSave(token, valueJson, syncJson) {
     const key = function (e) { return e.id + '|' + e.name; };
     const seen = {};
     (sync.seen || []).forEach(function (k) { seen[k] = true; });
-    const mine = {};
     const events = Array.isArray(value.events) ? value.events : [];
+    // A page that loaded before signing in holds the public (shortened) names: put the real
+    // name and note back on any row the admin didn't change, so a save never rewrites them.
+    const stored = readEventsTab_();
+    const storedById = {};
+    stored.forEach(function (s) { storedById[s.id] = s; });
+    events.forEach(function (e) {
+      const s = storedById[e.id];
+      if (!s) return;
+      const p = publicEvent_(s);
+      if (e.name === p.name && e.name !== s.name) e.name = s.name;
+      if (e.note === p.note && e.note !== s.note) e.note = s.note;
+    });
+    const mine = {};
     events.forEach(function (e) { mine[key(e)] = true; });
-    const added = readEventsTab_().filter(function (e) { return !seen[key(e)] && !mine[key(e)]; });
+    const wasSeen = function (s) { return seen[key(s)] || seen[s.id + '|' + publicEvent_(s).name]; };
+    const added = stored.filter(function (e) { return !wasSeen(e) && !mine[key(e)]; });
     // A row another project added can share an id with one the page just made: renumber it.
     const ids = {};
     let maxId = 100;
