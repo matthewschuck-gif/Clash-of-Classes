@@ -47,7 +47,8 @@ function build() {
   var book = { getSheets: function () { return sheets; }, getSheetByName: function (n) { return sheets.filter(function (s) { return s.getName() === n; })[0] || null; },
     insertSheet: function (n) { var s = makeSheet(n, []); sheets.push(s); return s; }, getId: function () { return 'CLASH'; } };
   var cache = {}, props = {}, updated = Date.now();
-  window.SpreadsheetApp = { getActiveSpreadsheet: function () { return book; }, openById: function () { return { getSheetByName: function (n) {
+  window.SpreadsheetApp = { getActiveSpreadsheet: function () { return book; },
+    newDataValidation: function () { var b = new Proxy({}, { get: function () { return function () { return b; }; } }); return b; }, openById: function () { return { getSheetByName: function (n) {
     return n === 'reflections' ? makeSheet(n, [['insight_level', 'created_at'], ['High', new Date()], ['Medium', new Date()]]) : n === 'panel_sessions' ? makeSheet(n, [['clash_squad', 'status'], ['GOLD', 'complete']]) : null; } }; } };
   window.DriveApp = { getFileById: function () { return { getLastUpdated: function () { return new Date(updated); } }; } };
   window.CacheService = { getScriptCache: function () { return { get: function (k) { return cache[k] || null; }, put: function (k, v) { cache[k] = v; } }; } };
@@ -70,6 +71,12 @@ getSheet_('Sign-up Events').appendRow(['Dodgeball', '2026-11-20', 8, true]);
 getSheet_('Sign-up Events').appendRow(['Lip Sync Battle', '2026-12-04', 4, true]);
 getSheet_('Student Board').appendRow(['8009999', 'Gus T.', 'Gold', '7', '1', '0', '0', '0', '', '0', '0', '0', '', '', '']);
 ensurePollTabs_(); getSheet_('Daily Polls').rows.slice(1).forEach(function (r) { r[0] = true; });
+ensureFreezeTab_(); getSheet_('Point Freezes').appendRow(['GREY', '2026-11-01', '2099-11-07', 'preview', '']);
+ensureDuelTab_(); getSheet_('Squad Duels').appendRow([true, 'Gold vs Grey Dough Duel', '2026-10-26', '2099-12-31', 'Points', 'trait_dough', 'GOLD vs GREY', 25, '', '']);
+ensureLoreTab_(); getSheet_('Lore Chapters').rows.splice(1);
+getSheet_('Lore Chapters').appendRow([true, 'ALL', 1, 'The Lantern at the Base', 'Long before the first bell, four lanterns were lit at the foot of the mountain…', '', '', '']);
+getSheet_('Lore Chapters').appendRow([true, 'ALL', 2, 'The Ridge Path', 'The second chapter.', '', 'points: 300', '']);
+getSheet_('Lore Chapters').appendRow([true, 'ALL', 3, 'Above the Clouds', 'The third chapter.', '', 'points: 5000', '']);
 </script>
 <script>
 // google.script.run → the .gs functions above, asynchronously, like the real thing.

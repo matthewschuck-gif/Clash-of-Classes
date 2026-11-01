@@ -91,6 +91,8 @@ function setupSpreadsheet() {
   ensureGeneralsTabs_();
   ensurePollTabs_();
   ensureFreezeTab_();
+  ensureDuelTab_();
+  ensureLoreTab_();
   setupHelpTab_();
   SpreadsheetApp.getUi().alert('Done -- app_data, events, metrics, Settings and "How To Use This Sheet" tabs are set up. Clash of Classes has no separate PII tab (unlike Trail Journal), so there is no extra sharing/protection step required here. You can now add/edit rows directly in the events and metrics tabs and the site will pick them up within a few seconds. Staff directions live in the "How To Use This Sheet" tab -- start there.');
 }
@@ -112,8 +114,10 @@ const DEFAULT_SETTINGS = [
   ['GENERALS_CODE', '', 'The code Squad Generals type with their 800# to open Generals HQ (Role = General on the MLC Roster tab). Blank = Generals HQ is closed. Change it any time.'],
   ['DAILY_POLL_POINTS', 'OFF', 'ON = after each Daily Poll day, squads get points for every student who voted (plus more for the winning side or right trivia answer). Turn on with Clash of Classes › Turn on daily poll points.'],
   ['POLL_VOTES_PER_10MIN', '1500', 'Most Daily Poll votes the site takes in 10 minutes (stops someone flooding it).'],
-  ['EVENT_LABELS', 'trait_dough=💵 Trait Dough, mountaineer_mindset=⛰️ Mindset, trail_journal=🏔️ Trail Journal, trailback_panel=🧭 Trailback Panel, star_growth=📈 STAR Growth, camp_mountaineer=⛺ Camp Mountaineer, daily_poll=🗳️ Daily Poll, challenge_bonus=🏁 Challenge, community_bonus=🎯 Bonus', 'Event type = how it is labelled on the TV feed and My Squad.'],
-];
+  ['EVENT_LABELS', 'trait_dough=💵 Trait Dough, mountaineer_mindset=⛰️ Mindset, trail_journal=🏔️ Trail Journal, trailback_panel=🧭 Trailback Panel, star_growth=📈 STAR Growth, camp_mountaineer=⛺ Camp Mountaineer, daily_poll=🗳️ Daily Poll, challenge_bonus=🏁 Challenge, duel_bonus=⚔️ Squad Duel, community_bonus=🎯 Bonus', 'Event type = how it is labelled on the TV feed and My Squad.'],
+  ['DUEL_BONUSES', 'OFF', 'ON = the day after each Squad Duel ends, the winning squad(s) get its Bonus Points (checked hourly). Turn on with Clash of Classes › Turn on Squad Duel bonuses.'],
+  ['PASSPORT_STAMPS', 'bills=🍞 Turn in Trait Dough; mindset=⛰️ Reach a Mindset summit; star=📈 Grow on STAR; shoutouts=🙌 Get a shout-out; ambassador=🤝 Be a Camp buddy; polls=🗳️ Vote in Daily Polls; events=🎟️ Sign up for a squad event', 'Trail Passport stamps on My Squad: key=label; … Keys: bills, mindset, star, shoutouts, ambassador, polls, events. Remove one to drop that stamp. All stamps = 🧭 Trail Passport complete.'],
+  ['PASSPORT_POLL_VOTES', '5', 'Daily Poll votes a student needs for the 🗳️ passport stamp.'],];
 
 // Writes one Settings value (used by the menu switches).
 function setSettingValue_(key, value) {

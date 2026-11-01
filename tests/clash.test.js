@@ -419,6 +419,77 @@ test('lore: Squad Themes has room for each squad\'s story; nothing shows until S
   assert.deepStrictEqual(w2.book.getSheetByName('Squad Themes').rows[0].slice(6), ['Trait', 'Lore Title', 'Lore', 'Lore Image', 'Show Lore']);
 });
 
+test('Squad Duels: scores by measure, a tie means both win, bonus once the day after it ends, only when ON', () => {
+  const w = world();
+  w.ensureSettings_();
+  w.ensureDuelTab_();
+  w.ensurePollTabs_();
+  const day = n => w.Utilities.formatDate(new Date(Date.now() + n * 86400000));
+  const duels = w.book.getSheetByName('Squad Duels');
+  duels.rows.push([true, 'Dough Duel', day(-7), day(-1), 'Entries', 'trait_dough', 'GOLD vs GREY', 25, '', ''],
+    [true, 'Vote-off', day(-7), day(-1), 'Poll Votes', '', '', 10, '', ''],
+    [true, 'Running', day(-1), day(5), 'Points', '', '', 5, '', '']);
+  const ev = w.book.getSheetByName('events');
+  ev.rows.push([110, 'b1', 'trait_dough', day(-3), '', '', 0, 1, 0, 0], [111, 'b2', 'trait_dough', day(-2), '', '', 0, 0, 3, 0],
+    [112, 'old bonus', 'challenge_bonus', day(-2), '', '', 0, 0, 50, 0]);
+  w.book.getSheetByName('Poll Votes').rows.push(['2', day(-3), '8001', 'PURPLE', 'x', ''], ['2', day(-3), '8002', 'PURPLE', 'y', ''], ['2', day(-20), '8003', 'GOLD', 'x', '']);
+  const list = JSON.parse(w.clashDuels());
+  const dough = list.find(d => d.title === 'Dough Duel');
+  assert.deepStrictEqual([J(dough.squads), J(dough.scores), J(dough.leaders), dough.done], [['GOLD', 'GREY'], { GOLD: 1, GREY: 1 }, ['GOLD', 'GREY'], true], 'entries, not points; bonuses ignored; a tie');
+  assert.deepStrictEqual(J(list.find(d => d.title === 'Vote-off').leaders), ['PURPLE']);
+  assert.ok(list.find(d => d.title === 'Running').active);
+  assert.deepStrictEqual(J(w.awardDuels()), ['DUEL_BONUSES is OFF.']);
+  w.setSettingValue_('DUEL_BONUSES', 'ON');
+  assert.deepStrictEqual(J(w.awardDuels()), ['Dough Duel: GOLD & GREY +25', 'Vote-off: PURPLE +10'], 'the running duel waits');
+  const bonus = ev.rows.filter(r => r[2] === 'duel_bonus');
+  assert.deepStrictEqual(bonus.map(r => [r[7], r[8], r[9]]), [[25, 25, ''], ['', '', 10]]);
+  assert.deepStrictEqual(J(w.awardDuels()), [], 'never twice');
+  assert.ok(/^Awarded .*GOLD & GREY \+25/.test(duels.rows.find(r => r[1] === 'Dough Duel')[8]));
+  assert.ok(JSON.parse(w.clashTvFeed()).latest.some(e => e.label === '⚔️ Squad Duel'), 'labelled on the TV even with the old EVENT_LABELS');
+});
+
+test('Lore chapters: unlock by points / challenge / date per squad, recorded once; drafts stay hidden', () => {
+  const w = world();
+  addStudentTabs(w); // challenge "Dough Drive": goal 5 trait_dough points (GOLD has 5 from the base events)
+  w.ensureLoreTab_();
+  const lore = w.book.getSheetByName('Lore Chapters');
+  lore.rows.splice(1); // drop the two draft examples
+  lore.rows.push([true, 'ALL', 1, 'The Climb Begins', 'Long ago…', 'https://img/1.png', '', ''],
+    [true, 'ALL', 2, 'The Ridge', 'Onward.', '', 'points: 8', ''],
+    [true, 'GOLD', 3, 'Gold Light', 'Shine.', '', 'challenge: Dough Drive', ''],
+    [true, 'ALL', 4, 'Future', 'Later.', '', 'date: 2099-01-01', ''],
+    [false, 'ALL', 5, 'Draft', 'secret', '', '', '']);
+  const gold = J(w.loreFor_('GOLD')), grey = J(w.loreFor_('GREY'));
+  assert.deepStrictEqual(gold.chapters.map(c => c.title), ['The Climb Begins', 'Gold Light'], 'GOLD: 5 points < 8, challenge done');
+  assert.deepStrictEqual(gold.next, { chapter: 2, hint: 'Unlocks at 8 squad points' });
+  assert.deepStrictEqual(grey.chapters.map(c => c.title), ['The Climb Begins']);
+  assert.ok(!JSON.stringify(gold).includes('secret'), 'unticked drafts never reach the page');
+  assert.ok(/GOLD \d{4}-\d{2}-\d{2}/.test(lore.rows[3][7]), 'unlock date recorded');
+  w.book.getSheetByName('events').rows.push([120, 'x', 'event', '2026-10-02', '', '', 0, 3, 0, 0]);
+  assert.deepStrictEqual(J(w.loreFor_('GOLD')).chapters.map(c => c.chapter), [1, 2, 3], 'reaching 8 points unlocks chapter 2');
+  assert.deepStrictEqual(J(w.recentLoreUnlocks_()).map(u => u.squad + u.chapter).sort(), ['BLACK2', 'GOLD2', 'GOLD3'], 'TV: unlocks with a rule (BLACK has 10 points), not chapter 1');
+  const me = JSON.parse(w.clashMyPage('8001234'));
+  assert.deepStrictEqual(me.lore.chapters.map(c => c.chapter), [1, 2, 3]);
+});
+
+test('Trail Passport: stamps from the Student Board, poll votes and sign-ups; complete when all are done', () => {
+  const w = world();
+  addStudentTabs(w);
+  w.ensureSettings_();
+  w.ensurePollTabs_();
+  w.ensureGeneralsTabs_();
+  w.setSettingValue_('PASSPORT_STAMPS', 'bills=🍞 Trait Dough; star=📈 STAR; polls=🗳️ Polls; events=🎟️ Event');
+  w.setSettingValue_('PASSPORT_POLL_VOTES', '2');
+  let p = JSON.parse(w.clashMyPage('8001234')).passport;
+  assert.deepStrictEqual(p.stamps.map(s => s.done), [true, true, false, false]);
+  assert.strictEqual(p.complete, false);
+  w.book.getSheetByName('Poll Votes').rows.push(['1', '2026-10-01', '8001234', 'GOLD', 'a', ''], ['2', '2026-10-02', '8001234', 'GOLD', 'b', '']);
+  w.book.getSheetByName('Sign-ups').rows.push(['Dodgeball', '8001234', 'Ann L.', 'GOLD', 'G', '']);
+  p = JSON.parse(w.clashMyPage('8001234')).passport;
+  assert.strictEqual(p.complete, true);
+  assert.deepStrictEqual(JSON.parse(w.clashMyPage('8005678')).passport.stamps.map(s => s.done), [false, false, false, false]);
+});
+
 test('page files: scripts parse, no old token or Supabase key left', () => {
   for (const f of ['App.html', 'Widgets.html', 'Index.html', 'Student.html', 'Generals.html']) {
     const h = fs.readFileSync(path.join(dir, f), 'utf8');

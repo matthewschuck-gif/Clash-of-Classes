@@ -3749,11 +3749,39 @@ function buildTV(){
     </div>`;
   }).join('');
 
+  buildSummitMap();
   if(window.clashStudentTV_) window.clashStudentTV_(); // challenge + latest-points slides (Student.html)
   document.getElementById('tvNav').innerHTML=Array.from({length:TV_SLIDE_COUNT},(_,i)=>i).map(i=>`<div class="tv-dot${i===tvSlide?' on':''}" onclick="showSlide(${i})"></div>`).join('');
 }
 
-const TV_SLIDE_COUNT=6;
+const TV_SLIDE_COUNT=7;
+
+// Summit Map slide: one mountain, each squad's flag partway up the trail by its place.
+// The leader sits near the summit and each place below sits one step lower (tied squads share
+// a step), so close scores still read clearly; the points are on each flag. Frozen squads get ❄️.
+function buildSummitMap(){
+  const el=document.getElementById('tvSummit'); if(!el) return;
+  const r=ranked();
+  const levels=[...new Set(r.map(sq=>grand(sq)))]; // distinct scores, highest first
+  const height=sq=>0.9-levels.indexOf(grand(sq))*0.2;
+  // The trail: a zig-zag path up the mountain, as points from the bottom (t=0) to the summit (t=1).
+  const path=[[60,520],[300,450],[180,370],[470,300],[330,220],[560,160],[600,70]];
+  const at=t=>{ const n=path.length-1, f=Math.min(Math.max(t,0),1)*n, i=Math.min(Math.floor(f),n-1), k=f-i;
+    return [path[i][0]+(path[i+1][0]-path[i][0])*k, path[i][1]+(path[i+1][1]-path[i][1])*k]; };
+  const flags=r.map((sq,i)=>{
+    const [x,y]=at(height(sq)), dx=(i%2?1:-1)*(18+i*6);
+    const frozen=(D.freezes||[]).some(f=>f.squad===sq);
+    return `<g><line x1="${x}" y1="${y}" x2="${x}" y2="${y-46}" stroke="#e5e7eb" stroke-width="3"/>
+      <path d="M${x} ${y-46} l${dx>0?44:-44} 10 l${dx>0?-44:44} 10 z" fill="${SQ_HEX[sq]}"/>
+      <text x="${x+dx*1.2}" y="${y-58}" text-anchor="middle" font-family="Fraunces,serif" font-weight="900" font-size="22" fill="${SQ_HEX[sq]}">${sq}${frozen?' ❄️':''}</text>
+      <text x="${x}" y="${y+24}" text-anchor="middle" font-family="DM Mono,monospace" font-weight="700" font-size="17" fill="${SQ_HEX[sq]}">${grand(sq).toLocaleString()} pts</text></g>`;
+  }).join('');
+  el.innerHTML=`<svg viewBox="0 0 900 560" style="width:100%;height:auto;max-height:68vh" role="img" aria-label="Squads climbing the mountain by points">
+    <polygon points="0,560 600,40 900,560" fill="#2a2440"/><polygon points="250,560 600,40 760,560" fill="#352d52"/>
+    <polygon points="545,90 600,40 655,90 625,82 600,96 575,82" fill="#f8fafc"/>
+    <polyline points="${path.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#a78bfa" stroke-width="5" stroke-dasharray="10 9" stroke-linecap="round"/>
+    <text x="600" y="28" text-anchor="middle" font-size="26">🚩</text>${flags}</svg>`;
+}
 function showSlide(n){ tvSlide=n; document.querySelectorAll('.tv-slide').forEach((s,i)=>s.classList.toggle('active',i===n)); document.querySelectorAll('.tv-dot').forEach((d,i)=>d.classList.toggle('on',i===n)); tvPct=0; document.getElementById('tvProg').style.width='0%'; }
 function startAuto(){ clearInterval(tvTimer); clearInterval(tvPTimer); const step=80,inc=step/TV_MS*100; tvPTimer=setInterval(()=>{tvPct=Math.min(tvPct+inc,100);document.getElementById('tvProg').style.width=tvPct+'%';},step); tvTimer=setInterval(()=>{showSlide((tvSlide+1)%TV_SLIDE_COUNT);startAuto();},TV_MS); }
 

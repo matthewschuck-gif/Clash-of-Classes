@@ -98,9 +98,20 @@
       (d.recent.length ? 'Shout-out for our latest points: ' + d.recent[0].name + ' (+' + d.recent[0].pts + ').\n\n' : '') +
       (next.length ? 'Sign up now: ' + next.map(function (e) { return e.event + (e.date ? ' on ' + e.date : ''); }).join(' and ') + '. See your General!\n\n' : '') +
       (ch ? 'This week\'s challenge: ' + ch.title + '. We\'re at ' + (ch.progress[d.squad] || 0) + ' of ' + ch.goal + '.\n\n' : '') +
+      (duelLine(d) ? duelLine(d) + '\n\n' : '') +
+      (d.lore && d.lore.next ? 'Our story: ' + d.lore.next.hint.replace(/^Unlocks/, 'the next chapter unlocks') + '!\n\n' : '') +
       (d.theme ? 'Remember our theme, ' + d.theme.theme + ': ' + d.theme.meaning + '\n\n' : '') +
       (d.poll && !/^No daily poll/.test(d.poll) ? d.poll + '\n\n' : '') +
       'Every Trait Dough bill counts. Let\'s go, ' + sq + '!';
+  }
+  // One read-aloud line about this week's Squad Duel ('' if none is running).
+  function duelLine(d) {
+    var du = (d.duels || []).filter(function (x) { return x.active; })[0];
+    if (!du) return '';
+    var others = du.squads.filter(function (s) { return s !== d.squad; }).map(title).join(' and ');
+    var lead = du.leaders.indexOf(d.squad) > -1;
+    return 'Squad Duel: ' + du.title + ' against ' + others + '. We have ' + (du.scores[d.squad] || 0) + ' ' + du.measure.toLowerCase() +
+      (lead ? ' and we are in the lead!' : ', so let\'s close the gap!') + ' The winner gets ' + du.bonus + ' bonus points.';
   }
   function hypeView() {
     return '<div class="ms-card"><div class="ms-h">Morning announcement (edit it as you like)</div><div class="hq-script" contenteditable="true" id="hqHype">' + esc(hypeText()) + '</div>' +
@@ -111,10 +122,13 @@
   function slides() {
     var d = data, sq = title(d.squad), st = d.standing;
     var lore = d.theme && d.theme.lore;
+    var ch = d.lore && d.lore.chapters.length ? d.lore.chapters[d.lore.chapters.length - 1] : null;
+    var chapterSlide = ch ? [['📜 Chapter ' + ch.chapter + ': ' + esc(ch.title), (ch.image ? '<img src="' + esc(ch.image) + '" alt="" style="max-height:34vh;max-width:100%;border-radius:12px"><br>' : '') +
+      '<span style="white-space:pre-line">' + esc(ch.story) + '</span>' + (d.lore.next ? '<br><br><i>' + esc(d.lore.next.hint) + '</i>' : '')]] : [];
     return [
       ['Welcome, ' + sq + ' Squad!', d.theme ? 'Our theme: <b>' + esc(d.theme.theme) + '</b><br>' + esc(d.theme.meaning) : 'Led by your Generals'],
     ].concat(lore ? [[esc(lore.title || 'Our story'), (lore.image ? '<img src="' + esc(lore.image) + '" alt="" style="max-height:38vh;max-width:100%;border-radius:12px"><br>' : '') +
-      '<span style="white-space:pre-line">' + esc(lore.text) + '</span>']] : []).concat([
+      '<span style="white-space:pre-line">' + esc(lore.text) + '</span>']] : []).concat(chapterSlide).concat([
       ['Clash of Classes update', st ? (['1st', '2nd', '3rd', '4th'][st.place - 1] + ' place · ' + st.total.toLocaleString() + ' points<br>') +
         SQ.map(function (s) { return '<span style="color:' + COLOR[s] + '">' + title(s) + ' ' + (d.totals[s] || 0).toLocaleString() + '</span>'; }).join(' &nbsp; ') : ''],
       ['Recent wins', d.recent.length ? d.recent.map(function (e) { return esc(e.name) + ' <b>+' + e.pts + '</b>'; }).join('<br>') : 'Let\'s make some this month!'],

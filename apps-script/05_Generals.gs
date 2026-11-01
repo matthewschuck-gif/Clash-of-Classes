@@ -189,6 +189,8 @@ function clashGeneralsHq(token) {
       .map(function (r) { return { row: r._row, item: String(r['Item']), done: ticked_(r['Done']) }; }),
     recent: recent, leaders: leaders, month: month, trait: trait,
     challenges: challengeProgress_().filter(function (c) { return c.active; }),
+    duels: JSON.parse(clashDuels()).filter(function (d) { return d.squads.indexOf(squad) > -1; }),
+    lore: loreFor_(squad),
     poll: (function () { try { return pollAnnouncement_(); } catch (e) { return ''; } })(), // 06_Polls.gs
     nominateFor: NOMINATE_FOR_,
     nominations: sheetRows_('Nominations').filter(function (r) { return id800_(r['General']) === me.id || String(r['General']) === me.name; })

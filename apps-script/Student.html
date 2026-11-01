@@ -48,6 +48,48 @@
       (l.image ? '<img src="' + esc(l.image) + '" alt="" style="max-width:100%;border-radius:10px;margin:6px 0">' : '') +
       (l.text ? '<p style="white-space:pre-line;line-height:1.6">' + esc(l.text) + '</p>' : '') + '</div>';
   }
+  // Lore chapters this squad unlocked (09_Lore.gs), newest last, plus what unlocks the next one.
+  function chaptersCard(lore, squad) {
+    if (!lore || (!lore.chapters.length && !lore.next)) return '';
+    return '<div class="ms-card"><div class="ms-h">📖 Your squad\'s story</div>' +
+      lore.chapters.map(function (c) {
+        return '<details' + (c === lore.chapters[lore.chapters.length - 1] ? ' open' : '') + ' style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:700">Chapter ' + c.chapter + ': ' + esc(c.title) + '</summary>' +
+          (c.image ? '<img src="' + esc(c.image) + '" alt="" style="max-width:100%;border-radius:10px;margin:8px 0">' : '') +
+          '<p style="white-space:pre-line;line-height:1.6">' + esc(c.story) + '</p></details>';
+      }).join('') +
+      (lore.next ? '<div class="ms-badge locked" style="display:inline-block">🔒 Chapter ' + lore.next.chapter + ' · ' + esc(lore.next.hint) + '</div>' : '') + '</div>';
+  }
+  // A Squad Duel card (08_Duels.gs). onlySquad = the student's squad, highlighted.
+  function duelCard(d, onlySquad) {
+    var max = Math.max.apply(null, d.squads.map(function (s) { return d.scores[s] || 0; }).concat([1]));
+    return '<div class="ch-card"><div class="ch-title">⚔️ Squad Duel: ' + esc(d.title) + '</div>' +
+      '<div class="ch-desc">' + d.squads.map(title).join(' vs ') + ' · most ' + esc(d.measure.toLowerCase()) +
+      (d.end ? (d.active ? ' by ' + esc(d.end) : ' · ended ' + esc(d.end)) : '') + ' · winner gets +' + d.bonus + '</div>' +
+      d.squads.map(function (s) {
+        var v = d.scores[s] || 0, lead = d.leaders.indexOf(s) > -1;
+        return '<div class="ch-row"><b style="color:' + COLOR[s] + '">' + title(s) + (s === onlySquad ? ' ★' : '') + '</b>' +
+          '<div class="ch-bar"><div class="ch-fill" style="width:' + Math.round(v / max * 100) + '%;background:' + COLOR[s] + '"></div></div>' +
+          '<span>' + v + (lead ? (d.done ? ' 🏆' : ' 🔥') : '') + '</span></div>';
+      }).join('') + '</div>';
+  }
+  // Trail Passport (04_Students.gs passportFor_): a stamp for each part of the program tried.
+  function passportCard(p) {
+    if (!p) return '';
+    var n = p.stamps.filter(function (s) { return s.done; }).length;
+    return '<div class="ms-card"><div class="ms-h">🧭 Trail Passport (' + n + ' of ' + p.stamps.length + ' stamps)</div><div class="ms-badges">' +
+      p.stamps.map(function (s) { return '<span class="ms-badge' + (s.done ? '' : ' locked') + '">' + (s.done ? '' : '○ ') + esc(s.label) + '</span>'; }).join('') + '</div>' +
+      '<div class="ms-small" style="margin-top:10px">' + (p.complete ? '🎉 Passport complete! You\'ve explored every part of the trail.' : 'Collect every stamp to complete your passport.') + '</div></div>';
+  }
+  var duels = [];
+  function renderHomeDuels() {
+    var el = document.getElementById('duelSection');
+    if (!el) return;
+    el.style.display = duels.length ? 'block' : 'none';
+    el.innerHTML = duels.map(function (d) { return duelCard(d); }).join('');
+  }
+  function loadDuels() {
+    window.gasRun_('clashDuels').then(function (list) { duels = list || []; renderHomeDuels(); }).catch(function () {});
+  }
   function store(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
   function stored(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
 
@@ -133,7 +175,8 @@
           (r.theme.project ? '<br>Service project: ' + esc(r.theme.project) + (r.theme.goal ? ' (' + r.theme.progress + ' of ' + r.theme.goal + ')' : '') : '') + '</div>' : '') +
         (r.theme && r.theme.trait ? '<div class="ms-standing">Squad trait: <b>' + esc(r.theme.trait) + '</b></div>' : '') +
         '<div class="ms-standing">' + standing + '</div></div>' +
-      loreCard(r.theme, me.squad) +
+      loreCard(r.theme, me.squad) + chaptersCard(r.lore, me.squad) +
+      (r.duels || []).map(function (d) { return duelCard(d, me.squad); }).join('') +
       '<div class="ms-card"><div class="ms-h">What you\'ve added</div><div class="ms-tiles">' +
         tiles.map(function (t) { return '<div class="ms-tile"><div class="ms-tile-val">' + esc(t[0]) + '</div><div class="ms-tile-lbl">' + esc(t[1]) + '</div></div>'; }).join('') +
       '</div></div>' +
@@ -141,6 +184,7 @@
         earned.map(function (b) { return '<span class="ms-badge">' + esc(b) + '</span>'; }).join('') +
         locked.map(function (b) { return '<span class="ms-badge locked">🔒 ' + esc(b) + '</span>'; }).join('') +
       '</div></div>' +
+      passportCard(r.passport) +
       '<div id="myPollSection" style="display:none"></div>' +
       (mine ? '<div class="ms-h" style="margin-top:6px">Your squad\'s challenges</div>' + mine : '') +
       '<div class="ms-small">Updated every hour' + (me.updated ? ' · last update ' + esc(me.updated) : '') +
@@ -163,6 +207,13 @@
     }
     var feed = document.getElementById('tvFeed');
     if (feed) window.gasRun_('clashTvFeed').then(function (f) {
+      // Duels and newly unlocked lore chapters go at the top of the challenges slide.
+      var extra = (f.duels || []).filter(function (d) { return d.active || d.done; }).slice(0, 2).map(function (d) { return duelCard(d); }).join('') +
+        (f.lore || []).map(function (u) {
+          return '<div class="ch-card"><div class="ch-title" style="color:' + COLOR[u.squad] + '">📜 ' + title(u.squad) + ' unlocked Chapter ' + u.chapter + ': ' + esc(u.title) + '</div>' +
+            '<div class="ch-desc">Read it on My Squad at clashofclasses.org</div></div>';
+        }).join('');
+      if (ch && extra) ch.innerHTML = extra + ch.innerHTML.replace(/<div class="ch-card"><div class="ch-title">🏁 No challenge running right now<\/div><\/div>/, '');
       var left = '<div><div class="tv-cat-title">⚡ Latest points</div>' + (f.latest || []).map(function (e) {
         var pts = SQ.filter(function (s) { return e.pts[s]; }).map(function (s) {
           return '<b style="color:' + COLOR[s] + '">' + title(s) + ' +' + e.pts[s] + '</b>';
@@ -226,6 +277,8 @@
     if (saved) lookup(saved);
     loadChallenges();
     loadPolls();
+    loadDuels();
+    setInterval(loadDuels, 120000);
     setInterval(loadChallenges, 120000);
     setInterval(loadPolls, 60000);
   }

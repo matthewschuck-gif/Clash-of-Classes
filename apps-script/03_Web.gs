@@ -218,6 +218,9 @@ function onOpen() {
     .addItem('Today\'s poll announcement', 'menuPollAnnouncement_')
     .addItem('Turn on daily poll points', 'menuTurnOnPolls_')
     .addItem('Turn off daily poll points', 'menuTurnOffPolls_')
+    .addSeparator()
+    .addItem('Turn on Squad Duel bonuses', 'menuTurnOnDuels_')
+    .addItem('Turn off Squad Duel bonuses', 'menuTurnOffDuels_')
     .addToUi();
 }
 

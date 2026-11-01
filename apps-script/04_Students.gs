@@ -78,7 +78,32 @@ function clashMyPage(id) {
     allBadges: badgeNames_(),
     roles: publicRoles_()[want] || [], // Mountaineer Leadership Corps roles (MLC Roster tab)
     theme: squadTheme_(squad),
+    lore: loreFor_(squad), // 09_Lore.gs: the chapters this squad has unlocked
+    duels: JSON.parse(clashDuels()).filter(function (d) { return d.squads.indexOf(squad) > -1; }),
+    passport: passportFor_(want, me),
   });
+}
+
+// ── TRAIL PASSPORT ──────────────────────────────────────────────────
+// A stamp for each part of the program a student has tried (Settings › PASSPORT_STAMPS,
+// "key=label; …"). Keys: bills, mindset, star, shoutouts, ambassador (from the Student Board),
+// polls (Daily Poll votes, PASSPORT_POLL_VOTES of them) and events (a squad event sign-up).
+// Positive things only: nothing a student gets from a consequence is ever a stamp.
+function passportFor_(id, me) {
+  const defs = String(getSetting_('PASSPORT_STAMPS') || '').split(';').map(function (p) {
+    const i = p.indexOf('=');
+    return i > 0 ? { key: p.slice(0, i).trim(), label: p.slice(i + 1).trim() } : null;
+  }).filter(function (d) { return d && d.label; });
+  if (!defs.length) return null;
+  const needVotes = Number(getSetting_('PASSPORT_POLL_VOTES')) || 5;
+  let votes = null, signedUp = null;
+  const have = function (key) {
+    if (key === 'polls') { votes = votes === null ? sheetRows_('Poll Votes').filter(function (v) { return id800_(v['800#']) === id; }).length : votes; return votes >= needVotes; }
+    if (key === 'events') { signedUp = signedUp === null ? sheetRows_('Sign-ups').some(function (s) { return id800_(s['800#']) === id; }) : signedUp; return signedUp; }
+    return (Number(me[key]) || 0) > 0;
+  };
+  const stamps = defs.map(function (d) { return { label: d.label, done: have(d.key) }; });
+  return { stamps: stamps, complete: stamps.every(function (s) { return s.done; }) };
 }
 
 // Every badge name, so the page can show the ones still to earn (from the Settings tab).
@@ -130,7 +155,7 @@ function challengeProgress_() {
     const progress = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
     events.forEach(function (e) {
       if (types.length && types.indexOf(String(e.type)) === -1) return;
-      if (/^challenge_bonus$/.test(e.type)) return; // bonuses never count toward a challenge
+      if (BONUS_TYPES_.indexOf(String(e.type)) > -1) return; // bonuses never count toward a challenge
       const d = String(e.date || '');
       if ((start && d < start) || (end && d > end)) return;
       SQUAD_KEYS_.forEach(function (s) {
@@ -209,9 +234,9 @@ function clashTvFeed() {
   const latest = readEventsTab_().slice().sort(function (a, b) {
     return String(b.date).localeCompare(String(a.date)) || (Number(b.id) - Number(a.id));
   }).slice(0, 8).map(function (e) {
-    return { name: e.name, label: labels[e.type] || '', date: e.date, pts: e.pts };
+    return { name: e.name, label: labels[e.type] || (e.type === 'duel_bonus' ? '⚔️ Squad Duel' : ''), date: e.date, pts: e.pts };
   });
-  const out = { latest: latest, stars: [] };
+  const out = { latest: latest, stars: [], lore: recentLoreUnlocks_(), duels: JSON.parse(clashDuels()) };
   if (String(getSetting_('TV_SHOW_NAMES')).toUpperCase() === 'ON') {
     const sheet = getSheetSafe_(getSetting_('STUDENT_BOARD_TAB') || 'Student Board');
     if (sheet && sheet.getLastRow() > 1) {
