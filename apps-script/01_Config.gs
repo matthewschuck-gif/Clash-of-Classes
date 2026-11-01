@@ -86,8 +86,55 @@ function setupSpreadsheet() {
   const def = ss.getSheetByName('Sheet1');
   if (def && ss.getSheets().length > 1) ss.deleteSheet(def);
   ensureMetricsRows_();
+  ensureSettings_();
   setupHelpTab_();
-  SpreadsheetApp.getUi().alert('Done -- app_data, events, metrics, and "How To Use This Sheet" tabs are set up. Clash of Classes has no separate PII tab (unlike Trail Journal), so there is no extra sharing/protection step required here. You can now add/edit rows directly in the events and metrics tabs and the site will pick them up within a few seconds. Staff directions live in the "How To Use This Sheet" tab -- start there.');
+  SpreadsheetApp.getUi().alert('Done -- app_data, events, metrics, Settings and "How To Use This Sheet" tabs are set up. Clash of Classes has no separate PII tab (unlike Trail Journal), so there is no extra sharing/protection step required here. You can now add/edit rows directly in the events and metrics tabs and the site will pick them up within a few seconds. Staff directions live in the "How To Use This Sheet" tab -- start there.');
+}
+
+// ── SETTINGS TAB (Key | Value | Notes) ──────────────────────────────
+// Defaults live here; Run setup adds missing rows and never overwrites a value someone set.
+// Read fresh on every call, so edits show on the next page load with no redeploy.
+const SETTINGS_TAB = 'Settings';
+const DEFAULT_SETTINGS = [
+  ['SITE_TITLE', 'Clash of Classes — Ephrata Middle School', 'Browser tab title.'],
+  ['SITE_URL', 'https://clashofclasses.org', 'The address students use (the menu\'s "Open the site" link).'],
+  ['POLL_SECONDS', '5', 'How often an open page checks for new points (seconds, 3 or more). Higher = fewer requests.'],
+  ['TJ_SHEET_ID', '1rinTrtlmJKQrvtn5GVs-ngmaQRvkl8Nt39yOBICgggA', 'Trail Journal Data Sheet (link or ID) for the Community Culture Stats panel. Only counts are read.'],
+];
+
+function ensureSettings_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SETTINGS_TAB);
+  if (!sheet) {
+    sheet = ss.insertSheet(SETTINGS_TAB);
+    sheet.getRange(1, 1, 1, 3).setValues([['Key', 'Value', 'Notes']]).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
+    sheet.setFrozenRows(1);
+  }
+  const have = {};
+  sheet.getDataRange().getValues().slice(1).forEach(function (r) { have[String(r[0]).trim()] = true; });
+  const missing = DEFAULT_SETTINGS.filter(function (d) { return !have[d[0]]; });
+  if (missing.length) sheet.getRange(sheet.getLastRow() + 1, 1, missing.length, 3).setValues(missing);
+}
+
+function getSetting_(key) {
+  const sheet = getSheetSafe_(SETTINGS_TAB);
+  if (sheet) {
+    const rows = sheet.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).trim() === key) {
+        const v = String(rows[i][1] == null ? '' : rows[i][1]).trim();
+        return key.slice(-3) === '_ID' ? extractSheetId_(v) : v;
+      }
+    }
+  }
+  const d = DEFAULT_SETTINGS.filter(function (x) { return x[0] === key; })[0];
+  return d ? d[1] : '';
+}
+
+// A pasted Sheet link → just its ID.
+function extractSheetId_(v) {
+  const m = String(v || '').match(/\/d\/([a-zA-Z0-9_-]{20,})/);
+  return m ? m[1] : String(v || '').trim();
 }
 
 // Pre-seeds the metrics tab with one row per squad (BLACK/GOLD/GREY/PURPLE) so staff just

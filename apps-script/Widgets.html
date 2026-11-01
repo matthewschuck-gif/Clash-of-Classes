@@ -1,0 +1,184 @@
+<script>
+/* Freudenfreude Ticker */
+(function() {
+  // Self-contained on purpose -- do NOT call window.gasCall_ here. This is a plain <script>
+  // tag that runs immediately as the parser reaches it; the big <script type="module"> that
+  // defines window.gasCall_ is implicitly deferred (module scripts always execute after the
+  // whole page has parsed), so window.gasCall_ doesn't exist yet at this point. Duplicating a
+  // tiny local copy avoids that race entirely -- same reason COC_URL/COC_ANON used to be
+  // duplicated locally in every widget before the migration.
+  // Loads the site data from Apps Script (window.gasRun_ is defined in Index.html).
+  function gasCallLocal_(body){ return window.gasRun_('clashLoad'); }
+
+  const SQUAD_COLOR = {
+    GOLD:   '#c9a84c', GREY: '#9ca3af',
+    BLACK:  '#e5e7eb', PURPLE: '#9f7aea',
+    Gold:   '#c9a84c', Grey: '#9ca3af',
+    Black:  '#e5e7eb', Purple: '#9f7aea',
+  };
+  const SQUAD_PTS_COLOR = {
+    trail_journal:   { bg:'rgba(44,74,53,.4)',   text:'#7dd3a8' },
+    trailback_panel: { bg:'rgba(92,61,143,.4)',  text:'#c4b5fd' },
+  };
+
+  function timeAgo(ts) {
+    const diff = Date.now() - ts;
+    const m = Math.floor(diff / 60000);
+    if (m < 1)  return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h / 24);
+    return d === 1 ? 'yesterday' : `${d} days ago`;
+  }
+
+  function typeLabel(type) {
+    if (type === 'trailback_panel') return '🏔️';
+    return '🌱';
+  }
+
+  async function loadTicker() {
+    try {
+      const loaded = await gasCallLocal_({ action: 'load' });
+      const rows = loaded && loaded.value != null ? [{ value: loaded.value }] : [];
+      const coc = rows?.[0]?.value || {};
+      const log = (coc.freudenLog || []).slice(-8).reverse();
+
+      const scroll = document.getElementById('frd-scroll');
+      if (!log.length) {
+        scroll.innerHTML = '<div class="frd-empty">No growth moments yet — be the first to earn one.</div>';
+        return;
+      }
+
+      const ptsConfig = SQUAD_PTS_COLOR;
+      scroll.innerHTML = log.map((entry, i) => {
+        const color  = SQUAD_COLOR[entry.squad] || '#9ca3af';
+        const ptsCfg = ptsConfig[entry.type] || ptsConfig.trail_journal;
+        const icon   = typeLabel(entry.type);
+        const delay  = i * 0.06;
+        return `<div class="frd-item" style="animation-delay:${delay}s">
+          <div class="frd-item-icon">${icon}</div>
+          <div class="frd-item-body">
+            <div class="frd-item-msg">
+              <span class="frd-item-squad" style="color:${color}">${entry.squad}</span>
+              — ${entry.message || 'A Mountaineer earned a growth point'}
+            </div>
+            <div class="frd-item-time">${timeAgo(entry.ts)}</div>
+          </div>
+          <div class="frd-item-pts" style="background:${ptsCfg.bg};color:${ptsCfg.text}">
+            +${entry.pts || 1}
+          </div>
+        </div>`;
+      }).join('');
+
+    } catch(e) {
+      console.error('Freudenfreude ticker error:', e);
+      document.getElementById('frd-scroll').innerHTML =
+        '<div class="frd-empty">Could not load growth moments.</div>';
+    }
+  }
+
+  loadTicker();
+  // Auto-refresh every 60 seconds
+  setInterval(loadTicker, 60000);
+  window.loadFrdTicker = loadTicker;
+})();
+</script>
+<script>
+/* Growth Leaderboard */
+(function() {
+  // Self-contained on purpose -- do NOT call window.gasCall_ here. This is a plain <script>
+  // tag that runs immediately as the parser reaches it; the big <script type="module"> that
+  // defines window.gasCall_ is implicitly deferred (module scripts always execute after the
+  // whole page has parsed), so window.gasCall_ doesn't exist yet at this point. Duplicating a
+  // tiny local copy avoids that race entirely -- same reason COC_URL/COC_ANON used to be
+  // duplicated locally in every widget before the migration.
+  // Loads the site data from Apps Script (window.gasRun_ is defined in Index.html).
+  function gasCallLocal_(body){ return window.gasRun_('clashLoad'); }
+
+  const SQUADS = ['Gold','Grey','Black','Purple'];
+  const SQUAD_COLOR = { Gold:'#c9a84c', Grey:'#9ca3af', Black:'#e5e7eb', Purple:'#9f7aea' };
+  const SQUAD_BG    = { Gold:'#c9a84c', Grey:'#6b7280', Black:'#374151', Purple:'#7c5db5' };
+  const MEDALS      = ['🥇','🥈','🥉','4️⃣'];
+
+  async function loadGrowth() {
+    try {
+      const loaded = await gasCallLocal_({ action: 'load' });
+      const rows = loaded && loaded.value != null ? [{ value: loaded.value }] : [];
+      const coc  = rows?.[0]?.value || {};
+
+      // Tally growth points per squad by event type
+      const tjPts    = { Gold:0, Grey:0, Black:0, Purple:0 };
+      const panelPts = { Gold:0, Grey:0, Black:0, Purple:0 };
+      const bonusPts = { Gold:0, Grey:0, Black:0, Purple:0 };
+      const starPts  = { Gold:0, Grey:0, Black:0, Purple:0 }; // STAR growth (sent by Define a Climb-er)
+
+      (coc.events || []).forEach(evt => {
+        if (!evt.pts) return;
+        SQUADS.forEach(sq => {
+          const p = evt.pts[sq.toUpperCase()] || 0;
+          if (!p) return;
+          if (evt.type === 'trail_journal')   tjPts[sq]    += p;
+          if (evt.type === 'trailback_panel') panelPts[sq] += p;
+          if (evt.type === 'community_bonus') bonusPts[sq] += p;
+          if (evt.type === 'star_growth')     starPts[sq]  += p;
+        });
+      });
+
+      // Sort by total growth pts
+      const sorted = SQUADS.map(sq => ({
+        squad: sq,
+        tj: tjPts[sq],
+        panel: panelPts[sq],
+        bonus: bonusPts[sq],
+        star: starPts[sq],
+        total: tjPts[sq] + panelPts[sq] + bonusPts[sq] + starPts[sq],
+      })).sort((a,b) => b.total - a.total);
+
+      const maxTotal = Math.max(...sorted.map(s => s.total), 1);
+      const hasAny   = sorted.some(s => s.total > 0);
+
+      const container = document.getElementById('growth-rows');
+      if (!hasAny) {
+        container.innerHTML = '<div class="growth-empty">No growth points yet — complete a Trail Journal or Trailback Panel to get started.</div>';
+        return;
+      }
+
+      container.innerHTML = sorted.map((s, i) => {
+        const barW  = Math.round((s.total / maxTotal) * 100);
+        const color = SQUAD_COLOR[s.squad];
+        const bg    = SQUAD_BG[s.squad];
+        const chips = [
+          s.tj    > 0 ? `<span class="growth-chip chip-tj">🌱 +${s.tj} TJ</span>` : '',
+          s.panel > 0 ? `<span class="growth-chip chip-panel">🏔️ +${s.panel} Panel</span>` : '',
+          s.bonus > 0 ? `<span class="growth-chip chip-bonus">🎯 +${s.bonus} Bonus</span>` : '',
+          s.star  > 0 ? `<span class="growth-chip chip-star">📈 +${s.star} STAR</span>` : '',
+        ].filter(Boolean).join('');
+
+        return `<div class="growth-row ${i===0?'rank-1':''}">
+          <div class="growth-rank">${MEDALS[i] || i+1}</div>
+          <div class="growth-squad-dot" style="background:${bg}"></div>
+          <div class="growth-squad-name" style="color:${color}">${s.squad}</div>
+          <div class="growth-bar-wrap">
+            <div class="growth-bar-track">
+              <div class="growth-bar-fill" style="width:${barW}%;background:${color}"></div>
+            </div>
+            <div class="growth-pts" style="color:${color}">${s.total}</div>
+            <div class="growth-pts-label">pts</div>
+          </div>
+          ${chips ? `<div class="growth-chips">${chips}</div>` : ''}
+        </div>`;
+      }).join('');
+
+    } catch(e) {
+      console.error('Growth board error:', e);
+      document.getElementById('growth-rows').innerHTML =
+        '<div class="growth-empty">Could not load growth standings.</div>';
+    }
+  }
+
+  loadGrowth();
+  setInterval(loadGrowth, 90000);
+  window.loadGrowthBoard = loadGrowth;
+})();
+</script>

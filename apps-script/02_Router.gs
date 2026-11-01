@@ -65,6 +65,8 @@ function doPost(e) {
 }
 
 function doGet(e) {
+  // No ?action= → the site itself (03_Web.gs). ?action=load|meta is the old read-only API.
+  if (!e || !e.parameter || !e.parameter.action) return serveSite_(e);
   return handleRequest_(e, 'GET');
 }
 
@@ -98,14 +100,13 @@ function handleRequest_(e, method) {
     let result;
     switch (body.action) {
       case 'load':
-        result = loadAppData_('coc');
+        result = publicLoad_();
         break;
       case 'meta':
         result = getAppDataMeta_('coc');
         break;
-      case 'save':
-        result = saveAppData_('coc', body.value);
-        break;
+      // No 'save' here any more: the old token was in the public page source. Saving now
+      // needs an admin sign-in through the site (clashSave in 03_Web.gs).
       default:
         throw new Error('Unknown action: ' + body.action);
     }
@@ -243,7 +244,8 @@ function loadAppData_(key) {
  * (e.g. someone removes a gallery photo), so an in-place partial overwrite could leave stale
  * trailing chunks behind if not handled carefully. Delete-then-append avoids that entirely.
  */
-function saveAppData_(key, value) {
+function saveAppData_(key, value, opts) {
+  opts = opts || {};
   if (value === undefined) throw new Error('save requires a value');
   const sheet = getSheet_(TABS.APP_DATA);
   const data = sheet.getDataRange().getValues();
@@ -254,13 +256,14 @@ function saveAppData_(key, value) {
   const events = Array.isArray(value.events) ? value.events : [];
   const rest = Object.assign({}, value);
   delete rest.events;
-  writeEventsTab_(events);
+  if (!opts.skipEventsTab) writeEventsTab_(events); // a poll vote leaves the events tab alone
 
   // Same split for metrics: the attendance/referral/grades numbers live in their own tab;
   // only the free-text month label stays in the blob (see the matching comment in
   // loadAppData_ and the SCHEMA.metrics comment in 01_Config.gs).
   if (value.metrics) {
-    writeMetricsTab_(value.metrics);
+    // skipMetricsTab: the page didn't change the numbers, so keep what the squad sync wrote.
+    if (!opts.skipMetricsTab) writeMetricsTab_(value.metrics);
     rest.metrics = { month: value.metrics.month || '' };
   }
 

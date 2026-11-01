@@ -1,0 +1,211 @@
+// Offline checks for the Clash of Classes Apps Script backend: fake Google services, real .gs code.
+//   node tests/clash.test.js
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+const assert = require('assert');
+
+const dir = path.join(__dirname, '..', 'apps-script');
+let passed = 0;
+function test(name, fn) { fn(); passed++; console.log('ok - ' + name); }
+
+function makeSheet(name, rows) {
+  const sheet = {
+    rows: rows.map(r => r.slice()),
+    getName: () => name,
+    getLastRow() { return this.rows.length; },
+    getLastColumn() { return this.rows.reduce((m, r) => Math.max(m, r.length), 0); },
+    getDataRange() { const s = this; return { getValues: () => s.rows.map(r => r.slice()) }; },
+    getRange(r, c, nr, nc) {
+      const s = this; nr = nr || 1; nc = nc || 1;
+      let proxy;
+      const api = {
+        getValues: () => { const out = []; for (let i = 0; i < nr; i++) { const row = s.rows[r - 1 + i] || []; out.push(Array.from({ length: nc }, (_, j) => row[c - 1 + j] == null ? '' : row[c - 1 + j])); } return out; },
+        setValues(vals) { vals.forEach((row, i) => { s.rows[r - 1 + i] = s.rows[r - 1 + i] || []; row.forEach((v, j) => { s.rows[r - 1 + i][c - 1 + j] = v; }); }); return proxy; },
+        setValue(v) { return api.setValues([[v]]); },
+        clearContent() { for (let i = 0; i < nr; i++) { const row = s.rows[r - 1 + i]; if (row) for (let j = 0; j < nc; j++) row[c - 1 + j] = ''; } return proxy; },
+      };
+      proxy = new Proxy(api, { get: (t, p) => p in t ? t[p] : () => proxy });
+      return proxy;
+    },
+    appendRow(row) { this.rows.push(row.slice()); },
+    deleteRow(n) { this.rows.splice(n - 1, 1); },
+    setFrozenRows() {}, setColumnWidth() {},
+  };
+  return sheet;
+}
+
+function world(opts) {
+  opts = opts || {};
+  const blob = Object.assign({ password: 'oldpw', poll: { active: true, question: 'Best squad?', options: ['A', 'B'], votes: { 0: 2 } }, metrics: { month: 'Oct' }, nextId: 103 }, opts.blob || {});
+  const json = JSON.stringify(blob);
+  const sheets = [
+    makeSheet('app_data', [['key', 'chunk_index', 'value_chunk', 'updated_at'], ['coc', 0, json, '2026-10-01']]),
+    makeSheet('events', [['id', 'name', 'type', 'date', 'note', 'multiplier', 'BLACK', 'GOLD', 'GREY', 'PURPLE'],
+      [101, 'Kickoff', 'event', '2026-09-01', '', '', 10, 0, 0, 0],
+      [102, 'Bill', 'trait_dough', '2026-10-01', '', '', 0, 5, 0, 0]]),
+    makeSheet('metrics', [['squad', 'attendance', 'referral', 'grades'], ['BLACK', 90, 80, 70], ['GOLD', 91, 81, 71], ['GREY', 92, 82, 72], ['PURPLE', 93, 83, 73]]),
+  ];
+  const book = {
+    getSheets: () => sheets,
+    getSheetByName: n => sheets.find(s => s.getName() === n) || null,
+    insertSheet(n) { const s = makeSheet(n, []); sheets.push(s); return s; },
+    getId: () => 'CLASH', deleteSheet() {}, setActiveSheet() {}, moveActiveSheet() {},
+  };
+  const tj = { getSheetByName: n => n === 'reflections' ? makeSheet(n, [['student_name', 'insight_level', 'created_at'], ['Ann', 'High', new Date('2026-10-02T12:00:00Z')]])
+    : n === 'panel_sessions' ? makeSheet(n, [['clash_squad', 'status'], ['GOLD', 'complete']]) : null };
+  const cache = {};
+  const props = {};
+  const ctx = {
+    console, JSON, Math, Date, Object, Array, String, Number,
+    SpreadsheetApp: { getActiveSpreadsheet: () => book, openById: id => { if (id !== '1rinTrtlmJKQrvtn5GVs-ngmaQRvkl8Nt39yOBICgggA') throw new Error('no ' + id); return tj; }, getUi: () => ({ alert() {} }) },
+    DriveApp: { getFileById: () => ({ getLastUpdated: () => new Date('2026-10-31T10:00:00Z') }) },
+    CacheService: { getScriptCache: () => ({ get: k => cache[k] || null, put: (k, v) => { cache[k] = v; } }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: k => props[k] || null, setProperty: (k, v) => { props[k] = v; } }) },
+    LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
+    Utilities: {
+      getUuid: (() => { let n = 0; return () => 'uuid-' + (++n); })(),
+      computeDigest: (alg, s) => Array.from(require('crypto').createHash('sha256').update(s).digest()).map(b => b > 127 ? b - 256 : b),
+      DigestAlgorithm: { SHA_256: 'sha256' }, Charset: { UTF_8: 'utf8' },
+      formatDate: d => d.toISOString().slice(0, 10),
+    },
+    Session: { getScriptTimeZone: () => 'America/New_York' },
+    HtmlService: {}, ContentService: {},
+  };
+  vm.createContext(ctx);
+  const src = fs.readdirSync(dir).filter(f => f.endsWith('.gs')).sort().map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
+  vm.runInContext(src, ctx);
+  ctx.book = book; ctx.props = props;
+  return ctx;
+}
+
+const events = w => w.book.getSheetByName('events').rows.slice(1);
+const login = (w, pw) => JSON.parse(w.clashLogin(pw)).token;
+
+test('load leaves the password out', () => {
+  const w = world();
+  const v = JSON.parse(w.clashLoad()).value;
+  assert.strictEqual(v.password, undefined);
+  assert.strictEqual(v.events.length, 2);
+  assert.deepStrictEqual(v.metrics.attendance, { BLACK: 90, GOLD: 91, GREY: 92, PURPLE: 93 });
+});
+
+test('sign-in: old site password works once and is then stored only as a hash', () => {
+  const w = world();
+  assert.throws(() => w.clashLogin('nope'), /Incorrect/);
+  assert.ok(login(w, 'oldpw'));
+  assert.ok(w.props.ADMIN_PW_HASH && w.props.ADMIN_PW_HASH !== 'oldpw');
+  assert.ok(!JSON.stringify(w.props).includes('oldpw'), 'never stored as plain text');
+  const t = login(w, 'oldpw');
+  w.clashSetPassword(t, 'newpass');
+  assert.throws(() => w.clashLogin('oldpw'), /Incorrect/);
+  assert.throws(() => w.clashLogin('ephrata2026'), /Incorrect/, 'built-in password no longer works once one is set');
+  assert.ok(login(w, 'newpass'));
+});
+
+test('too many wrong passwords locks sign-in for a while', () => {
+  const w = world();
+  for (let i = 0; i < 10; i++) assert.throws(() => w.clashLogin('x' + i));
+  assert.throws(() => w.clashLogin('oldpw'), /Too many/);
+});
+
+test('save needs an admin session', () => {
+  const w = world();
+  assert.throws(() => w.clashSave('', '{}', '{}'), /sign in/);
+  assert.throws(() => w.clashSave('made-up', '{}', '{}'), /sign in/);
+});
+
+test('save keeps points another project added after the page loaded, and drops ones the admin deleted', () => {
+  const w = world();
+  const t = login(w, 'oldpw');
+  const D = JSON.parse(w.clashLoad()).value;
+  const sync = { seen: D.events.map(e => e.id + '|' + e.name), metrics: { attendance: D.metrics.attendance, referral: D.metrics.referral, grades: D.metrics.grades } };
+  // Meanwhile Mindset appends a row (blank id) to the events tab.
+  w.book.getSheetByName('events').appendRow(['', 'Mindset Summit', 'mountaineer_mindset', '2026-10-31', '', '', 0, 0, 3, 0]);
+  // The admin deletes Kickoff and adds an event with the next id (103, the id the new row will also get).
+  D.events = D.events.filter(e => e.name !== 'Kickoff');
+  D.events.push({ id: 103, name: 'Pep rally', type: 'event', date: '2026-10-31', note: '', pts: { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 50 } });
+  const res = JSON.parse(w.clashSave(t, JSON.stringify(D), JSON.stringify(sync)));
+  assert.strictEqual(res.keptFromOthers, 1);
+  const rows = events(w);
+  assert.deepStrictEqual(rows.map(r => r[1]).sort(), ['Bill', 'Mindset Summit', 'Pep rally']);
+  const ids = rows.map(r => r[0]);
+  assert.strictEqual(new Set(ids).size, ids.length, 'no duplicate ids');
+  assert.strictEqual(rows.find(r => r[1] === 'Mindset Summit')[8], 3);
+});
+
+test('save leaves the metrics tab alone unless the admin changed the numbers', () => {
+  const w = world();
+  const t = login(w, 'oldpw');
+  const D = JSON.parse(w.clashLoad()).value;
+  const sync = { seen: D.events.map(e => e.id + '|' + e.name), metrics: JSON.parse(JSON.stringify({ attendance: D.metrics.attendance, referral: D.metrics.referral, grades: D.metrics.grades })) };
+  // The hourly squad sync writes new numbers after the page loaded.
+  w.book.getSheetByName('metrics').rows[1][1] = 99;
+  w.clashSave(t, JSON.stringify(D), JSON.stringify(sync));
+  assert.strictEqual(w.book.getSheetByName('metrics').rows[1][1], 99, 'sync numbers kept');
+  D.metrics.grades.GOLD = 55;
+  w.clashSave(t, JSON.stringify(D), JSON.stringify(sync));
+  assert.strictEqual(w.book.getSheetByName('metrics').rows[2][3], 55, 'admin edit written');
+});
+
+test('save never puts the password back into the site data', () => {
+  const w = world();
+  const t = login(w, 'oldpw');
+  const D = JSON.parse(w.clashLoad()).value;
+  D.password = 'sneaky';
+  w.clashSave(t, JSON.stringify(D), '{}');
+  assert.ok(!w.book.getSheetByName('app_data').rows.slice(1).map(r => r[2]).join('').includes('sneaky'));
+});
+
+test('poll vote: no sign-in, moves a changed vote, closed poll refuses', () => {
+  const w = world();
+  assert.deepStrictEqual(JSON.parse(w.clashVote('Best squad?', 1, -1)), { 0: 2, 1: 1 });
+  assert.deepStrictEqual(JSON.parse(w.clashVote('Best squad?', 0, 1)), { 0: 3, 1: 0 });
+  assert.throws(() => w.clashVote('Old question', 0, -1), /closed/);
+  assert.throws(() => w.clashVote('Best squad?', 5, -1), /Unknown/);
+  assert.strictEqual(events(w).length, 2, 'events untouched');
+});
+
+test('old API: load has no password and save is gone', () => {
+  const w = world();
+  w.props.APP_TOKEN = 'tok';
+  let out;
+  w.respondOut_ = o => { out = o; };
+  w.handleRequest_({ parameter: { action: 'load', token: 'tok' } }, 'GET');
+  assert.strictEqual(out.ok, true);
+  assert.strictEqual(out.data.value.password, undefined);
+  w.handleRequest_({ parameter: { payload: JSON.stringify({ action: 'save', token: 'tok', value: {} }) } }, 'POST');
+  assert.strictEqual(out.ok, false);
+  assert.ok(/Unknown action/.test(out.error));
+});
+
+test('Trail Journal stats read counts only, no names', () => {
+  const w = world();
+  w.ensureSettings_();
+  const s = JSON.parse(w.clashTrailJournalStats());
+  assert.deepStrictEqual(s.reflections, [{ insight_level: 'High', created_at: '2026-10-02T12:00:00.000Z' }]);
+  assert.deepStrictEqual(s.panels, [{ clash_squad: 'GOLD', status: 'complete' }]);
+  assert.ok(!JSON.stringify(s).includes('Ann'));
+});
+
+test('Settings tab: defaults added once, edits win, pasted links become IDs', () => {
+  const w = world();
+  w.ensureSettings_();
+  const st = w.book.getSheetByName('Settings');
+  assert.ok(st.rows.length > 3);
+  st.rows.find(r => r[0] === 'POLL_SECONDS')[1] = '10';
+  st.rows.find(r => r[0] === 'TJ_SHEET_ID')[1] = 'https://docs.google.com/spreadsheets/d/1rinTrtlmJKQrvtn5GVs-ngmaQRvkl8Nt39yOBICgggA/edit#gid=0';
+  w.ensureSettings_();
+  assert.strictEqual(w.getSetting_('POLL_SECONDS'), '10');
+  assert.strictEqual(w.getSetting_('TJ_SHEET_ID'), '1rinTrtlmJKQrvtn5GVs-ngmaQRvkl8Nt39yOBICgggA');
+});
+
+test('page files: scripts parse, no old token or Supabase key left', () => {
+  for (const f of ['App.html', 'Widgets.html', 'Index.html']) {
+    const h = fs.readFileSync(path.join(dir, f), 'utf8');
+    assert.ok(!/togetherweclimb4444HOPE|supabase\.co|TJ_ANON|ephrata2026/.test(h), f + ' has no secrets');
+    [...h.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].forEach(m => new vm.Script(m[1].replace(/<\?!=[\s\S]*?\?>/g, '{}')));
+  }
+});
+
+console.log('\n' + passed + ' tests passed');
