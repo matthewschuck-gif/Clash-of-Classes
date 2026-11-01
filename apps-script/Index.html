@@ -209,6 +209,15 @@
   <div id="mySquadApp"></div>
 </div>
 
+<div class="page" id="page-hq">
+  <div class="page-hero">
+    <h1 class="page-title">Generals <span>HQ</span></h1>
+    <div class="page-subtitle">For Squad Generals: roster, sign-ups, Mayhem checklist, hype script and squad meetings</div>
+  </div>
+  <div id="hqApp"></div>
+  <div class="hq-meet" id="hqMeetView"></div>
+</div>
+
 <div class="page" id="page-generals">
   <div class="page-hero">
     <h1 class="page-title">Squad <span>Generals</span></h1>
@@ -2297,6 +2306,7 @@ document.addEventListener('click', function (ev) {
 <?!= include('App'); ?>
 <?!= include('Widgets'); ?>
 <?!= include('Student'); ?>
+<?!= include('Generals'); ?>
 
 <div class="overlay" id="embedOverlay" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal" style="max-width:560px">

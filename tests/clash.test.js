@@ -273,8 +273,55 @@ test('TV feed: latest points with labels; badge leaders only when TV_SHOW_NAMES 
   assert.deepStrictEqual(f.stars, []);
 });
 
+test('Generals HQ: General + code only, own squad only, everyone placed before doubling, checklist, service', () => {
+  const w = world();
+  addStudentTabs(w); // Ann L. (Gold), Bo K. (Grey) on the Student Board
+  w.ensureSettings_();
+  w.ensureGeneralsTabs_();
+  const board = w.book.getSheetByName('Student Board');
+  board.rows.push(['8007777', 'Gia P.', 'Gold', '8', '0', '0', '0', '0', '', '0', '0', '0', '', '', '']);
+  w.book.getSheetByName('MLC Roster').rows.push(['8007777', 'Gia P.', 'Gold', 'General', ''], ['8001234', 'Ann L.', 'Gold', 'Hype Captain', ''],
+    ['8005678', 'Bo K.', 'Grey', 'Vanguard', '']);
+  w.book.getSheetByName('Sign-up Events').rows.push(['Dodgeball', '2026-11-20', 2, true], ['Lip Sync', '', '', false]);
+  assert.throws(() => w.clashGeneralsSignIn('8007777', 'x'), /isn't open yet/);
+  w.setSettingValue_('GENERALS_CODE', 'Summit');
+  assert.throws(() => w.clashGeneralsSignIn('8001234', 'summit'), /don't match/, 'a Captain is not a General');
+  const t = JSON.parse(w.clashGeneralsSignIn('800-7777', 'summit')).token;
+  let hq = JSON.parse(w.clashGeneralsHq(t));
+  assert.strictEqual(hq.squad, 'GOLD');
+  assert.deepStrictEqual(hq.roster.map(s => s.name).sort(), ['Ann L.', 'Gia P.'], 'Gold only');
+  assert.strictEqual(hq.notPlaced, 2);
+  assert.strictEqual(hq.theme.theme, 'Hope');
+  assert.deepStrictEqual(hq.leaders.map(l => l.role).sort(), ['General', 'Hype Captain']);
+  hq = JSON.parse(w.clashGeneralsSignUp(t, 'Dodgeball', '8001234', false));
+  assert.strictEqual(hq.notPlaced, 1);
+  assert.deepStrictEqual(hq.roster[0].name, 'Gia P.', 'not-placed students are listed first');
+  assert.throws(() => w.clashGeneralsSignUp(t, 'Dodgeball', '8005678', false), /isn't on your squad/);
+  assert.throws(() => w.clashGeneralsSignUp(t, 'Lip Sync', '8007777', false), /closed/);
+  w.clashGeneralsSignUp(t, 'Dodgeball', '8007777', false);
+  w.book.getSheetByName('Student Board').rows.push(['8008888', 'Hal M.', 'Gold', '7', '0', '0', '0', '0', '', '0', '0', '0', '', '', '']);
+  assert.throws(() => w.clashGeneralsSignUp(t, 'Dodgeball', '8008888', false), /full/);
+  hq = JSON.parse(w.clashGeneralsSignUp(t, 'Dodgeball', '8001234', true));
+  assert.strictEqual(hq.events[0].taken, 1, 'removed');
+  const item = hq.mayhem[0];
+  assert.strictEqual(hq.mayhem.length, 12);
+  hq = JSON.parse(w.clashGeneralsChecklist(t, item.row, true));
+  assert.strictEqual(hq.mayhem[0].done, true);
+  const grey = JSON.parse(w.clashGeneralsHq(t)).mayhem; // still Gold's list
+  assert.ok(grey.every(m => m.row !== undefined));
+  w.book.getSheetByName('Squad Themes').rows[2][4] = 10; // Gold service goal
+  hq = JSON.parse(w.clashGeneralsService(t, 4));
+  assert.deepStrictEqual([hq.theme.goal, hq.theme.progress], [10, 4]);
+  // My Squad shows public roles and the theme; Vanguard stays private.
+  const ann = JSON.parse(w.clashMyPage('8001234'));
+  assert.deepStrictEqual(ann.roles, ['Hype Captain']);
+  assert.strictEqual(ann.theme.theme, 'Hope');
+  assert.deepStrictEqual(JSON.parse(w.clashMyPage('8005678')).roles, [], 'Vanguard is not shown');
+  assert.throws(() => w.clashGeneralsHq('made-up'), /sign in/);
+});
+
 test('page files: scripts parse, no old token or Supabase key left', () => {
-  for (const f of ['App.html', 'Widgets.html', 'Index.html', 'Student.html']) {
+  for (const f of ['App.html', 'Widgets.html', 'Index.html', 'Student.html', 'Generals.html']) {
     const h = fs.readFileSync(path.join(dir, f), 'utf8');
     assert.ok(!/togetherweclimb4444HOPE|supabase\.co|TJ_ANON|ephrata2026/.test(h), f + ' has no secrets');
     [...h.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].forEach(m => new vm.Script(m[1].replace(/<\?!=[\s\S]*?\?>/g, '{}')));

@@ -75,6 +75,8 @@ function clashMyPage(id) {
     standing: standingFor_(squad, totals),
     challenges: challengeProgress_().filter(function (c) { return c.active; }),
     allBadges: badgeNames_(),
+    roles: publicRoles_()[want] || [], // Mountaineer Leadership Corps roles (MLC Roster tab)
+    theme: squadTheme_(squad),
   });
 }
 

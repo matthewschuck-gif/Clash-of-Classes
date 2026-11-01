@@ -117,6 +117,9 @@
       '<div class="ms-card" style="border-color:' + COLOR[me.squad] + '">' +
         '<div class="ms-hello">Hi, ' + esc(me.name) + '!</div>' +
         (me.squad ? '<span class="ms-squad" style="background:' + COLOR[me.squad] + '">' + me.squad + ' SQUAD</span>' : '') +
+        (r.roles || []).map(function (x) { return ' <span class="ms-badge" style="padding:4px 10px">⭐ ' + esc(x) + '</span>'; }).join('') +
+        (r.theme && r.theme.theme ? '<div class="ms-standing">Squad theme: <b>' + esc(r.theme.theme) + '</b>' + (r.theme.meaning ? ' · ' + esc(r.theme.meaning) : '') +
+          (r.theme.project ? '<br>Service project: ' + esc(r.theme.project) + (r.theme.goal ? ' (' + r.theme.progress + ' of ' + r.theme.goal + ')' : '') : '') + '</div>' : '') +
         '<div class="ms-standing">' + standing + '</div></div>' +
       '<div class="ms-card"><div class="ms-h">What you\'ve added</div><div class="ms-tiles">' +
         tiles.map(function (t) { return '<div class="ms-tile"><div class="ms-tile-val">' + esc(t[0]) + '</div><div class="ms-tile-lbl">' + esc(t[1]) + '</div></div>'; }).join('') +

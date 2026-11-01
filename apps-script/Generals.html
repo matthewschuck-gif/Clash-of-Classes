@@ -1,0 +1,160 @@
+<style>
+/* ── Generals HQ (Generals.html) ── */
+.hq-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 14px; }
+.hq-tab { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-weight: 600; font-size: 13px; }
+.hq-tab.on { background: var(--gold-soft, #fbbf24); color: #111; border-color: transparent; }
+.hq-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--border); }
+.hq-row:first-child { border-top: 0; }
+.hq-pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--surface2); margin: 2px 2px 0 0; }
+.hq-pill.need { background: rgba(248,113,113,.15); color: #f87171; }
+.hq-pill.role { background: rgba(251,191,36,.15); color: var(--gold-soft, #fbbf24); }
+.hq-select { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; font-size: 13px; max-width: 220px; }
+.hq-check { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--border); cursor: pointer; }
+.hq-check input { width: 20px; height: 20px; margin-top: 2px; }
+.hq-script { white-space: pre-wrap; background: var(--surface2); border-radius: 12px; padding: 16px; font-size: 15px; line-height: 1.6; }
+.hq-meet { position: fixed; inset: 0; background: #0f0a1e; color: #fff; z-index: 100000; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 5vw; }
+.hq-meet.on { display: flex; }
+.hq-meet h2 { font-family: 'Fraunces', serif; font-size: clamp(28px, 5vw, 64px); margin: 0 0 18px; color: var(--gold-soft, #fbbf24); }
+.hq-meet .hq-mbody { font-size: clamp(18px, 2.4vw, 32px); max-width: 1100px; line-height: 1.5; }
+.hq-meet .hq-mnav { position: absolute; bottom: 24px; left: 0; right: 0; display: flex; gap: 12px; justify-content: center; align-items: center; }
+.hq-mbtn { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.3); border-radius: 10px; padding: 10px 16px; font-size: 16px; cursor: pointer; }
+</style>
+<script>
+/* Generals HQ: sign in with 800# + the Generals code; manage your squad (05_Generals.gs). */
+(function () {
+  var SQ = ['BLACK', 'GOLD', 'GREY', 'PURPLE'];
+  var COLOR = { BLACK: 'var(--sq-black, #c5c9d1)', GOLD: 'var(--sq-gold, #ffe100)', GREY: 'var(--sq-grey, #99a8bb)', PURPLE: 'var(--sq-purple, #bb8ef5)' };
+  var token = '', data = null, view = 'roster', meet = 0;
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function title(s) { return s ? s.charAt(0) + s.slice(1).toLowerCase() : ''; }
+  function el() { return document.getElementById('hqApp'); }
+
+  function signIn() {
+    el().innerHTML = '<div class="ms-card"><div class="ms-h">Generals HQ: sign in</div>' +
+      '<div class="ms-form"><input id="hq800" inputmode="numeric" placeholder="Your 800 number"><input id="hqCode" type="password" placeholder="Generals code"><button class="btn btn-purple" id="hqGo">Open HQ</button></div>' +
+      '<div class="ms-err" id="hqErr"></div><div class="ms-small">Only Squad Generals on the MLC Roster can open HQ. Ask your staff advisor for the code.</div></div>';
+    var go = function () {
+      var e = document.getElementById('hqErr'); e.textContent = 'Checking…';
+      window.gasRun_('clashGeneralsSignIn', document.getElementById('hq800').value, document.getElementById('hqCode').value).then(function (r) {
+        token = r.token; load();
+      }).catch(function (x) { e.textContent = x.message.replace(/^Exception:\s*/, ''); });
+    };
+    document.getElementById('hqGo').onclick = go;
+    document.getElementById('hqCode').onkeydown = function (ev) { if (ev.key === 'Enter') go(); };
+  }
+
+  function load() { window.gasRun_('clashGeneralsHq', token).then(function (d) { data = d; render(); }).catch(fail); }
+  function act(fn) { var args = Array.prototype.slice.call(arguments, 1); return window.gasRun_.apply(null, [fn, token].concat(args)).then(function (d) { data = d; render(); }).catch(function (x) { alert(x.message.replace(/^Exception:\s*/, '')); }); }
+  function fail(x) { if (/sign in/i.test(x.message)) { token = ''; signIn(); } else el().innerHTML = '<div class="ms-card ms-err">' + esc(x.message) + '</div>'; }
+
+  function render() {
+    var d = data, st = d.standing, sq = d.squad;
+    var head = '<div class="ms-card" style="border-color:' + COLOR[sq] + '"><div class="ms-hello">⚔️ ' + title(sq) + ' Squad HQ</div>' +
+      '<div class="ms-standing">General ' + esc(d.me.name) + (st ? ' · <b>' + ['1st', '2nd', '3rd', '4th'][st.place - 1] + ' place</b>, ' + st.total.toLocaleString() + ' pts' +
+        (st.place > 1 ? ' (' + st.behindBy + ' behind ' + title(st.ahead) + ')' : ' (leading by ' + st.leadBy + ')') : '') + '</div>' +
+      (d.theme ? '<div class="ms-standing">Theme: <b>' + esc(d.theme.theme) + '</b> · ' + esc(d.theme.meaning) + '</div>' : '') +
+      '<div class="ms-standing"><b style="color:#f87171">' + d.notPlaced + '</b> of ' + d.roster.length + ' squad members not placed in an event yet.</div></div>';
+    var tabs = [['roster', '👥 Roster & sign-ups'], ['mayhem', '⚡ Mayhem checklist'], ['hype', '📣 Hype script'], ['meeting', '🎤 Squad meeting'], ['service', '🤝 Service project']];
+    var body = { roster: rosterView, mayhem: mayhemView, hype: hypeView, meeting: meetingView, service: serviceView }[view]();
+    el().innerHTML = head + '<div class="hq-tabs">' + tabs.map(function (t) { return '<button class="hq-tab' + (view === t[0] ? ' on' : '') + '" data-v="' + t[0] + '">' + t[1] + '</button>'; }).join('') +
+      '<button class="hq-tab" data-v="out">Sign out</button></div>' + body;
+    el().querySelectorAll('.hq-tab').forEach(function (b) { b.onclick = function () { if (b.dataset.v === 'out') { token = ''; signIn(); return; } view = b.dataset.v; render(); }; });
+    wire();
+  }
+
+  // Everyone placed once before anyone doubles up (Generals Handbook): least-placed first.
+  function rosterView() {
+    var d = data;
+    var open = d.events.filter(function (e) { return e.open; });
+    var opts = open.map(function (e) { return '<option value="' + esc(e.event) + '">' + esc(e.event) + (e.spots ? ' (' + e.taken + '/' + e.spots + ')' : '') + '</option>'; }).join('');
+    return '<div class="ms-card"><div class="ms-h">Events open for sign-up</div>' +
+      (d.events.length ? d.events.map(function (e) { return '<span class="hq-pill">' + esc(e.event) + (e.date ? ' · ' + esc(e.date) : '') + ' · ' + e.taken + (e.spots ? '/' + e.spots : '') + (e.open ? '' : ' · closed') + '</span>'; }).join('') : '<span class="ms-small">Staff add events on the Sign-up Events tab.</span>') + '</div>' +
+      '<div class="ms-card"><div class="ms-h">Squad roster (not placed yet first)</div>' +
+      d.roster.map(function (s) {
+        return '<div class="hq-row"><div><b>' + esc(s.name) + '</b>' + (s.grade ? ' <span class="ms-small">Gr ' + esc(s.grade) + '</span>' : '') + '<br>' +
+          (s.events.length ? s.events.map(function (e) { return '<span class="hq-pill" title="Click to remove" data-rm="' + esc(e) + '" data-id="' + esc(s.id) + '">✓ ' + esc(e) + ' ✕</span>'; }).join('') : '<span class="hq-pill need">Not placed yet</span>') +
+          s.roles.map(function (r) { return '<span class="hq-pill role">⭐ ' + esc(r) + '</span>'; }).join('') + '</div>' +
+          (opts ? '<div><select class="hq-select" data-add="' + esc(s.id) + '"><option value="">+ Add to event…</option>' + opts + '</select></div>' : '<div></div>') + '</div>';
+      }).join('') + '</div>';
+  }
+
+  function mayhemView() {
+    var done = data.mayhem.filter(function (m) { return m.done; }).length;
+    return '<div class="ms-card"><div class="ms-h">Mayhem Week checklist: ' + done + ' of ' + data.mayhem.length + '</div>' +
+      data.mayhem.map(function (m) { return '<label class="hq-check"><input type="checkbox" data-row="' + m.row + '"' + (m.done ? ' checked' : '') + '><span>' + esc(m.item) + '</span></label>'; }).join('') + '</div>';
+  }
+
+  function hypeText() {
+    var d = data, st = d.standing, sq = title(d.squad);
+    var next = d.events.filter(function (e) { return e.open; }).slice(0, 2);
+    var ch = (d.challenges || [])[0];
+    return 'Good morning, ' + sq + ' Squad! This is General ' + d.me.name + '.\n\n' +
+      (st ? (st.place === 1 ? 'We are in FIRST place with ' + st.total.toLocaleString() + ' points, ' + st.leadBy + ' ahead. Let\'s keep it that way!' :
+        'We are in ' + ['1st', '2nd', '3rd', '4th'][st.place - 1] + ' place, just ' + st.behindBy + ' points behind ' + title(st.ahead) + '. We can catch them!') + '\n\n' : '') +
+      (d.recent.length ? 'Shout-out for our latest points: ' + d.recent[0].name + ' (+' + d.recent[0].pts + ').\n\n' : '') +
+      (next.length ? 'Sign up now: ' + next.map(function (e) { return e.event + (e.date ? ' on ' + e.date : ''); }).join(' and ') + '. See your General!\n\n' : '') +
+      (ch ? 'This week\'s challenge: ' + ch.title + '. We\'re at ' + (ch.progress[d.squad] || 0) + ' of ' + ch.goal + '.\n\n' : '') +
+      (d.theme ? 'Remember our theme, ' + d.theme.theme + ': ' + d.theme.meaning + '\n\n' : '') +
+      'Every Trait Dough bill counts. Let\'s go, ' + sq + '!';
+  }
+  function hypeView() {
+    return '<div class="ms-card"><div class="ms-h">Morning announcement (edit it as you like)</div><div class="hq-script" contenteditable="true" id="hqHype">' + esc(hypeText()) + '</div>' +
+      '<p><button class="btn btn-purple" id="hqCopy">Copy</button></p></div>';
+  }
+
+  // The handbook's monthly squad meeting, as full-screen slides.
+  function slides() {
+    var d = data, sq = title(d.squad), st = d.standing;
+    return [
+      ['Welcome, ' + sq + ' Squad!', d.theme ? 'Our theme: <b>' + esc(d.theme.theme) + '</b><br>' + esc(d.theme.meaning) : 'Led by your Generals'],
+      ['Clash of Classes update', st ? (['1st', '2nd', '3rd', '4th'][st.place - 1] + ' place · ' + st.total.toLocaleString() + ' points<br>') +
+        SQ.map(function (s) { return '<span style="color:' + COLOR[s] + '">' + title(s) + ' ' + (d.totals[s] || 0).toLocaleString() + '</span>'; }).join(' &nbsp; ') : ''],
+      ['Recent wins', d.recent.length ? d.recent.map(function (e) { return esc(e.name) + ' <b>+' + e.pts + '</b>'; }).join('<br>') : 'Let\'s make some this month!'],
+      ['Coming up', d.events.filter(function (e) { return e.open; }).map(function (e) { return esc(e.event) + (e.date ? ' · ' + esc(e.date) : ''); }).join('<br>') || 'Watch the announcements!'],
+      ['This month' + (d.month ? ': ' + esc(d.month) : ''), (d.trait ? 'Trait: <b>' + esc(d.trait) + '</b><br>' : '') + (d.theme ? 'How is ' + sq + ' living <b>' + esc(d.theme.theme) + '</b> right now?' : '')],
+      ['Delegate voice', 'What are you hearing from the squad?'],
+      ['Service update', d.theme && d.theme.project ? esc(d.theme.project) + (d.theme.goal ? '<br>' + d.theme.progress + ' of ' + d.theme.goal : '') : 'Our service project is coming soon.'],
+      ['Let\'s go, ' + sq + '!', 'Every member placed. Every bill counts. 🔥'],
+    ];
+  }
+  function meetingView() {
+    return '<div class="ms-card"><div class="ms-h">Monthly squad meeting</div><p class="ms-small">Opening · Clash update · Wins · Coming up · This month\'s trait · Delegate voice · Service update · Close</p>' +
+      '<button class="btn btn-purple" id="hqMeet">▶ Start full screen</button></div>';
+  }
+  function showSlide() {
+    var s = slides(), m = document.getElementById('hqMeetView');
+    meet = Math.max(0, Math.min(meet, s.length - 1));
+    m.innerHTML = '<h2>' + s[meet][0] + '</h2><div class="hq-mbody">' + s[meet][1] + '</div>' +
+      '<div class="hq-mnav"><button class="hq-mbtn" id="hqPrev">◀</button><span>' + (meet + 1) + ' / ' + s.length + '</span><button class="hq-mbtn" id="hqNext">▶</button><button class="hq-mbtn" id="hqClose">✕ Close</button></div>';
+    document.getElementById('hqPrev').onclick = function () { meet--; showSlide(); };
+    document.getElementById('hqNext').onclick = function () { meet++; showSlide(); };
+    document.getElementById('hqClose').onclick = function () { m.classList.remove('on'); };
+  }
+
+  function serviceView() {
+    var t = data.theme || {};
+    return '<div class="ms-card"><div class="ms-h">Service project</div><p>' + (t.project ? esc(t.project) : 'Your staff advisor adds your project on the Squad Themes tab.') + '</p>' +
+      (t.goal ? '<div class="ch-bar"><div class="ch-fill" style="width:' + Math.min(100, Math.round(100 * t.progress / t.goal)) + '%;background:' + COLOR[data.squad] + '"></div></div><p>' + t.progress + ' of ' + t.goal + '</p>' +
+        '<div class="ms-form"><input id="hqProg" type="number" min="0" value="' + t.progress + '"><button class="btn btn-purple" id="hqSaveProg">Update progress</button></div>' : '') + '</div>';
+  }
+
+  function wire() {
+    el().querySelectorAll('select[data-add]').forEach(function (s) { s.onchange = function () { if (s.value) act('clashGeneralsSignUp', s.value, s.dataset.add, false); }; });
+    el().querySelectorAll('[data-rm]').forEach(function (p) { p.onclick = function () { if (confirm('Remove from ' + p.dataset.rm + '?')) act('clashGeneralsSignUp', p.dataset.rm, p.dataset.id, true); }; });
+    el().querySelectorAll('input[data-row]').forEach(function (c) { c.onchange = function () { act('clashGeneralsChecklist', c.dataset.row, c.checked); }; });
+    var copy = document.getElementById('hqCopy');
+    if (copy) copy.onclick = function () { try { navigator.clipboard.writeText(document.getElementById('hqHype').innerText); copy.textContent = 'Copied ✓'; } catch (e) {} };
+    var m = document.getElementById('hqMeet');
+    if (m) m.onclick = function () {
+      var v = document.getElementById('hqMeetView');
+      if (v.parentNode !== document.body) document.body.appendChild(v); // full screen above everything
+      meet = 0; v.classList.add('on'); showSlide();
+    };
+    var sp = document.getElementById('hqSaveProg');
+    if (sp) sp.onclick = function () { act('clashGeneralsService', document.getElementById('hqProg').value); };
+  }
+
+  function start() { if (el()) signIn(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>
