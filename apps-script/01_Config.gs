@@ -95,6 +95,7 @@ function setupSpreadsheet() {
   ensureLoreTab_();
   ensureEventPageTabs_();
   ensureMayhemWeekTabs_();
+  ensureShirtDesignTabs_();
   setupHelpTab_();
   SpreadsheetApp.getUi().alert('Done -- app_data, events, metrics, Settings and "How To Use This Sheet" tabs are set up. Clash of Classes has no separate PII tab (unlike Trail Journal), so there is no extra sharing/protection step required here. You can now add/edit rows directly in the events and metrics tabs and the site will pick them up within a few seconds. Staff directions live in the "How To Use This Sheet" tab -- start there.');
 }
@@ -122,6 +123,9 @@ const DEFAULT_SETTINGS = [
   ['SIGNUP_LIMIT', '3', 'Most events any student can be signed up for at a time, Generals and Captains included (counts only events that are Open on the Sign-up Events tab). 0 = no limit.'],
   ['SELF_SIGNUPS', 'OFF', 'ON = students can sign themselves up on My Squad for events with Self Sign-up ticked (Sign-up Events tab). OFF = only Generals sign students up.'],
   ['NOMINATE_FOR', 'Squad Captain (7th grade); Squad Captain (8th grade); Trailback Panel (Vanguard); Next year\'s Squad General', 'What Generals can nominate for in Generals HQ, separated by ;. Anything with "Captain" in it shows each squad\'s vote tally.'],
+  ['SHIRT_VOTING', 'OFF', 'ON = students vote on My Squad for their squad\'s Mayhem shirt design (approved designs on the Shirt Designs tab). One vote each; they can change it until you turn this OFF.'],
+  ['SHIRT_DESIGNS_PER_SQUAD', '6', 'Most designs one squad\'s Generals can upload.'],
+  ['SHIRT_DESIGN_FOLDER_ID', '', 'The private Drive folder for uploaded designs. Blank = made automatically on the first upload.'],
   ['SHIRT_POINTS', '2', 'Squad points per paid Mayhem shirt (Shirt Orders tab). Sent with Clash of Classes › Send shirt sale points.'],
   ['SQUAD_NIGHT_PRICE', '$5', 'Entry for Squad Night if a student isn\'t competing and didn\'t buy a shirt.'],
   ['SQUAD_NIGHT_POINTS', '1', 'Squad points per student who comes to Squad Night. Sent with Clash of Classes › Send Squad Night attendance points.'],

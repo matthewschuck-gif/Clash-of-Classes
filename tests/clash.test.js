@@ -579,6 +579,49 @@ test('Mayhem Week: 3-event limit, no two at once, self sign-up only when ON, cap
   assert.ok(/already sent/.test(w.sendSquadNightPoints()[0]));
 });
 
+test('Shirt designs: Generals upload to a private folder, staff approve, one changeable vote per student, own squad only', () => {
+  const w = world();
+  addStudentTabs(w); // Ann L. 8001234 Gold, Bo K. 8005678 Grey
+  w.ensureSettings_();
+  w.ensureGeneralsTabs_();
+  w.ensureShirtDesignTabs_();
+  const files = {};
+  let folders = 0;
+  w.DriveApp = {
+    createFolder: () => ({ getId: () => 'FOLDER' + (++folders) + 'xxxxxxxxxxxxxxxxxxxxxxxxx', createFile: blob => { const id = 'F' + Object.keys(files).length + 'xxxxxxxxxxxxxxxxxxxxxxxxx'; files[id] = blob; return { getId: () => id }; } }),
+    getFolderById: id => ({ createFile: blob => { const fid = 'F' + Object.keys(files).length + 'xxxxxxxxxxxxxxxxxxxxxxxxx'; files[fid] = blob; return { getId: () => fid }; } }),
+    getFileById: id => ({ getBlob: () => files[id], getLastUpdated: () => new Date() }),
+  };
+  w.Utilities.base64Decode = s => Array.from(Buffer.from(s, 'base64'));
+  w.Utilities.base64Encode = b => Buffer.from(b).toString('base64');
+  w.Utilities.newBlob = (bytes, type, name) => ({ getBytes: () => bytes, getContentType: () => type, name });
+  w.book.getSheetByName('MLC Roster').rows.push(['8007777', 'Gia P.', 'Gold', 'General', '']);
+  w.book.getSheetByName('Student Board').rows.push(['8007777', 'Gia P.', 'Gold', '8', '0', '0', '0', '0', '', '0', '0', '0', '', '', '']);
+  w.setSettingValue_('GENERALS_CODE', 'summit');
+  const t = JSON.parse(w.clashGeneralsSignIn('8007777', 'summit')).token;
+  const png = 'data:image/png;base64,' + Buffer.from('fake-png').toString('base64');
+  assert.throws(() => w.clashGeneralsUploadDesign(t, 'X', 'data:text/html;base64,PGI+'), /PNG or JPG/);
+  let hq = JSON.parse(w.clashGeneralsUploadDesign(t, 'Summit Lightning', png));
+  hq = JSON.parse(w.clashGeneralsUploadDesign(t, 'Gold Rush', png));
+  assert.deepStrictEqual(hq.designs.map(d => [d.title, d.approved]), [['Summit Lightning', false], ['Gold Rush', false]]);
+  assert.strictEqual(folders, 1, 'one private folder, made on the first upload');
+  const designs = w.book.getSheetByName('Shirt Designs');
+  const id1 = designs.rows[1][0], id2 = designs.rows[2][0];
+  assert.strictEqual(JSON.parse(w.clashShirtDesigns('8001234')).designs.length, 0, 'nothing shows before approval');
+  assert.throws(() => w.clashShirtImage(id1, ''), /isn't approved/);
+  assert.ok(/^data:image\/png;base64,/.test(w.clashShirtImage(id1, t)), 'the squad\'s General can see a pending design');
+  designs.rows[1][6] = true; designs.rows[2][6] = true;
+  assert.throws(() => w.clashShirtVote('8001234', id1), /closed/);
+  w.setSettingValue_('SHIRT_VOTING', 'ON');
+  let s = JSON.parse(w.clashShirtVote('8001234', id1));
+  assert.deepStrictEqual([s.voted, s.designs.map(d => d.votes)], [id1, [1, 0]]);
+  s = JSON.parse(w.clashShirtVote('8001234', id2));
+  assert.deepStrictEqual([s.voted, s.designs.map(d => d.votes)], [id2, [0, 1]], 'a changed vote moves, not doubles');
+  assert.throws(() => w.clashShirtVote('8005678', id1), /own squad/);
+  assert.deepStrictEqual(JSON.parse(w.clashShirtDesigns('8005678')).designs, [], 'other squads don\'t see Gold\'s designs');
+  assert.strictEqual(designs.rows[2][7], 1, 'the Votes column stays current for staff');
+});
+
 test('page files: scripts parse, no old token or Supabase key left', () => {
   for (const f of ['App.html', 'Widgets.html', 'Index.html', 'Student.html', 'Generals.html']) {
     const h = fs.readFileSync(path.join(dir, f), 'utf8');

@@ -58,8 +58,8 @@
       (d.theme && d.theme.trait ? '<div class="ms-standing">Squad trait: <b>' + esc(d.theme.trait) + '</b></div>' : '') +
       (d.theme && d.theme.lore ? '<div class="ms-standing">📜 <b>' + esc(d.theme.lore.title || 'Our story') + '</b>: on My Squad and in the meeting slides.</div>' : '') +
       '<div class="ms-standing"><b style="color:#f87171">' + d.notPlaced + '</b> of ' + d.roster.length + ' squad members not placed in an event yet.</div></div>';
-    var tabs = [['roster', '👥 Roster & sign-ups'], ['mayhem', '⚡ Mayhem checklist'], ['hype', '📣 Hype script'], ['meeting', '🎤 Squad meeting'], ['service', '🤝 Service project'], ['nominate', '📝 Nominate & letters']];
-    var body = { roster: rosterView, mayhem: mayhemView, hype: hypeView, meeting: meetingView, service: serviceView, nominate: nominateView }[view]();
+    var tabs = [['roster', '👥 Roster & sign-ups'], ['mayhem', '⚡ Mayhem checklist'], ['hype', '📣 Hype script'], ['meeting', '🎤 Squad meeting'], ['service', '🤝 Service project'], ['nominate', '📝 Nominate & letters'], ['shirts', '👕 Shirt designs']];
+    var body = { roster: rosterView, mayhem: mayhemView, hype: hypeView, meeting: meetingView, service: serviceView, nominate: nominateView, shirts: shirtsView }[view]();
     el().innerHTML = head + '<div class="hq-tabs">' + tabs.map(function (t) { return '<button class="hq-tab' + (view === t[0] ? ' on' : '') + '" data-v="' + t[0] + '">' + t[1] + '</button>'; }).join('') +
       '<button class="hq-tab" data-v="out">Sign out</button></div>' + body;
     el().querySelectorAll('.hq-tab').forEach(function (b) { b.onclick = function () { if (b.dataset.v === 'out') { token = ''; signIn(); return; } view = b.dataset.v; render(); }; });
@@ -184,7 +184,57 @@
       }).join('');
   }
 
+  // Mayhem shirt designs (12_ShirtDesigns.gs): upload, see approval status and live votes.
+  var designImg = {};
+  function shirtsView() {
+    var d = data, list = d.designs || [];
+    return '<div class="ms-card"><div class="ms-h">Upload a Mayhem shirt design for ' + title(d.squad) + '</div>' +
+      '<p class="ms-small">PNG or JPG. Staff approve each design before your squad can vote on it.' + (d.shirtVoting ? ' Voting is open now.' : ' Voting opens when staff turn it on.') + '</p>' +
+      '<div class="ms-form" style="flex-direction:column;align-items:stretch">' +
+      '<input id="dsTitle" placeholder="Design name (e.g. Summit Lightning)" maxlength="80">' +
+      '<input id="dsFile" type="file" accept="image/png,image/jpeg">' +
+      '<button class="btn btn-purple" id="dsGo">Upload design</button><div class="ms-err" id="dsErr"></div></div></div>' +
+      (list.length ? '<div class="ms-card"><div class="ms-h">Your squad\'s designs</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px">' +
+        list.map(function (x) {
+          return '<div style="border:1px solid var(--border);border-radius:12px;padding:10px"><img data-design="' + esc(x.id) + '" alt="' + esc(x.title) + '" src="' + (designImg[x.id] || '') + '" style="width:100%;aspect-ratio:1;object-fit:contain;background:var(--surface2);border-radius:8px">' +
+            '<div style="font-weight:700;margin-top:6px">' + (x.winner ? '🏆 ' : '') + esc(x.title) + '</div>' +
+            '<div class="ms-small">' + (x.approved ? x.votes + ' vote' + (x.votes === 1 ? '' : 's') : 'Waiting for staff approval') + ' · by ' + esc(x.by) + '</div></div>';
+        }).join('') + '</div></div>' : '');
+  }
+  // Shrinks a picture on the device (longest side 1200px, JPEG) so uploads stay small.
+  function shrinkImage(file) {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onerror = function () { reject(new Error('Could not read that file.')); };
+      r.onload = function () {
+        var img = new Image();
+        img.onerror = function () { reject(new Error('That file isn\'t a picture.')); };
+        img.onload = function () {
+          var s = Math.min(1, 1200 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+          c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+          var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+          resolve(c.toDataURL('image/jpeg', 0.85));
+        };
+        img.src = r.result;
+      };
+      r.readAsDataURL(file);
+    });
+  }
+
   function wire() {
+    var ds = document.getElementById('dsGo');
+    if (ds) ds.onclick = function () {
+      var f = document.getElementById('dsFile').files[0], err = document.getElementById('dsErr');
+      if (!f) { err.textContent = 'Pick a picture first.'; return; }
+      err.textContent = 'Uploading…';
+      shrinkImage(f).then(function (url) { return act('clashGeneralsUploadDesign', document.getElementById('dsTitle').value, url); })
+        .catch(function (x) { err.textContent = (x && x.message || '').replace(/^Exception:\s*/, ''); });
+    };
+    el().querySelectorAll('img[data-design]').forEach(function (im) {
+      var id = im.getAttribute('data-design');
+      if (designImg[id]) return;
+      window.gasRun_('clashShirtImage', id, token).then(function (u) { designImg[id] = u; im.src = u; }).catch(function () {});
+    });
     var ng = document.getElementById('nomGo');
     if (ng) ng.onclick = function () { act('clashGeneralsNominate', document.getElementById('nomFor').value, document.getElementById('nomWho').value, document.getElementById('nomWhy').value); };
     el().querySelectorAll('button[data-letter]').forEach(function (b) {

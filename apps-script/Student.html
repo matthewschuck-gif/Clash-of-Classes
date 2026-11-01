@@ -107,6 +107,53 @@
     }).catch(function (x) { if (err) err.textContent = (x && x.message || '').replace(/^Exception:\s*/, ''); });
   });
 
+  // Mayhem shirt designs (12_ShirtDesigns.gs): a student votes for their squad's design; the
+  // counts refresh every 10 seconds while My Squad is showing.
+  var shirtImg = {}, shirtTimer = null;
+  function shirtCardHtml(s) {
+    if (!s || !s.designs || !s.designs.length) return '';
+    var total = s.designs.reduce(function (n, d) { return n + d.votes; }, 0) || 1;
+    return '<div class="ms-h">👕 Pick ' + title(s.squad || '') + '\'s Mayhem shirt' + (s.open ? '' : ' <span class="ms-small">(voting is closed)</span>') + '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px">' +
+      s.designs.map(function (d) {
+        var pct = Math.round(100 * d.votes / total), mine = s.voted === d.id;
+        return '<div style="border:' + (mine ? '2px solid var(--gold-soft,#fbbf24)' : '1px solid var(--border)') + ';border-radius:12px;padding:10px">' +
+          '<img data-shirt="' + esc(d.id) + '" alt="' + esc(d.title) + '" src="' + (shirtImg[d.id] || '') + '" style="width:100%;aspect-ratio:1;object-fit:contain;background:var(--surface2);border-radius:8px">' +
+          '<div style="font-weight:700;margin-top:6px">' + (d.winner ? '🏆 ' : '') + esc(d.title) + '</div>' +
+          '<div class="ch-bar" style="margin:6px 0"><div class="ch-fill" style="width:' + pct + '%;background:' + (COLOR[s.squad] || '#bb8ef5') + '"></div></div>' +
+          '<div class="ms-small">' + d.votes + ' vote' + (d.votes === 1 ? '' : 's') + (mine ? ' · your pick' : '') + '</div>' +
+          (s.open && !mine ? '<button class="btn btn-purple shirt-vote" data-shirt="' + esc(d.id) + '" style="margin-top:8px;width:100%">Vote</button>' : '') + '</div>';
+      }).join('') + '</div><div class="ms-err" id="shirtErr"></div>';
+  }
+  function paintShirts(s) {
+    var box = document.getElementById('shirtCard');
+    if (!box) return;
+    var html = shirtCardHtml(s);
+    box.style.display = html ? 'block' : 'none';
+    box.innerHTML = html;
+    box.querySelectorAll('img[data-shirt]').forEach(function (im) {
+      var id = im.getAttribute('data-shirt');
+      if (shirtImg[id]) return;
+      window.gasRun_('clashShirtImage', id, '').then(function (u) { shirtImg[id] = u; im.src = u; }).catch(function () {});
+    });
+  }
+  function loadShirts() {
+    if (!document.getElementById('shirtCard')) { clearInterval(shirtTimer); shirtTimer = null; return; }
+    window.gasRun_('clashShirtDesigns', stored(KEY)).then(paintShirts).catch(function () {});
+  }
+  function startShirts() {
+    loadShirts();
+    if (!shirtTimer) shirtTimer = setInterval(function () { if (!document.hidden) loadShirts(); }, 10000);
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.shirt-vote');
+    if (!b) return;
+    var err = document.getElementById('shirtErr');
+    if (err) err.textContent = 'Voting…';
+    window.gasRun_('clashShirtVote', stored(KEY), b.getAttribute('data-shirt')).then(paintShirts)
+      .catch(function (x) { if (err) err.textContent = (x && x.message || '').replace(/^Exception:\s*/, ''); });
+  });
+
   // Mayhem Week scoreboard (from EVENT_PAGES, loaded by App.html) for the home page and TV.
   function mayhemBoardHtml(big) {
     var sb = window.EVENT_PAGES && window.EVENT_PAGES.mayhem && window.EVENT_PAGES.mayhem.scoreboard;
@@ -271,6 +318,7 @@
         earned.map(function (b) { return '<span class="ms-badge">' + esc(b) + '</span>'; }).join('') +
         locked.map(function (b) { return '<span class="ms-badge locked">🔒 ' + esc(b) + '</span>'; }).join('') +
       '</div></div>' +
+      '<div class="ms-card" id="shirtCard" style="display:none"></div>' +
       signupsCard(r.signups) +
       passportCard(r.passport) +
       '<div id="myPollSection" style="display:none"></div>' +
@@ -279,6 +327,7 @@
       ' · <a href="#" id="msNotMe" style="color:var(--purple-lt)">Not you? Switch</a></div>';
     document.getElementById('msNotMe').onclick = function (e) { e.preventDefault(); store(KEY, null); renderForm(); };
     if (typeof loadPolls === 'function') loadPolls(); // shows what this student voted
+    startShirts(); // Mayhem shirt designs, live
   }
 
   // ── TV slides (called from buildTV in App) ──

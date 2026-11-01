@@ -195,6 +195,8 @@ function clashGeneralsHq(token) {
     poll: (function () { try { return pollAnnouncement_(); } catch (e) { return ''; } })(), // 06_Polls.gs
     nominateFor: nominateFor_(), // Settings › NOMINATE_FOR (11_MayhemWeek.gs)
     captainTally: captainTally_(squad),
+    designs: hqDesigns_(squad), // 12_ShirtDesigns.gs
+    shirtVoting: String(getSetting_('SHIRT_VOTING')).toUpperCase() === 'ON',
     signupLimit: Number(getSetting_('SIGNUP_LIMIT')) || 0,
     nominations: sheetRows_('Nominations').filter(function (r) { return id800_(r['General']) === me.id || String(r['General']) === me.name; })
       .map(function (r) { return { date: String(r['Date']), for: String(r['For']), nominee: String(r['Nominee']), why: String(r['Why']) }; }),
