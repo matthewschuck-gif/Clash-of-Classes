@@ -65,7 +65,7 @@ function clashMyPage(id) {
     name: String(get('Name')), squad: squad,
     bills: num('Trait Dough Bills'), billsWeek: num('Bills This Week'), wins: num('Trait Dough Wins'),
     mindset: num('Mindset Summits'), journal: get('Trail Journal Growth') === '' ? null : num('Trail Journal Growth'),
-    star: num('STAR Growth Points'), shoutouts: num('Shout-outs'), streak: num('Streak (weeks)'),
+    star: num('STAR Growth Points'), shoutouts: num('Shout-outs'), ambassador: num('Ambassador Buddies'), streak: num('Streak (weeks)'),
     badges: String(get('Badges')).split(',').map(function (s) { return s.trim(); }).filter(String),
     last: String(get('Last Contribution')), updated: String(get('Updated')),
   };

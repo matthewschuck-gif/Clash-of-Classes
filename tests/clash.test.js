@@ -317,6 +317,15 @@ test('Generals HQ: General + code only, own squad only, everyone placed before d
   assert.deepStrictEqual(ann.roles, ['Hype Captain']);
   assert.strictEqual(ann.theme.theme, 'Hope');
   assert.deepStrictEqual(JSON.parse(w.clashMyPage('8005678')).roles, [], 'Vanguard is not shown');
+  // Nominations: own squad only, a reason required; letters saved once each and replaced on save.
+  assert.throws(() => w.clashGeneralsNominate(t, 'Trailback Panel (Vanguard)', '8001234', 'short'), /why/);
+  assert.throws(() => w.clashGeneralsNominate(t, 'Trailback Panel (Vanguard)', '8005678', 'Calm, fair and keeps things private.'), /your squad/);
+  hq = JSON.parse(w.clashGeneralsNominate(t, 'Trailback Panel (Vanguard)', '8001234', 'Calm, fair and keeps things private.'));
+  assert.deepStrictEqual(hq.nominations.map(n => n.nominee), ['Ann L.']);
+  w.clashGeneralsLetter(t, 'To future Generals', 'Start early.');
+  hq = JSON.parse(w.clashGeneralsLetter(t, 'To future Generals', 'Start early. Trust your Captains.'));
+  assert.strictEqual(hq.letters[0].text, 'Start early. Trust your Captains.');
+  assert.strictEqual(w.book.getSheetByName('General Letters').rows.length, 2, 'one row per letter, replaced on save');
   assert.throws(() => w.clashGeneralsHq('made-up'), /sign in/);
 });
 

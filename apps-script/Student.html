@@ -109,6 +109,7 @@
       [me.mindset, 'Mindset summits'], [me.star, 'STAR growth points'], [me.shoutouts, 'Shout-outs'],
       [me.streak + (me.streak ? ' 🔥' : ''), 'Week streak'],
     ];
+    if (me.ambassador) tiles.push([me.ambassador, 'New students welcomed']);
     if (me.journal !== null) tiles.push([me.journal, 'Trail Journal growth']);
     var earned = me.badges;
     var locked = (r.allBadges || []).filter(function (b) { return earned.indexOf(b) === -1; });

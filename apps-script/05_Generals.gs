@@ -13,6 +13,9 @@
  *   Sign-up Events  Event | Date | Spots Per Squad | Open
  *   Sign-ups        Event | 800# | Name | Squad | Added By | Added At
  *   Mayhem Checklist Squad | Item | Done | Done By
+ *   Nominations     Date | General | Squad | For | Nominee 800# | Nominee | Why   (Trailback Panel each
+ *                   marking period, next year's Generals; staff make the final choice)
+ *   General Letters Updated | General | Squad | Letter | Text   (the two end-of-year letters)
  *
  * Generals sign in with their 800# (Role = General on MLC Roster) plus GENERALS_CODE from
  * Settings. They only ever see and change their own squad. The squad roster comes from the
@@ -24,6 +27,10 @@ const THEME_HEADERS_ = ['Squad', 'Theme', 'What It Means', 'Service Project', 'S
 const SIGNUP_EVENT_HEADERS_ = ['Event', 'Date', 'Spots Per Squad', 'Open'];
 const SIGNUP_HEADERS_ = ['Event', '800#', 'Name', 'Squad', 'Added By', 'Added At'];
 const MAYHEM_HEADERS_ = ['Squad', 'Item', 'Done', 'Done By'];
+const NOMINATION_HEADERS_ = ['Date', 'General', 'Squad', 'For', 'Nominee 800#', 'Nominee', 'Why'];
+const LETTER_HEADERS_ = ['Updated', 'General', 'Squad', 'Letter', 'Text'];
+const NOMINATE_FOR_ = ['Trailback Panel (Vanguard)', 'Next year\'s Squad General'];
+const LETTERS_ = ['To future Generals', 'To staff advisors'];
 const MAYHEM_ITEMS_ = [
   'Captains assigned and briefed at least two weeks before Mayhem Week',
   'Attended all required after-school prep sessions',
@@ -63,6 +70,8 @@ function ensureGeneralsTabs_() {
   const seed = [];
   SQUAD_KEYS_.forEach(function (s) { MAYHEM_ITEMS_.forEach(function (i) { seed.push([s, i, false, '']); }); });
   make('Mayhem Checklist', MAYHEM_HEADERS_, seed);
+  make('Nominations', NOMINATION_HEADERS_);
+  make('General Letters', LETTER_HEADERS_);
 }
 
 function sheetRows_(name) {
@@ -159,7 +168,43 @@ function clashGeneralsHq(token) {
       .map(function (r) { return { row: r._row, item: String(r['Item']), done: ticked_(r['Done']) }; }),
     recent: recent, leaders: leaders, month: month, trait: trait,
     challenges: challengeProgress_().filter(function (c) { return c.active; }),
+    nominateFor: NOMINATE_FOR_,
+    nominations: sheetRows_('Nominations').filter(function (r) { return id800_(r['General']) === me.id || String(r['General']) === me.name; })
+      .map(function (r) { return { date: String(r['Date']), for: String(r['For']), nominee: String(r['Nominee']), why: String(r['Why']) }; }),
+    letters: LETTERS_.map(function (l) {
+      const r = sheetRows_('General Letters').filter(function (x) { return id800_(x['General']) === me.id && String(x['Letter']) === l; })[0];
+      return { letter: l, text: r ? String(r['Text']) : '', updated: r ? String(r['Updated']) : '' };
+    }),
   });
+}
+
+// A General nominates a squad member (Trailback Panel or next year's General). Staff decide.
+function clashGeneralsNominate(token, forWhat, id, why) {
+  const me = hqSession_(token);
+  if (NOMINATE_FOR_.indexOf(forWhat) === -1) throw new Error('Pick what you are nominating for.');
+  if (String(why || '').trim().length < 10) throw new Error('Say why in a sentence or two.');
+  const sid = id800_(id);
+  const s = sheetRows_(getSetting_('STUDENT_BOARD_TAB') || 'Student Board').filter(function (r) { return id800_(r['800#']) === sid && squadOf_(r['Squad']) === me.squad; })[0];
+  if (!s) throw new Error('Pick a student from your squad.');
+  getSheet_('Nominations').appendRow([Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'), me.id, me.squad, forWhat, sid, String(s['Name'] || ''), String(why).trim()]);
+  return clashGeneralsHq(token);
+}
+
+// Saves (or replaces) one of the General's two end-of-year letters.
+function clashGeneralsLetter(token, letter, text) {
+  const me = hqSession_(token);
+  if (LETTERS_.indexOf(letter) === -1) throw new Error('Unknown letter.');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = getSheet_('General Letters');
+    const r = sheetRows_('General Letters').filter(function (x) { return id800_(x['General']) === me.id && String(x['Letter']) === letter; })[0];
+    const row = [Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'), me.id, me.squad, letter, String(text || '')];
+    if (r) sh.getRange(r._row, 1, 1, row.length).setValues([row]); else sh.appendRow(row);
+  } finally {
+    lock.releaseLock();
+  }
+  return clashGeneralsHq(token);
 }
 
 // Add (or remove) a squad member for a sign-up event.

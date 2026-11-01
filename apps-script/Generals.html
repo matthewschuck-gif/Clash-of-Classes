@@ -54,8 +54,8 @@
         (st.place > 1 ? ' (' + st.behindBy + ' behind ' + title(st.ahead) + ')' : ' (leading by ' + st.leadBy + ')') : '') + '</div>' +
       (d.theme ? '<div class="ms-standing">Theme: <b>' + esc(d.theme.theme) + '</b> · ' + esc(d.theme.meaning) + '</div>' : '') +
       '<div class="ms-standing"><b style="color:#f87171">' + d.notPlaced + '</b> of ' + d.roster.length + ' squad members not placed in an event yet.</div></div>';
-    var tabs = [['roster', '👥 Roster & sign-ups'], ['mayhem', '⚡ Mayhem checklist'], ['hype', '📣 Hype script'], ['meeting', '🎤 Squad meeting'], ['service', '🤝 Service project']];
-    var body = { roster: rosterView, mayhem: mayhemView, hype: hypeView, meeting: meetingView, service: serviceView }[view]();
+    var tabs = [['roster', '👥 Roster & sign-ups'], ['mayhem', '⚡ Mayhem checklist'], ['hype', '📣 Hype script'], ['meeting', '🎤 Squad meeting'], ['service', '🤝 Service project'], ['nominate', '📝 Nominate & letters']];
+    var body = { roster: rosterView, mayhem: mayhemView, hype: hypeView, meeting: meetingView, service: serviceView, nominate: nominateView }[view]();
     el().innerHTML = head + '<div class="hq-tabs">' + tabs.map(function (t) { return '<button class="hq-tab' + (view === t[0] ? ' on' : '') + '" data-v="' + t[0] + '">' + t[1] + '</button>'; }).join('') +
       '<button class="hq-tab" data-v="out">Sign out</button></div>' + body;
     el().querySelectorAll('.hq-tab').forEach(function (b) { b.onclick = function () { if (b.dataset.v === 'out') { token = ''; signIn(); return; } view = b.dataset.v; render(); }; });
@@ -138,7 +138,32 @@
         '<div class="ms-form"><input id="hqProg" type="number" min="0" value="' + t.progress + '"><button class="btn btn-purple" id="hqSaveProg">Update progress</button></div>' : '') + '</div>';
   }
 
+  // Nominations (Trailback Panel each marking period, next year's Generals) and the two
+  // end-of-year letters, from the Generals Handbook. Staff make the final choices.
+  function nominateView() {
+    var d = data;
+    return '<div class="ms-card"><div class="ms-h">Nominate a squad member</div>' +
+      '<p class="ms-small">Trailback Panel: students who show empathy and fairness, can hold hard conversations calmly, own their actions, and keep things confidential. Staff make the final selection.</p>' +
+      '<div class="ms-form" style="flex-direction:column;align-items:stretch">' +
+      '<select class="hq-select" id="nomFor" style="max-width:none">' + d.nominateFor.map(function (f) { return '<option>' + esc(f) + '</option>'; }).join('') + '</select>' +
+      '<select class="hq-select" id="nomWho" style="max-width:none"><option value="">Pick a squad member…</option>' + d.roster.map(function (s) { return '<option value="' + esc(s.id) + '">' + esc(s.name) + '</option>'; }).join('') + '</select>' +
+      '<textarea id="nomWhy" rows="3" placeholder="Why? (a sentence or two)" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px"></textarea>' +
+      '<button class="btn btn-purple" id="nomGo">Send nomination</button></div>' +
+      (d.nominations.length ? '<div class="ms-h" style="margin-top:14px">Your nominations</div>' + d.nominations.map(function (n) { return '<div class="hq-row"><div><b>' + esc(n.nominee) + '</b> · ' + esc(n.for) + '<br><span class="ms-small">' + esc(n.date) + ' · ' + esc(n.why) + '</span></div><div></div></div>'; }).join('') : '') + '</div>' +
+      d.letters.map(function (l, i) {
+        return '<div class="ms-card"><div class="ms-h">End-of-year letter: ' + esc(l.letter) + '</div>' +
+          '<p class="ms-small">' + (i === 0 ? 'Honest advice for next year\'s Generals: what worked, what was hard, who helped you most.' : 'Your honest reflection: what should change, which events worked, who showed real leadership.') + '</p>' +
+          '<textarea id="letter' + i + '" rows="7" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px">' + esc(l.text) + '</textarea>' +
+          '<p><button class="btn btn-purple" data-letter="' + i + '">Save letter</button> <span class="ms-small">' + (l.updated ? 'Saved ' + esc(l.updated) : 'Not saved yet') + '</span></p></div>';
+      }).join('');
+  }
+
   function wire() {
+    var ng = document.getElementById('nomGo');
+    if (ng) ng.onclick = function () { act('clashGeneralsNominate', document.getElementById('nomFor').value, document.getElementById('nomWho').value, document.getElementById('nomWhy').value); };
+    el().querySelectorAll('button[data-letter]').forEach(function (b) {
+      b.onclick = function () { act('clashGeneralsLetter', data.letters[b.dataset.letter].letter, document.getElementById('letter' + b.dataset.letter).value); };
+    });
     el().querySelectorAll('select[data-add]').forEach(function (s) { s.onchange = function () { if (s.value) act('clashGeneralsSignUp', s.value, s.dataset.add, false); }; });
     el().querySelectorAll('[data-rm]').forEach(function (p) { p.onclick = function () { if (confirm('Remove from ' + p.dataset.rm + '?')) act('clashGeneralsSignUp', p.dataset.rm, p.dataset.id, true); }; });
     el().querySelectorAll('input[data-row]').forEach(function (c) { c.onchange = function () { act('clashGeneralsChecklist', c.dataset.row, c.checked); }; });
