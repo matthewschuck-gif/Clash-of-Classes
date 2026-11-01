@@ -90,6 +90,7 @@ function setupSpreadsheet() {
   ensureChallenges_();
   ensureGeneralsTabs_();
   ensurePollTabs_();
+  ensureFreezeTab_();
   setupHelpTab_();
   SpreadsheetApp.getUi().alert('Done -- app_data, events, metrics, Settings and "How To Use This Sheet" tabs are set up. Clash of Classes has no separate PII tab (unlike Trail Journal), so there is no extra sharing/protection step required here. You can now add/edit rows directly in the events and metrics tabs and the site will pick them up within a few seconds. Staff directions live in the "How To Use This Sheet" tab -- start there.');
 }

@@ -103,6 +103,8 @@
         ? '<b>' + title(st.squad) + '</b> is in <b>1st place</b>, ' + st.leadBy.toLocaleString() + ' points ahead. Keep it up!'
         : '<b>' + title(st.squad) + '</b> is in <b>' + ['1st', '2nd', '3rd', '4th'][st.place - 1] + ' place</b>, ' +
           st.behindBy.toLocaleString() + ' points behind ' + title(st.ahead) + '. Every bill helps!';
+      if (st.frozen) standing += '<br>❄️ Your squad is on a <b>point freeze</b>' + (st.frozen.until ? ' until <b>' + esc(st.frozen.until) + '</b>' : '') +
+        '. You keep every point you have, but new points won\'t count until the freeze ends.';
     }
     var tiles = [
       [me.bills, 'Trait Dough bills'], [me.billsWeek, 'Bills this week'], [me.wins, 'Trait Dough wins'],

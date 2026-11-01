@@ -58,7 +58,8 @@ function world(opts) {
   const props = {};
   const ctx = {
     console, JSON, Math, Date, Object, Array, String, Number,
-    SpreadsheetApp: { getActiveSpreadsheet: () => book, openById: id => { if (id !== '1rinTrtlmJKQrvtn5GVs-ngmaQRvkl8Nt39yOBICgggA') throw new Error('no ' + id); return tj; }, getUi: () => ({ alert() {} }) },
+    SpreadsheetApp: { getActiveSpreadsheet: () => book, openById: id => { if (id !== '1rinTrtlmJKQrvtn5GVs-ngmaQRvkl8Nt39yOBICgggA') throw new Error('no ' + id); return tj; }, getUi: () => ({ alert() {} }),
+      newDataValidation: () => { const b = new Proxy({}, { get: () => () => b }); return b; } },
     DriveApp: { getFileById: () => ({ getLastUpdated: () => new Date('2026-10-31T10:00:00Z') }) },
     CacheService: { getScriptCache: () => ({ get: k => cache[k] || null, put: (k, v) => { cache[k] = v; } }) },
     PropertiesService: { getScriptProperties: () => ({ getProperty: k => props[k] || null, setProperty: (k, v) => { props[k] = v; } }) },
@@ -367,6 +368,25 @@ test('Daily Polls: one vote per 800#, results after voting, points for voters an
   assert.deepStrictEqual([last.answer, last.voted, J(last.winners)], ['4', '4', ['4']]);
   assert.ok(/Today's This or That: Coke or Pepsi\? Vote on/.test(w.pollAnnouncement_()), w.pollAnnouncement_());
   assert.ok(/The answer: 4/.test(w.pollAnnouncement_()));
+});
+
+test('point freeze: a frozen squad keeps its points but earns nothing new, from any project', () => {
+  const w = world();
+  w.ensureFreezeTab_();
+  const fz = w.book.getSheetByName('Point Freezes');
+  fz.rows.push(['GOLD', '2026-10-01', '2026-10-15', 'Unsportsmanlike conduct', 'Mr. S']);
+  const ev = w.book.getSheetByName('events');
+  // Another project adds a row during the freeze that also gives BLACK points.
+  ev.rows.push([103, 'Poll', 'daily_poll', '2026-10-05', 'votes', '', 2, 4, 0, 0], [104, 'Later', 'trait_dough', '2026-10-20', '', '', 0, 7, 0, 0]);
+  const totals = J(w.squadTotals_());
+  assert.deepStrictEqual([totals.BLACK, totals.GOLD], [12, 7], 'GOLD: 5 + 4 frozen out, the 10-20 points count; BLACK unaffected');
+  const row = ev.rows.find(r => r[0] === 103);
+  assert.deepStrictEqual([row[6], row[7]], [2, 0]);
+  assert.ok(/❄️ GOLD frozen: \+4 not counted/.test(row[4]) && /^votes/.test(row[4]), 'the lost-out points are noted on the row');
+  assert.deepStrictEqual(J(w.squadTotals_()), totals, 'running again changes nothing');
+  assert.strictEqual(w.freezeToday_('GOLD'), null, 'not frozen today (freeze ended)');
+  fz.rows.push(['GREY', '2026-01-01', '', 'Open-ended', '']);
+  assert.deepStrictEqual(J(w.standingFor_('GREY', totals).frozen), { until: '' });
 });
 
 test('page files: scripts parse, no old token or Supabase key left', () => {

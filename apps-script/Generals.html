@@ -52,6 +52,8 @@
     var head = '<div class="ms-card" style="border-color:' + COLOR[sq] + '"><div class="ms-hello">⚔️ ' + title(sq) + ' Squad HQ</div>' +
       '<div class="ms-standing">General ' + esc(d.me.name) + (st ? ' · <b>' + ['1st', '2nd', '3rd', '4th'][st.place - 1] + ' place</b>, ' + st.total.toLocaleString() + ' pts' +
         (st.place > 1 ? ' (' + st.behindBy + ' behind ' + title(st.ahead) + ')' : ' (leading by ' + st.leadBy + ')') : '') + '</div>' +
+      (st && st.frozen ? '<div class="ms-standing" style="color:#93c5fd">❄️ <b>Point freeze</b>' + (st.frozen.until ? ' until ' + esc(st.frozen.until) : '') +
+        '. The squad keeps its points; new ones won\'t count until it ends. Talk to your advisor about what it takes to lift it.</div>' : '') +
       (d.theme ? '<div class="ms-standing">Theme: <b>' + esc(d.theme.theme) + '</b> · ' + esc(d.theme.meaning) + '</div>' : '') +
       '<div class="ms-standing"><b style="color:#f87171">' + d.notPlaced + '</b> of ' + d.roster.length + ' squad members not placed in an event yet.</div></div>';
     var tabs = [['roster', '👥 Roster & sign-ups'], ['mayhem', '⚡ Mayhem checklist'], ['hype', '📣 Hype script'], ['meeting', '🎤 Squad meeting'], ['service', '🤝 Service project'], ['nominate', '📝 Nominate & letters']];

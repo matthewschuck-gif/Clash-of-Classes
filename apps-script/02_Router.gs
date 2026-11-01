@@ -299,6 +299,7 @@ function readEventsTab_() {
   const headers = SCHEMA[TABS.EVENTS];
   const idCol = headers.indexOf('id');
   const events = [];
+  const rowNumbers = []; // sheet row of each event, for applyFreezes_
   let maxId = 100; // matches the frontend's own starting nextId
 
   for (let i = 1; i < data.length; i++) {
@@ -336,8 +337,10 @@ function readEventsTab_() {
     };
     if (evt.multiplier === '' || evt.multiplier === null) delete evt.multiplier;
     events.push(evt);
+    rowNumbers.push(i + 1);
   }
 
+  applyFreezes_(sheet, events, rowNumbers); // 07_Freezes.gs: frozen squads earn nothing new
   return events;
 }
 
