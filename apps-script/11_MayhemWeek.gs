@@ -24,7 +24,40 @@
  */
 
 const SIGNUP_EXTRA_HEADERS_ = ['Slot', 'Type', 'Self Sign-up'];
-const SHIRT_HEADERS_ = ['Date', '800#', 'Name', 'Squad', 'Size', 'Paid', 'Picked Up', 'Points Sent'];
+// From the Mayhem Week Event Chart (Drive › Mountaineer Leadership Corps & Mayhem Week), which
+// adapts the high school's Red & Black Night. [Event, Date, Spots Per Squad, Open, Slot, Type, Self Sign-up]
+// Thursday's field events share the Slot "Field Events", so a student can only be in one of them
+// (they run at the same time, as at Red & Black). Fill in the other Slots (PASS, Lunch, Core
+// Extension) when the schedule is set. Open stays unticked until sign-ups open.
+const MAYHEM_WEEK_EVENTS_ = [
+  ['Trivia Bowl', '2027-03-15', 4, false, '', 'Mind Games', false],
+  ['Spoons', '2027-03-15', 4, false, '', 'Mind Games', false],
+  ['Escape Room', '2027-03-15', 2, false, '', 'Mind Games', false],
+  ['Chess Tournament', '2027-03-15', 4, false, '', 'Mind Games', false],
+  ['Lip Sync / Glee Battle', '2027-03-16', 10, false, '', 'Skills & Stunts', false],
+  ['Cupcake Wars', '2027-03-16', 4, false, '', 'Skills & Stunts', false],
+  ['Badminton Tournament', '2027-03-16', 2, false, '', 'Skills & Stunts', false],
+  ['Mario Kart', '2027-03-16', 4, false, '', 'Skills & Stunts', false],
+  ['Volleyball', '2027-03-17', 8, false, '', 'Athletic Day', false],
+  ['Smash Brothers', '2027-03-17', 4, false, '', 'Athletic Day', false],
+  ['Basketball Knockout', '2027-03-17', 5, false, '', 'Athletic Day', false],
+  ['Noodle Relay', '2027-03-17', 0, false, '', 'Athletic Day', false],
+  ['Minute to Win It', '2027-03-17', 10, false, '', 'Athletic Day', false],
+  ['Skirmish / Dodgeball', '2027-03-18', 6, false, 'Field Events', 'Field Events', false],
+  ['Shuttle Race', '2027-03-18', 2, false, 'Field Events', 'Field Events', false],
+  ['Arm Wrestling', '2027-03-18', 2, false, 'Field Events', 'Field Events', false],
+  ['Standing Long Jump', '2027-03-18', 2, false, 'Field Events', 'Field Events', false],
+  ['Rope Climb', '2027-03-18', 2, false, 'Field Events', 'Field Events', false],
+  ['Tug of War', '2027-03-18', 15, false, '', 'Field Events', false],
+  ['Obstacle Course', '2027-03-19', 6, false, '', 'Squad Night', false],
+  ['Squad Dance', '2027-03-19', 20, false, '', 'Squad Night', false],
+  ['Tricycle Relay', '2027-03-19', 10, false, '', 'Squad Night', false],
+  ['Running Relay', '2027-03-19', 6, false, '', 'Squad Night', false],
+  ['Speed Pyramids', '2027-03-19', 10, false, '', 'Squad Night', false],
+  ['Tire Pull', '2027-03-19', 12, false, '', 'Squad Night', false],
+];
+
+const SHIRT_HEADERS_ =['Date', '800#', 'Name', 'Squad', 'Size', 'Paid', 'Picked Up', 'Points Sent'];
 const DOOR_HEADERS_ = ['Time', '800#', 'Name', 'Squad', 'Entry', 'Paid', 'By'];
 
 function ensureMayhemWeekTabs_() {
@@ -34,6 +67,8 @@ function ensureMayhemWeekTabs_() {
     const have = ev.getRange(1, 1, 1, Math.max(ev.getLastColumn(), 1)).getValues()[0].map(function (h) { return String(h).trim(); });
     const missing = SIGNUP_EXTRA_HEADERS_.filter(function (h) { return have.indexOf(h) === -1; });
     if (missing.length) ev.getRange(1, have.filter(String).length + 1, 1, missing.length).setValues([missing]).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
+    // An empty tab starts with the Mayhem Week chart (closed until sign-ups open).
+    if (ev.getLastRow() < 2) ev.getRange(2, 1, MAYHEM_WEEK_EVENTS_.length, MAYHEM_WEEK_EVENTS_[0].length).setValues(MAYHEM_WEEK_EVENTS_);
   }
   [['Shirt Orders', SHIRT_HEADERS_], ['Squad Night', DOOR_HEADERS_]].forEach(function (t) {
     if (ss.getSheetByName(t[0])) return;
@@ -48,11 +83,16 @@ function boardRow_(sid) {
 }
 function eventOpen_(ev) { return String(ev['Open']).trim() === '' || ticked_(ev['Open']); }
 
+// The same cap for every student, Generals and Captains included (Settings › SIGNUP_LIMIT).
+function signupLimitFor_() {
+  return Number(getSetting_('SIGNUP_LIMIT')) || 0;
+}
+
 /** Throws a plain-words reason if this student can't take this event. */
 function signupGuard_(sid, ev, squad) {
   const events = sheetRows_('Sign-up Events');
   const mine = sheetRows_('Sign-ups').filter(function (r) { return id800_(r['800#']) === sid; });
-  const limit = Number(getSetting_('SIGNUP_LIMIT')) || 0;
+  const limit = signupLimitFor_(sid);
   const openMine = mine.filter(function (r) {
     const e = events.filter(function (x) { return String(x['Event']) === String(r['Event']); })[0];
     return e && eventOpen_(e);
@@ -82,7 +122,7 @@ function mySignups_(sid, squad) {
     return { event: String(e['Event']), date: String(e['Date'] || ''), slot: String(e['Slot'] || ''), type: String(e['Type'] || ''),
       self: on && ticked_(e['Self Sign-up']), spotsLeft: spots ? Math.max(0, spots - taken) : null, mine: mine.indexOf(String(e['Event'])) > -1 };
   });
-  return { on: on, limit: Number(getSetting_('SIGNUP_LIMIT')) || 0, count: events.filter(function (e) { return e.mine; }).length, events: events };
+  return { on: on, limit: signupLimitFor_(sid), count: events.filter(function (e) { return e.mine; }).length, events: events };
 }
 
 /** A student signs up (or drops) on My Squad with their 800#. */

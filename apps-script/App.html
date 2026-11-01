@@ -2743,6 +2743,17 @@ function applyEventPage_(p){
       <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Color Squad Finals Challenge — squads battle at lunch every day${sb?'':'. The scoreboard fills in as points are recorded'}.</div>
       ${days?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">${days}</div>`:''}${board}`;
   }
+  // Squad Night: the Friday-night finals (shown when the Squad Night field has a value).
+  if(p==='mayhem'&&$('mayhemNightBlock')){
+    const nb=$('mayhemNightBlock');
+    nb.style.display=f['Squad Night']?'block':'none';
+    if(f['Squad Night']) nb.innerHTML=`<div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Squad Night</div>
+      <div style="font-size:14px;color:var(--gold-soft);font-weight:600;margin-bottom:4px">${evEsc(f['Squad Night'])}</div>
+      ${f['Squad Night Entry']?`<div style="font-size:13.5px;color:var(--text2);line-height:1.6;margin-bottom:14px">${evEsc(f['Squad Night Entry'])}</div>`:''}
+      ${d.night.length?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">${d.night.map((r,i)=>`<div style="display:grid;grid-template-columns:minmax(150px,auto) 1fr;gap:14px;padding:11px 16px;${i?'border-top:1px solid var(--border)':''}">
+        <div style="font-family:'Fraunces',serif;font-weight:700;font-size:14.5px">${evEsc(r.heading)}</div>
+        <div style="font-size:13.5px;color:var(--text2);line-height:1.55">${evEsc(r.details)}${r.points?`<div style="color:var(--gold-soft);font-weight:600;margin-top:2px">${evEsc(r.points)}</div>`:''}</div></div>`).join('')}</div>`:''}`;
+  }
   // Sheet links go after the Edit Page links.
   const le=$(p+'Links');
   if(le&&d.links.length){

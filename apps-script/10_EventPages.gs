@@ -11,6 +11,7 @@
  *   Section Schedule  Heading = time, Details = what happens
  *   Section Events    Heading = event name, Details = rules, Points / Who = scoring
  *   Section Week      Heading = day, Details = homeroom/spirit plan, Points / Who = lunch challenge
+ *   Section Night     the Squad Night finals: Heading = event, Details = rules, Points / Who = scoring
  *   Section Links     Heading = label, Link = the address
  *   When a page has Schedule or Events rows, they replace the page's built-in list.
  *
@@ -37,6 +38,8 @@ const DEFAULT_EVENT_FIELDS_ = [
   ['mayhem', 'Planning Doc Label', 'Mayhem Week plan', ''],
   ['mayhem', 'Audience Expectations', '', 'Blank = keep what the site shows now.'],
   ['mayhem', 'Participant Expectations', '', 'Blank = keep what the site shows now.'],
+  ['mayhem', 'Squad Night', 'Friday, March 19 · evening in the gym', 'When and where the Squad Night finals are. Blank hides the Squad Night section.'],
+  ['mayhem', 'Squad Night Entry', 'Free for anyone competing in a Mayhem Week event or wearing a Mayhem shirt they bought. $5 for everyone else. Student Council concessions.', 'Shown under the Squad Night heading. The door check-in uses Settings › SQUAD_NIGHT_PRICE.'],
   ['kickoff', 'Subtitle', 'Clash of Classes Kick Off · Friday, September 25, 2026', ''],
   ['kickoff', 'Date', 'Friday, September 25, 2026', ''],
   ['kickoff', 'Location', '', ''],
@@ -53,11 +56,19 @@ const DEFAULT_EVENT_FIELDS_ = [
 
 // [Show, Page, Section, Order, Heading, Details, Points / Who, Link]
 const DEFAULT_EVENT_ROWS_ = [
-  [true, 'mayhem', 'Week', 1, 'Monday, March 15', 'Spirit Day in homeroom', 'Lunch: Paper Chain Challenge (3 per squad)', ''],
-  [true, 'mayhem', 'Week', 2, 'Tuesday, March 16', 'Spirit Day in homeroom', 'Lunch: Penny Tower Race (2 per squad)', ''],
-  [true, 'mayhem', 'Week', 3, 'Wednesday, March 17', 'Spirit Day in homeroom', 'Lunch: Trivia (2 per squad)', ''],
-  [true, 'mayhem', 'Week', 4, 'Thursday, March 18', 'Spirit Day in homeroom', 'Lunch: Hula Hoop Contest (1 per squad)', ''],
-  [true, 'mayhem', 'Week', 5, 'Friday, March 19', 'Wear your Color Squad shirt · Closing Assembly · Mountaineer Mayhem', 'Lunch: Rock / Paper / Scissors (3 per squad)', ''],
+  [true, 'mayhem', 'Week', 1, 'Monday, March 15 · Mind Games', 'Trivia Bowl · Spoons · Escape Room · Chess Tournament', 'Lunch: Paper Chain Challenge (3 per squad)', ''],
+  [true, 'mayhem', 'Week', 2, 'Tuesday, March 16 · Skills & Stunts', 'Lip Sync / Glee Battle · Cupcake Wars · Badminton · Mario Kart', 'Lunch: Penny Tower Race (2 per squad)', ''],
+  [true, 'mayhem', 'Week', 3, 'Wednesday, March 17 · Athletic Day', 'Volleyball · Smash Brothers · Basketball Knockout · Noodle Relay · Minute to Win It', 'Lunch: Trivia (2 per squad)', ''],
+  [true, 'mayhem', 'Week', 4, 'Thursday, March 18 · Field Events', 'Skirmish / Dodgeball · Shuttle Race · Arm Wrestling · Standing Long Jump · Rope Climb (one field event each) · Tug of War', 'Lunch: Hula Hoop Contest (1 per squad)', ''],
+  [true, 'mayhem', 'Week', 5, 'Friday, March 19 · Mayhem Day', 'Wear your Color Squad shirt · Closing Assembly · Mountaineer Mayhem · Squad Night finals that evening', 'Lunch: Rock / Paper / Scissors (3 per squad)', ''],
+  [true, 'mayhem', 'Night', 1, 'Obstacle Course', 'Relay style. Every station must be touched; miss one and go back to it.', '6 per squad · 5 pts to the winner', ''],
+  [true, 'mayhem', 'Night', 2, 'Squad Dance', 'Same song for every squad, 2.5 minutes, squad shirts on. Judged with a rubric.', '12–20 per squad · 0–12 pts judged', ''],
+  [true, 'mayhem', 'Night', 3, 'Tricycle Relay', 'Relay across the gym floor, alternating ends.', '10 per squad · 2 pts to the winner', ''],
+  [true, 'mayhem', 'Night', 4, 'Running Relay', 'Baton relay, 3 runners at each end, each runner goes twice.', '6 per squad · 5 pts to the winner', ''],
+  [true, 'mayhem', 'Night', 5, 'Speed Pyramids', 'Best 2 of 3. The top person is up on knees, hands in the air, steady for 3 seconds.', '10 per squad · 5 pts to the winner', ''],
+  [true, 'mayhem', 'Night', 6, 'Tire Pull', 'Best of 9, first to 5, 30-second limit. A hand on the tire to win.', '12 per squad · 5 pts to the winner', ''],
+  [true, 'mayhem', 'Night', 7, 'Lucky Chance Spin', 'The Clash of Classes Spin Wheel closes the night for all four squads, with results added live.', 'Up to 50 pts', ''],
+  [true, 'mayhem', 'Night', 8, 'Poster reveal and final standings', 'Squad posters judged (0–12), the participation award (10 pts to the squad with the most participants all week), the sportsmanship award (5 pts) and t-shirt sales (5 pts to the top squad).', '', ''],
   [true, 'mayhem', 'Links', 1, 'Mayhem Week plan', '', '', MAYHEM_WEEK_DOC_],
   [true, 'mayhem', 'Links', 2, 'Last year\'s Mayhem master doc (2026)', '', '', 'https://docs.google.com/spreadsheets/d/1M1USTU2PWcx0tdjTOWQyg3NW9a02JBCNbfpj11q_TsI/edit'],
   [true, 'mayhem', 'Links', 3, 'Last year\'s competition slides (2026)', '', '', 'https://docs.google.com/presentation/d/19ZyXKF3HE4JwCR3GHtG_33rAxTF_e4egPLfDjkcBCvM/edit'],
@@ -122,7 +133,7 @@ function mayhemWeekScores_() {
 /** Everything the three event pages need, from the two tabs. Public (no names). */
 function clashEventPages() {
   const out = {};
-  EVENT_PAGES_.forEach(function (p) { out[p] = { fields: {}, schedule: [], events: [], week: [], links: [] }; });
+  EVENT_PAGES_.forEach(function (p) { out[p] = { fields: {}, schedule: [], events: [], week: [], night: [], links: [] }; });
   sheetRows_('Event Pages').forEach(function (r) {
     const p = String(r['Page'] || '').trim().toLowerCase();
     const f = String(r['Field'] || '').trim();
@@ -130,7 +141,7 @@ function clashEventPages() {
     if (!out[p] || !f || !v) return;
     out[p].fields[f] = /^Planning Doc$/i.test(f) ? safeLink_(v) : v;
   });
-  const sections = { schedule: 'schedule', events: 'events', week: 'week', links: 'links' };
+  const sections = { schedule: 'schedule', events: 'events', week: 'week', night: 'night', links: 'links' };
   sheetRows_('Event Rows').filter(function (r) { return ticked_(r['Show']); })
     .sort(function (a, b) { return (Number(a['Order']) || 0) - (Number(b['Order']) || 0); })
     .forEach(function (r) {

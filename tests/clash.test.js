@@ -497,7 +497,8 @@ test('Event pages: Mayhem/Kick Off fields and rows from the Sheet; blanks fall b
   assert.strictEqual(d.mayhem.fields['Date'], 'Friday, March 19, 2027');
   assert.ok(!('Location' in d.mayhem.fields), 'a blank Value keeps the Edit Page text');
   assert.ok(/15NP5-GEWObOM2HTOm46fznCmqlS/.test(d.mayhem.fields['Planning Doc']));
-  assert.deepStrictEqual([d.mayhem.week.length, d.mayhem.schedule.length, d.mayhem.events.length], [5, 15, 8]);
+  assert.deepStrictEqual([d.mayhem.week.length, d.mayhem.schedule.length, d.mayhem.events.length, d.mayhem.night.length], [5, 15, 8, 8]);
+  assert.ok(/Friday, March 19/.test(d.mayhem.fields['Squad Night']) && /\$5/.test(d.mayhem.fields['Squad Night Entry']));
   assert.strictEqual(d.kickoff.fields['Date'], 'Friday, September 25, 2026');
   assert.strictEqual(d.mayhem.scoreboard, null, 'no Mayhem Week points yet');
   const rows = w.book.getSheetByName('Event Rows');
@@ -525,6 +526,10 @@ test('Mayhem Week: 3-event limit, no two at once, self sign-up only when ON, cap
   w.ensureMayhemWeekTabs_();
   const evTab = w.book.getSheetByName('Sign-up Events');
   assert.deepStrictEqual(evTab.rows[0].slice(4), ['Slot', 'Type', 'Self Sign-up']);
+  assert.strictEqual(evTab.rows.length - 1, 25, 'an empty tab starts with the Mayhem Week chart');
+  assert.ok(evTab.rows.slice(1).every(r => r[3] === false), 'all closed until sign-ups open');
+  assert.strictEqual(evTab.rows.filter(r => r[4] === 'Field Events').length, 5, 'Thursday field events share one slot');
+  evTab.rows.splice(1);
   evTab.rows.push(['Mario Kart', '2027-03-15', 4, true, 'Lunch', 'Gaming', true], ['Squad Bowl', '2027-03-15', 4, true, 'Lunch', 'Brain', true],
     ['Chess', '2027-03-16', 2, true, 'Core Extension', 'Brain', true], ['Spoons', '2027-03-17', 4, true, 'Lunch', 'Table', true],
     ['Tug-o-war', '2027-03-19', 15, true, 'Squad Night', 'Active', false], ['Old event', '2026-10-01', 0, false, '', '', true]);
