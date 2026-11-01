@@ -3859,7 +3859,7 @@ function buildTV(){
 
   buildSummitMap();
   if(window.clashStudentTV_) window.clashStudentTV_(); // challenge + latest-points slides (Student.html)
-  document.getElementById('tvNav').innerHTML=Array.from({length:TV_SLIDE_COUNT},(_,i)=>i).map(i=>`<div class="tv-dot${i===tvSlide?' on':''}" onclick="showSlide(${i})"></div>`).join('');
+  document.getElementById('tvNav').innerHTML=Array.from({length:TV_SLIDE_COUNT},(_,i)=>i).map(i=>`<div class="tv-dot${i===tvSlide?' on':''}" onclick="showSlide(${i});startAuto()"></div>`).join('');
 }
 
 const TV_SLIDE_COUNT=7;
@@ -3977,8 +3977,10 @@ function buildSummitMap(){
     </g>
   </svg>`;
 }
-function showSlide(n){ if(n===6) buildSummitMap(); /* replays the climb */ tvSlide=n; document.querySelectorAll('.tv-slide').forEach((s,i)=>s.classList.toggle('active',i===n)); document.querySelectorAll('.tv-dot').forEach((d,i)=>d.classList.toggle('on',i===n)); tvPct=0; document.getElementById('tvProg').style.width='0%'; }
-function startAuto(){ clearInterval(tvTimer); clearInterval(tvPTimer); const step=80,inc=step/TV_MS*100; tvPTimer=setInterval(()=>{tvPct=Math.min(tvPct+inc,100);document.getElementById('tvProg').style.width=tvPct+'%';},step); tvTimer=setInterval(()=>{showSlide((tvSlide+1)%TV_SLIDE_COUNT);startAuto();},TV_MS); }
+function showSlide(n){ if(n===6) buildSummitMap(); /* replays the climb */ tvSlide=n; document.querySelectorAll('.tv-slide').forEach((s,i)=>s.classList.toggle('active',i===n)); document.querySelectorAll('.tv-dot').forEach((d,i)=>d.classList.toggle('on',i===n)); tvPct=0; tvProgRun(false); }
+// The slide timer bar fills with one GPU transform per slide instead of a width change every 80ms.
+function tvProgRun(go){ const p=document.getElementById('tvProg'); if(!p) return; p.style.transition='none'; p.style.transform='scaleX(0)'; if(!go) return; void p.offsetWidth; p.style.transition='transform '+TV_MS+'ms linear'; p.style.transform='scaleX(1)'; }
+function startAuto(){ clearInterval(tvTimer); clearInterval(tvPTimer); tvProgRun(true); tvTimer=setInterval(()=>{showSlide((tvSlide+1)%TV_SLIDE_COUNT);startAuto();},TV_MS); }
 
 document.addEventListener('keydown',e=>{
   if(!document.getElementById('tvView').classList.contains('active')) return;

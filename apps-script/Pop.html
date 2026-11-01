@@ -131,8 +131,50 @@ html[data-squad="BLACK"] .hero-sq-card[data-sq="BLACK"], html[data-squad="GOLD"]
 #mySquadApp .ms-tile:hover { transform: translateY(-3px); }
 #mySquadApp .ms-tile-val { font-size: 36px; font-variant-numeric: tabular-nums; }
 #mySquadApp .ms-badge:not(.locked) { position: relative; overflow: hidden; }
-#mySquadApp .ms-badge:not(.locked)::after { content: ''; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.35) 50%, transparent 60%); transform: translateX(-120%); animation: popShine 5s ease-in-out infinite; }
-@keyframes popShine { 0%, 70% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
+/* Earned stamps catch the light once when the page opens (one after another), and again when
+   pointed at. A loop that never stops would just be noise on a page students keep open. */
+#mySquadApp .ms-badge:not(.locked)::after { content: ''; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.35) 50%, transparent 60%); transform: translateX(-120%); animation: popShine .9s cubic-bezier(.22,1,.36,1) both; }
+#mySquadApp .ms-badge:not(.locked):nth-child(2)::after { animation-delay: .12s; } #mySquadApp .ms-badge:not(.locked):nth-child(3)::after { animation-delay: .24s; }
+#mySquadApp .ms-badge:not(.locked):nth-child(n+4)::after { animation-delay: .36s; }
+@media (hover: hover) { #mySquadApp .ms-badge:not(.locked):hover::after { animation: popShine2 .9s cubic-bezier(.22,1,.36,1) both; } }
+@keyframes popShine { from { transform: translateX(-120%); } to { transform: translateX(120%); } }
+@keyframes popShine2 { from { transform: translateX(-120%); } to { transform: translateX(120%); } }
+
+/* Race bars grow from the left as the scoreboard scrolls in: the gap between squads is the story. */
+@supports (animation-timeline: view()) {
+  .pop-race .fill { animation: popGrow linear both; animation-timeline: view(); animation-range: entry 20% cover 40%; }
+}
+@keyframes popGrow { from { transform: scaleX(0); } }
+
+/* Hover lifts only where there is a real mouse; on touch Chromebooks and phones a tap would
+   otherwise leave cards stuck "lifted". Buttons give a small press when clicked. */
+@media (hover: none) {
+  .pop-card:hover, .pop-stop:hover, .pop-bento > .card:hover, .hero-sq-card:hover, #mySquadApp .ms-tile:hover { transform: none; box-shadow: none; }
+}
+.btn:active, .btn-submit:active, .pop-card:active { transform: scale(.97); transition-duration: .08s; }
+
+/* Light backgrounds (the hallway TV is always light; light mode on the site): the squad colors
+   are tuned for dark, so Black, Grey and Gold text went pale-on-white (Black about 1.5:1).
+   Text gets darker shades of the same squads; bars and fills keep the bright ones. */
+:is(#tvView, body.light-mode) [style*="color:#c5c9d1"]:not([style*="background:#c5c9d1"]), :is(#tvView, body.light-mode) [style*="color:#b8bcc6"]:not([style*="background:#b8bcc6"]) { color: #1f2430 !important; }
+:is(#tvView, body.light-mode) [style*="color:#99a8bb"]:not([style*="background:#99a8bb"]), :is(#tvView, body.light-mode) [style*="color:#8899aa"]:not([style*="background:#8899aa"]) { color: #4b5b70 !important; }
+:is(#tvView, body.light-mode) [style*="color:#ffe100"]:not([style*="background:#ffe100"]) { color: #8a6500 !important; }
+:is(#tvView, body.light-mode) [style*="color:#bb8ef5"]:not([style*="background:#bb8ef5"]) { color: #6d28d9 !important; }
+
+/* Keyboard users can see where they are (the site had no focus ring). */
+.btn:focus-visible, .btn-submit:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--pop-gold); outline-offset: 3px; border-radius: 8px; }
+
+/* TV: each slide's content settles in after the crossfade. Seen from across a hallway every
+   ~9 seconds, so it can be a little expressive; it's still only opacity and a short rise. */
+.tv-slide.active > :not(.tv-rank-grid, .tv-met-grid, .tv-ch-grid, .tv-cat-rows) { animation: popTvIn .7s cubic-bezier(.22,1,.36,1) both; }
+.tv-slide.active > *:nth-child(2) { animation-delay: .08s; } .tv-slide.active > *:nth-child(3) { animation-delay: .16s; } .tv-slide.active > *:nth-child(n+4) { animation-delay: .24s; }
+@keyframes popTvIn { from { opacity: 0; transform: translateY(14px); } }
+/* Inside a slide, the squad cards / rows arrive one after another in rank order. */
+.tv-slide.active :is(.tv-rank-grid, .tv-met-grid, .tv-ch-grid, .tv-cat-rows) > * { animation: popTvIn .7s cubic-bezier(.22,1,.36,1) both; }
+.tv-slide.active :is(.tv-rank-grid, .tv-met-grid, .tv-ch-grid, .tv-cat-rows) > :nth-child(2) { animation-delay: .1s; }
+.tv-slide.active :is(.tv-rank-grid, .tv-met-grid, .tv-ch-grid, .tv-cat-rows) > :nth-child(3) { animation-delay: .2s; }
+.tv-slide.active :is(.tv-rank-grid, .tv-met-grid, .tv-ch-grid, .tv-cat-rows) > :nth-child(n+4) { animation-delay: .3s; }
 
 /* Reveal as sections scroll in (only where supported; everything is visible otherwise) */
 @supports (animation-timeline: view()) {
@@ -140,8 +182,9 @@ html[data-squad="BLACK"] .hero-sq-card[data-sq="BLACK"], html[data-squad="GOLD"]
 }
 @keyframes popIn { from { opacity: .001; transform: translateY(26px) scale(.98); } }
 @media (prefers-reduced-motion: reduce) {
-  .pop-reveal, #mySquadApp .ms-badge::after { animation: none !important; }
+  .pop-reveal, .pop-race .fill, .tv-slide.active > *, .tv-slide.active :is(.tv-rank-grid, .tv-met-grid, .tv-ch-grid, .tv-cat-rows) > *, #mySquadApp .ms-badge::after, #mySquadApp .ms-badge:hover::after { animation: none !important; }
   .pop-card, .pop-stop, .pop-bento > .card, #mySquadApp .ms-tile { transition: none !important; }
+  .btn:active, .btn-submit:active, .pop-card:active { transform: none; }
 }
 </style>
 <script>
