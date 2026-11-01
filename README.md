@@ -14,11 +14,13 @@ Ephrata Middle School's squad competition site, clashofclasses.org.
 | `apps-script/02_Router.gs` | Reads and writes the site data. `events` and `metrics` are plain, editable tabs. `?action=load` is the old read-only API |
 | `apps-script/03_Web.gs` | Serves the page. Also handles admin sign-in (scrambled password), merging saves, poll votes, Trail Journal stats and the Sheet menu |
 | `apps-script/04_Students.gs` | The My Squad page, automatic squad challenges and bonuses, and the TV feed |
+| `apps-script/05_Generals.gs` | Generals HQ (800# + `GENERALS_CODE`): squad roster with who isn't placed yet, event sign-ups, Mayhem Week checklist, service project. Also MLC roles on My Squad (Vanguard stays private) |
 | `apps-script/Index.html` | The page markup |
 | `apps-script/Styles.html`, `SiteCss.html` | Styles |
 | `apps-script/App.html` | The main site script |
 | `apps-script/Widgets.html` | Freudenfreude Ticker and Growth board |
 | `apps-script/Student.html` | My Squad, challenge bars and the two new TV slides |
+| `apps-script/Generals.html` | The Generals HQ page: roster and sign-ups, Mayhem checklist, hype script, full-screen squad meeting, service project |
 | `tools/wrapper-index.html`, `tools/wrapper-sw.js` | Become `index.html` and `sw.js` at cutover. The new `sw.js` clears the old site's offline cache |
 
 ## Where the numbers come from
