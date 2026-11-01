@@ -329,6 +329,46 @@ test('Generals HQ: General + code only, own squad only, everyone placed before d
   assert.throws(() => w.clashGeneralsHq('made-up'), /sign in/);
 });
 
+test('Daily Polls: one vote per 800#, results after voting, points for voters and winners once', () => {
+  const w = world();
+  addStudentTabs(w); // Ann L. 8001234 Gold, Bo K. 8005678 Grey
+  w.ensureSettings_();
+  w.ensurePollTabs_();
+  const day = n => w.Utilities.formatDate(new Date(Date.now() + n * 86400000));
+  const polls = w.book.getSheetByName('Daily Polls');
+  polls.rows.splice(1); // drop the two samples
+  polls.rows.push([true, day(0), 'This or That', 'Coke or Pepsi?', 'Coke | Pepsi', '', 1, 1, '', ''],
+    [true, day(-1), 'Trivia', 'How many squads?', '3 | 4', '4', 1, 2, '', ''],
+    [false, day(0), 'Trivia', 'Hidden?', 'a | b', 'a', 1, 1, '', '']);
+  let d = JSON.parse(w.clashDailyPolls(''));
+  assert.deepStrictEqual(d.today.map(p => p.question), ['Coke or Pepsi?']);
+  assert.strictEqual(d.today[0].counts, null, 'no results before you vote');
+  assert.strictEqual(d.last.question, 'How many squads?');
+  assert.throws(() => w.clashPollVote('2', '8009999', 'Coke'), /isn't on the list/);
+  assert.throws(() => w.clashPollVote('2', '8001234', 'Sprite'), /choices/);
+  assert.throws(() => w.clashPollVote('3', '8001234', '4'), /closed/, 'yesterday is closed');
+  d = JSON.parse(w.clashPollVote('2', '800-1234', 'Coke'));
+  assert.strictEqual(d.today[0].voted, 'Coke');
+  assert.deepStrictEqual(J(d.today[0].counts), { Coke: 1, Pepsi: 0 });
+  assert.throws(() => w.clashPollVote('2', '8001234', 'Pepsi'), /already voted/);
+  w.clashPollVote('2', '8005678', 'Coke');
+  // Score yesterday's trivia: put two votes on it (as if cast yesterday).
+  const votes = w.book.getSheetByName('Poll Votes');
+  votes.rows.push(['3', day(-1), '8001234', 'GOLD', '4', ''], ['3', day(-1), '8005678', 'GREY', '3', '']);
+  assert.deepStrictEqual(J(w.awardDailyPolls()), ['DAILY_POLL_POINTS is OFF.']);
+  w.setSettingValue_('DAILY_POLL_POINTS', 'ON');
+  assert.deepStrictEqual(J(w.awardDailyPolls()), ['How many squads?: BLACK +0, GOLD +3, GREY +1, PURPLE +0'], 'today\'s poll waits until tomorrow');
+  const ev = events(w).filter(r => r[2] === 'daily_poll');
+  assert.strictEqual(ev.length, 1);
+  assert.deepStrictEqual([ev[0][7], ev[0][8]], [3, 1]);
+  assert.ok(/^Awarded/.test(polls.rows[2][8]));
+  assert.deepStrictEqual(J(w.awardDailyPolls()), [], 'never twice');
+  const last = JSON.parse(w.clashDailyPolls('8001234')).last;
+  assert.deepStrictEqual([last.answer, last.voted, J(last.winners)], ['4', '4', ['4']]);
+  assert.ok(/Today's This or That: Coke or Pepsi\? Vote on/.test(w.pollAnnouncement_()), w.pollAnnouncement_());
+  assert.ok(/The answer: 4/.test(w.pollAnnouncement_()));
+});
+
 test('page files: scripts parse, no old token or Supabase key left', () => {
   for (const f of ['App.html', 'Widgets.html', 'Index.html', 'Student.html', 'Generals.html']) {
     const h = fs.readFileSync(path.join(dir, f), 'utf8');

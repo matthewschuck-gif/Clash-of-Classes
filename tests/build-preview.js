@@ -69,6 +69,7 @@ getSheet_('MLC Roster').appendRow(['8001234', 'Ann L.', 'Gold', 'General', '']);
 getSheet_('Sign-up Events').appendRow(['Dodgeball', '2026-11-20', 8, true]);
 getSheet_('Sign-up Events').appendRow(['Lip Sync Battle', '2026-12-04', 4, true]);
 getSheet_('Student Board').appendRow(['8009999', 'Gus T.', 'Gold', '7', '1', '0', '0', '0', '', '0', '0', '0', '', '', '']);
+ensurePollTabs_(); getSheet_('Daily Polls').rows.slice(1).forEach(function (r) { r[0] = true; });
 </script>
 <script>
 // google.script.run → the .gs functions above, asynchronously, like the real thing.

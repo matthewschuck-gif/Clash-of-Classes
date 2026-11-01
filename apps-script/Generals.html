@@ -95,6 +95,7 @@
       (next.length ? 'Sign up now: ' + next.map(function (e) { return e.event + (e.date ? ' on ' + e.date : ''); }).join(' and ') + '. See your General!\n\n' : '') +
       (ch ? 'This week\'s challenge: ' + ch.title + '. We\'re at ' + (ch.progress[d.squad] || 0) + ' of ' + ch.goal + '.\n\n' : '') +
       (d.theme ? 'Remember our theme, ' + d.theme.theme + ': ' + d.theme.meaning + '\n\n' : '') +
+      (d.poll && !/^No daily poll/.test(d.poll) ? d.poll + '\n\n' : '') +
       'Every Trait Dough bill counts. Let\'s go, ' + sq + '!';
   }
   function hypeView() {

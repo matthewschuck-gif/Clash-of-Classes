@@ -209,6 +209,10 @@ function onOpen() {
     .addSeparator()
     .addItem('Turn on challenge bonuses', 'menuTurnOnChallenges_')
     .addItem('Turn off challenge bonuses', 'menuTurnOffChallenges_')
+    .addSeparator()
+    .addItem('Today\'s poll announcement', 'menuPollAnnouncement_')
+    .addItem('Turn on daily poll points', 'menuTurnOnPolls_')
+    .addItem('Turn off daily poll points', 'menuTurnOffPolls_')
     .addToUi();
 }
 

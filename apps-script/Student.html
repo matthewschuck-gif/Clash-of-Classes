@@ -129,10 +129,12 @@
         earned.map(function (b) { return '<span class="ms-badge">' + esc(b) + '</span>'; }).join('') +
         locked.map(function (b) { return '<span class="ms-badge locked">🔒 ' + esc(b) + '</span>'; }).join('') +
       '</div></div>' +
+      '<div id="myPollSection" style="display:none"></div>' +
       (mine ? '<div class="ms-h" style="margin-top:6px">Your squad\'s challenges</div>' + mine : '') +
       '<div class="ms-small">Updated every hour' + (me.updated ? ' · last update ' + esc(me.updated) : '') +
       ' · <a href="#" id="msNotMe" style="color:var(--purple-lt)">Not you? Switch</a></div>';
     document.getElementById('msNotMe').onclick = function (e) { e.preventDefault(); store(KEY, null); renderForm(); };
+    if (typeof loadPolls === 'function') loadPolls(); // shows what this student voted
   }
 
   // ── TV slides (called from buildTV in App) ──
@@ -140,8 +142,12 @@
     var ch = document.getElementById('tvChallenges');
     if (ch) {
       var active = challenges.filter(function (c) { return c.active; });
-      ch.innerHTML = active.length ? active.slice(0, 3).map(function (c) { return challengeCard(c); }).join('')
-        : '<div class="ch-card"><div class="ch-title">🏁 No challenge running right now</div></div>';
+      var pollTv = polls.today.map(function (p) {
+        return '<div class="ch-card"><div class="ch-title">🗳️ Today\'s ' + (p.kind === 'Trivia' ? 'trivia' : 'This or That') + ': ' + esc(p.question) + '</div>' +
+          '<div class="ch-desc">' + p.choices.map(esc).join(' or ') + '? Vote on clashofclasses.org with your 800#. Every vote = a squad point!</div></div>';
+      }).join('');
+      ch.innerHTML = pollTv + (active.length ? active.slice(0, 3).map(function (c) { return challengeCard(c); }).join('')
+        : (pollTv ? '' : '<div class="ch-card"><div class="ch-title">🏁 No challenge running right now</div></div>'));
     }
     var feed = document.getElementById('tvFeed');
     if (feed) window.gasRun_('clashTvFeed').then(function (f) {
@@ -158,12 +164,58 @@
     }).catch(function () {});
   };
 
+  // ── Daily Polls (06_Polls.gs): vote with your 800#, results after you vote ──
+  var polls = { today: [], last: null };
+  function pollCard(p) {
+    var showCounts = p.counts && (p.voted || p.closed);
+    var total = Math.max(1, Object.keys(p.counts || {}).reduce(function (n, k) { return n + p.counts[k]; }, 0));
+    var head = '<div class="ch-title">🗳️ ' + (p.kind === 'Trivia' ? 'Trivia' : 'This or That') + (p.closed ? ' · results' : '') + '</div><div class="ch-desc">' + esc(p.question) + '</div>';
+    if (!showCounts && !p.closed) {
+      return '<div class="ch-card">' + head + '<div class="ms-form">' + p.choices.map(function (c) {
+        return '<button class="btn btn-purple poll-choice" data-poll="' + esc(p.id) + '" data-choice="' + esc(c) + '">' + esc(c) + '</button>';
+      }).join(' ') + '</div><div class="ms-small" style="margin-top:8px">Vote with your 800#: every vote earns your squad a point' +
+        (p.kind === 'Trivia' ? ', and a right answer earns one more.' : ', and picking the winning side earns one more.') + '</div><div class="ms-err poll-err"></div></div>';
+    }
+    return '<div class="ch-card">' + head + p.choices.map(function (c) {
+      var v = (p.counts || {})[c] || 0, pct = Math.round(100 * v / total);
+      var mark = (p.winners || []).indexOf(c) > -1 ? ' 🏆' : '';
+      return '<div class="ch-row"><b>' + esc(c) + mark + '</b><div class="ch-bar"><div class="ch-fill" style="width:' + pct + '%;background:var(--gold-soft,#fbbf24)"></div></div><span>' + pct + '%</span></div>';
+    }).join('') + '<div class="ms-small" style="margin-top:8px">' + (p.voted ? 'You picked <b>' + esc(p.voted) + '</b>. ' : '') +
+      (p.kind === 'Trivia' ? (p.closed ? 'Answer: <b>' + esc(p.answer) + '</b>' : 'The answer is revealed tomorrow!') : (p.closed ? '' : 'Final results tomorrow.')) + ' · ' + p.total + (p.total === 1 ? ' vote' : ' votes') + '</div></div>';
+  }
+  function renderPolls() {
+    var html = polls.today.map(pollCard).join('') + (polls.last ? pollCard(polls.last) : '');
+    ['dailyPollSection', 'myPollSection'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.style.display = html ? 'block' : 'none';
+      el.innerHTML = html;
+    });
+  }
+  function loadPolls() {
+    window.gasRun_('clashDailyPolls', stored(KEY)).then(function (d) { polls = d; renderPolls(); }).catch(function () {});
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.poll-choice');
+    if (!b) return;
+    var id = stored(KEY) || window.prompt('Type your 800 number to vote:') || '';
+    var card = b.closest('.ch-card'), err = card.querySelector('.poll-err');
+    if (!String(id).replace(/\D/g, '')) return;
+    if (err) err.textContent = 'Voting…';
+    window.gasRun_('clashPollVote', b.getAttribute('data-poll'), id, b.getAttribute('data-choice')).then(function (d) {
+      store(KEY, String(id).replace(/\D/g, ''));
+      polls = d; renderPolls();
+    }).catch(function (x) { if (err) err.textContent = (x && x.message || '').replace(/^Exception:\s*/, ''); });
+  });
+
   function start() {
     renderForm();
     var saved = stored(KEY);
     if (saved) lookup(saved);
     loadChallenges();
+    loadPolls();
     setInterval(loadChallenges, 120000);
+    setInterval(loadPolls, 60000);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
