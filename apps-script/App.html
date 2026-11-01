@@ -2606,6 +2606,7 @@ function renderMayhem(){
   const links=D.links.mayhem||[];
   const el=document.getElementById('mayhemLinks');
   if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map((l,i)=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via the admin panel.</div>'}`;
+  applyEventPage_('mayhem'); // Sheet values win (10_EventPages.gs)
 }
 
 function renderChamps(){
@@ -2638,6 +2639,7 @@ function renderChamps(){
   const links=D.links.champs||[];
   const el=document.getElementById('champsLinks');
   if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map(l=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via the admin panel.</div>'}`;
+  applyEventPage_('champs');
 }
 
 function renderKickoff(){
@@ -2674,7 +2676,86 @@ function renderKickoff(){
   const links=D.links.kickoff||[];
   const el=document.getElementById('kickoffLinks');
   if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map(l=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via the admin panel.</div>'}`;
+  applyEventPage_('kickoff');
 }
+
+// ── EVENT PAGES FROM THE SHEET (10_EventPages.gs: Event Pages + Event Rows tabs) ──
+// Each page renders as before (Edit Page panel), then anything filled in on the Sheet wins.
+var EVENT_PAGES=null; // var: render functions may run before this line does
+const evEsc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const evParas=s=>'<p>'+evEsc(s).replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')+'</p>';
+function applyEventPage_(p){
+  const d=EVENT_PAGES&&EVENT_PAGES[p]; if(!d) return;
+  const f=d.fields||{}, $=id=>document.getElementById(id);
+  const text=(id,v)=>{ const el=$(id); if(el&&v) el.textContent=v; };
+  text(p+'Subtitle',f['Subtitle']); text(p+'Date',f['Date']); text(p+'Location',f['Location']);
+  text(p==='mayhem'?'mayhemEventCount':p+'Format',f['Format']); text(p+'SchedLabel',f['Schedule Label']);
+  if(f['Intro']&&$(p+'Body')) $(p+'Body').innerHTML=evParas(f['Intro']);
+  if(p==='mayhem'){ text('mayhemAudienceExpect',f['Audience Expectations']); text('mayhemParticipantExpect',f['Participant Expectations']); }
+  const banner=$(p+'WinnerBanner');
+  if(banner&&/^(none|hide|no)$/i.test(f['Winner']||'')) banner.style.display='none';
+  else if(banner&&f['Winner']){
+    banner.style.display='block';
+    text(p==='mayhem'?'mayhemWinnerRoom':p+'WinnerText','🏆 '+f['Winner']); text(p+'WinnerNote',f['Winner Note']);
+  }
+  if(banner&&f['Winner Label']&&banner.firstElementChild) banner.firstElementChild.textContent='🏆 '+f['Winner Label'];
+  // Planning doc button next to Edit Page.
+  const hero=document.querySelector('#page-'+p+' .page-hero');
+  let btn=$(p+'DocBtn');
+  if(f['Planning Doc']&&hero){
+    if(!btn){ btn=document.createElement('a'); btn.id=p+'DocBtn'; btn.className='btn btn-purple'; btn.target='_blank'; btn.rel='noopener'; hero.appendChild(btn); }
+    btn.href=f['Planning Doc']; btn.textContent='📄 '+(f['Planning Doc Label']||'Planning doc');
+  } else if(btn) btn.remove();
+  // Schedule rows replace the built-in schedule.
+  if(d.schedule.length&&$(p+'ScheduleBlock')){
+    const el=$(p+'ScheduleBlock');
+    el.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:32px';
+    el.innerHTML=d.schedule.map((r,i)=>`<div style="display:grid;grid-template-columns:minmax(96px,auto) 1fr;gap:14px;padding:10px 16px;${i?'border-top:1px solid var(--border)':''}">
+      <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--gold-soft);white-space:nowrap">${evEsc(r.heading)}</div>
+      <div style="font-size:13.5px;color:var(--text);line-height:1.55">${evEsc(r.details)}${r.points?`<div style="font-size:12px;color:var(--text2);margin-top:2px">${evEsc(r.points)}</div>`:''}</div></div>`).join('');
+  }
+  // Event rows replace the built-in event list.
+  if(d.events.length&&$(p+'EventsBlock')){
+    $(p+'EventsBlock').innerHTML=d.events.map((r,i)=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt);background:rgba(109,43,159,0.14);padding:3px 9px;border-radius:999px">${i+1}</span>
+        <span style="font-family:'Fraunces',serif;font-size:17px;font-weight:700">${evEsc(r.heading)}</span></div>
+      ${r.details?`<div style="font-size:13.5px;color:var(--text2);line-height:1.6;margin-bottom:8px">${evEsc(r.details)}</div>`:''}
+      ${r.points?`<div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--gold-soft)">Points: ${evEsc(r.points)}</div>`:''}
+      ${r.link?`<a href="${evEsc(r.link)}" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--purple-lt)">More ↗</a>`:''}</div>`).join('');
+  }
+  // Mayhem Week: the days, then the squad scoreboard from mayhem_week points.
+  if(p==='mayhem'&&$('mayhemWeekBlock')){
+    const wb=$('mayhemWeekBlock'), sb=d.scoreboard;
+    wb.style.display=d.week.length||sb?'block':'none';
+    const days=d.week.map((r,i)=>`<div style="display:grid;grid-template-columns:minmax(150px,auto) 1fr;gap:14px;padding:11px 16px;${i?'border-top:1px solid var(--border)':''}">
+      <div style="font-family:'Fraunces',serif;font-weight:700;font-size:14.5px">${evEsc(r.heading)}</div>
+      <div style="font-size:13.5px;color:var(--text2);line-height:1.55">${evEsc(r.details)}${r.points?`<div style="color:var(--gold-soft);font-weight:600;margin-top:2px">${evEsc(r.points)}</div>`:''}</div></div>`).join('');
+    let board='';
+    if(sb){
+      const tot=sq=>sb.columns.reduce((n,c)=>n+(sb.scores[c][sq]||0),0);
+      const order=SQUADS.slice().sort((a,b)=>tot(b)-tot(a)), best=tot(order[0]);
+      board=`<div style="overflow-x:auto;margin-top:14px"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:520px">
+        <thead><tr><th style="text-align:left;padding:8px 10px;color:var(--text3);font-weight:600">Squad</th>${sb.columns.map(c=>`<th style="text-align:right;padding:8px 10px;color:var(--text3);font-weight:600">${evEsc(c)}</th>`).join('')}<th style="text-align:right;padding:8px 10px;color:var(--text);font-weight:700">Total</th></tr></thead>
+        <tbody>${order.map((sq,i)=>`<tr style="border-top:1px solid var(--border)"><td style="padding:9px 10px;font-weight:700;color:${SQ_HEX[sq]}">${best>0&&tot(sq)===best?'🏆 ':''}${sq}</td>${sb.columns.map(c=>`<td style="text-align:right;padding:9px 10px;font-family:'DM Mono',monospace">${sb.scores[c][sq]||0}</td>`).join('')}<td style="text-align:right;padding:9px 10px;font-family:'DM Mono',monospace;font-weight:700">${tot(sq)}</td></tr>`).join('')}</tbody></table></div>`;
+    }
+    wb.innerHTML=`<div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Mayhem Week</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Color Squad Finals Challenge — squads battle at lunch every day${sb?'':'. The scoreboard fills in as points are recorded'}.</div>
+      ${days?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">${days}</div>`:''}${board}`;
+  }
+  // Sheet links go after the Edit Page links.
+  const le=$(p+'Links');
+  if(le&&d.links.length){
+    le.querySelectorAll('.ev-sheet-link').forEach(a=>a.remove());
+    const none=le.querySelector('div[style*="Add links"]')||[...le.children].find(c=>/Add links via/.test(c.textContent)); if(none) none.remove();
+    le.insertAdjacentHTML('beforeend',d.links.map(l=>`<a href="${evEsc(l.link)}" target="_blank" rel="noopener" class="ext-link active-link ev-sheet-link">${evEsc(l.heading)}<span class="link-arrow">↗</span></a>`).join(''));
+  }
+}
+function loadEventPages(){
+  if(!window.gasRun_) return;
+  window.gasRun_('clashEventPages').then(d=>{ EVENT_PAGES=d; ['mayhem','kickoff','champs'].forEach(applyEventPage_); }).catch(()=>{});
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadEventPages); else loadEventPages();
 
 function renderWheel(){
   const pc=D.pageContent||{};

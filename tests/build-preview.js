@@ -77,6 +77,9 @@ ensureLoreTab_(); getSheet_('Lore Chapters').rows.splice(1);
 getSheet_('Lore Chapters').appendRow([true, 'ALL', 1, 'The Lantern at the Base', 'Long before the first bell, four lanterns were lit at the foot of the mountain…', '', '', '']);
 getSheet_('Lore Chapters').appendRow([true, 'ALL', 2, 'The Ridge Path', 'The second chapter.', '', 'points: 300', '']);
 getSheet_('Lore Chapters').appendRow([true, 'ALL', 3, 'Above the Clouds', 'The third chapter.', '', 'points: 5000', '']);
+ensureEventPageTabs_();
+getSheet_('events').appendRow([104, 'Paper Chain Challenge', 'mayhem_week', '2026-10-30', '', '', 3, 5, 1, 2]);
+getSheet_('events').appendRow([105, 'Penny Tower Race', 'mayhem_week', '2026-10-31', '', '', 2, 0, 4, 1]);
 </script>
 <script>
 // google.script.run → the .gs functions above, asynchronously, like the real thing.

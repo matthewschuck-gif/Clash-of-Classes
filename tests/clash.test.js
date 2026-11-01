@@ -490,6 +490,33 @@ test('Trail Passport: stamps from the Student Board, poll votes and sign-ups; co
   assert.deepStrictEqual(JSON.parse(w.clashMyPage('8005678')).passport.stamps.map(s => s.done), [false, false, false, false]);
 });
 
+test('Event pages: Mayhem/Kick Off fields and rows from the Sheet; blanks fall back; only https links; Mayhem Week scoreboard', () => {
+  const w = world();
+  w.ensureEventPageTabs_();
+  let d = JSON.parse(w.clashEventPages());
+  assert.strictEqual(d.mayhem.fields['Date'], 'Friday, March 19, 2027');
+  assert.ok(!('Location' in d.mayhem.fields), 'a blank Value keeps the Edit Page text');
+  assert.ok(/15NP5-GEWObOM2HTOm46fznCmqlS/.test(d.mayhem.fields['Planning Doc']));
+  assert.deepStrictEqual([d.mayhem.week.length, d.mayhem.schedule.length, d.mayhem.events.length], [5, 15, 8]);
+  assert.strictEqual(d.kickoff.fields['Date'], 'Friday, September 25, 2026');
+  assert.strictEqual(d.mayhem.scoreboard, null, 'no Mayhem Week points yet');
+  const rows = w.book.getSheetByName('Event Rows');
+  rows.rows.push([true, 'kickoff', 'Links', 1, 'Bad', '', '', 'javascript:alert(1)'], [false, 'kickoff', 'Events', 1, 'Hidden', '', '', ''],
+    [true, 'kickoff', 'Events', 2, 'Squad Relay', 'Rules', '10 pts', '']);
+  w.book.getSheetByName('Event Pages').rows.push(['kickoff', 'Planning Doc', 'http://not-secure.example', '']);
+  const ev = w.book.getSheetByName('events');
+  const now = new Date(), sy = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1; // this school year starts Aug 1 of sy
+  ev.rows.push([130, 'Paper Chain Challenge', 'mayhem_week', sy + '-08-15', '', '', 3, 5, 0, 1], [131, 'Trivia', 'mayhem_week', sy + '-08-16', '', '', 0, 0, 4, 0],
+    [132, 'Old', 'mayhem_week', sy + '-03-15', '', '', 9, 9, 9, 9]);
+  d = JSON.parse(w.clashEventPages());
+  assert.deepStrictEqual(d.kickoff.links, [], 'non-https links are dropped');
+  assert.strictEqual(d.kickoff.fields['Planning Doc'], '');
+  assert.deepStrictEqual(d.kickoff.events.map(e => e.heading), ['Squad Relay']);
+  assert.deepStrictEqual(J(d.mayhem.scoreboard.columns), ['Paper Chain Challenge', 'Trivia'], 'only this school year');
+  assert.deepStrictEqual(J(d.mayhem.scoreboard.scores['Paper Chain Challenge']), { BLACK: 3, GOLD: 5, GREY: 0, PURPLE: 1 });
+  assert.ok(JSON.parse(w.clashTvFeed()).latest.some(e => e.label === '🏔️ Mayhem Week'));
+});
+
 test('page files: scripts parse, no old token or Supabase key left', () => {
   for (const f of ['App.html', 'Widgets.html', 'Index.html', 'Student.html', 'Generals.html']) {
     const h = fs.readFileSync(path.join(dir, f), 'utf8');
