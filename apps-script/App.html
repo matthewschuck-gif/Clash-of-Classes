@@ -2753,7 +2753,7 @@ function applyEventPage_(p){
 }
 function loadEventPages(){
   if(!window.gasRun_) return;
-  window.gasRun_('clashEventPages').then(d=>{ EVENT_PAGES=d; ['mayhem','kickoff','champs'].forEach(applyEventPage_); }).catch(()=>{});
+  window.gasRun_('clashEventPages').then(d=>{ EVENT_PAGES=d; window.EVENT_PAGES=d; ['mayhem','kickoff','champs'].forEach(applyEventPage_); if(window.clashMayhemHome_) window.clashMayhemHome_(); }).catch(()=>{});
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadEventPages); else loadEventPages();
 

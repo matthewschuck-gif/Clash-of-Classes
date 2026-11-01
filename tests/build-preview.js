@@ -77,7 +77,10 @@ ensureLoreTab_(); getSheet_('Lore Chapters').rows.splice(1);
 getSheet_('Lore Chapters').appendRow([true, 'ALL', 1, 'The Lantern at the Base', 'Long before the first bell, four lanterns were lit at the foot of the mountain…', '', '', '']);
 getSheet_('Lore Chapters').appendRow([true, 'ALL', 2, 'The Ridge Path', 'The second chapter.', '', 'points: 300', '']);
 getSheet_('Lore Chapters').appendRow([true, 'ALL', 3, 'Above the Clouds', 'The third chapter.', '', 'points: 5000', '']);
-ensureEventPageTabs_();
+ensureEventPageTabs_(); ensureMayhemWeekTabs_(); setSettingValue_('SELF_SIGNUPS', 'ON');
+getSheet_('Sign-up Events').appendRow(['Mario Kart', '2027-03-15', 4, true, 'Lunch', 'Gaming', true]);
+getSheet_('Sign-up Events').appendRow(['Squad Bowl (trivia)', '2027-03-16', 4, true, 'Core Extension', 'Brain', true]);
+getSheet_('Sign-up Events').appendRow(['Tug-o-war', '2027-03-19', 15, true, 'Squad Night', 'Active', false]);
 getSheet_('events').appendRow([104, 'Paper Chain Challenge', 'mayhem_week', '2026-10-30', '', '', 3, 5, 1, 2]);
 getSheet_('events').appendRow([105, 'Penny Tower Race', 'mayhem_week', '2026-10-31', '', '', 2, 0, 4, 1]);
 </script>

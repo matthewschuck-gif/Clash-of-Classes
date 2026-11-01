@@ -70,9 +70,10 @@
   function rosterView() {
     var d = data;
     var open = d.events.filter(function (e) { return e.open; });
-    var opts = open.map(function (e) { return '<option value="' + esc(e.event) + '">' + esc(e.event) + (e.spots ? ' (' + e.taken + '/' + e.spots + ')' : '') + '</option>'; }).join('');
+    var opts = open.map(function (e) { return '<option value="' + esc(e.event) + '">' + esc(e.event) + (e.slot ? ' · ' + esc(e.slot) : '') + (e.spots ? ' (' + e.taken + '/' + e.spots + ')' : '') + '</option>'; }).join('');
     return '<div class="ms-card"><div class="ms-h">Events open for sign-up</div>' +
-      (d.events.length ? d.events.map(function (e) { return '<span class="hq-pill">' + esc(e.event) + (e.date ? ' · ' + esc(e.date) : '') + ' · ' + e.taken + (e.spots ? '/' + e.spots : '') + (e.open ? '' : ' · closed') + '</span>'; }).join('') : '<span class="ms-small">Staff add events on the Sign-up Events tab.</span>') + '</div>' +
+      (d.signupLimit ? '<p class="ms-small">Each student can be in up to ' + d.signupLimit + ' events, never two at the same time. Place everyone once before anyone doubles up.</p>' : '') +
+      (d.events.length ? d.events.map(function (e) { return '<span class="hq-pill">' + esc(e.event) + (e.type ? ' · ' + esc(e.type) : '') + (e.slot ? ' · ' + esc(e.slot) : '') + (e.date ? ' · ' + esc(e.date) : '') + ' · ' + e.taken + (e.spots ? '/' + e.spots : '') + (e.open ? '' : ' · closed') + '</span>'; }).join('') : '<span class="ms-small">Staff add events on the Sign-up Events tab.</span>') + '</div>' +
       '<div class="ms-card"><div class="ms-h">Squad roster (not placed yet first)</div>' +
       d.roster.map(function (s) {
         return '<div class="hq-row"><div><b>' + esc(s.name) + '</b>' + (s.grade ? ' <span class="ms-small">Gr ' + esc(s.grade) + '</span>' : '') + '<br>' +
@@ -171,6 +172,9 @@
       '<select class="hq-select" id="nomWho" style="max-width:none"><option value="">Pick a squad member…</option>' + d.roster.map(function (s) { return '<option value="' + esc(s.id) + '">' + esc(s.name) + '</option>'; }).join('') + '</select>' +
       '<textarea id="nomWhy" rows="3" placeholder="Why? (a sentence or two)" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px"></textarea>' +
       '<button class="btn btn-purple" id="nomGo">Send nomination</button></div>' +
+      ((d.captainTally || []).length ? '<div class="ms-h" style="margin-top:14px">Captain votes from your squad\'s Generals</div>' +
+        '<p class="ms-small">One vote per General per student. Staff confirm captains on the MLC Roster.</p>' +
+        d.captainTally.map(function (t) { return '<div class="hq-row"><div><b>' + esc(t.nominee) + '</b> · ' + esc(t.for) + '</div><div><b>' + t.votes + '</b> vote' + (t.votes === 1 ? '' : 's') + '</div></div>'; }).join('') : '') +
       (d.nominations.length ? '<div class="ms-h" style="margin-top:14px">Your nominations</div>' + d.nominations.map(function (n) { return '<div class="hq-row"><div><b>' + esc(n.nominee) + '</b> · ' + esc(n.for) + '<br><span class="ms-small">' + esc(n.date) + ' · ' + esc(n.why) + '</span></div><div></div></div>'; }).join('') : '') + '</div>' +
       d.letters.map(function (l, i) {
         return '<div class="ms-card"><div class="ms-h">End-of-year letter: ' + esc(l.letter) + '</div>' +

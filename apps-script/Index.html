@@ -107,6 +107,7 @@
   <div id="challengeSection" style="display:none;margin-top:28px"></div>
   <div id="autoChallengeSection" style="display:none;margin-top:20px"></div>
   <div id="duelSection" style="display:none;margin-top:20px"></div>
+  <div id="mayhemHomeBoard" style="display:none;margin-top:20px"></div>
   <div id="dailyPollSection" style="display:none;margin-top:20px"></div>
 
   <!-- TRAIT SPOTLIGHT -->
@@ -354,7 +355,10 @@
       <h1 class="page-title">Mountaineer <span>Mayhem</span></h1>
       <div class="page-subtitle" id="mayhemSubtitle">Special events &amp; competitions — March 13</div>
     </div>
-    <button class="btn btn-purple" onclick="requireAdmin(function(){openAdmin();aTab('mayhem');})">&#9998; Edit Page</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-purple" onclick="requireAdmin(function(){openAdmin();aTab('mayhem');})">&#9998; Edit Page</button>
+      <button class="btn" onclick="requireAdmin(function(){openSquadNightDoor();})" title="Staff: check students in at Squad Night">🌙 Squad Night door</button>
+    </div>
   </div>
 
   <!-- WINNER BANNER -->

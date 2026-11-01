@@ -517,6 +517,63 @@ test('Event pages: Mayhem/Kick Off fields and rows from the Sheet; blanks fall b
   assert.ok(JSON.parse(w.clashTvFeed()).latest.some(e => e.label === '🏔️ Mayhem Week'));
 });
 
+test('Mayhem Week: 3-event limit, no two at once, self sign-up only when ON, captain votes, shirt points, Squad Night door', () => {
+  const w = world();
+  addStudentTabs(w); // Ann L. 8001234 Gold, Bo K. 8005678 Grey
+  w.ensureSettings_();
+  w.ensureGeneralsTabs_();
+  w.ensureMayhemWeekTabs_();
+  const evTab = w.book.getSheetByName('Sign-up Events');
+  assert.deepStrictEqual(evTab.rows[0].slice(4), ['Slot', 'Type', 'Self Sign-up']);
+  evTab.rows.push(['Mario Kart', '2027-03-15', 4, true, 'Lunch', 'Gaming', true], ['Squad Bowl', '2027-03-15', 4, true, 'Lunch', 'Brain', true],
+    ['Chess', '2027-03-16', 2, true, 'Core Extension', 'Brain', true], ['Spoons', '2027-03-17', 4, true, 'Lunch', 'Table', true],
+    ['Tug-o-war', '2027-03-19', 15, true, 'Squad Night', 'Active', false], ['Old event', '2026-10-01', 0, false, '', '', true]);
+  assert.throws(() => w.clashStudentSignUp('8001234', 'Mario Kart'), /Generals/, 'OFF by default');
+  w.setSettingValue_('SELF_SIGNUPS', 'ON');
+  let su = JSON.parse(w.clashStudentSignUp('8001234', 'Mario Kart'));
+  assert.strictEqual(su.count, 1);
+  assert.throws(() => w.clashStudentSignUp('8001234', 'Squad Bowl'), /same time/);
+  JSON.parse(w.clashStudentSignUp('8001234', 'Chess'));
+  su = JSON.parse(w.clashStudentSignUp('8001234', 'Spoons'));
+  assert.strictEqual(su.count, 3);
+  w.setSettingValue_('SELF_SIGNUPS', 'ON');
+  assert.throws(() => w.clashStudentSignUp('8001234', 'Tug-o-war'), /isn't open for sign-ups/, 'not a self sign-up event');
+  w.book.getSheetByName('Sign-ups').rows.push(['Old event', '8001234', 'Ann L.', 'GOLD', 'G', '']); // closed events don't count
+  const ms = JSON.parse(w.clashMyPage('8001234')).signups;
+  assert.deepStrictEqual([ms.count, ms.limit, ms.events.filter(e => e.mine).map(e => e.event)], [3, 3, ['Mario Kart', 'Chess', 'Spoons']]);
+  // Generals hit the same limit.
+  w.book.getSheetByName('MLC Roster').rows.push(['8007777', 'Gia P.', 'Gold', 'General', ''], ['8008888', 'Hal Q.', 'Gold', 'General', '']);
+  w.book.getSheetByName('Student Board').rows.push(['8007777', 'Gia P.', 'Gold', '8', '0', '0', '0', '0', '', '0', '0', '0', '', '', '']);
+  w.setSettingValue_('GENERALS_CODE', 'summit');
+  const t = JSON.parse(w.clashGeneralsSignIn('8007777', 'summit')).token;
+  assert.throws(() => w.clashGeneralsSignUp(t, 'Tug-o-war', '8001234', false), /3 events/);
+  JSON.parse(w.clashStudentSignUp('8001234', 'Spoons', true)); // drop one
+  JSON.parse(w.clashGeneralsSignUp(t, 'Tug-o-war', '8001234', false));
+  // Captain votes: one per General per student, tallied for the squad.
+  JSON.parse(w.clashGeneralsNominate(t, 'Squad Captain (7th grade)', '8001234', 'Always helps out at lunch.'));
+  assert.throws(() => w.clashGeneralsNominate(t, 'Squad Captain (7th grade)', '8001234', 'Again, really helpful.'), /already nominated/);
+  const t2 = JSON.parse(w.clashGeneralsSignIn('8008888', 'summit')).token;
+  const hq = JSON.parse(w.clashGeneralsNominate(t2, 'Squad Captain (7th grade)', '8001234', 'Organized and kind.'));
+  assert.deepStrictEqual(hq.captainTally.map(x => [x.nominee, x.votes]), [['Ann L.', 2]]);
+  // Shirts: paid ones send points once, squad filled from the Student Board.
+  const shirts = w.book.getSheetByName('Shirt Orders');
+  shirts.rows.push(['2027-02-01', '8001234', 'Ann L.', '', 'M', true, '', ''], ['2027-02-01', '8005678', 'Bo K.', 'GREY', 'L', false, '', '']);
+  assert.deepStrictEqual(J(w.sendShirtPoints()), ['1 shirts: BLACK +0, GOLD +2, GREY +0, PURPLE +0']);
+  assert.deepStrictEqual(J(w.sendShirtPoints()), ['No new paid shirts.']);
+  // Door: competitor free, unpaid stranger pays, nobody twice; attendance points once.
+  const admin = login(w, 'oldpw');
+  assert.throws(() => w.clashDoorCheck('', '8001234'), /sign in/);
+  assert.strictEqual(JSON.parse(w.clashDoorCheck(admin, '8001234')).student.entry, 'Free (competitor)');
+  assert.strictEqual(JSON.parse(w.clashDoorCheck(admin, '8005678')).student.entry, 'Pay $5');
+  assert.throws(() => w.clashDoorAdmit(admin, '8005678', false), /paid first/);
+  w.clashDoorAdmit(admin, '8005678', true);
+  const r = JSON.parse(w.clashDoorAdmit(admin, '8001234', false));
+  assert.deepStrictEqual(J(r.counts), { BLACK: 0, GOLD: 1, GREY: 1, PURPLE: 0 });
+  assert.throws(() => w.clashDoorAdmit(admin, '8001234', false), /already came in/);
+  assert.deepStrictEqual(J(w.sendSquadNightPoints()), ['BLACK 0 → +0, GOLD 1 → +1, GREY 1 → +1, PURPLE 0 → +0']);
+  assert.ok(/already sent/.test(w.sendSquadNightPoints()[0]));
+});
+
 test('page files: scripts parse, no old token or Supabase key left', () => {
   for (const f of ['App.html', 'Widgets.html', 'Index.html', 'Student.html', 'Generals.html']) {
     const h = fs.readFileSync(path.join(dir, f), 'utf8');

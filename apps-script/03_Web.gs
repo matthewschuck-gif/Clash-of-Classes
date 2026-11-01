@@ -221,6 +221,9 @@ function onOpen() {
     .addSeparator()
     .addItem('Turn on Squad Duel bonuses', 'menuTurnOnDuels_')
     .addItem('Turn off Squad Duel bonuses', 'menuTurnOffDuels_')
+    .addSeparator()
+    .addItem('Send shirt sale points', 'menuSendShirtPoints_')
+    .addItem('Send Squad Night attendance points', 'menuSendSquadNightPoints_')
     .addToUi();
 }
 

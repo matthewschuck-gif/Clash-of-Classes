@@ -183,7 +183,8 @@ function clashGeneralsHq(token) {
     roster: roster, notPlaced: roster.filter(function (s) { return !s.events.length; }).length,
     events: events.map(function (r) {
       const n = signups.filter(function (s) { return String(s['Event']) === String(r['Event']); }).length;
-      return { event: String(r['Event']), date: String(r['Date'] || ''), spots: Number(r['Spots Per Squad']) || 0, open: String(r['Open']).trim() === '' || ticked_(r['Open']), taken: n };
+      return { event: String(r['Event']), date: String(r['Date'] || ''), slot: String(r['Slot'] || ''), type: String(r['Type'] || ''),
+        spots: Number(r['Spots Per Squad']) || 0, open: String(r['Open']).trim() === '' || ticked_(r['Open']), taken: n };
     }),
     mayhem: sheetRows_('Mayhem Checklist').filter(function (r) { return squadOf_(r['Squad']) === squad; })
       .map(function (r) { return { row: r._row, item: String(r['Item']), done: ticked_(r['Done']) }; }),
@@ -192,7 +193,9 @@ function clashGeneralsHq(token) {
     duels: JSON.parse(clashDuels()).filter(function (d) { return d.squads.indexOf(squad) > -1; }),
     lore: loreFor_(squad),
     poll: (function () { try { return pollAnnouncement_(); } catch (e) { return ''; } })(), // 06_Polls.gs
-    nominateFor: NOMINATE_FOR_,
+    nominateFor: nominateFor_(), // Settings › NOMINATE_FOR (11_MayhemWeek.gs)
+    captainTally: captainTally_(squad),
+    signupLimit: Number(getSetting_('SIGNUP_LIMIT')) || 0,
     nominations: sheetRows_('Nominations').filter(function (r) { return id800_(r['General']) === me.id || String(r['General']) === me.name; })
       .map(function (r) { return { date: String(r['Date']), for: String(r['For']), nominee: String(r['Nominee']), why: String(r['Why']) }; }),
     letters: LETTERS_.map(function (l) {
@@ -205,7 +208,10 @@ function clashGeneralsHq(token) {
 // A General nominates a squad member (Trailback Panel or next year's General). Staff decide.
 function clashGeneralsNominate(token, forWhat, id, why) {
   const me = hqSession_(token);
-  if (NOMINATE_FOR_.indexOf(forWhat) === -1) throw new Error('Pick what you are nominating for.');
+  if (nominateFor_().indexOf(forWhat) === -1) throw new Error('Pick what you are nominating for.');
+  if (sheetRows_('Nominations').some(function (n) { return String(n['General']) === me.id && String(n['For']) === forWhat && id800_(n['Nominee 800#']) === id800_(id); })) {
+    throw new Error('You already nominated that student for ' + forWhat + '.');
+  }
   if (String(why || '').trim().length < 10) throw new Error('Say why in a sentence or two.');
   const sid = id800_(id);
   const s = sheetRows_(getSetting_('STUDENT_BOARD_TAB') || 'Student Board').filter(function (r) { return id800_(r['800#']) === sid && squadOf_(r['Squad']) === me.squad; })[0];
@@ -247,9 +253,7 @@ function clashGeneralsSignUp(token, event, id, remove) {
     if (remove) { if (existing) sh.deleteRow(existing._row); return clashGeneralsHq(token); }
     if (existing) return clashGeneralsHq(token);
     if (!(String(ev['Open']).trim() === '' || ticked_(ev['Open']))) throw new Error('Sign-ups for that event are closed.');
-    const spots = Number(ev['Spots Per Squad']) || 0;
-    const taken = sheetRows_('Sign-ups').filter(function (r) { return String(r['Event']) === String(event) && squadOf_(r['Squad']) === me.squad; }).length;
-    if (spots && taken >= spots) throw new Error('Your squad\'s spots for that event are full.');
+    signupGuard_(sid, ev, me.squad); // spots, the SIGNUP_LIMIT and same-time events (11_MayhemWeek.gs)
     sh.appendRow([event, sid, String(student['Name'] || ''), me.squad, me.name || me.id,
       Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm')]);
   } finally {
