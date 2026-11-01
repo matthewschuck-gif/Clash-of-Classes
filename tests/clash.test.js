@@ -654,6 +654,37 @@ test('Privacy: the public site and TV never show a student name on behavior rows
   assert.ok(rows.some(r => r[1] === 'New admin event'));
 });
 
+test('school calendar: days off on an editable tab, synced from a district iCal feed, school-day counts', () => {
+  const w = world();
+  w.ensureSchoolCalendarTab_();
+  const tab = w.book.getSheetByName('School Calendar');
+  assert.ok(tab.rows.length > 25 && tab.rows.some(r => r[0] === '2026-11-26'), 'seeded with this year\'s days off');
+  tab.rows.push(['2027-02-02', 'Snow day', '']);
+  let cal = J(w.schoolCalendar_());
+  assert.ok(cal.noSchool.includes('2027-02-02') && cal.noSchool.includes('2026-11-26'));
+  // District feed: a snow day and a half day; only the day off is added, once.
+  const ics = 'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nDTSTART;VALUE=DATE:20270203\r\nDTEND;VALUE=DATE:20270204\r\nSUMMARY:Emergency Closing - Snow\r\nEND:VEVENT\r\n' +
+    'BEGIN:VEVENT\r\nDTSTART;VALUE=DATE:20270205\r\nSUMMARY:Half Day - Early Dismissal\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nDTSTART;VALUE=DATE:20261126\r\nSUMMARY:Thanksgiving Holiday\r\nEND:VEVENT\r\nEND:VCALENDAR';
+  w.UrlFetchApp = { fetch: () => ({ getContentText: () => ics }) };
+  w.setSettingValue_('SCHOOL_CALENDAR', 'https://district.example/cal.ics');
+  w.setSettingValue_('SCHOOL_START', '2026-08-31'); w.setSettingValue_('LAST_DAY', '2027-06-09');
+  const added = J(w.syncSchoolCalendar_());
+  assert.deepStrictEqual(added.map(a => a[0]), ['2027-02-03'], 'snow day added; half day skipped; Thanksgiving already there');
+  assert.deepStrictEqual(J(w.syncSchoolCalendar_()), [], 'running again adds nothing');
+  cal = J(w.schoolCalendar_());
+  assert.deepStrictEqual([cal.start, cal.end], ['2026-08-31', '2027-06-09']);
+  assert.ok(JSON.parse(w.clashLoad()).value.schoolCalendar.noSchool.includes('2027-02-03'), 'the page gets the list');
+  // The page's counts: Mon Nov 23 - Fri Nov 27 is break, so from Sat Nov 21 the next school day is Tue Dec 1.
+  const app = fs.readFileSync(path.join(dir, 'App.html'), 'utf8');
+  const pick = name => app.slice(app.indexOf('function ' + name), app.indexOf('\n}', app.indexOf('function ' + name)) + 2);
+  const page = { D: { schoolCalendar: cal }, SCHOOL_HOLIDAYS_2627: new Set(), Date, String, Set, Array };
+  vm.createContext(page);
+  vm.runInContext(['noSchoolDays', 'localYmd', 'countSchoolDays'].map(pick).join('\n'), page);
+  assert.strictEqual(page.countSchoolDays('2026-11-22', '2026-12-01'), 1, 'only Tue Dec 1 (Mon Nov 30 is still break)');
+  assert.strictEqual(page.countSchoolDays('2026-11-02', '2026-11-06'), 5, 'a full week');
+  assert.strictEqual(page.countSchoolDays('2027-02-01', '2027-02-05'), 3, 'snow days off');
+});
+
 test('page files: scripts parse, no old token or Supabase key left', () => {
   for (const f of ['App.html', 'Widgets.html', 'Index.html', 'Student.html', 'Generals.html', 'Pop.html']) {
     const h = fs.readFileSync(path.join(dir, f), 'utf8');

@@ -44,6 +44,7 @@ function publicLoad_(raw) {
   if (res.value) {
     delete res.value.password;
     res.value.freezes = activeFreezes_(); // read-only, from the Point Freezes tab
+    try { res.value.schoolCalendar = schoolCalendar_(); } catch (e) { /* the page falls back to its built-in list */ }
     if (!raw && Array.isArray(res.value.events)) res.value.events = res.value.events.map(publicEvent_);
   }
   return res;
@@ -95,6 +96,7 @@ function clashSave(token, valueJson, syncJson) {
     const sync = syncJson ? JSON.parse(syncJson) : {};
     delete value.password;
     delete value.freezes; // lives on the Point Freezes tab, not in the saved blob
+    delete value.schoolCalendar; // lives on the School Calendar tab
     const key = function (e) { return e.id + '|' + e.name; };
     const seen = {};
     (sync.seen || []).forEach(function (k) { seen[k] = true; });
@@ -266,6 +268,9 @@ function onOpen() {
     .addSeparator()
     .addItem('Send shirt sale points', 'menuSendShirtPoints_')
     .addItem('Send Squad Night attendance points', 'menuSendSquadNightPoints_')
+    .addSeparator()
+    .addItem('Sync days off from the district calendar', 'menuSyncSchoolCalendar_')
+    .addItem('Turn on daily calendar sync', 'menuTurnOnCalendarSync_')
     .addToUi();
 }
 

@@ -96,6 +96,7 @@ function setupSpreadsheet() {
   ensureEventPageTabs_();
   ensureMayhemWeekTabs_();
   ensureShirtDesignTabs_();
+  ensureSchoolCalendarTab_();
   setupHelpTab_();
   SpreadsheetApp.getUi().alert('Done -- app_data, events, metrics, Settings and "How To Use This Sheet" tabs are set up. Clash of Classes has no separate PII tab (unlike Trail Journal), so there is no extra sharing/protection step required here. You can now add/edit rows directly in the events and metrics tabs and the site will pick them up within a few seconds. Staff directions live in the "How To Use This Sheet" tab -- start there.');
 }
@@ -130,7 +131,11 @@ const DEFAULT_SETTINGS = [
   ['SHIRT_POINTS', '2', 'Squad points per paid Mayhem shirt (Shirt Orders tab). Sent with Clash of Classes › Send shirt sale points.'],
   ['SQUAD_NIGHT_PRICE', '$5', 'Entry for Squad Night if a student isn\'t competing and didn\'t buy a shirt.'],
   ['SQUAD_NIGHT_POINTS', '1', 'Squad points per student who comes to Squad Night. Sent with Clash of Classes › Send Squad Night attendance points.'],
-  ['PASSPORT_POLL_VOTES', '5', 'Daily Poll votes a student needs for the 🗳️ passport stamp.'],];
+  ['PASSPORT_POLL_VOTES', '5', 'Daily Poll votes a student needs for the 🗳️ passport stamp.'],
+  ['SCHOOL_START', '', 'First day of school (yyyy-mm-dd) for the home page day counts. Blank = the date set in the site\'s admin settings.'],
+  ['LAST_DAY', '', 'Last day of school (yyyy-mm-dd). Blank = the date set in the site\'s admin settings.'],
+  ['SCHOOL_CALENDAR', '', 'Optional: the district calendar, as its Google Calendar ID or its iCal (.ics) link. Clash of Classes › Sync days off from the district calendar adds its days off to the School Calendar tab.'],
+  ['SCHOOL_CALENDAR_WORDS', 'no school, holiday, break, closed, closing, conference, records day, snow, vacation day, inservice, in-service, act 80, labor day, memorial day, thanksgiving', 'An all-day district calendar event counts as a day off when its title has one of these (half days and early dismissals never do).'],];
 
 // Writes one Settings value (used by the menu switches).
 function setSettingValue_(key, value) {
