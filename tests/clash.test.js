@@ -655,7 +655,7 @@ test('Privacy: the public site and TV never show a student name on behavior rows
 });
 
 test('page files: scripts parse, no old token or Supabase key left', () => {
-  for (const f of ['App.html', 'Widgets.html', 'Index.html', 'Student.html', 'Generals.html']) {
+  for (const f of ['App.html', 'Widgets.html', 'Index.html', 'Student.html', 'Generals.html', 'Pop.html']) {
     const h = fs.readFileSync(path.join(dir, f), 'utf8');
     assert.ok(!/togetherweclimb4444HOPE|supabase\.co|TJ_ANON|ephrata2026/.test(h), f + ' has no secrets');
     [...h.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].forEach(m => new vm.Script(m[1].replace(/<\?!=[\s\S]*?\?>/g, '{}')));

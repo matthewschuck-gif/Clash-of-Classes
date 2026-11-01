@@ -2706,53 +2706,69 @@ function applyEventPage_(p){
     if(!btn){ btn=document.createElement('a'); btn.id=p+'DocBtn'; btn.className='btn btn-purple'; btn.target='_blank'; btn.rel='noopener'; hero.appendChild(btn); }
     btn.href=f['Planning Doc']; btn.textContent='📄 '+(f['Planning Doc Label']||'Planning doc');
   } else if(btn) btn.remove();
+  // Live countdown to the event day under the title (Pop.html), until the day has passed.
+  const titleBox=hero&&hero.firstElementChild;
+  if(titleBox&&f['Date']&&window.popCountdown){
+    let cd=$(p+'Count');
+    if(!cd){ cd=document.createElement('div'); cd.id=p+'Count'; cd.className='pop-count'; cd.setAttribute('aria-label','Countdown'); titleBox.appendChild(cd); }
+    window.popCountdown(cd,f['Date']);
+  }
   // Schedule rows replace the built-in schedule.
   if(d.schedule.length&&$(p+'ScheduleBlock')){
+    // A timeline (Pop.html): gold time on the left, event slots marked in purple.
     const el=$(p+'ScheduleBlock');
-    el.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:32px';
-    el.innerHTML=d.schedule.map((r,i)=>`<div style="display:grid;grid-template-columns:minmax(96px,auto) 1fr;gap:14px;padding:10px 16px;${i?'border-top:1px solid var(--border)':''}">
-      <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--gold-soft);white-space:nowrap">${evEsc(r.heading)}</div>
-      <div style="font-size:13.5px;color:var(--text);line-height:1.55">${evEsc(r.details)}${r.points?`<div style="font-size:12px;color:var(--text2);margin-top:2px">${evEsc(r.points)}</div>`:''}</div></div>`).join('');
+    el.removeAttribute('style'); el.className='pop-timeline pop-reveal';
+    el.innerHTML=d.schedule.map(r=>`<div class="pop-tl${/^\s*Event\s*\d/i.test(r.details)?' ev':''}"><div class="t">${evEsc(r.heading)}</div>
+      <div class="a">${evEsc(r.details)}${r.points?`<div style="font-size:12px;color:var(--text2);margin-top:2px">${evEsc(r.points)}</div>`:''}</div></div>`).join('');
   }
-  // Event rows replace the built-in event list.
+  // Event rows replace the built-in event list: trading cards with a big number behind them.
   if(d.events.length&&$(p+'EventsBlock')){
-    $(p+'EventsBlock').innerHTML=d.events.map((r,i)=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
-        <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple-lt);background:rgba(109,43,159,0.14);padding:3px 9px;border-radius:999px">${i+1}</span>
-        <span style="font-family:'Fraunces',serif;font-size:17px;font-weight:700">${evEsc(r.heading)}</span></div>
-      ${r.details?`<div style="font-size:13.5px;color:var(--text2);line-height:1.6;margin-bottom:8px">${evEsc(r.details)}</div>`:''}
-      ${r.points?`<div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--gold-soft)">Points: ${evEsc(r.points)}</div>`:''}
-      ${r.link?`<a href="${evEsc(r.link)}" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--purple-lt)">More ↗</a>`:''}</div>`).join('');
+    const eb=$(p+'EventsBlock');
+    eb.removeAttribute('style'); eb.className='pop-cards';
+    eb.innerHTML=d.events.map((r,i)=>`<article class="pop-card pop-reveal"><div class="num" aria-hidden="true">${i+1}</div>
+      <h4 class="title">${evEsc(r.heading)}</h4>
+      ${r.details?`<div class="rules">${evEsc(r.details)}</div>`:''}
+      ${r.points?`<span class="pts">${evEsc(r.points)}</span>`:''}
+      ${r.link?` <a href="${evEsc(r.link)}" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--purple-lt)">More ↗</a>`:''}</article>`).join('');
   }
   // Mayhem Week: the days, then the squad scoreboard from mayhem_week points.
   if(p==='mayhem'&&$('mayhemWeekBlock')){
     const wb=$('mayhemWeekBlock'), sb=d.scoreboard;
     wb.style.display=d.week.length||sb?'block':'none';
-    const days=d.week.map((r,i)=>`<div style="display:grid;grid-template-columns:minmax(150px,auto) 1fr;gap:14px;padding:11px 16px;${i?'border-top:1px solid var(--border)':''}">
-      <div style="font-family:'Fraunces',serif;font-weight:700;font-size:14.5px">${evEsc(r.heading)}</div>
-      <div style="font-size:13.5px;color:var(--text2);line-height:1.55">${evEsc(r.details)}${r.points?`<div style="color:var(--gold-soft);font-weight:600;margin-top:2px">${evEsc(r.points)}</div>`:''}</div></div>`).join('');
+    // The week as a trail (Pop.html): five stops on a dashed path, Friday lit up in gold.
+    const days=d.week.map(r=>{ const [day,...theme]=String(r.heading).split(' · ');
+      return `<div class="pop-stop pop-reveal"><div class="day">${evEsc(day)}</div>${theme.length?`<span class="theme">${evEsc(theme.join(' · '))}</span>`:''}
+        <div class="what">${evEsc(r.details)}</div>${r.points?`<div class="lunch">${evEsc(r.points)}</div>`:''}</div>`; }).join('');
     let board='';
     if(sb){
+      // Race bars that grow and count up as they come into view; the per-event table folds underneath.
       const tot=sq=>sb.columns.reduce((n,c)=>n+(sb.scores[c][sq]||0),0);
-      const order=SQUADS.slice().sort((a,b)=>tot(b)-tot(a)), best=tot(order[0]);
-      board=`<div style="overflow-x:auto;margin-top:14px"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:520px">
-        <thead><tr><th style="text-align:left;padding:8px 10px;color:var(--text3);font-weight:600">Squad</th>${sb.columns.map(c=>`<th style="text-align:right;padding:8px 10px;color:var(--text3);font-weight:600">${evEsc(c)}</th>`).join('')}<th style="text-align:right;padding:8px 10px;color:var(--text);font-weight:700">Total</th></tr></thead>
-        <tbody>${order.map((sq,i)=>`<tr style="border-top:1px solid var(--border)"><td style="padding:9px 10px;font-weight:700;color:${SQ_HEX[sq]}">${best>0&&tot(sq)===best?'🏆 ':''}${sq}</td>${sb.columns.map(c=>`<td style="text-align:right;padding:9px 10px;font-family:'DM Mono',monospace">${sb.scores[c][sq]||0}</td>`).join('')}<td style="text-align:right;padding:9px 10px;font-family:'DM Mono',monospace;font-weight:700">${tot(sq)}</td></tr>`).join('')}</tbody></table></div>`;
+      const order=SQUADS.slice().sort((a,b)=>tot(b)-tot(a)), best=tot(order[0]), max=Math.max(best,1);
+      board=`<div class="pop-race pop-reveal" role="table" aria-label="Mayhem Week scoreboard">
+        <div class="pop-h"><h3 style="font-size:20px">Scoreboard</h3><span class="tag">${sb.columns.length} event${sb.columns.length===1?'':'s'} scored</span></div>
+        ${order.map(sq=>`<div class="row${best>0&&tot(sq)===best?' lead':''}" role="row"><div class="sq" style="color:${SQ_HEX[sq]}">${sq.charAt(0)+sq.slice(1).toLowerCase()}</div>
+          <div class="track"><div class="fill" style="width:${Math.round(tot(sq)/max*100)}%;background:${SQ_HEX[sq]};color:${SQ_HEX[sq]}"></div></div>
+          <div class="pts" data-count="${tot(sq)}">${tot(sq)}</div></div>`).join('')}
+        <details><summary>Points by event</summary><div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:460px">
+          <thead><tr><th style="text-align:left;padding:6px 8px;color:var(--text3)">Squad</th>${sb.columns.map(c=>`<th style="text-align:right;padding:6px 8px;color:var(--text3)">${evEsc(c)}</th>`).join('')}</tr></thead>
+          <tbody>${order.map(sq=>`<tr style="border-top:1px solid var(--border)"><td style="padding:7px 8px;font-weight:700;color:${SQ_HEX[sq]}">${sq}</td>${sb.columns.map(c=>`<td style="text-align:right;padding:7px 8px;font-family:'DM Mono',monospace">${sb.scores[c][sq]||0}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details></div>`;
     }
-    wb.innerHTML=`<div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Mayhem Week</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Color Squad Finals Challenge — squads battle at lunch every day${sb?'':'. The scoreboard fills in as points are recorded'}.</div>
-      ${days?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">${days}</div>`:''}${board}`;
+    wb.innerHTML=`<div class="pop-h"><h3>Mayhem Week</h3><span class="tag">Color Squad Finals</span></div>
+      <p class="pop-sub">Squads battle all week at lunch and in events across the building${sb?'':'. The scoreboard fills in as points are recorded'}.</p>
+      ${days?`<div class="pop-trail">${days}</div>`:''}${board}`;
+    if(window.popCountUp) window.popCountUp(wb);
   }
   // Squad Night: the Friday-night finals (shown when the Squad Night field has a value).
   if(p==='mayhem'&&$('mayhemNightBlock')){
     const nb=$('mayhemNightBlock');
     nb.style.display=f['Squad Night']?'block':'none';
-    if(f['Squad Night']) nb.innerHTML=`<div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:6px">Squad Night</div>
-      <div style="font-size:14px;color:var(--gold-soft);font-weight:600;margin-bottom:4px">${evEsc(f['Squad Night'])}</div>
-      ${f['Squad Night Entry']?`<div style="font-size:13.5px;color:var(--text2);line-height:1.6;margin-bottom:14px">${evEsc(f['Squad Night Entry'])}</div>`:''}
-      ${d.night.length?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">${d.night.map((r,i)=>`<div style="display:grid;grid-template-columns:minmax(150px,auto) 1fr;gap:14px;padding:11px 16px;${i?'border-top:1px solid var(--border)':''}">
-        <div style="font-family:'Fraunces',serif;font-weight:700;font-size:14.5px">${evEsc(r.heading)}</div>
-        <div style="font-size:13.5px;color:var(--text2);line-height:1.55">${evEsc(r.details)}${r.points?`<div style="color:var(--gold-soft);font-weight:600;margin-top:2px">${evEsc(r.points)}</div>`:''}</div></div>`).join('')}</div>`:''}`;
+    // A ticket (Pop.html): the finals on the main part, admission on the torn-off stub.
+    if(f['Squad Night']) nb.innerHTML=`<div class="pop-ticket pop-reveal"><div class="main">
+        <div class="pop-h"><h3>Squad Night</h3><span class="tag">Finals</span></div>
+        <div class="when">${evEsc(f['Squad Night'])}</div>
+        ${f['Squad Night Entry']?`<div class="entry">${evEsc(f['Squad Night Entry'])}</div>`:''}
+        ${d.night.length?`<div class="finals">${d.night.map(r=>`<div class="final"><b>${evEsc(r.heading)}</b><span>${evEsc(r.details)}</span>${r.points?`<em>${evEsc(r.points)}</em>`:''}</div>`).join('')}</div>`:''}
+      </div><div class="stub" aria-hidden="true"><div class="admit">Admit one</div><div class="big">Squad<br>Night</div><div class="admit" style="color:#d6c2ff">Bring your squad color</div></div></div>`;
   }
   // Sheet links go after the Edit Page links.
   const le=$(p+'Links');

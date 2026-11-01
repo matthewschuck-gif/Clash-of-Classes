@@ -43,7 +43,7 @@
     document.getElementById('hqCode').onkeydown = function (ev) { if (ev.key === 'Enter') go(); };
   }
 
-  function load() { window.gasRun_('clashGeneralsHq', token).then(function (d) { data = d; render(); }).catch(fail); }
+  function load() { window.gasRun_('clashGeneralsHq', token).then(function (d) { data = d; if (window.popSkin) window.popSkin(d.squad); render(); }).catch(fail); }
   function act(fn) { var args = Array.prototype.slice.call(arguments, 1); return window.gasRun_.apply(null, [fn, token].concat(args)).then(function (d) { data = d; render(); }).catch(function (x) { alert(x.message.replace(/^Exception:\s*/, '')); }); }
   function fail(x) { if (/sign in/i.test(x.message)) { token = ''; signIn(); } else el().innerHTML = '<div class="ms-card ms-err">' + esc(x.message) + '</div>'; }
 

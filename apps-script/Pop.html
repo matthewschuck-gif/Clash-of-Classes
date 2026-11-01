@@ -1,0 +1,193 @@
+<style>
+/* ── Pop: the shared "game-day poster" layer (event pages, Mayhem Week, My Squad) ──────────
+   Topographic contours for the mountain identity, bold Fraunces numbers, squad-color glows.
+   Every effect only enhances content that is already visible; motion stops for people who
+   ask for less of it, and scroll-linked reveals only run where the browser supports them. */
+:root { --pop-gold: #ffe100; --pop-gold-soft: #fbbf24; --pop-purple: #9b5de5; --pop-deep: #2a0f45; --pop-ink: #f5f0ff;
+  --pop-topo: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='300' viewBox='0 0 600 300'%3E%3Cg fill='none' stroke='%23bb8ef5' stroke-opacity='.16' stroke-width='1.2'%3E%3Cpath d='M-20 260C80 220 120 120 230 130S380 230 470 180 560 60 640 70'/%3E%3Cpath d='M-20 230C70 195 120 100 225 108S375 205 465 155 560 38 640 46'/%3E%3Cpath d='M-20 200C60 170 115 80 220 86S370 180 460 130 555 16 640 22'/%3E%3Cpath d='M-20 290C90 250 130 150 235 155S385 255 475 205 565 90 640 98'/%3E%3Cpath d='M60 300C140 270 170 210 250 214S360 280 420 262'/%3E%3Cpath d='M300 40C330 30 360 18 400 24S470 60 520 40'/%3E%3C/g%3E%3C/svg%3E"); }
+
+/* Squad skins: once a student opens My Squad (or a General opens HQ), the site takes on their
+   squad's colors -- accents, glows, the countdown, trail, cards -- like the Trail Journal does.
+   The purple-and-gold base stays, so text keeps its contrast. Set by popSkin() below. */
+html[data-squad="BLACK"]  { --pop-gold: #e5e7eb; --pop-gold-soft: #d1d5db; --pop-purple: #6b7280; --squad: #c5c9d1; }
+html[data-squad="GOLD"]   { --pop-gold: #ffe100; --pop-gold-soft: #fbbf24; --pop-purple: #b45309; --squad: #ffe100; }
+html[data-squad="GREY"]   { --pop-gold: #cbd5e1; --pop-gold-soft: #a8b5c7; --pop-purple: #475569; --squad: #99a8bb; }
+html[data-squad="PURPLE"] { --pop-gold: #d8b4fe; --pop-gold-soft: #c4a1ff; --pop-purple: #7c3aed; --squad: #bb8ef5; }
+html[data-squad] body { background-image: radial-gradient(70% 380px at 50% 0%, color-mix(in srgb, var(--squad) 18%, transparent), transparent 75%); background-repeat: no-repeat; }
+.pop-skin-pill { display: inline-flex; align-items: center; gap: 6px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  color: #12081f; background: var(--squad, #bb8ef5); padding: 4px 10px; border-radius: 999px; font-weight: 700; }
+
+/* Event page heroes get the contour backdrop and an accent edge (squad-colored when skinned). */
+#page-mayhem .page-hero, #page-kickoff .page-hero, #page-champs .page-hero {
+  position: relative; isolation: isolate; padding: 28px 24px; border-radius: 22px; overflow: hidden;
+  background: radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--pop-purple) 45%, transparent), transparent 55%), radial-gradient(90% 120% at 100% 100%, color-mix(in srgb, var(--pop-gold) 16%, transparent), transparent 60%), var(--pop-topo) center/600px auto repeat, #14082a;
+  border: 1px solid color-mix(in srgb, var(--pop-gold) 28%, transparent); box-shadow: 0 20px 60px -30px color-mix(in srgb, var(--pop-purple) 70%, transparent); margin-bottom: 24px; }
+#page-mayhem .page-title, #page-kickoff .page-title, #page-champs .page-title { font-size: clamp(34px, 6vw, 64px); letter-spacing: -0.02em; line-height: .98; text-wrap: balance; }
+
+/* Countdown under the title */
+.pop-count { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.pop-count .u { min-width: 74px; padding: 10px 12px 8px; border-radius: 14px; background: rgba(10,4,20,.55); border: 1px solid color-mix(in srgb, var(--pop-gold) 25%, transparent); text-align: center; }
+.pop-count .n { font-family: 'Fraunces', serif; font-weight: 900; font-size: 30px; line-height: 1; color: var(--pop-gold); font-variant-numeric: tabular-nums; }
+.pop-count .l { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #cbb6ef; margin-top: 4px; }
+.pop-count .live { align-self: center; font-family: 'Fraunces', serif; font-weight: 900; font-size: 26px; color: var(--pop-gold); }
+
+/* Bento overview tiles (Date / Location / Format) */
+.pop-bento { display: grid !important; grid-template-columns: 1.4fr 1fr 1fr !important; gap: 14px !important; }
+.pop-bento > .card { position: relative; overflow: hidden; border-radius: 18px !important; padding: 20px !important; background: linear-gradient(160deg, color-mix(in srgb, var(--pop-purple) 16%, transparent), rgba(255,255,255,.02)) !important; transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s; }
+.pop-bento > .card:first-child { grid-row: span 1; background: linear-gradient(150deg, color-mix(in srgb, var(--pop-gold) 18%, transparent), color-mix(in srgb, var(--pop-purple) 12%, transparent)) !important; }
+.pop-bento > .card [id$="Date"], .pop-bento > .card [id$="Location"], .pop-bento > .card [id$="Format"], .pop-bento > .card [id$="EventCount"] { font-family: 'Fraunces', serif !important; font-size: 19px !important; font-weight: 700; color: var(--pop-ink) !important; line-height: 1.25; }
+.pop-bento > .card:hover { transform: translateY(-3px); box-shadow: 0 14px 34px -18px color-mix(in srgb, var(--pop-gold) 45%, transparent); }
+@media (max-width: 760px) { .pop-bento { grid-template-columns: 1fr !important; } }
+
+/* Section heads used by the generated blocks */
+.pop-h { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 0 0 6px; }
+.pop-h h3 { font-family: 'Fraunces', serif; font-size: clamp(22px, 3vw, 30px); font-weight: 900; margin: 0; letter-spacing: -0.01em; }
+.pop-h .tag { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--pop-gold); background: color-mix(in srgb, var(--pop-gold) 10%, transparent); border: 1px solid color-mix(in srgb, var(--pop-gold) 30%, transparent); padding: 3px 9px; border-radius: 999px; }
+.pop-sub { color: var(--text2); font-size: 14px; line-height: 1.6; margin: 0 0 16px; max-width: 70ch; }
+
+/* Mayhem Week as a trail: five stops joined by a dashed path */
+.pop-trail { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; padding-top: 26px; }
+.pop-trail::before { content: ''; position: absolute; left: 6%; right: 6%; top: 9px; border-top: 3px dashed color-mix(in srgb, var(--pop-gold) 45%, transparent); }
+.pop-stop { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px 14px 14px; transition: transform .25s cubic-bezier(.22,1,.36,1), border-color .25s; }
+.pop-stop::before { content: ''; position: absolute; top: -24px; left: 50%; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: #14082a; border: 3px solid var(--pop-gold); box-shadow: 0 0 0 4px color-mix(in srgb, var(--pop-gold) 12%, transparent); }
+.pop-stop:last-child { border-color: color-mix(in srgb, var(--pop-gold) 50%, transparent); background: linear-gradient(170deg, color-mix(in srgb, var(--pop-gold) 12%, transparent), var(--surface) 60%); }
+.pop-stop:last-child::before { background: var(--pop-gold); }
+.pop-stop:hover { transform: translateY(-4px); border-color: rgba(187,142,245,.6); }
+.pop-stop .day { font-family: 'Fraunces', serif; font-weight: 900; font-size: 19px; line-height: 1.1; }
+.pop-stop .theme { display: inline-block; margin: 6px 0 8px; font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: #d6c2ff; background: color-mix(in srgb, var(--pop-purple) 20%, transparent); padding: 3px 8px; border-radius: 999px; }
+.pop-stop .what { font-size: 13px; color: var(--text2); line-height: 1.5; }
+.pop-stop .lunch { margin-top: 10px; font-size: 12.5px; font-weight: 700; color: var(--pop-gold-soft); }
+@media (max-width: 900px) {
+  .pop-trail { grid-template-columns: 1fr; padding-top: 0; padding-left: 28px; }
+  .pop-trail::before { left: 9px; right: auto; top: 6px; bottom: 6px; border-top: 0; border-left: 3px dashed color-mix(in srgb, var(--pop-gold) 45%, transparent); }
+  .pop-stop::before { top: 20px; left: -27px; margin-left: 0; }
+}
+
+/* Race-bar scoreboard */
+.pop-race { margin-top: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 16px 18px; }
+.pop-race .row { display: grid; grid-template-columns: 92px 1fr 64px; gap: 12px; align-items: center; margin: 10px 0; }
+.pop-race .sq { font-family: 'Fraunces', serif; font-weight: 900; font-size: 16px; }
+.pop-race .track { height: 16px; border-radius: 999px; background: rgba(255,255,255,.06); overflow: hidden; }
+.pop-race .fill { height: 100%; border-radius: 999px; transform-origin: left center; box-shadow: 0 0 18px -2px currentColor; }
+.pop-race .pts { font-family: 'Fraunces', serif; font-weight: 900; font-size: 20px; text-align: right; font-variant-numeric: tabular-nums; }
+.pop-race .lead .sq::after { content: ' ★'; color: var(--pop-gold); }
+.pop-race details { margin-top: 6px; } .pop-race summary { cursor: pointer; font-size: 12.5px; color: var(--purple-lt); font-weight: 700; }
+
+/* Schedule as a timeline */
+.pop-timeline { position: relative; margin: 0 0 32px; padding-left: 26px; }
+.pop-timeline::before { content: ''; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 2px; background: linear-gradient(var(--pop-gold), var(--pop-purple)); border-radius: 2px; }
+.pop-tl { position: relative; display: grid; grid-template-columns: minmax(104px, auto) 1fr; gap: 14px; padding: 10px 14px; margin-bottom: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.pop-tl::before { content: ''; position: absolute; left: -24px; top: 15px; width: 12px; height: 12px; border-radius: 50%; background: #14082a; border: 2px solid var(--pop-gold); }
+.pop-tl .t { font-family: 'DM Mono', monospace; font-size: 12.5px; color: var(--pop-gold); white-space: nowrap; padding-top: 1px; }
+.pop-tl .a { font-size: 14px; color: var(--text); line-height: 1.5; }
+.pop-tl.ev { border-color: rgba(187,142,245,.45); } .pop-tl.ev::before { background: var(--pop-purple); border-color: #d6c2ff; }
+@media (max-width: 560px) { .pop-tl { grid-template-columns: 1fr; gap: 2px; } }
+
+/* Events as trading cards */
+.pop-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); gap: 14px; margin-bottom: 32px; }
+.pop-card { position: relative; overflow: hidden; padding: 18px 18px 16px; border-radius: 18px; background: linear-gradient(165deg, color-mix(in srgb, var(--pop-purple) 18%, transparent), var(--surface) 55%); border: 1px solid var(--border); transition: transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s, border-color .3s; }
+.pop-card:hover { transform: translateY(-4px) rotate(-.4deg); border-color: color-mix(in srgb, var(--pop-gold) 50%, transparent); box-shadow: 0 18px 40px -22px color-mix(in srgb, var(--pop-gold) 55%, transparent); }
+.pop-card .num { position: absolute; right: 10px; top: -14px; font-family: 'Fraunces', serif; font-weight: 900; font-size: 92px; line-height: 1; color: rgba(255,255,255,.05); pointer-events: none; }
+.pop-card .title { position: relative; font-family: 'Fraunces', serif; font-weight: 900; font-size: 20px; line-height: 1.15; margin: 0 0 8px; padding-right: 30px; }
+.pop-card .rules { position: relative; font-size: 13.5px; color: var(--text2); line-height: 1.6; margin-bottom: 12px; }
+.pop-card .pts { position: relative; display: inline-block; max-width: 100%; font-family: 'DM Mono', monospace; font-size: 12px; line-height: 1.45; color: #1a0b2e; background: var(--pop-gold); padding: 5px 10px; border-radius: 10px; font-weight: 700; }
+
+/* Squad Night as a ticket */
+.pop-ticket { position: relative; display: grid; grid-template-columns: 1fr 210px; border-radius: 20px; overflow: hidden; margin-bottom: 32px;
+  background: linear-gradient(135deg, #2a0f45, #1a0b2e 60%); border: 1px solid color-mix(in srgb, var(--pop-gold) 35%, transparent); box-shadow: 0 24px 60px -32px color-mix(in srgb, var(--pop-gold) 50%, transparent); }
+.pop-ticket .main { padding: 22px 24px; }
+.pop-ticket .stub { position: relative; padding: 22px 18px; border-left: 2px dashed color-mix(in srgb, var(--pop-gold) 45%, transparent); background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--pop-gold) 6%, transparent) 0 10px, transparent 10px 20px); display: flex; flex-direction: column; justify-content: flex-start; padding-top: 34px; text-align: center; gap: 6px; }
+.pop-ticket .stub::before, .pop-ticket .stub::after { content: ''; position: absolute; left: -13px; width: 24px; height: 24px; border-radius: 50%; background: var(--bg, #09010f); }
+.pop-ticket .stub::before { top: -12px; } .pop-ticket .stub::after { bottom: -12px; }
+.pop-ticket .admit { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--pop-gold); }
+.pop-ticket .big { font-family: 'Fraunces', serif; font-weight: 900; font-size: 28px; color: var(--pop-ink); line-height: 1; }
+.pop-ticket .when { font-family: 'Fraunces', serif; font-size: 18px; color: var(--pop-gold); font-weight: 700; margin: 4px 0 6px; }
+.pop-ticket .entry { font-size: 13.5px; color: #d6c2ff; line-height: 1.6; margin-bottom: 14px; }
+.pop-ticket .finals { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 8px; }
+.pop-ticket .final { padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); }
+.pop-ticket .final b { display: block; font-family: 'Fraunces', serif; font-size: 15px; }
+.pop-ticket .final span { font-size: 12.5px; color: var(--text2); }
+.pop-ticket .final em { display: block; font-style: normal; font-size: 12px; color: var(--pop-gold-soft); font-weight: 700; margin-top: 3px; }
+@media (max-width: 700px) { .pop-ticket { grid-template-columns: 1fr; } .pop-ticket .stub { border-left: 0; border-top: 2px dashed color-mix(in srgb, var(--pop-gold) 45%, transparent); } .pop-ticket .stub::before, .pop-ticket .stub::after { display: none; } }
+
+/* Home: contour hero and leaderboard cards with squad glows; the visitor's own squad (once
+   they've opened My Squad) gets a ring in its squad color. */
+#home-hero-section { position: relative; isolation: isolate; }
+#home-hero-section::before { content: ''; position: absolute; inset: -20px -16px auto; height: 100%; z-index: -1; background: var(--pop-topo) center/640px auto repeat; opacity: .8; -webkit-mask-image: linear-gradient(#000 40%, transparent); mask-image: linear-gradient(#000 40%, transparent); pointer-events: none; }
+.hero-sq-card { position: relative; transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s; }
+.hero-sq-card:hover { transform: translateY(-3px); }
+.hero-sq-card[data-sq="BLACK"] { box-shadow: inset 0 3px 0 #c5c9d1; } .hero-sq-card[data-sq="GOLD"] { box-shadow: inset 0 3px 0 #ffe100; }
+.hero-sq-card[data-sq="GREY"] { box-shadow: inset 0 3px 0 #99a8bb; } .hero-sq-card[data-sq="PURPLE"] { box-shadow: inset 0 3px 0 #bb8ef5; }
+.hero-sq-num { font-variant-numeric: tabular-nums; }
+html[data-squad="BLACK"] .hero-sq-card[data-sq="BLACK"], html[data-squad="GOLD"] .hero-sq-card[data-sq="GOLD"], html[data-squad="GREY"] .hero-sq-card[data-sq="GREY"], html[data-squad="PURPLE"] .hero-sq-card[data-sq="PURPLE"] {
+  box-shadow: inset 0 0 0 2px var(--squad), inset 0 0 40px -12px var(--squad); }
+
+/* My Squad: player card header, stat tiles, stamps */
+#mySquadApp .ms-card:first-child { position: relative; overflow: hidden; border-radius: 22px; padding: 26px 24px;
+  background: radial-gradient(110% 130% at 100% 0%, color-mix(in srgb, var(--squad, #bb8ef5) 30%, transparent), transparent 60%), var(--pop-topo) center/600px auto repeat, #14082a; }
+#mySquadApp .ms-hello { font-size: clamp(30px, 6vw, 48px); letter-spacing: -0.02em; }
+#mySquadApp .ms-tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, 132px), 1fr)); }
+#mySquadApp .ms-tile { border-radius: 16px; background: linear-gradient(170deg, color-mix(in srgb, var(--pop-purple) 18%, transparent), var(--surface2)); transition: transform .25s cubic-bezier(.22,1,.36,1); }
+#mySquadApp .ms-tile:hover { transform: translateY(-3px); }
+#mySquadApp .ms-tile-val { font-size: 36px; font-variant-numeric: tabular-nums; }
+#mySquadApp .ms-badge:not(.locked) { position: relative; overflow: hidden; }
+#mySquadApp .ms-badge:not(.locked)::after { content: ''; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.35) 50%, transparent 60%); transform: translateX(-120%); animation: popShine 5s ease-in-out infinite; }
+@keyframes popShine { 0%, 70% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
+
+/* Reveal as sections scroll in (only where supported; everything is visible otherwise) */
+@supports (animation-timeline: view()) {
+  .pop-reveal { animation: popIn linear both; animation-timeline: view(); animation-range: entry 0% cover 22%; }
+}
+@keyframes popIn { from { opacity: .001; transform: translateY(26px) scale(.98); } }
+@media (prefers-reduced-motion: reduce) {
+  .pop-reveal, #mySquadApp .ms-badge::after { animation: none !important; }
+  .pop-card, .pop-stop, .pop-bento > .card, #mySquadApp .ms-tile { transition: none !important; }
+}
+</style>
+<script>
+/* Pop helpers: a live countdown and count-up numbers. Pages call them after they render. */
+(function () {
+  // "Friday, March 19, 2027" (or any date the browser can read) → a ticking countdown.
+  var timers = {};
+  window.popCountdown = function (el, dateText) {
+    if (!el) return;
+    clearInterval(timers[el.id]);
+    var target = new Date(String(dateText || '').replace(/^[A-Za-z]+,\s*/, ''));
+    if (isNaN(target)) { el.innerHTML = ''; return; }
+    target.setHours(7, 50, 0, 0); // the school day starts
+    var tick = function () {
+      var ms = target - new Date();
+      if (ms <= 0) { el.innerHTML = ms > -86400000 ? '<span class="live">It\'s game day!</span>' : ''; clearInterval(timers[el.id]); return; }
+      var d = Math.floor(ms / 86400000), h = Math.floor(ms / 3600000) % 24, m = Math.floor(ms / 60000) % 60;
+      el.innerHTML = [[d, d === 1 ? 'day' : 'days'], [h, 'hours'], [m, 'min']].map(function (u) {
+        return '<div class="u"><div class="n">' + u[0] + '</div><div class="l">' + u[1] + '</div></div>';
+      }).join('');
+    };
+    tick();
+    timers[el.id] = setInterval(tick, 30000);
+  };
+  // Squad skin: remembered on this device; '' clears it. Applied at once on load.
+  window.popSkin = function (squad) {
+    var sq = String(squad || '').toUpperCase().replace('GRAY', 'GREY');
+    if (['BLACK', 'GOLD', 'GREY', 'PURPLE'].indexOf(sq) < 0) sq = '';
+    if (sq) document.documentElement.setAttribute('data-squad', sq); else document.documentElement.removeAttribute('data-squad');
+    try { if (sq) localStorage.setItem('clash-skin', sq); else localStorage.removeItem('clash-skin'); } catch (e) {}
+  };
+  try { var saved = localStorage.getItem('clash-skin'); if (saved) document.documentElement.setAttribute('data-squad', saved); } catch (e) {}
+  // Numbers with data-count="123" count up once when they appear (skipped for reduced motion).
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.popCountUp = function (root) {
+    if (reduce || !('IntersectionObserver' in window)) return;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        io.unobserve(en.target);
+        var el = en.target, end = Number(el.getAttribute('data-count')) || 0, t0 = performance.now();
+        var step = function (t) { var k = Math.min(1, (t - t0) / 900), e = 1 - Math.pow(1 - k, 4); el.textContent = Math.round(end * e).toLocaleString(); if (k < 1) requestAnimationFrame(step); };
+        requestAnimationFrame(step);
+      });
+    });
+    (root || document).querySelectorAll('[data-count]').forEach(function (el) { io.observe(el); });
+  };
+})();
+</script>

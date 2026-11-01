@@ -281,6 +281,8 @@
   function renderMe(r) {
     var app = document.getElementById('mySquadApp');
     var me = r.me, st = r.standing;
+    if (window.popSkin) window.popSkin(me.squad); // the site takes on this student's squad colors (Pop.html)
+    if (app) app.style.setProperty('--squad', COLOR[me.squad] || '#bb8ef5');
     var standing = '';
     if (st) {
       standing = st.place === 1
@@ -312,7 +314,7 @@
       loreCard(r.theme, me.squad) + chaptersCard(r.lore, me.squad) +
       (r.duels || []).map(function (d) { return duelCard(d, me.squad); }).join('') +
       '<div class="ms-card"><div class="ms-h">What you\'ve added</div><div class="ms-tiles">' +
-        tiles.map(function (t) { return '<div class="ms-tile"><div class="ms-tile-val">' + esc(t[0]) + '</div><div class="ms-tile-lbl">' + esc(t[1]) + '</div></div>'; }).join('') +
+        tiles.map(function (t) { return '<div class="ms-tile"><div class="ms-tile-val"' + (/^\d+$/.test(String(t[0])) ? ' data-count="' + t[0] + '"' : '') + '>' + esc(t[0]) + '</div><div class="ms-tile-lbl">' + esc(t[1]) + '</div></div>'; }).join('') +
       '</div></div>' +
       '<div class="ms-card"><div class="ms-h">Badges (' + earned.length + ' of ' + Math.max(earned.length, (r.allBadges || []).length) + ')</div><div class="ms-badges">' +
         earned.map(function (b) { return '<span class="ms-badge">' + esc(b) + '</span>'; }).join('') +
@@ -325,9 +327,10 @@
       (mine ? '<div class="ms-h" style="margin-top:6px">Your squad\'s challenges</div>' + mine : '') +
       '<div class="ms-small">Updated every hour' + (me.updated ? ' · last update ' + esc(me.updated) : '') +
       ' · <a href="#" id="msNotMe" style="color:var(--purple-lt)">Not you? Switch</a></div>';
-    document.getElementById('msNotMe').onclick = function (e) { e.preventDefault(); store(KEY, null); renderForm(); };
+    document.getElementById('msNotMe').onclick = function (e) { e.preventDefault(); store(KEY, null); if (window.popSkin) window.popSkin(''); renderForm(); };
     if (typeof loadPolls === 'function') loadPolls(); // shows what this student voted
     startShirts(); // Mayhem shirt designs, live
+    if (window.popCountUp) window.popCountUp(app); // stat tiles count up (Pop.html)
   }
 
   // ── TV slides (called from buildTV in App) ──
