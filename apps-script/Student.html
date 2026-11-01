@@ -40,6 +40,14 @@
   var KEY = 'clash-my-800';
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function title(sq) { return sq.charAt(0) + sq.slice(1).toLowerCase(); }
+  // The squad's story (Squad Themes tab, once Show Lore is ticked). '' until then.
+  function loreCard(theme, squad) {
+    var l = theme && theme.lore;
+    if (!l) return '';
+    return '<div class="ms-card" style="border-color:' + (COLOR[squad] || '') + '"><div class="ms-h">📜 ' + esc(l.title || 'The story of ' + title(squad || '')) + '</div>' +
+      (l.image ? '<img src="' + esc(l.image) + '" alt="" style="max-width:100%;border-radius:10px;margin:6px 0">' : '') +
+      (l.text ? '<p style="white-space:pre-line;line-height:1.6">' + esc(l.text) + '</p>' : '') + '</div>';
+  }
   function store(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
   function stored(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
 
@@ -123,7 +131,9 @@
         (r.roles || []).map(function (x) { return ' <span class="ms-badge" style="padding:4px 10px">⭐ ' + esc(x) + '</span>'; }).join('') +
         (r.theme && r.theme.theme ? '<div class="ms-standing">Squad theme: <b>' + esc(r.theme.theme) + '</b>' + (r.theme.meaning ? ' · ' + esc(r.theme.meaning) : '') +
           (r.theme.project ? '<br>Service project: ' + esc(r.theme.project) + (r.theme.goal ? ' (' + r.theme.progress + ' of ' + r.theme.goal + ')' : '') : '') + '</div>' : '') +
+        (r.theme && r.theme.trait ? '<div class="ms-standing">Squad trait: <b>' + esc(r.theme.trait) + '</b></div>' : '') +
         '<div class="ms-standing">' + standing + '</div></div>' +
+      loreCard(r.theme, me.squad) +
       '<div class="ms-card"><div class="ms-h">What you\'ve added</div><div class="ms-tiles">' +
         tiles.map(function (t) { return '<div class="ms-tile"><div class="ms-tile-val">' + esc(t[0]) + '</div><div class="ms-tile-lbl">' + esc(t[1]) + '</div></div>'; }).join('') +
       '</div></div>' +

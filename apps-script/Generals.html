@@ -55,6 +55,8 @@
       (st && st.frozen ? '<div class="ms-standing" style="color:#93c5fd">❄️ <b>Point freeze</b>' + (st.frozen.until ? ' until ' + esc(st.frozen.until) : '') +
         '. The squad keeps its points; new ones won\'t count until it ends. Talk to your advisor about what it takes to lift it.</div>' : '') +
       (d.theme ? '<div class="ms-standing">Theme: <b>' + esc(d.theme.theme) + '</b> · ' + esc(d.theme.meaning) + '</div>' : '') +
+      (d.theme && d.theme.trait ? '<div class="ms-standing">Squad trait: <b>' + esc(d.theme.trait) + '</b></div>' : '') +
+      (d.theme && d.theme.lore ? '<div class="ms-standing">📜 <b>' + esc(d.theme.lore.title || 'Our story') + '</b>: on My Squad and in the meeting slides.</div>' : '') +
       '<div class="ms-standing"><b style="color:#f87171">' + d.notPlaced + '</b> of ' + d.roster.length + ' squad members not placed in an event yet.</div></div>';
     var tabs = [['roster', '👥 Roster & sign-ups'], ['mayhem', '⚡ Mayhem checklist'], ['hype', '📣 Hype script'], ['meeting', '🎤 Squad meeting'], ['service', '🤝 Service project'], ['nominate', '📝 Nominate & letters']];
     var body = { roster: rosterView, mayhem: mayhemView, hype: hypeView, meeting: meetingView, service: serviceView, nominate: nominateView }[view]();
@@ -108,8 +110,11 @@
   // The handbook's monthly squad meeting, as full-screen slides.
   function slides() {
     var d = data, sq = title(d.squad), st = d.standing;
+    var lore = d.theme && d.theme.lore;
     return [
       ['Welcome, ' + sq + ' Squad!', d.theme ? 'Our theme: <b>' + esc(d.theme.theme) + '</b><br>' + esc(d.theme.meaning) : 'Led by your Generals'],
+    ].concat(lore ? [[esc(lore.title || 'Our story'), (lore.image ? '<img src="' + esc(lore.image) + '" alt="" style="max-height:38vh;max-width:100%;border-radius:12px"><br>' : '') +
+      '<span style="white-space:pre-line">' + esc(lore.text) + '</span>']] : []).concat([
       ['Clash of Classes update', st ? (['1st', '2nd', '3rd', '4th'][st.place - 1] + ' place · ' + st.total.toLocaleString() + ' points<br>') +
         SQ.map(function (s) { return '<span style="color:' + COLOR[s] + '">' + title(s) + ' ' + (d.totals[s] || 0).toLocaleString() + '</span>'; }).join(' &nbsp; ') : ''],
       ['Recent wins', d.recent.length ? d.recent.map(function (e) { return esc(e.name) + ' <b>+' + e.pts + '</b>'; }).join('<br>') : 'Let\'s make some this month!'],
@@ -118,7 +123,7 @@
       ['Delegate voice', 'What are you hearing from the squad?'],
       ['Service update', d.theme && d.theme.project ? esc(d.theme.project) + (d.theme.goal ? '<br>' + d.theme.progress + ' of ' + d.theme.goal : '') : 'Our service project is coming soon.'],
       ['Let\'s go, ' + sq + '!', 'Every member placed. Every bill counts. 🔥'],
-    ];
+    ]);
   }
   function meetingView() {
     return '<div class="ms-card"><div class="ms-h">Monthly squad meeting</div><p class="ms-small">Opening · Clash update · Wins · Coming up · This month\'s trait · Delegate voice · Service update · Close</p>' +

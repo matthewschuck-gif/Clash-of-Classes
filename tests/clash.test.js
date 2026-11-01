@@ -387,6 +387,36 @@ test('point freeze: a frozen squad keeps its points but earns nothing new, from 
   assert.strictEqual(w.freezeToday_('GOLD'), null, 'not frozen today (freeze ended)');
   fz.rows.push(['GREY', '2026-01-01', '', 'Open-ended', '']);
   assert.deepStrictEqual(J(w.standingFor_('GREY', totals).frozen), { until: '' });
+  // The leaderboard and TV get today's freezes; an admin save never stores them, and an event
+  // the admin adds for GREY during the freeze is saved as 0 for GREY.
+  const loaded = JSON.parse(w.clashLoad()).value;
+  assert.deepStrictEqual(loaded.freezes, [{ squad: 'GREY', until: '' }]);
+  const t = login(w, 'oldpw');
+  loaded.events.push({ id: 200, name: 'Admin add', type: 'event', date: '2026-10-25', note: '', pts: { BLACK: 1, GOLD: 0, GREY: 3, PURPLE: 0 } });
+  w.clashSave(t, JSON.stringify(loaded), JSON.stringify({ seen: loaded.events.map(e => e.id + '|' + e.name) }));
+  const saved = ev.rows.find(r => r[0] === 200);
+  assert.deepStrictEqual([saved[6], saved[8]], [1, 0]);
+  assert.ok(/❄️ GREY frozen: \+3/.test(saved[4]));
+  assert.ok(!w.book.getSheetByName('app_data').rows.some(r => String(r[2]).includes('freezes')), 'freezes are not saved in the blob');
+});
+
+test('lore: Squad Themes has room for each squad\'s story; nothing shows until Show Lore is ticked', () => {
+  const w = world();
+  w.ensureGeneralsTabs_();
+  const themes = w.book.getSheetByName('Squad Themes');
+  assert.deepStrictEqual(themes.rows[0].slice(6), ['Trait', 'Lore Title', 'Lore', 'Lore Image', 'Show Lore']);
+  const gold = themes.rows.find(r => r[0] === 'GOLD');
+  gold[6] = 'Hope'; gold[7] = 'The Lantern Keepers'; gold[8] = 'Long ago…'; gold[9] = 'javascript:alert(1)';
+  assert.strictEqual(w.squadTheme_('GOLD').lore, null, 'a draft stays hidden');
+  assert.strictEqual(w.squadTheme_('GOLD').trait, '');
+  gold[10] = true;
+  assert.deepStrictEqual(J(w.squadTheme_('GOLD').lore), { title: 'The Lantern Keepers', text: 'Long ago…', image: '' }, 'only https images');
+  assert.strictEqual(w.squadTheme_('GOLD').trait, 'Hope');
+  // An older sheet without the lore columns gets them added at the end.
+  const w2 = world();
+  w2.book.insertSheet('Squad Themes').rows.push(['Squad', 'Theme', 'What It Means', 'Service Project', 'Service Goal', 'Service Progress'], ['GOLD', 'Hope', '', '', '', '']);
+  w2.ensureGeneralsTabs_();
+  assert.deepStrictEqual(w2.book.getSheetByName('Squad Themes').rows[0].slice(6), ['Trait', 'Lore Title', 'Lore', 'Lore Image', 'Show Lore']);
 });
 
 test('page files: scripts parse, no old token or Supabase key left', () => {

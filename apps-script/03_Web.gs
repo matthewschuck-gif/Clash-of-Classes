@@ -41,7 +41,10 @@ function include(name) {
 // The site data with the password taken out (anyone can open the site).
 function publicLoad_() {
   const res = loadAppData_('coc');
-  if (res.value) delete res.value.password;
+  if (res.value) {
+    delete res.value.password;
+    res.value.freezes = activeFreezes_(); // read-only, from the Point Freezes tab
+  }
   return res;
 }
 
@@ -62,6 +65,7 @@ function clashSave(token, valueJson, syncJson) {
     const value = JSON.parse(valueJson);
     const sync = syncJson ? JSON.parse(syncJson) : {};
     delete value.password;
+    delete value.freezes; // lives on the Point Freezes tab, not in the saved blob
     const key = function (e) { return e.id + '|' + e.name; };
     const seen = {};
     (sync.seen || []).forEach(function (k) { seen[k] = true; });
@@ -79,6 +83,7 @@ function clashSave(token, valueJson, syncJson) {
       ids[e.id] = true;
     });
     value.events = events.concat(added);
+    applyFreezes_(null, value.events, []); // an admin-added event during a freeze counts 0 too
     if (value.nextId !== undefined && Number(value.nextId) <= maxId) value.nextId = maxId + 1;
     const unchanged = !!sync.metrics && sameMetrics_(sync.metrics, value.metrics);
     const res = saveAppData_('coc', value, { skipMetricsTab: unchanged });

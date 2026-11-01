@@ -9,7 +9,11 @@
  *                   Captain, Art Captain, Music Captain, Dance Captain, Spirit Captain, Delegate,
  *                   Day Camp Counselor, Pathfinder, Steward, Scout, Vanguard. Vanguard stays
  *                   private (Trailback Panel confidentiality) unless Show On My Squad is ticked.
- *   Squad Themes    Squad | Theme | What It Means | Service Project | Service Goal | Service Progress
+ *   Squad Themes    Squad | Theme | What It Means | Service Project | Service Goal | Service Progress |
+ *                   Trait | Lore Title | Lore | Lore Image | Show Lore
+ *                   The lore columns are space for each squad's story (colors and traits are still
+ *                   being decided). Nothing shows until Show Lore is ticked; then My Squad, Generals
+ *                   HQ and the squad meeting slides show it. Lore Image: an https:// image link.
  *   Sign-up Events  Event | Date | Spots Per Squad | Open
  *   Sign-ups        Event | 800# | Name | Squad | Added By | Added At
  *   Mayhem Checklist Squad | Item | Done | Done By
@@ -23,7 +27,8 @@
  */
 
 const MLC_HEADERS_ = ['800#', 'Name', 'Squad', 'Role', 'Show On My Squad'];
-const THEME_HEADERS_ = ['Squad', 'Theme', 'What It Means', 'Service Project', 'Service Goal', 'Service Progress'];
+const THEME_HEADERS_ = ['Squad', 'Theme', 'What It Means', 'Service Project', 'Service Goal', 'Service Progress',
+  'Trait', 'Lore Title', 'Lore', 'Lore Image', 'Show Lore'];
 const SIGNUP_EVENT_HEADERS_ = ['Event', 'Date', 'Spots Per Squad', 'Open'];
 const SIGNUP_HEADERS_ = ['Event', '800#', 'Name', 'Squad', 'Added By', 'Added At'];
 const MAYHEM_HEADERS_ = ['Squad', 'Item', 'Done', 'Done By'];
@@ -46,10 +51,10 @@ const MAYHEM_ITEMS_ = [
   'Staff advisor check-in completed before Friday closing assembly',
 ];
 const DEFAULT_THEMES_ = [
-  ['BLACK', 'Freudenfreude', 'Joy in others\' success. Lifting others up is the standard.', '', '', ''],
-  ['GOLD', 'Hope', 'Belief that things get better. Lift the room when things are hard.', '', '', ''],
-  ['GREY', 'Belonging', 'Everyone has a place here, especially new students and quieter voices.', '', '', ''],
-  ['PURPLE', 'Curiosity', 'Ask more questions. Lean into learning, creativity and trying new things.', '', '', ''],
+  ['BLACK', 'Freudenfreude', 'Joy in others\' success. Lifting others up is the standard.', '', '', '', '', '', '', '', false],
+  ['GOLD', 'Hope', 'Belief that things get better. Lift the room when things are hard.', '', '', '', '', '', '', '', false],
+  ['GREY', 'Belonging', 'Everyone has a place here, especially new students and quieter voices.', '', '', '', '', '', '', '', false],
+  ['PURPLE', 'Curiosity', 'Ask more questions. Lean into learning, creativity and trying new things.', '', '', '', '', '', '', '', false],
 ];
 
 function ensureGeneralsTabs_() {
@@ -64,7 +69,14 @@ function ensureGeneralsTabs_() {
     return sh;
   };
   make('MLC Roster', MLC_HEADERS_);
-  make('Squad Themes', THEME_HEADERS_, DEFAULT_THEMES_);
+  const themes = make('Squad Themes', THEME_HEADERS_, DEFAULT_THEMES_);
+  // Sheets made before the lore columns existed: add the missing headers at the end.
+  const have = themes.getRange(1, 1, 1, Math.max(themes.getLastColumn(), 1)).getValues()[0].map(function (h) { return String(h).trim(); });
+  const missing = THEME_HEADERS_.filter(function (h) { return have.indexOf(h) === -1; });
+  if (missing.length) {
+    themes.getRange(1, have.filter(String).length + 1, 1, missing.length).setValues([missing]).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
+  }
+  themes.getRange(2, THEME_HEADERS_.indexOf('Show Lore') + 1, 4, 1).insertCheckboxes();
   make('Sign-up Events', SIGNUP_EVENT_HEADERS_);
   make('Sign-ups', SIGNUP_HEADERS_);
   const seed = [];
@@ -106,8 +118,17 @@ function publicRoles_() {
 
 function squadTheme_(squad) {
   const t = sheetRows_('Squad Themes').filter(function (r) { return squadOf_(r['Squad']) === squad; })[0];
-  return t ? { theme: String(t['Theme'] || ''), meaning: String(t['What It Means'] || ''), project: String(t['Service Project'] || ''),
-    goal: Number(t['Service Goal']) || 0, progress: Number(t['Service Progress']) || 0 } : null;
+  if (!t) return null;
+  const out = { theme: String(t['Theme'] || ''), meaning: String(t['What It Means'] || ''), project: String(t['Service Project'] || ''),
+    goal: Number(t['Service Goal']) || 0, progress: Number(t['Service Progress']) || 0, trait: '', lore: null };
+  // Trait and lore only once Show Lore is ticked, so drafts stay in the Sheet.
+  if (ticked_(t['Show Lore'])) {
+    out.trait = String(t['Trait'] || '').trim();
+    const text = String(t['Lore'] || '').trim();
+    const image = String(t['Lore Image'] || '').trim();
+    if (text || image) out.lore = { title: String(t['Lore Title'] || '').trim(), text: text, image: /^https:\/\//i.test(image) ? image : '' };
+  }
+  return out;
 }
 
 // ── GENERALS SIGN-IN ────────────────────────────────────────────────

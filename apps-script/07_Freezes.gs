@@ -43,8 +43,15 @@ function freezeToday_(squad) {
   return f ? { until: f.end } : null;
 }
 
+// Every squad frozen today: [{ squad, until }] (for the leaderboard and TV).
+function activeFreezes_() {
+  return SQUAD_KEYS_.map(function (s) { const f = freezeToday_(s); return f ? { squad: s, until: f.until } : null; })
+    .filter(function (f) { return f; });
+}
+
 /**
- * Called by readEventsTab_ with the events it built and the tab's raw rows. Zeroes points a
+ * Called by readEventsTab_ with the events it built and the tab's raw rows (and by clashSave
+ * with sheet = null, to fix the events before they are written). Zeroes points a
  * frozen squad earned inside a freeze and notes them on that row. Changes `events` in place.
  */
 function applyFreezes_(sheet, events, rowNumbers) {
@@ -61,8 +68,8 @@ function applyFreezes_(sheet, events, rowNumbers) {
     e.note = (e.note ? String(e.note) + ' · ' : '') + notes.join(' · ');
     frozen.forEach(function (s) {
       e.pts[s] = 0;
-      sheet.getRange(rowNumbers[i], headers.indexOf(s) + 1).setValue(0);
+      if (sheet) sheet.getRange(rowNumbers[i], headers.indexOf(s) + 1).setValue(0);
     });
-    sheet.getRange(rowNumbers[i], noteCol + 1).setValue(e.note);
+    if (sheet) sheet.getRange(rowNumbers[i], noteCol + 1).setValue(e.note);
   });
 }

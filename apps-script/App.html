@@ -1786,13 +1786,20 @@ function renderHomeText(){
 }
 
 // ── HOME MINI ──
+// ❄️ line for a squad on a point freeze today (D.freezes comes from 07_Freezes.gs). '' otherwise.
+function freezeTag(sq, cls){
+  const f=(D.freezes||[]).find(x=>x.squad===sq);
+  if(!f) return '';
+  return `<div class="${cls||''}" style="color:#93c5fd;font-size:.8em;font-weight:700;margin-top:2px">❄️ Point freeze${f.until?' until '+String(f.until).replace(/[<>&"]/g,''):''}</div>`;
+}
+
 function renderMini(){
   const r=ranked(), mx=maxGrand();
   document.getElementById('miniBoard').innerHTML=r.map((sq,i)=>`
     <div class="mini-sq sq-${sq} ${i===0?'rank-1':''}">
       <div class="mini-sq-rank">${i===0?'<span class="mini-sq-crown">★</span>':''} #${i+1}</div>
       <div class="mini-sq-name" style="color:${SQ_HEX[sq]}">${sq}</div>
-      <div class="mini-sq-pts" style="color:${SQ_HEX[sq]}">${grand(sq).toLocaleString()}</div>
+      <div class="mini-sq-pts" style="color:${SQ_HEX[sq]}">${grand(sq).toLocaleString()}</div>${freezeTag(sq)}
       <div class="mini-sq-bar"><div class="mini-sq-fill" style="width:${Math.round(grand(sq)/mx*100)}%;background:${SQ_HEX[sq]}"></div></div>
     </div>`).join('');
 }
@@ -1805,7 +1812,7 @@ function renderStrip(){
       <div class="strip-sq-rank">${i===0?'<span class="strip-crown">★</span> ':''} Rank #${i+1}</div>
       <div class="strip-sq-name">${sq}</div>
       <div class="strip-sq-pts" id="spt-${sq}">${grand(sq).toLocaleString()}</div>
-      <div class="strip-sq-lbl">Total Points</div>
+      <div class="strip-sq-lbl">Total Points</div>${freezeTag(sq)}
       <div class="strip-sq-bar" style="width:${Math.round(grand(sq)/mx*100)}%"></div>
     </div>`).join('');
 }
@@ -3707,7 +3714,7 @@ function buildTV(){
         <div class="tv-rk-num">Rank #${i+1}</div>
         <div class="tv-rk-name" style="color:${SQ_HEX[sq]}">${sq}</div>
         <div class="tv-rk-pts" style="color:${SQ_HEX[sq]}">${grand(sq).toLocaleString()}</div>
-        <div class="tv-rk-lbl">Total Points</div>
+        <div class="tv-rk-lbl">Total Points</div>${freezeTag(sq)}
       </div>
       <div class="tv-rk-bar" style="background:${SQ_HEX[sq]};width:${Math.round(grand(sq)/mx*100)}%"></div>
     </div>`).join('');
