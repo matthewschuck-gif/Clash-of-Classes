@@ -81,7 +81,7 @@
     var tags = (d.theme ? '<span>Theme: <b>' + esc(d.theme.theme) + '</b> · ' + esc(d.theme.meaning) + '</span>' : '') +
       (d.theme && d.theme.trait ? '<span>Squad trait: <b>' + esc(d.theme.trait) + '</b></span>' : '') +
       (d.theme && d.theme.lore ? '<span>📜 <b>' + esc(d.theme.lore.title || 'Our story') + '</b> is on My Squad and in the meeting slides</span>' : '');
-    var head = '<div class="ms-card hq-deck"><div class="hq-kicker">General ' + esc(d.me.name) + '</div>' +
+    var head = '<div class="ms-card hq-deck craft-lit craft-motes"><div class="hq-kicker">General ' + esc(d.me.name) + '</div>' +
       '<div class="ms-hello">' + title(sq) + ' Squad HQ</div>' +
       '<div class="hq-stats">' +
         '<div class="hq-stat"><div class="v">' + place + '</div><div class="l">Place</div>' + (gap ? '<div class="g">' + esc(gap) + '</div>' : '') + '</div>' +

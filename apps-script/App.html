@@ -3829,11 +3829,16 @@ function buildTV(){
         ${i===0?'<div class="tv-rk-crown">★</div>':''}
         <div class="tv-rk-num">Rank #${i+1}</div>
         <div class="tv-rk-name" style="color:${SQ_HEX[sq]}">${sq}</div>
-        <div class="tv-rk-pts" style="color:${SQ_HEX[sq]}">${grand(sq).toLocaleString()}</div>
+        <div class="tv-rk-pts" data-sq="${sq}" style="color:${SQ_HEX[sq]}">${grand(sq).toLocaleString()}</div>
         <div class="tv-rk-lbl">Total Points</div>${freezeTag(sq)}
       </div>
       <div class="tv-rk-bar" style="background:${SQ_HEX[sq]};width:${Math.round(grand(sq)/mx*100)}%"></div>
     </div>`).join('');
+  // New points while the rankings are up: that squad's number lands with a bump and a small
+  // burst in its color (Craft, in Pop.html). The first build only remembers the totals.
+  const prev=window._tvPrevTotals||null; window._tvPrevTotals={};
+  r.forEach(sq=>{ window._tvPrevTotals[sq]=grand(sq);
+    if(prev&&grand(sq)>(prev[sq]||0)&&tvSlide===0&&window.craftLand){ const el=document.querySelector('#tvRanks .tv-rk-pts[data-sq="'+sq+'"]'); craftLand(el); if(window.craftCelebrate) craftCelebrate(el,[SQ_HEX[sq],'#ffe100','#ffffff']); } });
 
   const cats=[{label:'Event Points',vals:Object.fromEntries(SQUADS.map(sq=>[sq,evtTotal(sq)]))},{label:'Attendance',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.attendance[sq]||0)]))},{label:'No Referral',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.referral[sq]||0)]))},{label:'No Fail Grade',vals:Object.fromEntries(SQUADS.map(sq=>[sq,Math.round(D.metrics.grades[sq]||0)]))}];
   const hdrs=`<div class="tv-cat-row" style="margin-bottom:6px"><div></div>${SQUADS.map(sq=>`<div class="tv-col-hdr" style="color:${SQ_HEX[sq]}">${sq}</div>`).join('')}</div>`;
