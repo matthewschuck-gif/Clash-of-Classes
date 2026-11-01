@@ -108,7 +108,7 @@ const DEFAULT_SETTINGS = [
   ['CHALLENGE_BONUSES', 'OFF', 'ON = a squad that reaches a challenge goal on the Challenges tab gets its Bonus Points once, automatically (checked hourly). Turn on with Clash of Classes › Turn on challenge bonuses.'],
   ['TV_SHOW_NAMES', 'ON', 'ON = the hallway TV shows a "Badge leaders" slide with first name + last initial. OFF = no student names on the TV.'],
   ['GENERALS_CODE', '', 'The code Squad Generals type with their 800# to open Generals HQ (Role = General on the MLC Roster tab). Blank = Generals HQ is closed. Change it any time.'],
-  ['EVENT_LABELS', 'trait_dough=💵 Trait Dough, mountaineer_mindset=⛰️ Mindset, trail_journal=🏔️ Trail Journal, trailback_panel=🧭 Trailback Panel, star_growth=📈 STAR Growth, challenge_bonus=🏁 Challenge, community_bonus=🎯 Bonus', 'Event type = how it is labelled on the TV feed and My Squad.'],
+  ['EVENT_LABELS', 'trait_dough=💵 Trait Dough, mountaineer_mindset=⛰️ Mindset, trail_journal=🏔️ Trail Journal, trailback_panel=🧭 Trailback Panel, star_growth=📈 STAR Growth, camp_mountaineer=⛺ Camp Mountaineer, challenge_bonus=🏁 Challenge, community_bonus=🎯 Bonus', 'Event type = how it is labelled on the TV feed and My Squad.'],
 ];
 
 // Writes one Settings value (used by the menu switches).
