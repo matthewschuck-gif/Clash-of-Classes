@@ -3756,33 +3756,120 @@ function buildTV(){
 
 const TV_SLIDE_COUNT=7;
 
-// Summit Map slide: one mountain, each squad's flag partway up the trail by its place.
-// The leader sits near the summit and each place below sits one step lower (tied squads share
-// a step), so close scores still read clearly; the points are on each flag. Frozen squads get ❄️.
+// Summit Map slide, built for a hallway TV read in a few seconds from across the hall.
+// Left: a night mountain with a switchback trail; each squad is a pennant with its place on it.
+// The leader camps near the summit and each place below sits one camp lower (tied squads share a
+// camp), so close scores still read clearly. Right: the standings in big type, each row tied to
+// its flag by a line. The flags climb in from the bottom when the slide comes up, leader last
+// (no motion for people who turn motion off). Frozen squads get ❄️.
 function buildSummitMap(){
   const el=document.getElementById('tvSummit'); if(!el) return;
   const r=ranked();
   const levels=[...new Set(r.map(sq=>grand(sq)))]; // distinct scores, highest first
-  const height=sq=>0.9-levels.indexOf(grand(sq))*0.2;
-  // The trail: a zig-zag path up the mountain, as points from the bottom (t=0) to the summit (t=1).
-  const path=[[60,520],[300,450],[180,370],[470,300],[330,220],[560,160],[600,70]];
-  const at=t=>{ const n=path.length-1, f=Math.min(Math.max(t,0),1)*n, i=Math.min(Math.floor(f),n-1), k=f-i;
-    return [path[i][0]+(path[i+1][0]-path[i][0])*k, path[i][1]+(path[i+1][1]-path[i][1])*k]; };
-  const flags=r.map((sq,i)=>{
-    const [x,y]=at(height(sq)), dx=(i%2?1:-1)*(18+i*6);
-    const frozen=(D.freezes||[]).some(f=>f.squad===sq);
-    return `<g><line x1="${x}" y1="${y}" x2="${x}" y2="${y-46}" stroke="#e5e7eb" stroke-width="3"/>
-      <path d="M${x} ${y-46} l${dx>0?44:-44} 10 l${dx>0?-44:44} 10 z" fill="${SQ_HEX[sq]}"/>
-      <text x="${x+dx*1.2}" y="${y-58}" text-anchor="middle" font-family="Fraunces,serif" font-weight="900" font-size="22" fill="${SQ_HEX[sq]}">${sq}${frozen?' ❄️':''}</text>
-      <text x="${x}" y="${y+24}" text-anchor="middle" font-family="DM Mono,monospace" font-weight="700" font-size="17" fill="${SQ_HEX[sq]}">${grand(sq).toLocaleString()} pts</text></g>`;
+  const CAMP_T=[0.86,0.64,0.42,0.2];                // how far up the trail each place camps (1st sits just under the snowline)
+  const esc=s=>String(s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  const titleCase=sq=>sq.charAt(0)+sq.slice(1).toLowerCase();
+
+  // The trail: switchbacks from base camp to the summit, smoothed (Catmull-Rom) and sampled, so
+  // flags can be placed by distance along it.
+  const knots=[[230,790],[560,722],[330,640],[655,560],[420,472],[690,384],[522,292],[602,206],[566,118]];
+  const pts=[];
+  for(let i=0;i<knots.length-1;i++){
+    const p0=knots[Math.max(i-1,0)],p1=knots[i],p2=knots[i+1],p3=knots[Math.min(i+2,knots.length-1)];
+    for(let s=0;s<24;s++){ const t=s/24,t2=t*t,t3=t2*t;
+      pts.push([0,1].map(k=>0.5*(2*p1[k]+(-p0[k]+p2[k])*t+(2*p0[k]-5*p1[k]+4*p2[k]-p3[k])*t2+(-p0[k]+3*p1[k]-3*p2[k]+p3[k])*t3))); }
+  }
+  pts.push(knots[knots.length-1]);
+  const cum=[0]; for(let i=1;i<pts.length;i++) cum.push(cum[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));
+  const total=cum[cum.length-1];
+  const at=t=>{ const d=Math.min(Math.max(t,0),1)*total; let i=1; while(i<cum.length-1&&cum[i]<d) i++;
+    const k=(d-cum[i-1])/((cum[i]-cum[i-1])||1); return [pts[i-1][0]+(pts[i][0]-pts[i-1][0])*k, pts[i-1][1]+(pts[i][1]-pts[i-1][1])*k]; };
+  const trailD='M'+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L');
+
+  // Squads that share a camp (a tie) stand side by side.
+  const placeOf=sq=>levels.indexOf(grand(sq));
+  const marks=r.map(sq=>{
+    const lvl=placeOf(sq), mates=r.filter(o=>placeOf(o)===lvl), k=mates.indexOf(sq);
+    const [x,y]=at(CAMP_T[Math.min(lvl,3)]);
+    return { sq, place:lvl+1, x:x+(k-(mates.length-1)/2)*58, y, frozen:(D.freezes||[]).some(f=>f.squad===sq) };
+  });
+
+  // Standings rows on the right, top to bottom in place order.
+  const rowY=i=>150+i*172;
+  const ord=n=>n+(n===1?'st':n===2?'nd':n===3?'rd':'th');
+  const sub=(m,i)=>{
+    const pts_=grand(m.sq);
+    if(i===0) return r.length>1&&grand(r[1])===pts_ ? 'Tied for the summit' : `Leading by ${(pts_-grand(r[1]||m.sq)).toLocaleString()}`;
+    const ahead=marks[i-1];
+    return grand(ahead.sq)===pts_ ? `Tied with ${titleCase(ahead.sq)}` : `${(grand(ahead.sq)-pts_).toLocaleString()} behind ${titleCase(ahead.sq)}`;
+  };
+
+  // A few fixed stars (same every time, so the slide doesn't flicker between refreshes).
+  const stars=Array.from({length:46},(_,i)=>{ const x=(i*317)%1060+20, y=(i*151)%330+18, rr=i%5===0?2.2:1.2;
+    return `<circle cx="${x}" cy="${y}" r="${rr}" fill="#efe7ff" opacity="${(0.25+((i*37)%50)/100).toFixed(2)}"/>`; }).join('');
+
+  const connectors=marks.map((m,i)=>{
+    const y2=rowY(i)-10, x1=m.x+30, mx=(x1+1118)/2;
+    return `<path d="M${x1.toFixed(0)} ${(m.y-58).toFixed(0)} C${mx.toFixed(0)} ${(m.y-58).toFixed(0)} ${mx.toFixed(0)} ${y2} 1118 ${y2}" fill="none" stroke="${SQ_HEX[m.sq]}" stroke-width="2" stroke-opacity=".45" stroke-dasharray="2 7" stroke-linecap="round" class="sm-rise" style="animation-delay:${(0.25+(marks.length-1-i)*0.22+0.35).toFixed(2)}s"/>`;
   }).join('');
-  el.innerHTML=`<svg viewBox="0 0 900 560" style="width:100%;height:auto;max-height:68vh" role="img" aria-label="Squads climbing the mountain by points">
-    <polygon points="0,560 600,40 900,560" fill="#2a2440"/><polygon points="250,560 600,40 760,560" fill="#352d52"/>
-    <polygon points="545,90 600,40 655,90 625,82 600,96 575,82" fill="#f8fafc"/>
-    <polyline points="${path.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#a78bfa" stroke-width="5" stroke-dasharray="10 9" stroke-linecap="round"/>
-    <text x="600" y="28" text-anchor="middle" font-size="26">🚩</text>${flags}</svg>`;
+
+  const flags=marks.slice().reverse().map((m,j)=>{
+    const c=SQ_HEX[m.sq], delay=(0.25+j*0.22).toFixed(2);
+    return `<g class="sm-rise" style="animation-delay:${delay}s">
+      <ellipse cx="${m.x}" cy="${m.y+4}" rx="22" ry="6" fill="#07020d" opacity=".55"/>
+      <line x1="${m.x}" y1="${m.y+2}" x2="${m.x}" y2="${m.y-84}" stroke="#12081f" stroke-width="7" stroke-linecap="round" opacity=".7"/>
+      <line x1="${m.x}" y1="${m.y+2}" x2="${m.x}" y2="${m.y-84}" stroke="#f3eefc" stroke-width="4" stroke-linecap="round"/>
+      <path d="M${m.x+2} ${m.y-84} L${m.x+66} ${m.y-68} L${m.x+2} ${m.y-50} Z" fill="${c}" stroke="${m.frozen?'#93c5fd':'#12081f'}" stroke-width="${m.frozen?4:3}" stroke-linejoin="round" paint-order="stroke"/>
+      <text x="${m.x+24}" y="${m.y-59}" text-anchor="middle" font-family="Fraunces,serif" font-weight="900" font-size="24" fill="#12081f">${m.place}</text>
+      ${m.frozen?`<text x="${m.x+82}" y="${m.y-60}" font-size="26">❄️</text>`:''}
+    </g>`;
+  }).join('');
+
+  const rows=marks.map((m,i)=>{
+    const c=SQ_HEX[m.sq], y=rowY(i), delay=(0.25+(marks.length-1-i)*0.22+0.35).toFixed(2);
+    return `<g class="sm-rise" style="animation-delay:${delay}s">
+      <text x="1140" y="${y-34}" font-family="DM Mono,monospace" font-size="22" letter-spacing="1" fill="#b09ec8">${ord(m.place)}${m.frozen?'  ·  ❄️ POINT FREEZE':''}</text>
+      <text x="1140" y="${y+22}" font-family="Fraunces,serif" font-weight="900" font-size="60" fill="${c}">${esc(titleCase(m.sq))}</text>
+      <text x="1556" y="${y+22}" text-anchor="end" font-family="DM Mono,monospace" font-weight="500" font-size="40" fill="#f3eefc">${grand(m.sq).toLocaleString()}</text>
+      <text x="1140" y="${y+58}" font-family="DM Mono,monospace" font-size="21" fill="#b09ec8">${esc(sub(m,i))}</text>
+    </g>`;
+  }).join('');
+
+  el.innerHTML=`<svg viewBox="0 0 1600 840" style="width:100%;height:auto;max-height:76vh;display:block" role="img"
+      aria-label="Summit Map: ${r.map((sq,i)=>`${ord(marks[i].place)} ${titleCase(sq)}, ${grand(sq)} points`).join('; ')}">
+    <defs>
+      <linearGradient id="smSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#160a29"/><stop offset=".7" stop-color="#241140"/><stop offset="1" stop-color="#3a1c5c"/></linearGradient>
+      <radialGradient id="smGlow" cx="566" cy="96" r="260" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffe100" stop-opacity=".32"/><stop offset="1" stop-color="#ffe100" stop-opacity="0"/></radialGradient>
+      <linearGradient id="smLit" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5a3a8a"/><stop offset="1" stop-color="#3a2360"/></linearGradient>
+      <linearGradient id="smShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c1a4a"/><stop offset="1" stop-color="#1b0f2e"/></linearGradient>
+      <clipPath id="smPlate"><rect width="1600" height="840" rx="28"/></clipPath>
+    </defs>
+    <style>
+      #tvSummit .sm-rise{animation:smRise .9s cubic-bezier(.25,1,.5,1) backwards}
+      @keyframes smRise{from{opacity:0;transform:translateY(46px)}}
+      @media (prefers-reduced-motion:reduce){#tvSummit .sm-rise{animation:none}}
+    </style>
+    <g clip-path="url(#smPlate)">
+      <rect width="1600" height="840" fill="url(#smSky)"/>
+      ${stars}
+      <circle cx="566" cy="96" r="260" fill="url(#smGlow)"/>
+      <path d="M-20 840 L120 560 L210 610 L330 430 L410 500 L470 455 L470 840 Z M640 840 L760 520 L840 590 L930 470 L1060 640 L1120 840 Z" fill="#2a1747" opacity=".85"/>
+      <path d="M40 840 L230 560 L300 602 L432 336 L470 360 L566 86 L1080 840 Z" fill="url(#smShade)"/>
+      <path d="M566 86 L652 300 L700 272 L860 520 L920 502 L1080 840 L566 840 L610 560 L540 380 Z" fill="url(#smLit)" opacity=".9"/>
+      <path d="M566 86 L604 182 L586 172 L570 196 L548 168 L528 186 L520 176 Z" fill="#f3eefc"/>
+      <path d="M566 86 L604 182 L586 172 Z" fill="#cbbfe3"/>
+      <path d="${trailD}" fill="none" stroke="#0f0719" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/>
+      <path d="${trailD}" fill="none" stroke="#e3d6fb" stroke-width="4" stroke-dasharray="1 12" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
+      ${CAMP_T.map(t=>{ const [x,y]=at(t); return `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="6" fill="#0f0719" stroke="#e3d6fb" stroke-width="2" opacity=".7"/>`; }).join('')}
+      <path d="M566 86 L566 40" stroke="#ffe100" stroke-width="4" stroke-linecap="round"/><path d="M568 40 L604 50 L568 60 Z" fill="#ffe100"/>
+      <text x="56" y="86" font-family="Fraunces,serif" font-weight="900" font-size="54" fill="#f3eefc">The Summit Map</text>
+      <text font-family="DM Mono,monospace" font-size="21" fill="#b09ec8"><tspan x="58" y="124">Every point moves your</tspan><tspan x="58" y="152">squad up the mountain</tspan></text>
+      <line x1="1118" y1="70" x2="1118" y2="790" stroke="#f3eefc" stroke-opacity=".08" stroke-width="2"/>
+      ${connectors}${flags}${rows}
+    </g>
+  </svg>`;
 }
-function showSlide(n){ tvSlide=n; document.querySelectorAll('.tv-slide').forEach((s,i)=>s.classList.toggle('active',i===n)); document.querySelectorAll('.tv-dot').forEach((d,i)=>d.classList.toggle('on',i===n)); tvPct=0; document.getElementById('tvProg').style.width='0%'; }
+function showSlide(n){ if(n===6) buildSummitMap(); /* replays the climb */ tvSlide=n; document.querySelectorAll('.tv-slide').forEach((s,i)=>s.classList.toggle('active',i===n)); document.querySelectorAll('.tv-dot').forEach((d,i)=>d.classList.toggle('on',i===n)); tvPct=0; document.getElementById('tvProg').style.width='0%'; }
 function startAuto(){ clearInterval(tvTimer); clearInterval(tvPTimer); const step=80,inc=step/TV_MS*100; tvPTimer=setInterval(()=>{tvPct=Math.min(tvPct+inc,100);document.getElementById('tvProg').style.width=tvPct+'%';},step); tvTimer=setInterval(()=>{showSlide((tvSlide+1)%TV_SLIDE_COUNT);startAuto();},TV_MS); }
 
 document.addEventListener('keydown',e=>{
