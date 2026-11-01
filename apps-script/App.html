@@ -68,7 +68,7 @@ window.toggleMode = function(){
 // Build nav immediately so tabs appear and work before Firebase loads
 (function(){
   var pages=[
-    {id:'home',icon:'🏠',label:'Home'},{id:'trait',icon:'⭐',label:'Trait'},
+    {id:'home',icon:'🏠',label:'Home'},{id:'mysquad',icon:'🧗',label:'My Squad'},{id:'trait',icon:'⭐',label:'Trait'},
     {id:'squads',icon:'👥',label:'Squads'},{id:'tracker',icon:'📊',label:'Tracker'},
     {id:'mindset',icon:'📚',label:'Mindset'},{id:'wheel',icon:'🎡',label:'Wheel'},
     {id:'traitdough',icon:'💵',label:'Trait Dough'},{id:'sotm',icon:'🌟',label:'Student of Month'},
@@ -208,6 +208,7 @@ function applyBranding(){
 
 const PAGES_DEF = [
   { id:'home',       icon:'🏠', label:'Home'           },
+  { id:'mysquad',    icon:'🧗', label:'My Squad'       },
   { id:'trait',      icon:'⭐', label:'Trait'          },
   { id:'squads',     icon:'👥', label:'Squads'         },
   { id:'tracker',    icon:'📊', label:'Tracker'        },
@@ -3740,10 +3741,11 @@ function buildTV(){
     </div>`;
   }).join('');
 
-  document.getElementById('tvNav').innerHTML=[0,1,2,3].map(i=>`<div class="tv-dot${i===tvSlide?' on':''}" onclick="showSlide(${i})"></div>`).join('');
+  if(window.clashStudentTV_) window.clashStudentTV_(); // challenge + latest-points slides (Student.html)
+  document.getElementById('tvNav').innerHTML=Array.from({length:TV_SLIDE_COUNT},(_,i)=>i).map(i=>`<div class="tv-dot${i===tvSlide?' on':''}" onclick="showSlide(${i})"></div>`).join('');
 }
 
-const TV_SLIDE_COUNT=4;
+const TV_SLIDE_COUNT=6;
 function showSlide(n){ tvSlide=n; document.querySelectorAll('.tv-slide').forEach((s,i)=>s.classList.toggle('active',i===n)); document.querySelectorAll('.tv-dot').forEach((d,i)=>d.classList.toggle('on',i===n)); tvPct=0; document.getElementById('tvProg').style.width='0%'; }
 function startAuto(){ clearInterval(tvTimer); clearInterval(tvPTimer); const step=80,inc=step/TV_MS*100; tvPTimer=setInterval(()=>{tvPct=Math.min(tvPct+inc,100);document.getElementById('tvProg').style.width=tvPct+'%';},step); tvTimer=setInterval(()=>{showSlide((tvSlide+1)%TV_SLIDE_COUNT);startAuto();},TV_MS); }
 

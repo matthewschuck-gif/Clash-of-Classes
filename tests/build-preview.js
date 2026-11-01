@@ -37,6 +37,12 @@ function build() {
       [102, 'Trait Dough: week 6', 'trait_dough', '2026-10-30', '', '', 12, 18, 9, 14],
       [103, 'STAR Growth: Cycle 2', 'star_growth', '2026-10-31', '', '', 40, 52, 47, 38]]),
     makeSheet('metrics', [['squad', 'attendance', 'referral', 'grades'], ['BLACK', 94, 88, 81], ['GOLD', 95, 90, 84], ['GREY', 93, 86, 80], ['PURPLE', 96, 91, 79]]),
+    makeSheet('Student Board', [['800#', 'Name', 'Squad', 'Grade', 'Trait Dough Bills', 'Bills This Week', 'Trait Dough Wins', 'Mindset Summits', 'Trail Journal Growth', 'STAR Growth Points', 'Shout-outs', 'Streak (weeks)', 'Badges', 'Last Contribution', 'Updated'],
+      ['8001234', 'Ann L.', 'Gold', '7', '12', '2', '1', '1', '', '4', '2', '3', '🍞 First Trait Dough, 🍞 Trait Dough Ten, 🏆 Trait Dough Winner, ⛰️ Mindset Summit, 📈 STAR Grower, 🙌 Shout-out, 🔥 3-Week Streak', '2026-10-30', '2026-10-31 19:00'],
+      ['8005678', 'Bo K.', 'Grey', '8', '3', '0', '0', '0', '', '2', '0', '0', '🍞 First Trait Dough, 📈 STAR Grower', '2026-10-20', '2026-10-31 19:00']]),
+    makeSheet('Challenges', [['Show', 'Title', 'Description', 'Event Types', 'Measure', 'Goal', 'Start', 'End', 'Bonus Points', 'Awarded'],
+      [true, 'Trait Dough Week', 'Turn in Trait Dough bills all week!', 'trait_dough', 'Points', 25, '2026-10-26', '2099-12-31', 50, ''],
+      [true, 'Growth Push', 'Every point from any project counts.', '', 'Points', 200, '2026-09-01', '2099-12-31', 0, '']]),
   ];
   var book = { getSheets: function () { return sheets; }, getSheetByName: function (n) { return sheets.filter(function (s) { return s.getName() === n; })[0] || null; },
     insertSheet: function (n) { var s = makeSheet(n, []); sheets.push(s); return s; }, getId: function () { return 'CLASH'; } };

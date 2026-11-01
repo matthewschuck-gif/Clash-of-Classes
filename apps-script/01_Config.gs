@@ -87,6 +87,7 @@ function setupSpreadsheet() {
   if (def && ss.getSheets().length > 1) ss.deleteSheet(def);
   ensureMetricsRows_();
   ensureSettings_();
+  ensureChallenges_();
   setupHelpTab_();
   SpreadsheetApp.getUi().alert('Done -- app_data, events, metrics, Settings and "How To Use This Sheet" tabs are set up. Clash of Classes has no separate PII tab (unlike Trail Journal), so there is no extra sharing/protection step required here. You can now add/edit rows directly in the events and metrics tabs and the site will pick them up within a few seconds. Staff directions live in the "How To Use This Sheet" tab -- start there.');
 }
@@ -100,7 +101,24 @@ const DEFAULT_SETTINGS = [
   ['SITE_URL', 'https://clashofclasses.org', 'The address students use (the menu\'s "Open the site" link).'],
   ['POLL_SECONDS', '5', 'How often an open page checks for new points (seconds, 3 or more). Higher = fewer requests.'],
   ['TJ_SHEET_ID', '1rinTrtlmJKQrvtn5GVs-ngmaQRvkl8Nt39yOBICgggA', 'Trail Journal Data Sheet (link or ID) for the Community Culture Stats panel. Only counts are read.'],
+  ['STUDENT_BOARD_TAB', 'Student Board', 'Tab that Define a Climb-er fills every hour with each student\'s positive points and badges. The My Squad page reads it.'],
+  ['MY_SQUAD_LOOKUPS_PER_10MIN', '300', 'Most My Squad look-ups the whole site allows in 10 minutes (stops anyone paging through every 800#).'],
+  ['BADGE_LIST', '🍞 First Trait Dough; 🍞 Trait Dough Ten; 🏆 Trait Dough Winner; ⛰️ Mindset Summit; ⛰️ Triple Summit; 📈 STAR Grower; 🚀 STAR Climber; 🙌 Shout-out; 🔥 3-Week Streak; 🔥 6-Week Streak', 'Every badge, in order, so My Squad can show the ones still to earn. Keep these names the same as BOARD_BADGES on the Climb-er Settings tab (that is where the rules live).'],
+  ['CHALLENGE_BONUSES', 'OFF', 'ON = a squad that reaches a challenge goal on the Challenges tab gets its Bonus Points once, automatically (checked hourly). Turn on with Clash of Classes › Turn on challenge bonuses.'],
+  ['TV_SHOW_NAMES', 'ON', 'ON = the hallway TV shows a "Badge leaders" slide with first name + last initial. OFF = no student names on the TV.'],
+  ['EVENT_LABELS', 'trait_dough=💵 Trait Dough, mountaineer_mindset=⛰️ Mindset, trail_journal=🏔️ Trail Journal, trailback_panel=🧭 Trailback Panel, star_growth=📈 STAR Growth, challenge_bonus=🏁 Challenge, community_bonus=🎯 Bonus', 'Event type = how it is labelled on the TV feed and My Squad.'],
 ];
+
+// Writes one Settings value (used by the menu switches).
+function setSettingValue_(key, value) {
+  ensureSettings_();
+  const sheet = getSheet_(SETTINGS_TAB);
+  const rows = sheet.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === key) { sheet.getRange(i + 1, 2).setValues([[value]]); return; }
+  }
+  sheet.appendRow([key, value, '']);
+}
 
 function ensureSettings_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();

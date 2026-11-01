@@ -80,6 +80,7 @@ function world(opts) {
 }
 
 const events = w => w.book.getSheetByName('events').rows.slice(1);
+const J = x => JSON.parse(JSON.stringify(x)); // values from the sandbox → plain data
 const login = (w, pw) => JSON.parse(w.clashLogin(pw)).token;
 
 test('load leaves the password out', () => {
@@ -200,8 +201,80 @@ test('Settings tab: defaults added once, edits win, pasted links become IDs', ()
   assert.strictEqual(w.getSetting_('TJ_SHEET_ID'), '1rinTrtlmJKQrvtn5GVs-ngmaQRvkl8Nt39yOBICgggA');
 });
 
+function addStudentTabs(w) {
+  const board = w.book.insertSheet('Student Board');
+  board.rows.push(['800#', 'Name', 'Squad', 'Grade', 'Trait Dough Bills', 'Bills This Week', 'Trait Dough Wins', 'Mindset Summits', 'Trail Journal Growth', 'STAR Growth Points', 'Shout-outs', 'Streak (weeks)', 'Badges', 'Last Contribution', 'Updated'],
+    ['8001234', 'Ann L.', 'Gold', '7', '12', '2', '1', '1', '', '4', '2', '3', '🍞 First Trait Dough, 🔥 3-Week Streak', '2026-10-30', '2026-10-31 19:00'],
+    ['8005678', 'Bo K.', 'Gray', '8', '0', '0', '0', '0', '', '0', '0', '0', '', '', '2026-10-31 19:00']);
+  const ch = w.book.insertSheet('Challenges');
+  ch.rows.push(['Show', 'Title', 'Description', 'Event Types', 'Measure', 'Goal', 'Start', 'End', 'Bonus Points', 'Awarded'],
+    [true, 'Dough Drive', 'Bills!', 'trait_dough', 'Points', 5, '2026-09-01', '2099-12-31', 50, ''],
+    [true, 'Show up', '', '', 'Entries', 2, '2026-09-01', '2099-12-31', 0, ''],
+    [false, 'Hidden', '', '', 'Points', 1, '', '', 10, '']);
+}
+
+test('My Squad: one student by 800#, positive counts, squad standing, their challenges', () => {
+  const w = world();
+  addStudentTabs(w);
+  const r = JSON.parse(w.clashMyPage('800-1234'));
+  assert.strictEqual(r.me.name, 'Ann L.');
+  assert.strictEqual(r.me.bills, 12);
+  assert.strictEqual(r.me.journal, null, 'Trail Journal hidden when blank');
+  assert.deepStrictEqual(r.me.badges, ['🍞 First Trait Dough', '🔥 3-Week Streak']);
+  // Events: Black 10, Gold 5 → Gold 2nd, 5 behind Black.
+  assert.deepStrictEqual([r.standing.place, r.standing.ahead, r.standing.behindBy], [2, 'BLACK', 5]);
+  assert.deepStrictEqual(r.challenges.map(c => c.title), ['Dough Drive', 'Show up']);
+  assert.ok(r.allBadges.length >= 5);
+  assert.strictEqual(JSON.parse(w.clashMyPage('8005678')).me.squad, 'GREY', 'Gray → GREY');
+  assert.throws(() => w.clashMyPage('8009999'), /isn't on the list/);
+  assert.throws(() => w.clashMyPage('12'), /800 number/);
+  assert.ok(!w.clashMyPage('8001234').includes('8005678'), 'never sends another student');
+});
+
+test('My Squad look-ups are capped', () => {
+  const w = world();
+  addStudentTabs(w);
+  w.ensureSettings_();
+  w.setSettingValue_('MY_SQUAD_LOOKUPS_PER_10MIN', '3');
+  for (let i = 0; i < 3; i++) w.clashMyPage('8001234');
+  assert.throws(() => w.clashMyPage('8001234'), /busy/);
+});
+
+test('Challenges: progress from the events tab, bonuses once per squad when ON', () => {
+  const w = world();
+  addStudentTabs(w);
+  const list = JSON.parse(w.clashChallenges());
+  const dough = list.find(c => c.title === 'Dough Drive');
+  assert.deepStrictEqual(dough.progress, { BLACK: 0, GOLD: 5, GREY: 0, PURPLE: 0 });
+  assert.deepStrictEqual(list.find(c => c.title === 'Show up').progress, { BLACK: 1, GOLD: 1, GREY: 0, PURPLE: 0 });
+  assert.ok(!list.some(c => c.title === 'Hidden'));
+  w.ensureSettings_();
+  assert.deepStrictEqual(J(w.checkChallengeBonuses()), ['CHALLENGE_BONUSES is OFF.']);
+  w.setSettingValue_('CHALLENGE_BONUSES', 'ON');
+  assert.deepStrictEqual(J(w.checkChallengeBonuses()), ['GOLD +50 for Dough Drive']);
+  const bonus = events(w).filter(r => r[2] === 'challenge_bonus');
+  assert.strictEqual(bonus.length, 1);
+  assert.strictEqual(bonus[0][7], 50);
+  assert.ok(/^GOLD \d{4}-\d{2}-\d{2}$/.test(w.book.getSheetByName('Challenges').rows[1][9]));
+  assert.deepStrictEqual(J(w.checkChallengeBonuses()), [], 'never twice');
+  assert.strictEqual(JSON.parse(w.clashChallenges()).find(c => c.title === 'Show up').progress.GOLD, 1, 'bonuses do not count toward challenges');
+});
+
+test('TV feed: latest points with labels; badge leaders only when TV_SHOW_NAMES is ON', () => {
+  const w = world();
+  addStudentTabs(w);
+  w.ensureSettings_();
+  let f = JSON.parse(w.clashTvFeed());
+  assert.strictEqual(f.latest[0].name, 'Bill');
+  assert.strictEqual(f.latest[0].label, '💵 Trait Dough');
+  assert.deepStrictEqual(f.stars.map(s => s.name), ['Ann L.']);
+  w.setSettingValue_('TV_SHOW_NAMES', 'OFF');
+  f = JSON.parse(w.clashTvFeed());
+  assert.deepStrictEqual(f.stars, []);
+});
+
 test('page files: scripts parse, no old token or Supabase key left', () => {
-  for (const f of ['App.html', 'Widgets.html', 'Index.html']) {
+  for (const f of ['App.html', 'Widgets.html', 'Index.html', 'Student.html']) {
     const h = fs.readFileSync(path.join(dir, f), 'utf8');
     assert.ok(!/togetherweclimb4444HOPE|supabase\.co|TJ_ANON|ephrata2026/.test(h), f + ' has no secrets');
     [...h.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].forEach(m => new vm.Script(m[1].replace(/<\?!=[\s\S]*?\?>/g, '{}')));

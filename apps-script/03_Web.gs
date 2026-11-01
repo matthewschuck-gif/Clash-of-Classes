@@ -206,6 +206,9 @@ function onOpen() {
     .addItem('Run setup (tabs + Settings)', 'setupSpreadsheet')
     .addItem('Set admin password…', 'menuSetPassword_')
     .addItem('Open the site', 'menuOpenSite_')
+    .addSeparator()
+    .addItem('Turn on challenge bonuses', 'menuTurnOnChallenges_')
+    .addItem('Turn off challenge bonuses', 'menuTurnOffChallenges_')
     .addToUi();
 }
 

@@ -1,0 +1,166 @@
+<style>
+/* ── My Squad + challenges (Student.html) ── */
+.ms-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg, 16px); padding: 20px; margin-bottom: 16px; }
+.ms-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.ms-form input { flex: 1; min-width: 180px; background: var(--surface2); border: 1px solid var(--border2, var(--border)); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 16px; font-family: 'DM Mono', monospace; letter-spacing: 1px; }
+.ms-err { color: #f87171; font-size: 13px; margin-top: 10px; min-height: 18px; }
+.ms-hello { font-family: 'Fraunces', serif; font-size: clamp(24px, 4vw, 36px); font-weight: 900; margin: 0 0 4px; }
+.ms-squad { display: inline-block; padding: 4px 12px; border-radius: 999px; font-weight: 700; font-size: 12px; letter-spacing: 1.5px; color: #111; }
+.ms-standing { font-size: 15px; color: var(--text2); margin: 10px 0 0; line-height: 1.6; }
+.ms-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.ms-tile { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; text-align: center; }
+.ms-tile-val { font-family: 'Fraunces', serif; font-size: 30px; font-weight: 900; color: var(--gold-soft, #fbbf24); }
+.ms-tile-lbl { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+.ms-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.ms-badge { padding: 8px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; background: rgba(251, 191, 36, .14); color: var(--gold-soft, #fbbf24); border: 1px solid rgba(251, 191, 36, .35); }
+.ms-badge.locked { background: transparent; color: var(--text3); border-style: dashed; border-color: var(--border); opacity: .7; }
+.ms-h { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 700; margin: 0 0 12px; }
+.ms-small { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+.ch-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+.ch-title { font-family: 'Fraunces', serif; font-weight: 700; font-size: 17px; }
+.ch-desc { font-size: 13px; color: var(--text2); margin: 4px 0 10px; }
+.ch-row { display: grid; grid-template-columns: 70px 1fr 70px; gap: 8px; align-items: center; margin: 6px 0; font-size: 12px; }
+.ch-bar { height: 10px; background: var(--surface2); border-radius: 999px; overflow: hidden; }
+.ch-fill { height: 100%; border-radius: 999px; transition: width .6s; }
+.ch-done { font-size: 11px; color: #4ade80; font-weight: 700; }
+.tv-ch-grid { display: grid; gap: 18px; width: min(1100px, 92vw); margin: 0 auto; }
+.tv-ch-grid .ch-card { padding: 22px; }
+.tv-ch-grid .ch-title { font-size: clamp(20px, 2.4vw, 32px); }
+.tv-ch-grid .ch-row { font-size: clamp(13px, 1.4vw, 18px); grid-template-columns: 110px 1fr 110px; }
+.tv-ch-grid .ch-bar { height: 18px; }
+.tv-feed { display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; width: min(1200px, 94vw); margin: 0 auto; }
+.tv-feed-item { display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; font-size: clamp(13px, 1.4vw, 20px); color: var(--text); font-weight: 600; }
+@media (max-width: 760px) { .tv-feed { grid-template-columns: 1fr; } }
+</style>
+<script>
+/* My Squad page, automatic challenges and two TV slides. Data comes from 04_Students.gs. */
+(function () {
+  var SQ = ['BLACK', 'GOLD', 'GREY', 'PURPLE'];
+  var COLOR = { BLACK: 'var(--sq-black, #c5c9d1)', GOLD: 'var(--sq-gold, #ffe100)', GREY: 'var(--sq-grey, #99a8bb)', PURPLE: 'var(--sq-purple, #bb8ef5)' };
+  var KEY = 'clash-my-800';
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function title(sq) { return sq.charAt(0) + sq.slice(1).toLowerCase(); }
+  function store(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+  function stored(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+
+  // ── Challenges ──
+  function challengeCard(c, onlySquad) {
+    var squads = onlySquad ? [onlySquad] : SQ;
+    var max = Math.max(c.goal || 1, 1);
+    return '<div class="ch-card"><div class="ch-title">🏁 ' + esc(c.title) + '</div>' +
+      (c.description ? '<div class="ch-desc">' + esc(c.description) + '</div>' : '') +
+      squads.map(function (s) {
+        var v = c.progress[s] || 0, pct = Math.min(100, Math.round(v / max * 100));
+        return '<div class="ch-row"><b style="color:' + COLOR[s] + '">' + title(s) + '</b>' +
+          '<div class="ch-bar"><div class="ch-fill" style="width:' + pct + '%;background:' + COLOR[s] + '"></div></div>' +
+          '<span>' + (v >= c.goal && c.goal ? '<span class="ch-done">✓ ' + v + '/' + c.goal + '</span>' : v + '/' + c.goal) + '</span></div>';
+      }).join('') +
+      '<div class="ms-small" style="margin-top:8px">' + (c.measure === 'Entries' ? 'Counts entries' : 'Counts points') +
+      (c.end ? ' · ends ' + esc(c.end) : '') + (c.bonus ? ' · +' + c.bonus + ' bonus for each squad that makes it' : '') + '</div></div>';
+  }
+
+  var challenges = [];
+  function renderHomeChallenges() {
+    var el = document.getElementById('autoChallengeSection');
+    if (!el) return;
+    var active = challenges.filter(function (c) { return c.active; });
+    el.style.display = active.length ? 'block' : 'none';
+    el.innerHTML = active.map(function (c) { return challengeCard(c); }).join('');
+  }
+  function loadChallenges() {
+    window.gasRun_('clashChallenges').then(function (list) { challenges = list || []; renderHomeChallenges(); }).catch(function () {});
+  }
+
+  // ── My Squad ──
+  function renderForm(msg) {
+    var app = document.getElementById('mySquadApp');
+    if (!app) return;
+    app.innerHTML = '<div class="ms-card"><div class="ms-h">Type your 800 number to see what you\'ve added to your squad</div>' +
+      '<div class="ms-form"><input id="ms800" inputmode="numeric" autocomplete="off" placeholder="800 number" value="' + esc(stored(KEY)) + '">' +
+      '<button class="btn btn-purple" id="msGo">Show my page</button></div><div class="ms-err" id="msErr">' + esc(msg || '') + '</div></div>';
+    var input = document.getElementById('ms800');
+    document.getElementById('msGo').onclick = function () { lookup(input.value); };
+    input.onkeydown = function (e) { if (e.key === 'Enter') lookup(input.value); };
+  }
+
+  function lookup(id) {
+    var err = document.getElementById('msErr');
+    if (err) err.textContent = 'Looking…';
+    window.gasRun_('clashMyPage', String(id || '')).then(function (r) {
+      store(KEY, String(id).replace(/\D/g, ''));
+      renderMe(r);
+    }).catch(function (e) {
+      if (err) err.textContent = (e && e.message) ? e.message.replace(/^Exception:\s*/, '') : 'Something went wrong.';
+    });
+  }
+
+  function renderMe(r) {
+    var app = document.getElementById('mySquadApp');
+    var me = r.me, st = r.standing;
+    var standing = '';
+    if (st) {
+      standing = st.place === 1
+        ? '<b>' + title(st.squad) + '</b> is in <b>1st place</b>, ' + st.leadBy.toLocaleString() + ' points ahead. Keep it up!'
+        : '<b>' + title(st.squad) + '</b> is in <b>' + ['1st', '2nd', '3rd', '4th'][st.place - 1] + ' place</b>, ' +
+          st.behindBy.toLocaleString() + ' points behind ' + title(st.ahead) + '. Every bill helps!';
+    }
+    var tiles = [
+      [me.bills, 'Trait Dough bills'], [me.billsWeek, 'Bills this week'], [me.wins, 'Trait Dough wins'],
+      [me.mindset, 'Mindset summits'], [me.star, 'STAR growth points'], [me.shoutouts, 'Shout-outs'],
+      [me.streak + (me.streak ? ' 🔥' : ''), 'Week streak'],
+    ];
+    if (me.journal !== null) tiles.push([me.journal, 'Trail Journal growth']);
+    var earned = me.badges;
+    var locked = (r.allBadges || []).filter(function (b) { return earned.indexOf(b) === -1; });
+    var mine = (r.challenges || []).map(function (c) { return challengeCard(c, me.squad); }).join('');
+    app.innerHTML =
+      '<div class="ms-card" style="border-color:' + COLOR[me.squad] + '">' +
+        '<div class="ms-hello">Hi, ' + esc(me.name) + '!</div>' +
+        (me.squad ? '<span class="ms-squad" style="background:' + COLOR[me.squad] + '">' + me.squad + ' SQUAD</span>' : '') +
+        '<div class="ms-standing">' + standing + '</div></div>' +
+      '<div class="ms-card"><div class="ms-h">What you\'ve added</div><div class="ms-tiles">' +
+        tiles.map(function (t) { return '<div class="ms-tile"><div class="ms-tile-val">' + esc(t[0]) + '</div><div class="ms-tile-lbl">' + esc(t[1]) + '</div></div>'; }).join('') +
+      '</div></div>' +
+      '<div class="ms-card"><div class="ms-h">Badges (' + earned.length + ' of ' + Math.max(earned.length, (r.allBadges || []).length) + ')</div><div class="ms-badges">' +
+        earned.map(function (b) { return '<span class="ms-badge">' + esc(b) + '</span>'; }).join('') +
+        locked.map(function (b) { return '<span class="ms-badge locked">🔒 ' + esc(b) + '</span>'; }).join('') +
+      '</div></div>' +
+      (mine ? '<div class="ms-h" style="margin-top:6px">Your squad\'s challenges</div>' + mine : '') +
+      '<div class="ms-small">Updated every hour' + (me.updated ? ' · last update ' + esc(me.updated) : '') +
+      ' · <a href="#" id="msNotMe" style="color:var(--purple-lt)">Not you? Switch</a></div>';
+    document.getElementById('msNotMe').onclick = function (e) { e.preventDefault(); store(KEY, null); renderForm(); };
+  }
+
+  // ── TV slides (called from buildTV in App) ──
+  window.clashStudentTV_ = function () {
+    var ch = document.getElementById('tvChallenges');
+    if (ch) {
+      var active = challenges.filter(function (c) { return c.active; });
+      ch.innerHTML = active.length ? active.slice(0, 3).map(function (c) { return challengeCard(c); }).join('')
+        : '<div class="ch-card"><div class="ch-title">🏁 No challenge running right now</div></div>';
+    }
+    var feed = document.getElementById('tvFeed');
+    if (feed) window.gasRun_('clashTvFeed').then(function (f) {
+      var left = '<div><div class="tv-cat-title">⚡ Latest points</div>' + (f.latest || []).map(function (e) {
+        var pts = SQ.filter(function (s) { return e.pts[s]; }).map(function (s) {
+          return '<b style="color:' + COLOR[s] + '">' + title(s) + ' +' + e.pts[s] + '</b>';
+        }).join(' ');
+        return '<div class="tv-feed-item"><span>' + esc(e.label ? e.label + ' · ' : '') + esc(e.name) + '</span><span>' + pts + '</span></div>';
+      }).join('') + '</div>';
+      var right = (f.stars || []).length ? '<div><div class="tv-cat-title">🏅 Badge leaders</div>' + f.stars.map(function (s) {
+        return '<div class="tv-feed-item"><span style="color:' + (COLOR[s.squad] || 'inherit') + '">' + esc(s.name) + '</span><span>' + s.badges + ' 🏅</span></div>';
+      }).join('') + '</div>' : '';
+      feed.innerHTML = left + right;
+    }).catch(function () {});
+  };
+
+  function start() {
+    renderForm();
+    var saved = stored(KEY);
+    if (saved) lookup(saved);
+    loadChallenges();
+    setInterval(loadChallenges, 120000);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>

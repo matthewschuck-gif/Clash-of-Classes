@@ -105,6 +105,7 @@
 
   <!-- WEEKLY CHALLENGE -->
   <div id="challengeSection" style="display:none;margin-top:28px"></div>
+  <div id="autoChallengeSection" style="display:none;margin-top:20px"></div>
 
   <!-- TRAIT SPOTLIGHT -->
   <div id="traitSpotlightSection" style="display:none;margin-top:28px"></div>
@@ -200,6 +201,14 @@
 </div>
 
 <!-- GENERALS -->
+<div class="page" id="page-mysquad">
+  <div class="page-hero">
+    <h1 class="page-title">My <span>Squad</span></h1>
+    <div class="page-subtitle">See what you've added to your squad: points, badges and challenges</div>
+  </div>
+  <div id="mySquadApp"></div>
+</div>
+
 <div class="page" id="page-generals">
   <div class="page-hero">
     <h1 class="page-title">Squad <span>Generals</span></h1>
@@ -1468,6 +1477,8 @@
     </div>
     <div class="tv-slide" id="tvS2"><div class="tv-cat-title">Points by Category</div><div class="tv-cat-rows" id="tvCats"></div></div>
     <div class="tv-slide" id="tvS3"><div class="tv-met-grid" id="tvMets"></div></div>
+    <div class="tv-slide" id="tvS4"><div class="tv-cat-title">Squad Challenges</div><div class="tv-ch-grid" id="tvChallenges"></div></div>
+    <div class="tv-slide" id="tvS5"><div class="tv-feed" id="tvFeed"></div></div>
   </div>
   <div class="tv-nav" id="tvNav"></div>
   <!-- Remote spin overlay -->
@@ -2285,6 +2296,7 @@ document.addEventListener('click', function (ev) {
 </script>
 <?!= include('App'); ?>
 <?!= include('Widgets'); ?>
+<?!= include('Student'); ?>
 
 <div class="overlay" id="embedOverlay" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal" style="max-width:560px">
