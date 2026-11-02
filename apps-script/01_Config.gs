@@ -97,6 +97,8 @@ function setupSpreadsheet() {
   ensureMayhemWeekTabs_();
   ensureShirtDesignTabs_();
   ensureSchoolCalendarTab_();
+  ensureGameTabs_();
+  ensureMeTabs_();
   setupHelpTab_();
   SpreadsheetApp.getUi().alert('Done -- app_data, events, metrics, Settings and "How To Use This Sheet" tabs are set up. Clash of Classes has no separate PII tab (unlike Trail Journal), so there is no extra sharing/protection step required here. You can now add/edit rows directly in the events and metrics tabs and the site will pick them up within a few seconds. Staff directions live in the "How To Use This Sheet" tab -- start there.');
 }
@@ -134,6 +136,22 @@ const DEFAULT_SETTINGS = [
   ['PASSPORT_POLL_VOTES', '5', 'Daily Poll votes a student needs for the 🗳️ passport stamp.'],
   ['FUN_THAW_TIERS', '1=25, 2=50, 3=100', 'Fun Freeze: reaching the thaw goal once gets back 25% of the points frozen out, twice 50%, three times 100% ("times the goal = percent back").'],
   ['FUN_SECOND_CHANCE_DAYS', '2', 'Fun Freeze: school days a squad\'s one second chance adds to Thaw By.'],
+  ['GAME_AWARDS', 'OFF', 'ON = the game layer gives points: weekly territory, round goals, the monster, destination tickets (checked hourly). Turn on with Clash of Classes › Turn on game awards. OFF = the map, cards and goals still show; no bonus points.'],
+  ['GAME_MAP', 'ON', 'OFF hides the school map (King of the Mountain, territories, wings).'],
+  ['GAME_CARDS', 'ON', 'OFF hides Chance cards.'],
+  ['GAME_STREAK', 'ON', 'OFF hides Hot Streaks.'],
+  ['GAME_ROUNDS', 'ON', 'OFF hides round goals.'],
+  ['GAME_ENGINE', 'ON', 'OFF hides engine powers.'],
+  ['MONSTER_VISIBLE', 'ON', 'OFF hides Monster of the Month everywhere (one click: Clash of Classes › Show or hide Monster of the Month). Each monster also needs Show ticked on the Monsters tab.'],
+  ['CLAIM_DAYS', '14', 'School map: a zone goes to the squad with the most points from its events in the last this-many days.'],
+  ['WING_MULTIPLIER', '2', 'School map: holding every zone in a wing pays that wing this many times.'],
+  ['CHANCE_DRAWS_PER_WEEK', '1', 'Chance cards each squad\'s Generals can draw a week (engine powers can add more).'],
+  ['STREAK_BANK', '2=2, 3=4, 4=7, 5=11, 6=16', 'Hot Streak: days in a row = points when banked.'],
+  ['TICKETS_HELD', '3', 'Destination tickets a student can hold at once.'],
+  ['TICKET_CHOICES', '3', 'Destination tickets offered per draw (the student keeps at least one).'],
+  ['AVATAR_GEAR', 'boots=bills>=1; pack=bills>=5; rope=mindset>=1; lantern=shoutouts>=1; compass=star>=1; scarf=streak>=3; badge=tickets>=3; flag=passport>=1', 'My Climb: gear a student\'s climber earns. gear=thing>=number; things: bills, mindset, shoutouts, star, streak, buddy, tickets, passport.'],
+  ['STUDENT_EMAIL_PATTERN', '', 'My Climb sign-in when the Student Board has no Email column: how a student email is built from the 800#, e.g. {800}@easdpa.org. Blank = use the Email column only.'],
+  ['STUDENT_LINK', '', 'The student link (the second deployment, Anyone within EASD). The site\'s My Climb button opens it with ?page=me.'],
   ['SCHOOL_START', '', 'First day of school (yyyy-mm-dd) for the home page day counts. Blank = the date set in the site\'s admin settings.'],
   ['LAST_DAY', '', 'Last day of school (yyyy-mm-dd). Blank = the date set in the site\'s admin settings.'],
   ['SCHOOL_CALENDAR', '', 'Optional: the district calendar, as its Google Calendar ID or its iCal (.ics) link. Clash of Classes › Sync days off from the district calendar adds its days off to the School Calendar tab.'],

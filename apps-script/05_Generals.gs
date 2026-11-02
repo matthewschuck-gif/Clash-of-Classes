@@ -28,7 +28,7 @@
 
 const MLC_HEADERS_ = ['800#', 'Name', 'Squad', 'Role', 'Show On My Squad'];
 const THEME_HEADERS_ = ['Squad', 'Theme', 'What It Means', 'Service Project', 'Service Goal', 'Service Progress',
-  'Trait', 'Lore Title', 'Lore', 'Lore Image', 'Show Lore'];
+  'Trait', 'Lore Title', 'Lore', 'Lore Image', 'Show Lore', 'Mascot', 'Mascot Name', 'Mascot Image'];
 const SIGNUP_EVENT_HEADERS_ = ['Event', 'Date', 'Spots Per Squad', 'Open'];
 const SIGNUP_HEADERS_ = ['Event', '800#', 'Name', 'Squad', 'Added By', 'Added At'];
 const MAYHEM_HEADERS_ = ['Squad', 'Item', 'Done', 'Done By'];

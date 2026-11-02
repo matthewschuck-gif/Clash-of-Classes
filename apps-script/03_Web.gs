@@ -24,6 +24,7 @@ const LEGACY_DEFAULT_PW_ = 'ephrata2026'; // the site's built-in password before
 
 // ── PAGE ────────────────────────────────────────────────────────────
 function serveSite_(e) {
+  if (e && e.parameter && e.parameter.page === 'me') return serveMe_(); // My Climb, the student dashboard (16_Me.gs)
   const t = HtmlService.createTemplateFromFile('Index');
   t.config = JSON.stringify({ pollMs: Math.max(3, Number(getSetting_('POLL_SECONDS')) || 5) * 1000 });
   return t.evaluate()
@@ -44,6 +45,8 @@ function publicLoad_(raw) {
   if (res.value) {
     delete res.value.password;
     maybeCheckThaws_(); // thaws a freeze whose goals are met (14_Thaw.gs), at most every 5 minutes
+    maybeGameTick_(); // map claims and engine unlocks (15_Game.gs), at most every 10 minutes
+    res.value.studentLink = String(getSetting_('STUDENT_LINK') || '');
     res.value.freezes = activeFreezes_(); // read-only, from the Point Freezes tab
     try { res.value.schoolCalendar = schoolCalendar_(); } catch (e) { /* the page falls back to its built-in list */ }
     if (!raw && Array.isArray(res.value.events)) res.value.events = res.value.events.map(publicEvent_);
@@ -98,6 +101,7 @@ function clashSave(token, valueJson, syncJson) {
     delete value.password;
     delete value.freezes; // lives on the Point Freezes tab, not in the saved blob
     delete value.schoolCalendar; // lives on the School Calendar tab
+    delete value.studentLink; // lives on Settings
     const key = function (e) { return e.id + '|' + e.name; };
     const seen = {};
     (sync.seen || []).forEach(function (k) { seen[k] = true; });
@@ -271,6 +275,10 @@ function onOpen() {
     .addItem('Send Squad Night attendance points', 'menuSendSquadNightPoints_')
     .addSeparator()
     .addItem('Check thaw goals now', 'menuCheckThaws_')
+    .addSeparator()
+    .addItem('Turn on game awards', 'menuTurnOnGame_')
+    .addItem('Turn off game awards', 'menuTurnOffGame_')
+    .addItem('Show or hide Monster of the Month', 'menuToggleMonster_')
     .addItem('Sync days off from the district calendar', 'menuSyncSchoolCalendar_')
     .addItem('Turn on daily calendar sync', 'menuTurnOnCalendarSync_')
     .addToUi();

@@ -61,7 +61,7 @@ function world(opts) {
     SpreadsheetApp: { getActiveSpreadsheet: () => book, openById: id => { if (id !== '1rinTrtlmJKQrvtn5GVs-ngmaQRvkl8Nt39yOBICgggA') throw new Error('no ' + id); return tj; }, getUi: () => ({ alert() {} }),
       newDataValidation: () => { const b = new Proxy({}, { get: () => () => b }); return b; } },
     DriveApp: { getFileById: () => ({ getLastUpdated: () => new Date('2026-10-31T10:00:00Z') }) },
-    CacheService: { getScriptCache: () => ({ get: k => cache[k] || null, put: (k, v) => { cache[k] = v; } }) },
+    CacheService: { getScriptCache: () => ({ get: k => cache[k] || null, put: (k, v) => { cache[k] = v; }, remove: k => { delete cache[k]; } }) },
     PropertiesService: { getScriptProperties: () => ({ getProperty: k => props[k] || null, setProperty: (k, v) => { props[k] = v; } }) },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     Utilities: {
@@ -405,7 +405,7 @@ test('lore: Squad Themes has room for each squad\'s story; nothing shows until S
   const w = world();
   w.ensureGeneralsTabs_();
   const themes = w.book.getSheetByName('Squad Themes');
-  assert.deepStrictEqual(themes.rows[0].slice(6), ['Trait', 'Lore Title', 'Lore', 'Lore Image', 'Show Lore']);
+  assert.deepStrictEqual(themes.rows[0].slice(6), ['Trait', 'Lore Title', 'Lore', 'Lore Image', 'Show Lore', 'Mascot', 'Mascot Name', 'Mascot Image']);
   const gold = themes.rows.find(r => r[0] === 'GOLD');
   gold[6] = 'Hope'; gold[7] = 'The Lantern Keepers'; gold[8] = 'Long ago…'; gold[9] = 'javascript:alert(1)';
   assert.strictEqual(w.squadTheme_('GOLD').lore, null, 'a draft stays hidden');
@@ -417,7 +417,7 @@ test('lore: Squad Themes has room for each squad\'s story; nothing shows until S
   const w2 = world();
   w2.book.insertSheet('Squad Themes').rows.push(['Squad', 'Theme', 'What It Means', 'Service Project', 'Service Goal', 'Service Progress'], ['GOLD', 'Hope', '', '', '', '']);
   w2.ensureGeneralsTabs_();
-  assert.deepStrictEqual(w2.book.getSheetByName('Squad Themes').rows[0].slice(6), ['Trait', 'Lore Title', 'Lore', 'Lore Image', 'Show Lore']);
+  assert.deepStrictEqual(w2.book.getSheetByName('Squad Themes').rows[0].slice(6), ['Trait', 'Lore Title', 'Lore', 'Lore Image', 'Show Lore', 'Mascot', 'Mascot Name', 'Mascot Image']);
 });
 
 test('Squad Duels: scores by measure, a tie means both win, bonus once the day after it ends, only when ON', () => {
@@ -735,6 +735,120 @@ test('thaw: a Peaks Freeze needs every group goal and staff sign-off; a Fun Free
   w.clashGeneralsSecondChance('tok2');
   assert.ok(fz.rows[4][7] > today && /^Used/.test(fz.rows[4][10]));
   assert.throws(() => w.clashGeneralsSecondChance('tok2'), /already used/);
+});
+
+test('game layer: map claims, wing bonus, chance cards + Flip Three, Hot Streak, round goals, monster, tickets, My Climb sign-in', () => {
+  const w = world();
+  const today = w.todayYmd_(), ago = n => w.ymdShift_(today, -n);
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureMeTabs_(); w.ensurePollTabs_();
+  w.ScriptApp = { getProjectTriggers: () => [], newTrigger: () => ({ timeBased: () => ({ everyHours: () => ({ create() {} }) }) }) };
+  // Students (made-up names) with emails and attendance from Climb-er.
+  w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade', 'Trait Dough Bills', 'Bills This Week', 'Trait Dough Wins', 'Mindset Summits', 'Trail Journal Growth', 'STAR Growth Points', 'Shout-outs', 'Ambassador Buddies', 'Streak (weeks)', 'Badges', 'Last Contribution', 'Updated', 'Attendance %', 'Email'],
+    ['8001111', 'Ann L.', 'Gold', '7', '4', '1', '0', '1', '', '2', '0', '0', '2', '', ago(1), '', '96', 'ann.l@easdpa.org'],
+    ['8002222', 'Ed P.', 'Gold', '8', '0', '0', '0', '0', '', '0', '1', '0', '0', '', '', '', '90', 'ed.p@easdpa.org'],
+    ['8003333', 'Cy R.', 'Grey', '7', '1', '0', '0', '0', '', '0', '0', '0', '0', '', ago(3), '', '', '']];
+  const ev = w.book.getSheetByName('events');
+  // GOLD wins the poll zone and everything overall; GREY wins the Trait Dough zone.
+  ev.rows.push([301, 'Daily Poll', 'daily_poll', ago(2), '', '', 0, 9, 2, 0], [302, 'Trait Dough: Cy R.', 'trait_dough', ago(1), '', '', 0, 0, 5, 0]);
+  let zones = J(w.mapZones_(null, true));
+  const z = name => zones.find(x => x.zone === name);
+  assert.strictEqual(z('Echo Falls').holder, 'GOLD');
+  assert.strictEqual(z('Dough Meadow').holder, 'GREY');
+  assert.strictEqual(z('The Summit').holder, 'GOLD', 'King of the Mountain = most points overall');
+  // King of the hill: a tie doesn't take it away.
+  ev.rows.push([303, 'Trait Dough: Ann L.', 'trait_dough', ago(1), '', '', 0, 5, 0, 0]);
+  zones = J(w.mapZones_(null, true));
+  assert.strictEqual(z('Dough Meadow').holder, 'GREY', 'tie: the holder keeps it');
+  // A wing held whole pays again: give GOLD all of Commons Valley.
+  const mz = w.book.getSheetByName('Map Zones');
+  mz.rows.forEach(r => { if (r[2] === 'Commons Valley') r[10] = 'GOLD'; });
+  w.setSettingValue_('GAME_AWARDS', 'ON');
+  w.props['game-paid-week'] = 'old';
+  w.gameTick();
+  const terr = ev.rows.filter(r => r[2] === 'territory');
+  const goldTerr = terr.find(r => r[7] > 0);
+  // GOLD: Summit 5x2 + Echo Falls 3 + Lunch Basin 3 + Duelers' Pass 3 + Commons wing again (3+3) = 25,
+  // + 1 per zone from Switchback Builders (unlocks at 2 zones) = 29.
+  assert.strictEqual(goldTerr[7], 29, 'zones, the Summit doubled, the wing paid twice, +4 from the Switchback Builders engine power (4 zones)');
+  w.gameTick();
+  assert.strictEqual(ev.rows.filter(r => r[2] === 'territory').length, terr.length, 'paid once a week');
+  // Chance cards: a General draws one a week.
+  const cache = w.CacheService.getScriptCache();
+  cache.put('hq-g1', JSON.stringify({ id: '8001111', name: 'Ann L.', squad: 'GOLD' }));
+  w.clashGeneralsHq = () => '{}';
+  const drew = JSON.parse(w.clashGeneralsDrawCard('g1')).drew;
+  assert.ok(drew && drew.card);
+  assert.throws(() => w.clashGeneralsDrawCard('g1'), /already drew/);
+  // Flip Three: GREY flips three; a card that comes up twice busts (here every card is the same).
+  const cards = w.book.getSheetByName('Chance Cards');
+  cards.rows.forEach((r, i) => { if (i) r[0] = r[1] === 'Lucky Switchback'; });
+  const hand = w.book.getSheetByName('Squad Hand');
+  hand.rows.push(['GOLD', 'Flip Three', 'flip_three', 0, today, 'Held', '']);
+  const flipped = JSON.parse(w.clashGeneralsPlayCard('g1', hand.rows.length, 'GREY')).flipped;
+  assert.deepStrictEqual(flipped.map(f => f.status), ['Busted', 'Busted', 'Busted'], 'three of the same card: all bust, no points lost');
+  assert.throws(() => w.clashGeneralsPlayCard('g1', hand.rows.length, 'GREY'), /isn't in your hand/);
+  // Hot Streak: GOLD topped poll turnout three finished days in a row, then banks it.
+  const polls = w.book.getSheetByName('Daily Polls'), votes = w.book.getSheetByName('Poll Votes');
+  [3, 2, 1].forEach(n => {
+    polls.rows.push([true, ago(n), 'This or That', 'Q' + n, 'A | B', '', 1, 1, '', '']);
+    const id = polls.rows.length;
+    votes.rows.push([id, ago(n), '8001111', 'GOLD', 'A', ''], [id, ago(n), '8002222', 'GOLD', 'B', ''], [id, ago(n), '8003333', 'GREY', 'A', '']);
+  });
+  const st = J(w.hotStreaks_());
+  assert.strictEqual(st.GOLD.length, 3);
+  assert.strictEqual(st.GREY.length, 0);
+  w.clashGeneralsBankStreak('g1');
+  assert.ok(ev.rows.some(r => r[2] === 'streak_bank' && r[7] === 6), '3 days banks 4 points, +2 from the Rope Team engine power (GOLD holds a whole wing)');
+  assert.strictEqual(J(w.hotStreaks_()).GOLD.length, 0, 'the streak starts over after banking');
+  // Round goal that ended yesterday: places get prizes once.
+  const rg = w.book.getSheetByName('Round Goals');
+  rg.rows.push([true, ago(10), ago(1), 'Most voters', 'voters', 8, 5, 3, '', '']);
+  w.gameTick();
+  const rgEv = ev.rows.find(r => r[2] === 'round_goal' && /Most voters/.test(r[1]));
+  assert.ok(rgEv && rgEv[7] === 8 && rgEv[8] === 5, 'GOLD 1st, GREY 2nd');
+  // Monster: hidden until shown; defeated together.
+  assert.strictEqual(w.monster_(), null, 'seeded monsters start hidden');
+  const mon = w.book.getSheetByName('Monsters');
+  mon.rows.push([true, ago(5), w.ymdShift_(today, 5), 'Test Beast', 'Grr', '', 'voters: 9', 2, '']);
+  assert.ok(J(w.monster_()).defeated, '9 votes this week defeats it');
+  w.gameTick();
+  assert.strictEqual(ev.rows.filter(r => r[2] === 'monster').length, 1);
+  w.setSettingValue_('MONSTER_VISIBLE', 'OFF');
+  assert.strictEqual(w.monster_(), null, 'one switch hides it everywhere');
+  // My Climb: Ann signs in with her school account.
+  w.Session.getActiveUser = () => ({ getEmail: () => 'Ann.L@easdpa.org' });
+  let me = JSON.parse(w.clashMe());
+  assert.strictEqual(me.me.id, '8001111');
+  const att = me.metrics.find(m => m.key === 'attendance');
+  assert.deepStrictEqual([att.me, att.squadAvg], [96, 93], 'her attendance next to the GOLD average');
+  assert.strictEqual(me.mascot.animal, 'Cottontail rabbit');
+  w.Session.getActiveUser = () => ({ getEmail: () => 'someone@else.org' });
+  assert.throws(() => w.clashMe(), /NOT_FOUND/);
+  w.Session.getActiveUser = () => ({ getEmail: () => '' });
+  assert.throws(() => w.clashMe(), /SIGN_IN/);
+  // Staff preview needs an admin session.
+  assert.throws(() => w.clashMe('8001111', 'nope'));
+  const tok = login(w, 'oldpw');
+  // Destination tickets: draw three, keep one; finishing it pays the squad once.
+  const offer = JSON.parse(w.clashMeDrawTickets('8001111', tok)).offer;
+  assert.strictEqual(offer.length, 3);
+  const td = w.book.getSheetByName('Destination Tickets');
+  td.rows.push([true, 'Poll Pal', 'Vote once.', 'polls: 1', 3]);
+  cache.put('tickets-8001111', JSON.stringify(['Poll Pal']));
+  me = JSON.parse(w.clashMeKeepTickets(['Poll Pal'], '8001111', tok));
+  assert.strictEqual(me.tickets.find(t => t.ticket === 'Poll Pal').status, 'Holding');
+  votes.rows.push([99, today, '8001111', 'GOLD', 'A', '']);
+  me = JSON.parse(w.clashMe('8001111', tok));
+  assert.strictEqual(me.tickets.find(t => t.ticket === 'Poll Pal').status, 'Completed');
+  assert.ok(ev.rows.some(r => r[2] === 'destination_ticket' && r[7] === 3 && /Ann L\./.test(r[1])));
+  JSON.parse(w.clashMe('8001111', tok));
+  assert.strictEqual(ev.rows.filter(r => r[2] === 'destination_ticket').length, 1, 'paid once');
+  // My climber: only allowed choices are saved; gear follows what she's done.
+  assert.deepStrictEqual(JSON.parse(w.clashMeSaveLook({ skin: 2, hair: 99, hat: 1 }, '8001111', tok)).look, { skin: 2, hair: 0, hairColor: 0, hat: 1, eyes: 0 });
+  me = JSON.parse(w.clashMe('8001111', tok));
+  assert.ok(me.gear.find(g => g.gear === 'boots').have && !me.gear.find(g => g.gear === 'lantern').have);
+  // The public site never gets other students' numbers.
+  assert.ok(!/8002222|ed\.p@/.test(w.clashGame()));
 });
 
 test('page files: scripts parse, no old token or Supabase key left', () => {
