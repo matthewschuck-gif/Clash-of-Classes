@@ -463,7 +463,7 @@ function gameState_(events) {
   };
 }
 
-function clashGame() { return JSON.stringify(gameState_()); }
+function clashGame() { const g = gameState_(); g.studentLink = String(getSetting_('STUDENT_LINK') || ''); return JSON.stringify(g); }
 
 // ── THE TICK: claims, unlocks, and (with GAME_AWARDS ON) the weekly and end-of-round points ──
 function gameTick() {
@@ -543,4 +543,22 @@ function menuTurnOffGame_() {
   setSettingValue_('GAME_AWARDS', 'OFF');
   ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'gameTick') ScriptApp.deleteTrigger(t); });
   SpreadsheetApp.getUi().alert('Game awards are OFF. The map, cards and goals still show; no bonus points go out.');
+}
+
+// ── GENERALS HQ: the squad's game hand ──────────────────────────────
+function hqGame_(squad) {
+  try {
+    const events = readEventsTab_(), engine = gameOn_('GAME_ENGINE') ? enginePowers_(false, events) : [];
+    const st = gameOn_('GAME_STREAK') ? hotStreaks_()[squad] : null;
+    return {
+      cards: gameOn_('GAME_CARDS'),
+      hand: gameOn_('GAME_CARDS') ? handFor_(squad).filter(function (h) { return h.status === 'Held' || h.status === 'Armed'; })
+        .map(function (h) { const d = chanceDeck_().filter(function (c) { return c.card === h.card; })[0]; return { row: h.row, card: h.card, effect: h.effect, value: h.value, status: h.status, text: d ? d.text : '' }; }) : [],
+      drawsLeft: gameOn_('GAME_CARDS') ? drawsLeft_(squad, engine) : 0,
+      streak: st ? { length: st.length, bank: streakValue_(st.length, squad, engine), shields: st.shields } : null,
+      engine: engine,
+      map: gameOn_('GAME_MAP') ? (function () { const z = mapZones_(events); return { zones: z.map(function (x) { const o = Object.assign({}, x); delete o.row; return o; }), wings: heldWings_(z), claimDays: Number(getSetting_('CLAIM_DAYS')) || 14 }; })() : null,
+      monster: monster_(events),
+    };
+  } catch (e) { return { error: e.message }; }
 }

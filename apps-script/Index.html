@@ -22,6 +22,7 @@
 <?!= include('Styles'); ?>
 <?!= include('SiteCss'); ?>
 <?!= include('Pop'); ?>
+<?!= include('GameUi'); ?>
 </head>
 <body>
 <div id="appLoadingScreen" style="position:fixed;inset:0;background:#1c1917;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
@@ -87,6 +88,8 @@
       <div style="text-align:center;padding:20px;color:var(--text3);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px">Connecting…</div>
     </div>
   </div>
+  <!-- The game layer on Home (15_Game.gs via GameUi): My Climb button, Monster of the Month, the mountain map. -->
+  <section id="homeGame" style="margin:18px 0"></section>
 
   <div class="about-strip" id="aboutStrip" style="margin-top:40px">
     <div class="stat-card"><div class="stat-num" id="homeStat1Num">4</div><div class="stat-label" id="homeStat1Lbl">Color Squads</div></div>
@@ -1502,6 +1505,8 @@
     <div class="tv-slide" id="tvS4"><div class="tv-cat-title">Squad Challenges</div><div class="tv-ch-grid" id="tvChallenges"></div></div>
     <div class="tv-slide" id="tvS5"><div class="tv-feed" id="tvFeed"></div></div>
     <div class="tv-slide" id="tvS6" style="justify-content:center"><div id="tvSummit" style="width:min(1500px,96vw,calc(76vh * 1600 / 840));margin:0 auto"></div></div>
+    <div class="tv-slide" id="tvS7" style="justify-content:center"><div class="tv-cat-title">The Mountain: who holds what</div><div id="tvMap" style="width:min(1300px,94vw,calc(70vh * 1.5));margin:0 auto"></div></div>
+    <div class="tv-slide" id="tvS8" style="justify-content:center"><div id="tvMonster" style="width:min(1100px,92vw);margin:0 auto;transform:scale(1.35);transform-origin:top center"></div></div>
   </div>
   <div class="tv-nav" id="tvNav"></div>
   <!-- Remote spin overlay -->

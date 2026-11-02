@@ -116,8 +116,8 @@ html[data-squad] body { background-image: radial-gradient(70% 380px at 50% 0%, c
 
 /* Home: contour hero and leaderboard cards with squad glows; the visitor's own squad (once
    they've opened My Squad) gets a ring in its squad color. */
-#home-hero-section { position: relative; isolation: isolate; }
-#home-hero-section::before { content: ''; position: absolute; inset: -20px -16px auto; height: 100%; z-index: -1; background: var(--pop-topo) center/640px auto repeat; opacity: .8; -webkit-mask-image: linear-gradient(#000 40%, transparent); mask-image: linear-gradient(#000 40%, transparent); pointer-events: none; }
+.home-hero-section { position: relative; isolation: isolate; }
+.home-hero-section::before { content: ''; position: absolute; inset: -20px -16px auto; height: 100%; z-index: -1; background: var(--pop-topo) center/640px auto repeat; opacity: .8; -webkit-mask-image: linear-gradient(#000 40%, transparent); mask-image: linear-gradient(#000 40%, transparent); pointer-events: none; }
 .hero-sq-card { position: relative; transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s; }
 .hero-sq-card:hover { transform: translateY(-3px); }
 .hero-sq-card[data-sq="BLACK"] { box-shadow: inset 0 3px 0 #c5c9d1; } .hero-sq-card[data-sq="GOLD"] { box-shadow: inset 0 3px 0 #ffe100; }

@@ -296,6 +296,20 @@
       '<div class="gm-goal">Defeat it together: ' + esc(m.goal) + ' · ' + esc(prog) + (m.reward ? ' · every squad gets +' + m.reward : '') + '</div></div></div>';
   }
 
+
+  // Home page block (Index #homeGame): the My Climb button, Monster of the Month and the map.
+  function homeGame() {
+    var box = document.getElementById('homeGame');
+    if (!box || !window.gasRun_) return;
+    window.gasRun_('clashGame').then(function (g) {
+      var link = g.studentLink ? g.studentLink + (g.studentLink.indexOf('?') > -1 ? '&' : '?') + 'page=me' : '';
+      box.innerHTML = (link ? '<div style="display:flex;justify-content:center;margin:0 0 16px"><a class="btn btn-gold craft-press" href="' + esc(link) + '" target="_top" style="font-size:16px;padding:12px 22px">🏔️ Open My Climb</a></div>' : '') +
+        (g.monster ? '<div style="margin-bottom:16px">' + monster(g.monster) + '</div>' : '') +
+        (g.map ? '<div class="pop-h"><h3>The mountain</h3><span class="tag">King of the Mountain</span></div>' + board(g.map) : '');
+    }).catch(function () {});
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(homeGame, 1500); }); else setTimeout(homeGame, 1500);
+  setInterval(function () { if (!document.hidden) homeGame(); }, 300000);
   window.GameUi = { mascot: mascot, character: character, board: board, monster: monster, LOOK: LOOK, SQ: SQ_LIGHT };
 })();
 </script>
