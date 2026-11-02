@@ -68,7 +68,10 @@ function world(opts) {
       getUuid: (() => { let n = 0; return () => 'uuid-' + (++n); })(),
       computeDigest: (alg, s) => Array.from(require('crypto').createHash('sha256').update(s).digest()).map(b => b > 127 ? b - 256 : b),
       DigestAlgorithm: { SHA_256: 'sha256' }, Charset: { UTF_8: 'utf8' },
-      formatDate: d => d.toISOString().slice(0, 10),
+      formatDate: (d, tz, f) => { // UTC stands in for the school's time zone in tests
+        const p = n => String(n).padStart(2, '0'), ymd = d.toISOString().slice(0, 10), hm = p(d.getUTCHours()) + ':' + p(d.getUTCMinutes());
+        return f === 'HH:mm' ? hm : f === 'u' ? String(((d.getUTCDay() + 6) % 7) + 1) : /HH/.test(f || '') ? ymd + ' ' + hm : ymd;
+      },
     },
     Session: { getScriptTimeZone: () => 'America/New_York' },
     HtmlService: {}, ContentService: {},
@@ -815,6 +818,14 @@ test('game layer: map claims, wing bonus, chance cards + Flip Three, Hot Streak,
   assert.strictEqual(ev.rows.filter(r => r[2] === 'monster').length, 1);
   w.setSettingValue_('MONSTER_VISIBLE', 'OFF');
   assert.strictEqual(w.monster_(), null, 'one switch hides it everywhere');
+  // My Climb is school-day only: 7:00 to 4:00, weekdays not on the School Calendar.
+  w.ensureSchoolCalendarTab_();
+  assert.strictEqual(w.climbOpen_(new Date('2026-11-02T10:00:00Z')), true, 'Monday 10:00');
+  assert.strictEqual(w.climbOpen_(new Date('2026-11-02T06:30:00Z')), false, 'before 7');
+  assert.strictEqual(w.climbOpen_(new Date('2026-11-02T16:00:00Z')), false, 'at 4 it closes');
+  assert.strictEqual(w.climbOpen_(new Date('2026-11-07T12:00:00Z')), false, 'Saturday');
+  assert.strictEqual(w.climbOpen_(new Date('2026-11-26T12:00:00Z')), false, 'Thanksgiving (School Calendar)');
+  w.setSettingValue_('MY_CLIMB_HOURS', '00:00-23:59'); w.setSettingValue_('MY_CLIMB_SCHOOL_DAYS', 'OFF'); // the rest of this test runs any time
   // My Climb: Ann signs in with her school account.
   w.Session.getActiveUser = () => ({ getEmail: () => 'Ann.L@easdpa.org' });
   let me = JSON.parse(w.clashMe());
@@ -844,7 +855,7 @@ test('game layer: map claims, wing bonus, chance cards + Flip Three, Hot Streak,
   JSON.parse(w.clashMe('8001111', tok));
   assert.strictEqual(ev.rows.filter(r => r[2] === 'destination_ticket').length, 1, 'paid once');
   // My climber: only allowed choices are saved; gear follows what she's done.
-  assert.deepStrictEqual(JSON.parse(w.clashMeSaveLook({ skin: 2, hair: 99, hat: 1 }, '8001111', tok)).look, { skin: 2, hair: 0, hairColor: 0, hat: 1, eyes: 0 });
+  assert.deepStrictEqual(JSON.parse(w.clashMeSaveLook({ fur: 2, eyes: 99, hat: 1 }, '8001111', tok)).look, { fur: 2, eyes: 0, mood: 0, hat: 1, accent: 0 });
   me = JSON.parse(w.clashMe('8001111', tok));
   assert.ok(me.gear.find(g => g.gear === 'boots').have && !me.gear.find(g => g.gear === 'lantern').have);
   // The public site never gets other students' numbers.

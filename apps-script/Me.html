@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<?!= include('Styles'); ?>
+<?!= include('Pop'); ?>
+<?!= include('GameUi'); ?>
+<style>
+/* ── My Climb: one student's own dashboard (16_Me.gs). Dark purple site, squad skin once loaded. ── */
+body { margin: 0; background: #0d0518; color: var(--text, #f5f0ff); font-family: 'DM Sans', system-ui, sans-serif; min-height: 100dvh; }
+.me-wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px 80px; }
+.me-top { display: flex; align-items: center; gap: 12px; padding: 14px 0; }
+.me-top img { width: 52px; height: 52px; object-fit: contain; }
+.me-top b { display: block; font-family: 'Fraunces', serif; font-weight: 900; font-size: 22px; line-height: 1; }
+.me-top span { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #b09ec8; }
+.me-card { background: rgba(255,255,255,.035); border: 1px solid rgba(187,142,245,.18); border-radius: 18px; padding: 18px; margin-bottom: 14px; }
+.me-card h2 { font-family: 'Fraunces', serif; font-weight: 900; font-size: 21px; margin: 0 0 4px; }
+.me-sub { color: #cbb6ef; font-size: 14px; line-height: 1.55; margin: 0 0 12px; }
+/* Hero: your own version of your squad's mascot (cheering in a speech bubble), hello, standing. */
+.me-hero { display: grid; grid-template-columns: 190px 1fr; gap: 18px; align-items: center; border-radius: 22px; padding: 18px 20px;
+  background: radial-gradient(110% 130% at 100% 0%, color-mix(in srgb, var(--squad, #bb8ef5) 30%, transparent), transparent 60%), var(--pop-topo) center/600px auto repeat, #14082a;
+  border: 1px solid color-mix(in srgb, var(--squad, #bb8ef5) 40%, transparent); margin-bottom: 14px; }
+.me-hero h1 { font-family: 'Fraunces', serif; font-weight: 900; font-size: clamp(28px, 5vw, 44px); letter-spacing: -0.02em; margin: 0; line-height: 1.05; }
+.me-pills { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+.me-pill { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; background: var(--squad, #bb8ef5); color: #12081f; font-weight: 700; }
+.me-pill.alt { background: rgba(255,255,255,.08); color: #e9ddff; }
+.me-standing { color: #e9ddff; font-size: 15px; line-height: 1.55; }
+.me-mascot { position: relative; }
+.me-bubble { position: absolute; left: 78%; top: 2px; width: 150px; z-index: 2; background: #fff; color: #1a0b2e; font-size: 12.5px; font-weight: 700; line-height: 1.35; padding: 8px 10px; border-radius: 14px; box-shadow: 0 8px 20px -10px #000; }
+.me-bubble::after { content: ''; position: absolute; left: -6px; top: 18px; border: 7px solid transparent; border-right-color: #fff; border-left: 0; }
+@media (max-width: 720px) { .me-hero { grid-template-columns: 150px 1fr; } .me-bubble { display: none; } }
+@media (max-width: 420px) { .me-hero { grid-template-columns: 1fr; text-align: center; } .me-hero > :first-child { max-width: 150px; margin: 0 auto; } .me-pills { justify-content: center; } }
+/* Tabs */
+.me-tabs { position: sticky; top: 0; z-index: 20; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding: 8px 0; margin-bottom: 8px; background: #0d0518; }
+.me-tabs::-webkit-scrollbar { display: none; }
+.me-tab { flex: 0 0 auto; font: inherit; font-weight: 700; font-size: 14px; color: #cbb6ef; background: rgba(255,255,255,.05); border: 1px solid rgba(187,142,245,.18); border-radius: 999px; padding: 9px 16px; cursor: pointer; }
+.me-tab[aria-selected="true"] { background: var(--squad, #bb8ef5); color: #12081f; border-color: transparent; }
+/* You vs. your squad */
+.me-metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 10px; }
+.me-m { padding: 14px; border-radius: 16px; background: rgba(10,4,20,.5); border: 1px solid rgba(255,255,255,.07); }
+.me-m .l { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #b09ec8; }
+.me-m .v { font-family: 'Fraunces', serif; font-weight: 900; font-size: 32px; line-height: 1.1; color: var(--pop-gold, #ffe100); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.me-m .avg { font-size: 13px; color: #cbb6ef; margin: 2px 0 8px; }
+.me-bars { display: grid; gap: 4px; }
+.me-bars i { display: block; height: 7px; border-radius: 99px; transform-origin: left; animation: popGrow .8s var(--craft-out, ease-out) both; }
+.me-bars .you { background: var(--pop-gold, #ffe100); } .me-bars .sq { background: rgba(203,182,239,.45); }
+.me-m .note { font-size: 12.5px; font-weight: 700; margin-top: 8px; color: #86efac; }
+/* Gear shelf + mascot builder */
+.me-gear { display: flex; flex-wrap: wrap; gap: 8px; }
+.me-gear span { font-size: 13px; padding: 6px 11px; border-radius: 12px; background: rgba(134,239,172,.12); color: #bbf7d0; border: 1px solid rgba(134,239,172,.3); }
+.me-gear span.locked { background: rgba(255,255,255,.04); color: #8f7fa8; border-style: dashed; border-color: rgba(255,255,255,.12); }
+.me-build { display: grid; grid-template-columns: 180px 1fr; gap: 18px; align-items: center; }
+.me-opts { display: grid; gap: 8px; }
+.me-opt { display: grid; grid-template-columns: 90px 36px 1fr 36px; gap: 8px; align-items: center; font-size: 14px; }
+.me-opt button { font: inherit; font-weight: 700; width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(187,142,245,.3); background: rgba(255,255,255,.06); color: #fff; cursor: pointer; }
+.me-opt .n { text-align: center; font-family: 'DM Mono', monospace; color: #cbb6ef; }
+@media (max-width: 560px) { .me-build { grid-template-columns: 1fr; } .me-build > :first-child { max-width: 180px; margin: 0 auto; } }
+/* Destination tickets */
+.me-tickets { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+.me-tk { position: relative; padding: 16px 16px 14px; border-radius: 16px; background: linear-gradient(160deg, color-mix(in srgb, var(--squad, #bb8ef5) 16%, transparent), #170b29 70%); border: 1px solid color-mix(in srgb, var(--squad, #bb8ef5) 35%, transparent); }
+.me-tk::before, .me-tk::after { content: ''; position: absolute; top: 50%; width: 16px; height: 16px; margin-top: -8px; border-radius: 50%; background: #0d0518; }
+.me-tk::before { left: -8px; } .me-tk::after { right: -8px; }
+.me-tk b { font-family: 'Fraunces', serif; font-size: 18px; display: block; }
+.me-tk p { margin: 4px 0 10px; color: #cbb6ef; font-size: 13.5px; line-height: 1.5; }
+.me-tk .pts { position: absolute; right: 14px; top: 14px; font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 700; background: var(--pop-gold, #ffe100); color: #1a0b2e; padding: 3px 8px; border-radius: 8px; }
+.me-tk .req { font-size: 12.5px; color: #e9ddff; margin-top: 6px; }
+.me-tk .req i { display: block; height: 6px; margin-top: 4px; border-radius: 99px; background: linear-gradient(90deg, var(--pop-gold, #ffe100), #86efac); }
+.me-tk.done { opacity: .75; } .me-tk.done b::after { content: ' ✓'; color: #86efac; }
+.me-tk.pick { cursor: pointer; } .me-tk.pick.on { outline: 3px solid var(--pop-gold, #ffe100); outline-offset: 2px; }
+/* Game tab */
+.me-rg { display: grid; gap: 6px; }
+.me-rg .row { display: grid; grid-template-columns: 90px 1fr 52px; gap: 10px; align-items: center; font-size: 14px; }
+.me-rg .row.mine { font-weight: 700; }
+.me-rg .row span:first-child { font-family: 'Fraunces', serif; font-weight: 900; }
+.me-rg i { display: block; height: 10px; border-radius: 99px; }
+.me-engine { display: grid; gap: 10px; }
+.me-hab { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: start; }
+.me-hab > b { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #b09ec8; padding-top: 10px; }
+.me-hab .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 8px; }
+.me-pw { padding: 10px 12px; border-radius: 12px; font-size: 13px; line-height: 1.45; background: rgba(255,225,0,.1); border: 1px solid rgba(255,225,0,.35); }
+.me-pw.locked { background: rgba(255,255,255,.03); border: 1px dashed rgba(255,255,255,.14); color: #8f7fa8; }
+.me-pw strong { display: block; font-size: 14px; color: #fff; }
+.me-pw.locked strong { color: #b09ec8; }
+.me-card .ms-badge { display: inline-block; font-size: 13px; padding: 5px 10px; border-radius: 10px; background: rgba(255,225,0,.12); border: 1px solid rgba(255,225,0,.35); color: #fff2a8; }
+.me-err { padding: 28px 20px; text-align: center; }
+.me-err h2 { font-family: 'Fraunces', serif; font-size: 26px; margin: 0 0 8px; }
+.me-form { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 16px; }
+.me-form input { font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(187,142,245,.35); background: #170b29; color: #fff; min-width: 0; }
+.me-skel { height: 160px; border-radius: 22px; background: linear-gradient(100deg, rgba(255,255,255,.04) 30%, rgba(255,255,255,.09) 50%, rgba(255,255,255,.04) 70%); background-size: 300% 100%; animation: meShimmer 1.4s linear infinite; margin-bottom: 14px; }
+@keyframes meShimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .me-skel { animation: none; } .me-bars i { animation: none; } }
+</style>
+</head>
+<body>
+<div class="me-wrap">
+  <header class="me-top">
+    <? if (shield) { ?><img src="<?= shield ?>" alt="Clash of Classes 2026-2027 shield"><? } ?>
+    <div><b>My Climb</b><span>Clash of Classes</span></div>
+  </header>
+  <main id="me" aria-live="polite"><div class="me-skel"></div><div class="me-skel" style="height:90px"></div></main>
+</div>
+<script>
+(function () {
+  var D = null, tab = 'me', look = null, preview = null; // preview = { id, token } for staff
+  var BLANK = { fur: 0, eyes: 0, mood: 0, hat: 0, accent: 0 };
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function title(s) { s = String(s || ''); return s.charAt(0) + s.slice(1).toLowerCase(); }
+  function run(fn) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return new Promise(function (ok, no) {
+      google.script.run.withSuccessHandler(function (r) { ok(typeof r === 'string' ? JSON.parse(r) : r); }).withFailureHandler(no)[fn].apply(null, args);
+    });
+  }
+  function who() { return preview ? [preview.id, preview.token] : []; }
+  function msg(e) { return String(e && e.message || e).replace(/^Exception:\s*/, '').replace(/^(SIGN_IN|NOT_FOUND|CLOSED):\s*/, ''); }
+
+  function load() {
+    run.apply(null, ['clashMe'].concat(who())).then(function (d) { D = d; look = Object.assign({}, BLANK, d.look || {}); if (window.popSkin) popSkin(d.me.squad); render(); })
+      .catch(function (e) {
+        var m = msg(e), raw = String(e && e.message), signin = /SIGN_IN|NOT_FOUND/.test(raw), closed = /CLOSED/.test(raw);
+        $('me').innerHTML = '<div class="me-card me-err">' + (closed ? '<div style="max-width:180px;margin:0 auto 6px">' + GameUi.mascot(['GOLD', 'PURPLE', 'GREY', 'BLACK'][new Date().getDay() % 4]) + '</div>' : '') +
+          '<h2>' + (closed ? 'The trail is resting' : signin ? 'Almost there' : 'Something went wrong') + '</h2><p class="me-sub">' + esc(m) + '</p>' +
+          '<details style="margin-top:18px;color:#b09ec8"><summary style="cursor:pointer">Staff: preview a student</summary><div class="me-form">' +
+          '<input id="pv800" inputmode="numeric" placeholder="Student 800#" aria-label="Student 800 number"><input id="pvPw" type="password" placeholder="Clash admin password" aria-label="Clash admin password">' +
+          '<button class="btn btn-purple" id="pvGo">Preview</button></div><p class="me-sub" id="pvErr"></p></details></div>';
+        $('pvGo').onclick = function () {
+          $('pvErr').textContent = 'Checking…';
+          run('clashLogin', $('pvPw').value).then(function (r) { preview = { id: $('pv800').value, token: r.token }; load(); }).catch(function (x) { $('pvErr').textContent = msg(x); });
+        };
+      });
+  }
+
+  function animal() { return String((D.mascot && D.mascot.animal) || 'mascot').toLowerCase(); }
+  function mascotLine() {
+    var st = D.standing || {};
+    if (st.frozen) return st.frozen.kind === 'Fun' ? 'Ice breaker time! Push our luck!' : 'We thaw this one together.';
+    if (D.tickets.some(function (t) { return t.status === 'Completed' && t.completed === new Date().toISOString().slice(0, 10); })) return 'Ticket done! That one counts for all of us.';
+    if (st.place === 1) return 'Top of the mountain. Let\'s stay here!';
+    return 'Every point moves us up the mountain.';
+  }
+
+  function render() {
+    var me = D.me, st = D.standing || {};
+    var first = String(me.name || '').split(' ')[0];
+    var standing = st.place ? '<b>' + title(st.squad) + '</b> is in <b>' + ['1st', '2nd', '3rd', '4th'][st.place - 1] + ' place</b>' +
+      (st.place > 1 ? ', ' + st.behindBy.toLocaleString() + ' behind ' + title(st.ahead) + '.' : ', ' + st.leadBy.toLocaleString() + ' ahead.') : '';
+    var tabs = [['me', 'Me'], ['tickets', 'Tickets'], ['squad', 'My Squad'], ['map', 'Map'], ['game', 'Game']];
+    $('me').innerHTML = (D.preview ? '<div class="me-card" style="border-color:#fbbf24">Staff preview of ' + esc(me.name) + '. Saving their mascot or keeping tickets here changes their real account.</div>' : '') +
+      '<section class="me-hero craft-lit craft-motes"><div class="me-mascot gc-hop" tabindex="0" aria-label="Your ' + esc(animal()) + '">' + GameUi.character(me.squad, look, D.gear, D.mascot) + '<div class="me-bubble">' + esc(mascotLine()) + '</div></div><div>' +
+      '<h1>Hi, ' + esc(first) + '!</h1><div class="me-pills"><span class="me-pill">' + esc(title(me.squad)) + ' Squad</span>' +
+      (D.roles || []).map(function (r) { return '<span class="me-pill alt">' + esc(r) + '</span>'; }).join('') + '</div><div class="me-standing">' + standing + '</div></div></section>' +
+      '<nav class="me-tabs" role="tablist">' + tabs.map(function (t) { return '<button class="me-tab craft-press" role="tab" data-t="' + t[0] + '" aria-selected="' + (tab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</nav>' +
+      '<div id="meBody">' + ({ me: meTab, tickets: ticketsTab, squad: squadTab, map: mapTab, game: gameTab }[tab])() + '</div>';
+    document.querySelectorAll('.me-tab').forEach(function (b) { b.onclick = function () { tab = b.getAttribute('data-t'); render(); }; });
+    wire();
+  }
+
+  // ── Me: my numbers next to my squad's average, my gear, my mascot ──
+  function meTab() {
+    var metrics = (D.metrics || []).map(function (m) {
+      var you = m.me == null ? 0 : m.me, avg = m.squadAvg == null ? 0 : m.squadAvg, top = Math.max(you, avg, m.pct ? 100 : 1);
+      var note = m.me != null && m.squadAvg != null && m.me > m.squadAvg ? 'Above your squad\'s average' : m.me != null && m.squadAvg != null && m.me === m.squadAvg ? 'Right at your squad\'s average' : '';
+      return '<div class="me-m"><div class="l">' + esc(m.label) + '</div><div class="v">' + (m.me == null ? '–' : esc(m.me) + (m.pct ? '%' : '')) + '</div>' +
+        '<div class="avg">Squad average: ' + (m.squadAvg == null ? '–' : esc(m.squadAvg) + (m.pct ? '%' : '')) + '</div>' +
+        '<div class="me-bars" aria-hidden="true"><i class="you" style="width:' + Math.round(100 * you / top) + '%"></i><i class="sq" style="width:' + Math.round(100 * avg / top) + '%"></i></div>' +
+        (note ? '<div class="note">' + note + '</div>' : '') + '</div>';
+    }).join('');
+    var gear = (D.gear || []).map(function (g) { return '<span class="' + (g.have ? '' : 'locked') + '" title="' + (g.have ? 'Earned' : 'Earn it: ' + esc(g.need)) + '">' + (g.have ? '✓ ' : '🔒 ') + esc(g.gear) + '</span>'; }).join('');
+    var badges = (D.me.badges || []).map(function (b) { return '<span class="ms-badge">' + esc(b) + '</span>'; }).join('') || '<span class="me-sub">Your first badge is one Trait Dough bill away.</span>';
+    var stamps = D.passport ? D.passport.stamps.map(function (s) { return '<span class="me-pill ' + (s.done ? '' : 'alt') + '" style="text-transform:none;letter-spacing:0;font-family:inherit">' + (s.done ? '✓ ' : '') + esc(s.label) + '</span>'; }).join(' ') : '';
+    var LBL = { fur: 'Fur', eyes: 'Eyes', mood: 'Mood', hat: 'Hat', accent: 'Color' };
+    var opts = Object.keys(GameUi.LOOK).map(function (k) {
+      return '<div class="me-opt"><span>' + LBL[k] + '</span><button data-k="' + k + '" data-d="-1" aria-label="Previous ' + LBL[k] + '">‹</button><span class="n">' + ((look[k] || 0) + 1) + ' / ' + GameUi.LOOK[k] + '</span><button data-k="' + k + '" data-d="1" aria-label="Next ' + LBL[k] + '">›</button></div>';
+    }).join('');
+    return '<section class="me-card"><h2>You and your squad</h2><p class="me-sub">Your numbers next to the ' + esc(title(D.me.squad)) + ' Squad\'s average. Only you see your own.</p><div class="me-metrics">' + metrics + '</div></section>' +
+      '<section class="me-card"><h2>Your ' + esc(animal()) + '\'s gear</h2><p class="me-sub">Gear comes from what you do: bills, summits, shout-outs, streaks, tickets.</p><div class="me-gear">' + gear + '</div></section>' +
+      '<section class="me-card"><h2>Make your ' + esc(animal()) + ' your own</h2><p class="me-sub">Every ' + esc(title(D.me.squad)) + ' Squad member has their own. Gear you earn shows up on it.</p><div class="me-build"><div id="lookPrev">' + GameUi.character(D.me.squad, look, D.gear, D.mascot) + '</div><div class="me-opts">' + opts +
+      '<div><button class="btn btn-gold craft-press" id="saveLook">Save</button> <span class="me-sub" id="lookMsg"></span></div></div></div></section>' +
+      '<section class="me-card"><h2>Badges and passport</h2><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">' + badges + '</div>' + stamps + '</section>';
+  }
+
+  // ── Tickets: Ticket to Ride's destination tickets, as personal goals ──
+  function ticket(t, picking) {
+    var reqs = (t.progress || []).map(function (p) { return '<div class="req">' + esc(p.key) + ': ' + p.have + ' / ' + p.need + '<i style="width:' + Math.round(100 * p.have / Math.max(1, p.need)) + '%"></i></div>'; }).join('');
+    return '<div class="me-tk' + (t.status === 'Completed' ? ' done' : '') + (picking ? ' pick' : '') + '"' + (picking ? ' data-pick="' + esc(t.ticket) + '" role="checkbox" aria-checked="false" tabindex="0"' : '') + '>' +
+      '<span class="pts">+' + esc(t.points) + '</span><b>' + esc(t.ticket) + '</b><p>' + esc(t.text) + '</p>' + reqs + '</div>';
+  }
+  function ticketsTab() {
+    var held = D.tickets.filter(function (t) { return t.status === 'Holding'; }), done = D.tickets.filter(function (t) { return t.status === 'Completed'; });
+    return '<section class="me-card"><h2>Destination tickets</h2><p class="me-sub">Personal goals. Draw three, keep at least one. Finish a ticket and your squad earns its points. You can hold ' + D.ticketsMax + ' at a time.</p>' +
+      (held.length ? '<div class="me-tickets">' + held.map(function (t) { return ticket(t); }).join('') + '</div>' : '<p class="me-sub">No tickets yet.</p>') +
+      (held.length < D.ticketsMax ? '<p style="margin-top:14px"><button class="btn btn-gold craft-press" id="drawT">Draw tickets</button></p>' : '') + '<div id="offer"></div></section>' +
+      (done.length ? '<section class="me-card"><h2>Finished</h2><div class="me-tickets">' + done.map(function (t) { return ticket(t); }).join('') + '</div></section>' : '');
+  }
+
+  // ── My Squad: the mascot, the story, what the squad is working on ──
+  function squadTab() {
+    var me = D.me, m = D.mascot || {}, st = D.standing || {};
+    var lore = D.lore && D.lore.chapters.length ? D.lore.chapters.map(function (c) { return '<h3 style="font-family:Fraunces,serif;margin:12px 0 4px">Chapter ' + esc(c.chapter) + ': ' + esc(c.title) + '</h3><p class="me-sub" style="white-space:pre-wrap">' + esc(c.story) + '</p>'; }).join('') +
+      (D.lore.next ? '<p class="me-sub">Next chapter opens: ' + esc(D.lore.next.hint) + '</p>' : '') : '<p class="me-sub">Your squad\'s story is coming this year.</p>';
+    var duels = (D.duels || []).map(function (d) { return '<div class="me-sub"><b>' + esc(d.title) + '</b>: ' + d.squads.map(function (s) { return title(s) + ' ' + d.scores[s]; }).join(' · ') + (d.bonus ? ' (winner +' + d.bonus + ')' : '') + '</div>'; }).join('');
+    var ch = (D.challenges || []).map(function (c) { var p = c.progress[me.squad] || 0; return '<div class="me-sub"><b>' + esc(c.title) + '</b>: ' + p + (c.goal ? ' / ' + c.goal : '') + '</div>'; }).join('');
+    return '<section class="me-card" style="display:grid;grid-template-columns:minmax(120px,200px) 1fr;gap:18px;align-items:center"><div class="gc-hop" tabindex="0">' + GameUi.mascot(me.squad, m) + '</div><div>' +
+      '<h2>' + esc(m.name || m.animal || title(me.squad)) + '</h2><p class="me-sub">' + (m.name && m.animal ? esc(m.animal) + ', ' : '') + 'the ' + esc(title(me.squad)) + ' Squad mascot.' +
+      (D.theme && D.theme.theme ? ' Theme: <b>' + esc(D.theme.theme) + '</b>. ' + esc(D.theme.meaning || '') : '') + '</p>' + (st.frozen && window.thawHtml ? thawHtml(st.frozen) : '') + '</div></section>' +
+      '<section class="me-card"><h2>Our story</h2>' + lore + '</section>' +
+      (duels || ch ? '<section class="me-card"><h2>What we\'re working on</h2>' + duels + ch + '</section>' : '');
+  }
+
+  function mapTab() {
+    var g = D.game || {};
+    return g.map ? '<section class="me-card"><h2>The mountain</h2><p class="me-sub">Squads claim territories by earning the most points in them. Hold a whole region and it pays double. The Summit holder is King of the Mountain.</p>' + GameUi.board(g.map) + '</section>'
+      : '<section class="me-card"><p class="me-sub">The map isn\'t open yet.</p></section>';
+  }
+
+  function gameTab() {
+    var g = D.game || {}, sq = D.me.squad, out = '';
+    if (g.monster) out += '<section class="me-card"><h2>Monster of the Month</h2>' + GameUi.monster(g.monster) + '</section>';
+    (g.rounds || []).forEach(function (r) {
+      var top = Math.max.apply(null, ['BLACK', 'GOLD', 'GREY', 'PURPLE'].map(function (s) { return r.scores[s]; }).concat([1]));
+      out += '<section class="me-card"><h2>Round goal: ' + esc(r.goal) + '</h2><p class="me-sub">' + esc(r.start) + ' to ' + esc(r.end) + ' · 1st +' + r.prizes[0] + ', 2nd +' + r.prizes[1] + ', 3rd +' + r.prizes[2] + '</p><div class="me-rg">' +
+        ['BLACK', 'GOLD', 'GREY', 'PURPLE'].sort(function (a, b) { return r.scores[b] - r.scores[a]; }).map(function (s) {
+          return '<div class="row' + (s === sq ? ' mine' : '') + '"><span>' + title(s) + '</span><i style="width:' + Math.round(100 * r.scores[s] / top) + '%;background:' + GameUi.SQ[s] + '"></i><span>' + r.scores[s] + '</span></div>';
+        }).join('') + '</div></section>';
+    });
+    if (g.streaks && g.streaks[sq]) {
+      var s = g.streaks[sq];
+      out += '<section class="me-card"><h2>🔥 Hot Streak: ' + s.length + ' day' + (s.length === 1 ? '' : 's') + '</h2><p class="me-sub">Days in a row ' + esc(title(sq)) + ' had the most Daily Poll voters. ' +
+        (s.bank ? 'Worth +' + s.bank + ' if your Generals bank it now. Or ride it for more.' : 'Two days in a row starts a streak your Generals can bank.') + ' Vote every morning to keep it going.</p></section>';
+    }
+    if (g.engine && g.engine.length) {
+      var habs = {}; g.engine.forEach(function (p) { (habs[p.habitat] = habs[p.habitat] || []).push(p); });
+      out += '<section class="me-card"><h2>Squad engine</h2><p class="me-sub">Powers your squad unlocks for the rest of the year.</p><div class="me-engine">' + Object.keys(habs).map(function (h) {
+        return '<div class="me-hab"><b>' + esc(h) + '</b><div class="cards">' + habs[h].map(function (p) {
+          var on = p.unlocked[sq];
+          return '<div class="me-pw' + (on ? '' : ' locked') + '"><strong>' + (on ? '⚡ ' : '🔒 ') + esc(p.power) + '</strong>' + esc(p.text) + (on ? '' : '<br><em>Unlocks: ' + esc(p.hint || p.rule) + '</em>') + '</div>';
+        }).join('') + '</div></div>';
+      }).join('') + '</div></section>';
+    }
+    return out || '<section class="me-card"><p class="me-sub">Nothing running right now. Check back soon.</p></section>';
+  }
+
+  function wire() {
+    document.querySelectorAll('.me-opt button').forEach(function (b) {
+      b.onclick = function () {
+        var k = b.getAttribute('data-k'), n = GameUi.LOOK[k];
+        look[k] = ((look[k] || 0) + Number(b.getAttribute('data-d')) + n) % n;
+        $('lookPrev').innerHTML = GameUi.character(D.me.squad, look, D.gear, D.mascot);
+        b.parentNode.querySelector('.n').textContent = (look[k] + 1) + ' / ' + n;
+      };
+    });
+    if ($('saveLook')) $('saveLook').onclick = function () {
+      $('lookMsg').textContent = 'Saving…';
+      run.apply(null, ['clashMeSaveLook', look].concat(who())).then(function (r) { look = r.look; D.look = r.look; $('lookMsg').textContent = 'Saved!'; if (window.craftPop) craftPop($('lookPrev')); })
+        .catch(function (e) { $('lookMsg').textContent = msg(e); });
+    };
+    if ($('drawT')) $('drawT').onclick = function () {
+      $('offer').innerHTML = '<p class="me-sub">Drawing…</p>';
+      run.apply(null, ['clashMeDrawTickets'].concat(who())).then(function (r) {
+        $('offer').innerHTML = '<h3 style="font-family:Fraunces,serif;margin:16px 0 6px">Pick at least one (up to ' + r.keepUpTo + ')</h3><div class="me-tickets">' +
+          r.offer.map(function (t) { return ticket({ ticket: t.ticket, text: t.text, points: t.points, progress: [] }, true); }).join('') +
+          '</div><p style="margin-top:12px"><button class="btn btn-gold craft-press" id="keepT" disabled>Keep these</button></p>';
+        document.querySelectorAll('[data-pick]').forEach(function (c) {
+          var flip = function () {
+            var picked = document.querySelectorAll('[data-pick].on').length;
+            if (!c.classList.contains('on') && picked >= r.keepUpTo) return;
+            c.classList.toggle('on'); c.setAttribute('aria-checked', c.classList.contains('on'));
+            $('keepT').disabled = !document.querySelectorAll('[data-pick].on').length;
+          };
+          c.onclick = flip; c.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } };
+        });
+        $('keepT').onclick = function () {
+          var names = Array.prototype.map.call(document.querySelectorAll('[data-pick].on'), function (c) { return c.getAttribute('data-pick'); });
+          var from = $('keepT').getBoundingClientRect();
+          run.apply(null, ['clashMeKeepTickets', names].concat(who())).then(function (d) { D = d; render(); if (window.craftCelebrate) craftCelebrate({ getBoundingClientRect: function () { return from; } }); })
+            .catch(function (e) { alert(msg(e)); });
+        };
+      }).catch(function (e) { $('offer').innerHTML = '<p class="me-sub">' + esc(msg(e)) + '</p>'; });
+    };
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>

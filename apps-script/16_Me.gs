@@ -17,15 +17,15 @@
  * polls, signups, buddy, tools (different kinds of things), streak. Join with + to need both.
  * Finishing one earns the squad its Points (once GAME_AWARDS is ON) and frees a slot.
  *
- * MY CLIMBER (tab Avatars): each student's own little climber. They pick the look; the gear
- * comes from what they've done (AVATAR_GEAR).
+ * MY MASCOT (tab Avatars): each student makes their own version of their squad's animal (fur, eyes,
+ * mood, hat, color); the gear on it comes from what they've done (AVATAR_GEAR).
  */
 
 const TICKET_HEADERS_ = ['Show', 'Ticket', 'Text', 'Requirement', 'Points'];
 const STUDENT_TICKET_HEADERS_ = ['800#', 'Squad', 'Ticket', 'Drawn', 'Baseline', 'Status', 'Completed', 'Awarded'];
 const AVATAR_HEADERS_ = ['800#', 'Look', 'Updated'];
 const MASCOTS_ = { GOLD: 'Cottontail rabbit', PURPLE: 'Ruffled grouse', GREY: 'Fisher', BLACK: 'White-tailed deer' };
-const LOOK_CHOICES_ = { skin: 6, hair: 6, hairColor: 6, hat: 5, eyes: 4 };
+const LOOK_CHOICES_ = { fur: 3, eyes: 4, mood: 4, hat: 5, accent: 6 }; // GameUi.html LOOK: the student's own version of their squad's animal
 
 function ensureMeTabs_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -67,9 +67,26 @@ function signedInId_() {
   throw new Error('NOT_FOUND: ' + email + ' isn\'t matched to a student yet. Ask your homeroom teacher.');
 }
 
+// My Climb is for the school day: open MY_CLIMB_HOURS (07:00-16:00) on school days only
+// (weekdays not on the School Calendar tab). Staff previews are never locked.
+function climbOpen_(now) {
+  now = now || new Date();
+  const tz = Session.getScriptTimeZone();
+  const hours = String(getSetting_('MY_CLIMB_HOURS') || '07:00-16:00').match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+  if (!hours) return true;
+  const hm = Utilities.formatDate(now, tz, 'HH:mm');
+  const pad = function (h, m) { return ('0' + h).slice(-2) + ':' + m; };
+  if (hm < pad(hours[1], hours[2]) || hm >= pad(hours[3], hours[4])) return false;
+  if (String(getSetting_('MY_CLIMB_SCHOOL_DAYS') || 'ON').toUpperCase() === 'OFF') return true;
+  const dow = Number(Utilities.formatDate(now, tz, 'u')); // 1 = Monday … 7 = Sunday
+  if (dow > 5) return false;
+  try { return schoolCalendar_().noSchool.indexOf(Utilities.formatDate(now, tz, 'yyyy-MM-dd')) === -1; } catch (e) { return true; }
+}
+
 // Which student: the signed-in one, or (staff signed in as admin) any student to preview.
 function meId_(asId, adminToken) {
   if (asId && adminToken) { requireAdmin_(adminToken); return id800_(asId); }
+  if (!climbOpen_()) throw new Error('CLOSED: My Climb is open ' + String(getSetting_('MY_CLIMB_HOURS') || '07:00-16:00').replace('-', ' to ') + ' on school days. See you on the trail!');
   return signedInId_();
 }
 
@@ -196,7 +213,7 @@ function clashMeKeepTickets(names, asId, adminToken) {
   return clashMe(asId, adminToken);
 }
 
-// ── MY CLIMBER ──────────────────────────────────────────────────────
+// ── MY MASCOT ───────────────────────────────────────────────────────
 // Gear rules: "boots=bills>=1; pack=bills>=5; ..." checked against the student's numbers.
 function gearFor_(me, extra) {
   const rules = String(getSetting_('AVATAR_GEAR') || '').split(';').map(function (p) {
@@ -263,6 +280,8 @@ function clashMascots() {
 // The student page itself: ?page=me on the student link.
 function serveMe_() {
   const t = HtmlService.createTemplateFromFile('Me');
+  const shield = String(getSetting_('SHIELD_LOGO_URL') || '').trim();
+  t.shield = /^https:\/\//i.test(shield) ? shield : '';
   return t.evaluate()
     .setTitle('My Climb · Clash of Classes')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, viewport-fit=cover')

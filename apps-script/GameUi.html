@@ -1,0 +1,301 @@
+<style>
+/* ── GameUi: characters, the territory board, the monster (shared by the site, TV and My Climb) ──
+   Original characters in the spirit of the 2026-27 shield: each squad's Pennsylvania mountain
+   animal on the logo's snowy peak with its boot-print trail. Round, soft, big-eyed (an ode to
+   Pixar's craft, not its characters). They blink and breathe; both stop for reduced motion. */
+.gc-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.gc-breathe { transform-box: fill-box; transform-origin: 50% 100%; animation: gcBreathe 3.6s ease-in-out infinite; }
+.gc-blink { transform-box: fill-box; transform-origin: 50% 50%; animation: gcBlink 5.2s infinite; }
+.gc-wiggle { transform-box: fill-box; transform-origin: 50% 90%; animation: gcWiggle 2.8s ease-in-out infinite; }
+@keyframes gcBreathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.015, .985); } }
+@keyframes gcBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.08); } }
+@keyframes gcWiggle { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+.gc-hop:hover .gc-breathe, .gc-hop:focus-visible .gc-breathe { animation: gcHop .7s var(--craft-spring, ease-out); }
+@keyframes gcHop { 0% { transform: none; } 25% { transform: scale(1.08, .88); } 55% { transform: translateY(-14px) scale(.95, 1.07); } 80% { transform: scale(1.04, .95); } 100% { transform: none; } }
+
+/* Territory board */
+.gb { position: relative; border-radius: 18px; overflow: hidden; background: #12081f; }
+.gb svg { display: block; width: 100%; height: auto; }
+.gb .zone { transition: filter .25s; cursor: default; }
+.gb .zone:hover { filter: brightness(1.15); }
+.gb-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; font-size: 13px; }
+.gb-legend span { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.06); color: var(--text2, #d6c2ff); }
+.gb-legend i { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+
+/* Monster */
+.gm { position: relative; overflow: hidden; display: grid; grid-template-columns: 110px 1fr; gap: 16px; align-items: center; padding: 18px; border-radius: 18px;
+  background: radial-gradient(90% 120% at 0% 0%, rgba(239, 68, 68, .22), transparent 60%), #1a0b2e; border: 1px solid rgba(248, 113, 113, .35); }
+.gm h3 { margin: 0; font-family: 'Fraunces', serif; font-weight: 900; font-size: 22px; color: #fff; }
+.gm p { margin: 6px 0 10px; color: #f5d0d0; font-size: 14px; line-height: 1.5; }
+.gm-hp { height: 14px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+.gm-hp i { display: block; height: 100%; background: linear-gradient(90deg, #f87171, #fbbf24); border-radius: 99px; transition: width 1.2s var(--craft-spring, ease-out); }
+.gm-goal { font-family: 'DM Mono', monospace; font-size: 12px; color: #fecaca; margin-top: 6px; }
+.gm.dead { border-color: rgba(134, 239, 172, .5); background: radial-gradient(90% 120% at 0% 0%, rgba(134, 239, 172, .2), transparent 60%), #10261a; }
+.gm img { width: 110px; height: 110px; object-fit: cover; border-radius: 14px; }
+@media (max-width: 520px) { .gm { grid-template-columns: 1fr; } .gm > :first-child { max-width: 120px; } }
+@media (prefers-reduced-motion: reduce) { .gc-breathe, .gc-blink, .gc-wiggle, .gc-hop:hover .gc-breathe { animation: none !important; } }
+</style>
+<script>
+/* GameUi helpers: GameUi.mascot(squad, mascot), GameUi.character(squad, look, gear, mascot),
+   GameUi.board(map), GameUi.monster(m). All return HTML strings. */
+(function () {
+  var SQ = { BLACK: '#1f2430', GOLD: '#ffe100', GREY: '#99a8bb', PURPLE: '#7c3aed' };
+  var SQ_LIGHT = { BLACK: '#c5c9d1', GOLD: '#ffe100', GREY: '#99a8bb', PURPLE: '#bb8ef5' };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  var uid = 0;
+
+  function eye(x, y, r, look) {
+    var dx = (look || 0) * r * .18;
+    return '<g class="gc-blink"><ellipse cx="' + x + '" cy="' + y + '" rx="' + r + '" ry="' + (r * 1.12) + '" fill="#fff"/><circle cx="' + (x + dx) + '" cy="' + (y + r * .1) + '" r="' + (r * .66) + '" fill="#2b1a10"/><circle cx="' + (x + dx - r * .22) + '" cy="' + (y - r * .2) + '" r="' + (r * .24) + '" fill="#fff"/></g>';
+  }
+  // ── Characters ────────────────────────────────────────────────────
+  // Each squad's Pennsylvania mountain animal, drawn with real volume: a gradient body lit from
+  // the upper left, a cool rim light on the far edge, fur flicks, a soft contact shadow, and
+  // glossy eyes with colored irises, two catchlights and brows that act. A student customizes
+  // their own: fur shade, eye color, mood, hat, color; gear they've earned goes on the animal.
+  function hex(c) { c = c.replace('#', ''); return [parseInt(c.slice(0, 2), 16), parseInt(c.slice(2, 4), 16), parseInt(c.slice(4, 6), 16)]; }
+  function mix(a, b, t) { var x = hex(a), y = hex(b); return '#' + x.map(function (v, i) { return ('0' + Math.round(v + (y[i] - v) * t).toString(16)).slice(-2); }).join(''); }
+  function lit(c) { return mix(c, '#fff4e0', .32); }
+  function shade(c) { return mix(c, '#140820', .42); }
+  // A volume gradient: light upper left, shadow lower right.
+  function vol(id, c) {
+    return '<radialGradient id="' + id + '" cx=".34" cy=".28" r=".85"><stop offset="0" stop-color="' + lit(c) + '"/><stop offset=".55" stop-color="' + c + '"/><stop offset="1" stop-color="' + shade(c) + '"/></radialGradient>';
+  }
+  // Fur flicks along an outline: short strokes in a lighter tone.
+  function fur(points, c, w) {
+    return points.map(function (p) { return '<path d="M' + p[0] + ' ' + p[1] + ' q' + p[2] + ' ' + p[3] + ' ' + p[4] + ' ' + p[5] + '" stroke="' + c + '" stroke-width="' + (w || 2) + '" fill="none" stroke-linecap="round" opacity=".7"/>'; }).join('');
+  }
+  var IRIS = ['#7a4a22', '#3c7a4f', '#3a6fb8', '#b07d1c'];
+  // Eyes with a colored iris, pupil, two catchlights and a lid shadow; brows by mood.
+  // mood: 0 happy, 1 determined, 2 cool (half-lidded), 3 silly.
+  function eyes(id, xl, xr, y, r, iris, mood, browColor) {
+    var one = function (x, side) {
+      var lid = mood === 2 ? '<path d="M' + (x - r - 1) + ' ' + (y - r * .2) + ' Q' + x + ' ' + (y - r * 1.5) + ' ' + (x + r + 1) + ' ' + (y - r * .2) + ' Z" fill="' + browColor + '"/>' : '';
+      return '<g class="gc-blink"><ellipse cx="' + x + '" cy="' + y + '" rx="' + r + '" ry="' + (r * 1.08) + '" fill="url(#sc' + id + ')"/>' +
+        '<circle cx="' + (x + side * r * .08) + '" cy="' + (y + r * .08) + '" r="' + (r * .68) + '" fill="url(#ir' + id + ')"/>' +
+        '<circle cx="' + (x + side * r * .08) + '" cy="' + (y + r * .1) + '" r="' + (r * .36) + '" fill="#0f0806"/>' +
+        '<ellipse cx="' + (x - r * .26) + '" cy="' + (y - r * .28) + '" rx="' + (r * .24) + '" ry="' + (r * .19) + '" fill="#fff"/>' +
+        '<circle cx="' + (x + r * .3) + '" cy="' + (y + r * .34) + '" r="' + (r * .1) + '" fill="#fff" opacity=".85"/>' +
+        '<path d="M' + (x - r) + ' ' + (y - r * .15) + ' Q' + x + ' ' + (y - r * 1.25) + ' ' + (x + r) + ' ' + (y - r * .15) + '" stroke="#000" stroke-opacity=".18" stroke-width="' + (r * .3) + '" fill="none"/>' + lid + '</g>';
+    };
+    var b = function (x, side) {
+      var tilt = mood === 1 ? -5 : mood === 3 ? (side < 0 ? 7 : -2) : mood === 2 ? 0 : 3; // + lifts the inner end (happy), - drops it (determined)
+      return '<path d="M' + (x - r * .8) + ' ' + (y - r * 1.55 - tilt * side) + ' Q' + x + ' ' + (y - r * 1.9 - (mood === 0 ? 3 : 0)) + ' ' + (x + r * .8) + ' ' + (y - r * 1.55 + tilt * side) + '" stroke="' + browColor + '" stroke-width="' + (r * .32) + '" fill="none" stroke-linecap="round"/>';
+    };
+    return '<radialGradient id="sc' + id + '" cx=".4" cy=".35" r=".75"><stop offset=".6" stop-color="#ffffff"/><stop offset="1" stop-color="#d9d2e4"/></radialGradient>' +
+      '<radialGradient id="ir' + id + '" cx=".45" cy=".4" r=".7"><stop offset="0" stop-color="' + lit(iris) + '"/><stop offset=".7" stop-color="' + iris + '"/><stop offset="1" stop-color="' + shade(iris) + '"/></radialGradient>' +
+      one(xl, 1) + one(xr, -1) + b(xl, -1) + b(xr, 1);
+  }
+  function mouth(x, y, w, mood, dark) {
+    if (mood === 1) return '<path d="M' + (x - w) + ' ' + (y + 1) + ' Q' + x + ' ' + (y + w * .55) + ' ' + (x + w) + ' ' + (y - 2) + '" stroke="' + dark + '" stroke-width="3" fill="none" stroke-linecap="round"/>';
+    if (mood === 2) return '<path d="M' + (x - w * .7) + ' ' + (y + 2) + ' Q' + (x + w * .2) + ' ' + (y + w * .45) + ' ' + (x + w) + ' ' + (y - 3) + '" stroke="' + dark + '" stroke-width="3" fill="none" stroke-linecap="round"/>';
+    if (mood === 3) return '<path d="M' + (x - w) + ' ' + y + ' Q' + x + ' ' + (y + w * .9) + ' ' + (x + w) + ' ' + y + ' Z" fill="' + dark + '"/><ellipse cx="' + (x + w * .25) + '" cy="' + (y + w * .6) + '" rx="' + (w * .38) + '" ry="' + (w * .42) + '" fill="#e96a86"/>';
+    return '<path d="M' + (x - w) + ' ' + y + ' Q' + x + ' ' + (y + w * 1.05) + ' ' + (x + w) + ' ' + y + ' Z" fill="' + dark + '"/><path d="M' + (x - w * .55) + ' ' + (y + w * .55) + ' Q' + x + ' ' + (y + w * .25) + ' ' + (x + w * .55) + ' ' + (y + w * .55) + ' Q' + x + ' ' + (y + w * .95) + ' ' + (x - w * .55) + ' ' + (y + w * .55) + ' Z" fill="#e96a86"/>';
+  }
+  // The logo's snowy peak, lit like the characters, with its boot-print trail and a soft shadow.
+  function ground(id) {
+    var prints = [[24, 206], [38, 200], [52, 206], [148, 202], [162, 208], [176, 201]].map(function (p, i) {
+      return '<ellipse cx="' + p[0] + '" cy="' + p[1] + '" rx="4.2" ry="2.3" fill="#6d5c86" opacity=".5" transform="rotate(' + (i % 2 ? 18 : -14) + ' ' + p[0] + ' ' + p[1] + ')"/>';
+    }).join('');
+    return '<linearGradient id="pk' + id + '" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#d9d0ee"/><stop offset="1" stop-color="#9d8cc4"/></linearGradient>' +
+      '<radialGradient id="sh' + id + '" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#2a1745" stop-opacity=".55"/><stop offset="1" stop-color="#2a1745" stop-opacity="0"/></radialGradient>' +
+      '<path d="M4 218 L60 176 L82 186 L106 166 L196 218 Z" fill="url(#pk' + id + ')"/><path d="M60 176 L70 186 L82 186 Z M106 166 L100 182 L116 176 Z" fill="#fff"/>' + prints +
+      '<ellipse cx="100" cy="210" rx="58" ry="9" fill="url(#sh' + id + ')"/>';
+  }
+  var HAT_COLORS = ['', '#e85d4a', '#2bb3a3', '#f59e0b', '#ec4899', '#64748b'];
+  // Hats sit on a head centered at (cx, top).
+  function hat(style, cx, top, w, color) {
+    var d = shade(color), l = lit(color);
+    if (style === 1) return '<path d="M' + (cx - w) + ' ' + (top + 14) + ' Q' + (cx - w) + ' ' + (top - 22) + ' ' + cx + ' ' + (top - 24) + ' Q' + (cx + w) + ' ' + (top - 22) + ' ' + (cx + w) + ' ' + (top + 14) + ' Z" fill="' + color + '"/>' +
+      '<rect x="' + (cx - w - 3) + '" y="' + (top + 6) + '" width="' + (2 * w + 6) + '" height="12" rx="6" fill="' + d + '"/><circle cx="' + cx + '" cy="' + (top - 26) + '" r="8" fill="' + l + '"/>' +
+      fur([[cx - 10, top - 6, 2, -6, 4, -10], [cx + 2, top - 8, 2, -6, 4, -10], [cx + 12, top - 4, 2, -6, 4, -10]], l, 2);
+    if (style === 2) return '<path d="M' + (cx - w) + ' ' + (top + 10) + ' Q' + cx + ' ' + (top - 26) + ' ' + (cx + w) + ' ' + (top + 10) + ' Z" fill="' + color + '"/><path d="M' + (cx - w * .2) + ' ' + (top + 8) + ' Q' + (cx + w * 1.1) + ' ' + (top + 2) + ' ' + (cx + w * 1.5) + ' ' + (top + 12) + ' Q' + (cx + w * .8) + ' ' + (top + 16) + ' ' + (cx - w * .2) + ' ' + (top + 14) + ' Z" fill="' + d + '"/><circle cx="' + cx + '" cy="' + (top - 15) + '" r="3" fill="' + l + '"/>';
+    if (style === 3) return '<path d="M' + (cx - w) + ' ' + (top + 10) + ' Q' + cx + ' ' + (top - 8) + ' ' + (cx + w) + ' ' + (top + 10) + ' L' + (cx + w) + ' ' + (top + 18) + ' Q' + cx + ' ' + (top + 2) + ' ' + (cx - w) + ' ' + (top + 18) + ' Z" fill="' + color + '"/><path d="M' + (cx + w - 2) + ' ' + (top + 12) + ' l14 -2 l-6 12 Z" fill="' + d + '"/><circle cx="' + (cx - 8) + '" cy="' + (top + 8) + '" r="2" fill="' + l + '"/><circle cx="' + (cx + 8) + '" cy="' + (top + 8) + '" r="2" fill="' + l + '"/>';
+    if (style === 4) return '<path d="M' + (cx - w) + ' ' + (top + 12) + ' Q' + cx + ' ' + (top + 2) + ' ' + (cx + w) + ' ' + (top + 12) + ' L' + (cx + w) + ' ' + (top + 19) + ' Q' + cx + ' ' + (top + 9) + ' ' + (cx - w) + ' ' + (top + 19) + ' Z" fill="' + color + '"/>' +
+      '<g transform="translate(' + cx + ' ' + (top + 2) + ')"><rect x="-26" y="-8" width="22" height="13" rx="6" fill="#111"/><rect x="4" y="-8" width="22" height="13" rx="6" fill="#111"/><path d="M-4 -3 h8" stroke="#111" stroke-width="3"/><path d="M-22 -5 l8 0" stroke="#fff" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/></g>';
+    return '';
+  }
+  // Earned gear on the animal. a = anchor points for this body: neck, chest, back, hand, feet[2].
+  function gear(has, a, color, back) {
+    var g = '', d = shade(color);
+    if (back) return has.pack ? '<rect x="' + (a.back[0] - 18) + '" y="' + (a.back[1] - 20) + '" width="36" height="44" rx="12" fill="#7a5233"/><rect x="' + (a.back[0] - 12) + '" y="' + (a.back[1] - 14) + '" width="24" height="12" rx="5" fill="#9a6c46"/>' : '';
+    if (has.rope) g += '<path d="M' + (a.neck[0] - 26) + ' ' + (a.neck[1] + 4) + ' Q' + (a.chest[0] + 6) + ' ' + (a.chest[1] + 22) + ' ' + (a.neck[0] + 30) + ' ' + (a.neck[1] + 28) + '" stroke="#d9b46a" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M' + (a.neck[0] - 26) + ' ' + (a.neck[1] + 4) + ' Q' + (a.chest[0] + 6) + ' ' + (a.chest[1] + 22) + ' ' + (a.neck[0] + 30) + ' ' + (a.neck[1] + 28) + '" stroke="#a8823e" stroke-width="5" stroke-dasharray="2 5" fill="none"/>';
+    if (has.scarf) g += '<path d="M' + (a.neck[0] - 26) + ' ' + a.neck[1] + ' Q' + a.neck[0] + ' ' + (a.neck[1] + 12) + ' ' + (a.neck[0] + 26) + ' ' + a.neck[1] + ' L' + (a.neck[0] + 24) + ' ' + (a.neck[1] + 11) + ' Q' + a.neck[0] + ' ' + (a.neck[1] + 23) + ' ' + (a.neck[0] - 24) + ' ' + (a.neck[1] + 11) + ' Z" fill="' + color + '"/><path d="M' + (a.neck[0] + 12) + ' ' + (a.neck[1] + 10) + ' l6 24 l9 -4 l-4 -22 Z" fill="' + d + '"/>';
+    if (has.badge) g += '<path d="M' + (a.chest[0] - 6) + ' ' + (a.chest[1] - 12) + ' l6 10 l6 -10" stroke="#3a6fb8" stroke-width="4" fill="none"/><circle cx="' + a.chest[0] + '" cy="' + a.chest[1] + '" r="7.5" fill="#ffd84d" stroke="#b07d1c" stroke-width="2"/><path d="M' + a.chest[0] + ' ' + (a.chest[1] - 3.5) + ' l1.2 2.4 l2.6 .4 l-1.9 1.8 l.5 2.6 l-2.4 -1.3 l-2.4 1.3 l.5 -2.6 l-1.9 -1.8 l2.6 -.4 Z" fill="#fff6c2"/>';
+    if (has.compass) g += '<circle cx="' + (a.chest[0] + 18) + '" cy="' + (a.chest[1] + 4) + '" r="6.5" fill="#e3c27a" stroke="#7a5233" stroke-width="1.6"/><path d="M' + (a.chest[0] + 18) + ' ' + (a.chest[1] - .5) + ' l1.8 4.5 l-1.8 4.5 l-1.8 -4.5 Z" fill="#e85d4a"/>';
+    if (has.boots) g += a.feet.map(function (f) { return '<path d="M' + (f[0] - 11) + ' ' + (f[1] - 10) + ' h18 q6 0 6 8 v4 h-26 Z" fill="#6b4226"/><path d="M' + (f[0] - 12) + ' ' + (f[1] + 2) + ' h28" stroke="#2b1a10" stroke-width="3.5" stroke-linecap="round"/>'; }).join('');
+    if (has.lantern) g += '<path d="M' + a.hand[0] + ' ' + a.hand[1] + ' v8" stroke="#5b4a3a" stroke-width="2"/><circle cx="' + a.hand[0] + '" cy="' + (a.hand[1] + 18) + '" r="16" fill="#ffd56a" opacity=".22"/><rect x="' + (a.hand[0] - 7) + '" y="' + (a.hand[1] + 8) + '" width="14" height="18" rx="4" fill="#ffe7a1" stroke="#7a5233" stroke-width="2"/>';
+    if (has.flag) g += '<path d="M178 206 L178 118" stroke="#8a8f99" stroke-width="3.5" stroke-linecap="round"/><path d="M179 118 Q192 122 200 120 Q194 130 200 140 Q190 138 179 141 Z" fill="' + color + '" stroke="' + d + '" stroke-width="1.5"/>';
+    return g;
+  }
+
+  // Each body: fur shades, the default look, and a draw function returning the layers.
+  var SPECIES = {
+    GOLD: { fur: ['#a98463', '#c9a27a', '#8a7a6e'], hat: 0, accent: '#ffd400', draw: function (id, c, k) {
+      var a = { neck: [100, 146], chest: [100, 166], back: [138, 160], hand: [64, 170], feet: [[80, 204], [120, 204]] };
+      return { anchors: a, back: '<circle cx="146" cy="182" r="14" fill="#fff"/>' + fur([[138, 176, -4, -6, -2, -12], [150, 172, 4, -6, 2, -12]], '#e9e4dc', 3),
+        body: '<path d="M64 200 Q58 150 100 140 Q142 150 136 200 Z" fill="url(#bd' + id + ')"/><ellipse cx="100" cy="182" rx="24" ry="20" fill="#f4e8d8"/>' +
+          '<ellipse cx="80" cy="204" rx="17" ry="9" fill="url(#bd' + id + ')"/><ellipse cx="120" cy="204" rx="17" ry="9" fill="url(#bd' + id + ')"/>' +
+          '<ellipse cx="66" cy="172" rx="8" ry="11" fill="url(#bd' + id + ')"/><ellipse cx="134" cy="172" rx="8" ry="11" fill="url(#bd' + id + ')"/>',
+        ears: '<g class="gc-wiggle"><path d="M76 70 Q60 8 80 6 Q98 10 94 70 Z" fill="url(#bd' + id + ')"/><path d="M80 66 Q70 22 82 18 Q90 22 89 66 Z" fill="url(#in' + id + ')"/>' +
+          '<path d="M106 70 Q104 8 124 8 Q140 14 124 72 Z" fill="url(#bd' + id + ')"/><path d="M111 66 Q112 24 122 20 Q130 26 120 68 Z" fill="url(#in' + id + ')"/></g>',
+        head: '<ellipse cx="100" cy="104" rx="42" ry="39" fill="url(#bd' + id + ')"/><path d="M134 82 Q144 104 132 128" stroke="#a9c6ff" stroke-opacity=".5" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+          fur([[60, 100, -6, 2, -8, 8], [62, 112, -6, 2, -6, 10], [138, 100, 6, 2, 8, 8], [138, 112, 6, 2, 6, 10]], lit(c), 2.4) +
+          '<ellipse cx="100" cy="122" rx="24" ry="17" fill="#f7ede0"/><ellipse cx="80" cy="120" rx="8" ry="5" fill="#f3a5b4" opacity=".55"/><ellipse cx="120" cy="120" rx="8" ry="5" fill="#f3a5b4" opacity=".55"/>' +
+          eyes(id, 80, 120, 100, 15, IRIS[k.eyes], k.mood, shade(c)) +
+          '<path d="M94 113 Q100 109 106 113 Q100 120 94 113 Z" fill="#e7798f"/><ellipse cx="98" cy="112" rx="2" ry="1.2" fill="#fff" opacity=".8"/>' +
+          mouth(100, 124, 7, k.mood, '#5a2a1e') + '<path d="M74 118 L52 112 M74 124 L52 128 M126 118 L148 112 M126 124 L148 128" stroke="#5a4636" stroke-width="1.2" opacity=".55"/>',
+        headTop: [100, 66], hatW: 38,
+        defs: '<linearGradient id="in' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc6d1"/><stop offset="1" stop-color="#e98aa0"/></linearGradient>' };
+    } },
+    PURPLE: { fur: ['#8b6a4a', '#a8825a', '#6e5d50'], hat: 3, accent: '#7c3aed', draw: function (id, c, k) {
+      var a = { neck: [100, 142], chest: [100, 168], back: [140, 156], hand: [62, 168], feet: [[84, 206], [116, 206]] };
+      var bars = [0, 1, 2, 3, 4].map(function (i) { return '<path d="M' + (124 + i * 7) + ' 150 L' + (146 + i * 10) + ' ' + (100 + i * 10) + '" stroke="' + shade(c) + '" stroke-width="5" stroke-linecap="round"/>'; }).join('');
+      return { anchors: a,
+        back: '<g class="gc-wiggle"><path d="M116 176 Q140 78 186 108 Q186 156 120 184 Z" fill="url(#bd' + id + ')"/>' + bars + '<path d="M150 84 Q190 104 182 150" stroke="#2c1d14" stroke-width="7" fill="none" stroke-linecap="round"/></g>',
+        body: '<ellipse cx="100" cy="170" rx="46" ry="40" fill="url(#bd' + id + ')"/><path d="M68 160 Q100 214 132 160 Q122 206 100 210 Q76 206 68 160 Z" fill="#d7b98d"/>' +
+          [[76, 170], [94, 184], [112, 170], [86, 196], [110, 196]].map(function (p) { return '<path d="M' + p[0] + ' ' + p[1] + ' q6 6 12 0" stroke="' + shade(c) + '" stroke-width="3" fill="none" stroke-linecap="round"/>'; }).join('') +
+          '<path d="M86 208 l-5 9 M86 208 l0 10 M86 208 l5 9 M114 208 l-5 9 M114 208 l0 10 M114 208 l5 9" stroke="#c77a2c" stroke-width="2.6" stroke-linecap="round"/>',
+        ears: '<path d="M84 66 Q86 40 100 52 Q108 36 118 60" fill="' + shade(c) + '"/>',
+        head: '<circle cx="100" cy="104" r="40" fill="url(#bd' + id + ')"/><path d="M134 84 Q146 106 130 132" stroke="#a9c6ff" stroke-opacity=".45" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+          '<path d="M60 112 Q54 144 82 142 Q70 128 72 108 Z M140 112 Q146 144 118 142 Q130 128 128 108 Z" fill="#2c1d14"/>' +
+          fur([[64, 96, -6, 0, -8, 6], [136, 96, 6, 0, 8, 6], [90, 66, 0, -6, 4, -10], [104, 66, 2, -6, 6, -10]], lit(c), 2.4) +
+          '<path d="M70 86 Q80 78 92 86 M108 86 Q120 78 130 86" stroke="#e85d4a" stroke-width="4" fill="none" stroke-linecap="round"/>' +
+          eyes(id, 80, 120, 102, 14.5, IRIS[k.eyes], k.mood, '#3a2618') +
+          '<path d="M90 116 L110 114 L100 130 Z" fill="url(#bk' + id + ')"/><path d="M93 117 L103 116" stroke="#fff" stroke-opacity=".6" stroke-width="2" stroke-linecap="round"/>' +
+          (k.mood === 3 ? '<ellipse cx="102" cy="132" rx="4" ry="5" fill="#e96a86"/>' : ''),
+        headTop: [100, 66], hatW: 36,
+        defs: '<linearGradient id="bk' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2b450"/><stop offset="1" stop-color="#c47a22"/></linearGradient>' };
+    } },
+    GREY: { fur: ['#4a3a30', '#6a5240', '#2f2a28'], hat: 1, accent: '#99a8bb', draw: function (id, c, k) {
+      var a = { neck: [100, 144], chest: [100, 168], back: [138, 160], hand: [62, 168], feet: [[82, 206], [118, 206]] };
+      return { anchors: a,
+        back: '<g class="gc-wiggle"><path d="M126 196 Q186 196 184 140 Q176 118 164 132 Q166 178 122 182 Z" fill="url(#bd' + id + ')"/>' + fur([[176, 146, 6, 2, 8, 8], [170, 162, 6, 2, 8, 8], [158, 178, 4, 4, 6, 10]], lit(c), 2.6) + '</g>',
+        body: '<path d="M66 208 Q58 150 100 136 Q142 150 134 208 Z" fill="url(#bd' + id + ')"/><ellipse cx="100" cy="178" rx="18" ry="24" fill="' + mix(c, '#c9b8a6', .35) + '"/>' +
+          '<ellipse cx="82" cy="206" rx="15" ry="8" fill="' + shade(c) + '"/><ellipse cx="118" cy="206" rx="15" ry="8" fill="' + shade(c) + '"/>' +
+          '<ellipse cx="66" cy="170" rx="8" ry="12" fill="url(#bd' + id + ')"/><ellipse cx="134" cy="170" rx="8" ry="12" fill="url(#bd' + id + ')"/>',
+        ears: '<circle cx="66" cy="76" r="15" fill="url(#gz' + id + ')"/><circle cx="134" cy="76" r="15" fill="url(#gz' + id + ')"/><circle cx="66" cy="77" r="8" fill="' + shade(c) + '"/><circle cx="134" cy="77" r="8" fill="' + shade(c) + '"/>',
+        head: '<ellipse cx="100" cy="106" rx="42" ry="37" fill="url(#gz' + id + ')"/><path d="M136 86 Q146 108 132 132" stroke="#a9c6ff" stroke-opacity=".5" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+          fur([[62, 100, -6, 0, -8, 6], [64, 114, -6, 2, -6, 8], [138, 100, 6, 0, 8, 6], [136, 114, 6, 2, 6, 8], [84, 72, -2, -6, 0, -8], [116, 72, 2, -6, 0, -8]], '#d8d2cc', 2.2) +
+          '<ellipse cx="100" cy="124" rx="18" ry="13" fill="#bdb3aa"/>' +
+          eyes(id, 80, 120, 102, 14, IRIS[k.eyes], k.mood, '#2a201b') +
+          '<path d="M93 116 Q100 111 107 116 Q100 122 93 116 Z" fill="#1b1310"/><ellipse cx="98" cy="115" rx="2" ry="1" fill="#fff" opacity=".6"/>' + mouth(100, 126, 6.5, k.mood, '#2a1612'),
+        headTop: [100, 70], hatW: 40,
+        defs: '<radialGradient id="gz' + id + '" cx=".34" cy=".28" r=".85"><stop offset="0" stop-color="#d3ccc4"/><stop offset=".5" stop-color="' + mix(c, '#a39a92', .7) + '"/><stop offset="1" stop-color="' + shade(c) + '"/></radialGradient>' };
+    } },
+    BLACK: { fur: ['#b07a4a', '#c68f5a', '#8f6545'], hat: 4, accent: '#1f2430', draw: function (id, c, k) {
+      var a = { neck: [100, 146], chest: [100, 170], back: [138, 162], hand: [62, 170], feet: [[84, 210], [116, 210]] };
+      return { anchors: a, back: '<path d="M134 168 Q156 156 154 176 Q146 188 134 184 Z" fill="#fff"/>',
+        body: '<path d="M68 196 Q62 150 100 142 Q138 150 132 196 Z" fill="url(#bd' + id + ')"/><ellipse cx="100" cy="166" rx="16" ry="18" fill="#f6ecdd"/>' +
+          '<path d="M80 194 L78 212 M92 196 L92 214 M108 196 L108 214 M120 194 L122 212" stroke="' + shade(c) + '" stroke-width="8" stroke-linecap="round"/>' +
+          '<path d="M74 212 h8 M88 214 h8 M104 214 h8 M118 212 h8" stroke="#1b1310" stroke-width="6" stroke-linecap="round"/>' +
+          '<ellipse cx="66" cy="172" rx="8" ry="12" fill="url(#bd' + id + ')"/><g class="gc-wiggle"><path d="M132 172 Q148 158 150 140" stroke="url(#bd' + id + ')" stroke-width="10" fill="none" stroke-linecap="round"/><path d="M146 138 l9 -6" stroke="#1b1310" stroke-width="8" stroke-linecap="round"/></g>',
+        ears: '<path d="M80 64 Q70 36 82 18 M76 46 L64 36 M78 56 L66 52 M120 64 Q130 36 118 18 M124 46 L136 36 M122 56 L134 52" stroke="url(#an' + id + ')" stroke-width="6" fill="none" stroke-linecap="round"/>' +
+          '<ellipse cx="60" cy="86" rx="20" ry="11" fill="url(#bd' + id + ')" transform="rotate(-22 60 86)"/><ellipse cx="140" cy="86" rx="20" ry="11" fill="url(#bd' + id + ')" transform="rotate(22 140 86)"/>' +
+          '<ellipse cx="60" cy="86" rx="12" ry="6" fill="#f3c9b4" transform="rotate(-22 60 86)"/><ellipse cx="140" cy="86" rx="12" ry="6" fill="#f3c9b4" transform="rotate(22 140 86)"/>',
+        head: '<ellipse cx="100" cy="106" rx="34" ry="38" fill="url(#bd' + id + ')"/><path d="M128 84 Q138 108 126 134" stroke="#a9c6ff" stroke-opacity=".5" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+          fur([[70, 96, -6, 0, -6, 8], [130, 96, 6, 0, 6, 8], [94, 70, 0, -6, 4, -8], [106, 70, 0, -6, -4, -8]], lit(c), 2.2) +
+          '<ellipse cx="100" cy="132" rx="18" ry="14" fill="#f6ecdd"/><ellipse cx="84" cy="102" rx="14" ry="14" fill="#f6ecdd" opacity=".55"/><ellipse cx="116" cy="102" rx="14" ry="14" fill="#f6ecdd" opacity=".55"/>' +
+          eyes(id, 83, 117, 102, 14, IRIS[k.eyes], k.mood, '#4a2e1c') +
+          '<ellipse cx="100" cy="126" rx="9" ry="6.5" fill="#1b1310"/><ellipse cx="97" cy="124" rx="2.6" ry="1.4" fill="#fff" opacity=".6"/>' + mouth(100, 136, 6.5, k.mood, '#2a1612'),
+        headTop: [100, 72], hatW: 34,
+        defs: '<linearGradient id="an' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff7e6"/><stop offset="1" stop-color="#cdb98f"/></linearGradient>' };
+    } },
+  };
+  var LOOK = { fur: 3, eyes: 4, mood: 4, hat: 5, accent: 6 };
+
+  // character(squad, look, earned gear, mascot info): the squad's animal, as this student made it.
+  // With no look it's the squad's own mascot (its signature hat and color).
+  function character(squad, look, gearList, m) {
+    var s = String(squad || '').toUpperCase().replace('GRAY', 'GREY'), sp = SPECIES[s];
+    m = m || {};
+    if (!look && m.image) return '<img src="' + esc(m.image) + '" alt="' + esc(m.name || m.animal || s) + '" style="width:100%;height:auto;border-radius:18px">';
+    if (!sp) return '';
+    var k = look ? { fur: look.fur || 0, eyes: look.eyes || 0, mood: look.mood || 0, hat: look.hat || 0, accent: look.accent || 0 } : { fur: 0, eyes: 0, mood: 0, hat: sp.hat, accent: 0 };
+    var has = {}; (gearList || []).forEach(function (g) { if (g.have) has[g.gear] = true; });
+    if (!look) has.scarf = true; // the squad mascot always wears its colors
+    var c = sp.fur[k.fur] || sp.fur[0], color = k.accent ? HAT_COLORS[k.accent] : sp.accent, id = 'ch' + (++uid);
+    var p = sp.draw(id, c, k);
+    var svg = '<defs>' + vol('bd' + id, c) + (p.defs || '') + '</defs>' + ground(id) +
+      '<g class="gc-breathe">' + gear(has, p.anchors, color, true) + p.back + p.ears + p.body + p.head + gear(has, p.anchors, color, false) +
+      hat(k.hat, p.headTop[0], p.headTop[1], p.hatW, color) + '</g>';
+    var name = (m.name ? m.name + ', ' : '') + (m.animal || s.charAt(0) + s.slice(1).toLowerCase() + ' Squad mascot');
+    return '<svg class="gc-svg" viewBox="0 0 200 222" role="img" aria-label="' + esc(name) + '">' + svg + '</svg>';
+  }
+  function mascot(squad, m) { return character(squad, null, null, m); }
+
+  // ── The territory board ───────────────────────────────────────────
+  // Zones sit on a 12 x 8 grid; each is drawn with uneven, hand-cut borders (seeded by its name,
+  // so it looks the same every time). General territories only: never the real building.
+  function seeded(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return function () { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296; }; }
+  function blob(z, cell) {
+    var rnd = seeded(z.zone), x = z.x * cell + 6, y = z.y * cell + 6, w = z.w * cell - 12, h = z.h * cell - 12, pts = [], n = 5;
+    function j() { return (rnd() - .5) * cell * .28; }
+    for (var i = 0; i <= n; i++) pts.push([x + w * i / n + (i && i < n ? j() : 0), y + (i && i < n ? j() : 0)]);
+    for (i = 1; i <= n; i++) pts.push([x + w + j(), y + h * i / n + (i < n ? j() : 0)]);
+    for (i = n - 1; i >= 0; i--) pts.push([x + w * i / n + (i ? j() : 0), y + h + j()]);
+    for (i = n - 1; i > 0; i--) pts.push([x + j(), y + h * i / n + j()]);
+    return 'M' + pts.map(function (p) { return p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' L') + ' Z';
+  }
+  function board(map, opts) {
+    if (!map || !map.zones || !map.zones.length) return '';
+    opts = opts || {};
+    var cell = 80, W = 12 * cell, H = 8 * cell;
+    var wingColor = {};
+    var zones = map.zones.map(function (z) {
+      var fill = z.holder ? SQ_LIGHT[z.holder] : '#3a2a52', ink = z.holder === 'GOLD' || z.holder === 'GREY' || z.holder === 'BLACK' ? '#12081f' : '#fff';
+      var cx = (z.x + z.w / 2) * cell, cy = (z.y + z.h / 2) * cell;
+      var crown = z.summit ? '<path d="M' + (cx - 18) + ' ' + (cy - 30) + ' l6 -16 l12 10 l12 -10 l6 16 Z" fill="#ffe100" stroke="#12081f" stroke-width="2"/>' : '';
+      var wingHeld = map.wings && map.wings[z.wing];
+      return '<g class="zone"><path d="' + blob(z, cell) + '" fill="' + fill + '" fill-opacity="' + (z.holder ? .92 : .6) + '" stroke="' + (wingHeld ? '#ffe100' : '#12081f') + '" stroke-width="' + (wingHeld ? 6 : 4) + '" stroke-linejoin="round"><title>' + esc(z.zone + (z.holder ? ', held by ' + z.holder : ', unclaimed') + ' · ' + z.wing) + '</title></path>' +
+        crown + '<text x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle" font-family="Fraunces,serif" font-weight="900" font-size="' + (z.w * cell > 170 ? 22 : 17) + '" fill="' + (z.holder ? ink : '#d6c2ff') + '">' + esc(z.zone) + '</text>' +
+        '<text x="' + cx + '" y="' + (cy + 26) + '" text-anchor="middle" font-family="DM Mono,monospace" font-size="13" fill="' + (z.holder ? ink : '#b09ec8') + '" opacity=".85">' + esc(z.holder ? (z.summit ? 'KING OF THE MOUNTAIN' : z.holder) : 'unclaimed') + '</text></g>';
+    }).join('');
+    var held = map.wings ? Object.keys(map.wings) : [];
+    var legend = '<div class="gb-legend">' + held.map(function (w) { return '<span><i style="background:' + SQ_LIGHT[map.wings[w]] + '"></i>' + esc(w) + ': all held by ' + esc(map.wings[w]) + '</span>'; }).join('') +
+      '<span>Claimed by the most points in the last ' + (map.claimDays || 14) + ' days</span></div>';
+    return '<div class="gb"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Clash territory map">' +
+      '<defs><pattern id="gbTopo" width="160" height="80" patternUnits="userSpaceOnUse"><path d="M0 60 Q40 40 80 56 T160 50" fill="none" stroke="#bb8ef5" stroke-opacity=".12" stroke-width="1.5"/></pattern></defs>' +
+      '<rect width="' + W + '" height="' + H + '" fill="#170b29"/><rect width="' + W + '" height="' + H + '" fill="url(#gbTopo)"/>' + zones + '</svg></div>' + (opts.legend === false ? '' : legend);
+  }
+
+  // ── Monster of the Month ──────────────────────────────────────────
+  // Shady: the small blue hairy gremlin of schadenfreude. His fur tufts shrink with his health;
+  // defeated, he's tiny, sheepish and blushing.
+  function shady(defeated, health) {
+    var h = defeated ? 0 : Math.max(0, Math.min(1, health == null ? 1 : health)), grow = .72 + .28 * h;
+    var tufts = '';
+    for (var i = 0; i < 14; i++) {
+      var a = Math.PI * (1.05 + i * .065), r = 40, x = 60 + Math.cos(a) * r, y = 70 + Math.sin(a) * r * .95, len = (8 + (i % 3) * 4) * grow;
+      tufts += '<path d="M' + (x - 4).toFixed(1) + ' ' + y.toFixed(1) + ' L' + (x + Math.cos(a) * len).toFixed(1) + ' ' + (y + Math.sin(a) * len).toFixed(1) + ' L' + (x + 4).toFixed(1) + ' ' + y.toFixed(1) + ' Z" fill="#2f6fd0"/>';
+    }
+    return '<svg class="gc-svg" viewBox="0 0 120 120" aria-hidden="true"><g class="gc-breathe" transform="translate(60 112) scale(' + grow.toFixed(2) + ') translate(-60 -112)">' +
+      '<path d="M14 70 L4 40 L30 56 Z M106 70 L116 40 L90 56 Z" fill="#2f6fd0"/><path d="M16 64 L10 46 L26 56 Z M104 64 L110 46 L94 56 Z" fill="#8fb8f5"/>' + tufts +
+      '<ellipse cx="60" cy="74" rx="40" ry="36" fill="#3d82e6"/><ellipse cx="60" cy="86" rx="22" ry="18" fill="#6aa3f0"/>' +
+      '<path d="M28 96 l-6 14 M38 102 l-2 12 M82 102 l2 12 M92 96 l6 14" stroke="#2f6fd0" stroke-width="5" stroke-linecap="round"/>' +
+      '<ellipse cx="44" cy="66" rx="12" ry="13" fill="#fff6c2"/><ellipse cx="76" cy="66" rx="12" ry="13" fill="#fff6c2"/>' +
+      '<g class="gc-blink"><circle cx="' + (defeated ? 44 : 47) + '" cy="68" r="6" fill="#1a1036"/><circle cx="' + (defeated ? 76 : 79) + '" cy="68" r="6" fill="#1a1036"/>' +
+      '<circle cx="45" cy="65" r="2" fill="#fff"/><circle cx="77" cy="65" r="2" fill="#fff"/></g>' +
+      (defeated
+        ? '<path d="M32 52 Q44 58 54 54 M66 54 Q76 58 88 52" stroke="#1a3c80" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="36" cy="82" rx="7" ry="4" fill="#f3a5b4" opacity=".7"/><ellipse cx="84" cy="82" rx="7" ry="4" fill="#f3a5b4" opacity=".7"/><path d="M52 90 Q60 86 68 90" stroke="#1a1036" stroke-width="3" fill="none" stroke-linecap="round"/>'
+        : '<path d="M32 50 L54 58 M88 50 L66 58" stroke="#1a3c80" stroke-width="4" stroke-linecap="round"/><path d="M40 86 Q60 100 82 84" stroke="#1a1036" stroke-width="4" fill="#4a1030" stroke-linecap="round"/><path d="M48 88 l3 5 l3 -5 M64 89 l3 5 l3 -5" fill="#fff"/>') +
+      '</g></svg>';
+  }
+  function monster(m) {
+    if (!m) return '';
+    var pct = Math.round(100 * (m.health || 0));
+    var art = m.image ? '<img src="' + esc(m.image) + '" alt="">' : /shady/i.test(m.name) ? shady(m.defeated, m.health) :
+      '<svg class="gc-svg" viewBox="0 0 120 120" aria-hidden="true"><g class="gc-breathe"><path d="M20 110 Q10 50 60 30 Q110 50 100 110 Z" fill="' + (m.defeated ? '#4b7a5a' : '#6b2f5e') + '"/>' +
+      '<path d="M38 34 l-8 -18 l18 10 Z M82 34 l8 -18 l-18 10 Z" fill="#3b1a35"/>' + eye(46, 64, 9, .4) + eye(74, 64, 9, .4) +
+      '<path d="M40 88 Q60 ' + (m.defeated ? 98 : 80) + ' 80 88" stroke="#1b0b18" stroke-width="5" fill="none" stroke-linecap="round"/>' +
+      (m.defeated ? '' : '<path d="M48 86 l4 6 l4 -6 M64 86 l4 6 l4 -6" fill="#fff"/>') + '</g></svg>';
+    var prog = m.progress ? m.progress.have + (m.progress.pct ? '%' : '') + ' of ' + m.progress.need + (m.progress.pct ? '%' : '') : 'Staff will mark it defeated';
+    return '<div class="gm' + (m.defeated ? ' dead' : '') + '"><div>' + art + '</div><div>' +
+      '<h3>' + (m.defeated ? '🎉 ' : '👹 ') + esc(m.name) + (m.defeated ? ' is defeated!' : '') + '</h3><p>' + esc(m.story) + '</p>' +
+      '<div class="gm-hp" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100" aria-label="Monster health"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="gm-goal">Defeat it together: ' + esc(m.goal) + ' · ' + esc(prog) + (m.reward ? ' · every squad gets +' + m.reward : '') + '</div></div></div>';
+  }
+
+  window.GameUi = { mascot: mascot, character: character, board: board, monster: monster, LOOK: LOOK, SQ: SQ_LIGHT };
+})();
+</script>

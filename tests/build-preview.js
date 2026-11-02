@@ -7,8 +7,9 @@ const http = require('http');
 const dir = path.join(__dirname, '..', 'apps-script');
 const read = f => fs.readFileSync(path.join(dir, f), 'utf8');
 
-function build() {
-  let html = read('Index.html')
+function build(page) {
+  // ?page=me → My Climb (Me.html), signed in as the sample student Ann L.
+  let html = (page === 'me' ? read('Me.html').replace(/<? if (shield) { ?>|<? } ?>/g, '').replace('<?= shield ?>', '/shield.png') : read('Index.html'))
     .replace(/<\?!= include\('([A-Za-z]+)'\); \?>/g, (m, f) => read(f + '.html'))
     .replace('<?!= config ?>', JSON.stringify({ pollMs: 5000 }));
   const gs = fs.readdirSync(dir).filter(f => f.endsWith('.gs')).sort().map(read).join('\n');
@@ -37,9 +38,9 @@ function build() {
       [102, 'Trait Dough: week 6', 'trait_dough', '2026-10-30', '', '', 12, 18, 9, 14],
       [103, 'STAR Growth: Cycle 2', 'star_growth', '2026-10-31', '', '', 40, 52, 47, 38]]),
     makeSheet('metrics', [['squad', 'attendance', 'referral', 'grades'], ['BLACK', 94, 88, 81], ['GOLD', 95, 90, 84], ['GREY', 93, 86, 80], ['PURPLE', 96, 91, 79]]),
-    makeSheet('Student Board', [['800#', 'Name', 'Squad', 'Grade', 'Trait Dough Bills', 'Bills This Week', 'Trait Dough Wins', 'Mindset Summits', 'Trail Journal Growth', 'STAR Growth Points', 'Shout-outs', 'Streak (weeks)', 'Badges', 'Last Contribution', 'Updated'],
-      ['8001234', 'Ann L.', 'Gold', '7', '12', '2', '1', '1', '', '4', '2', '3', '🍞 First Trait Dough, 🍞 Trait Dough Ten, 🏆 Trait Dough Winner, ⛰️ Mindset Summit, 📈 STAR Grower, 🙌 Shout-out, 🔥 3-Week Streak', '2026-10-30', '2026-10-31 19:00'],
-      ['8005678', 'Bo K.', 'Grey', '8', '3', '0', '0', '0', '', '2', '0', '0', '🍞 First Trait Dough, 📈 STAR Grower', '2026-10-20', '2026-10-31 19:00']]),
+    makeSheet('Student Board', [['800#', 'Name', 'Squad', 'Grade', 'Trait Dough Bills', 'Bills This Week', 'Trait Dough Wins', 'Mindset Summits', 'Trail Journal Growth', 'STAR Growth Points', 'Shout-outs', 'Streak (weeks)', 'Badges', 'Last Contribution', 'Updated', 'Attendance %', 'Email'],
+      ['8001234', 'Ann L.', 'Gold', '7', '12', '2', '1', '1', '', '4', '2', '3', '🍞 First Trait Dough, 🍞 Trait Dough Ten, 🏆 Trait Dough Winner, ⛰️ Mindset Summit, 📈 STAR Grower, 🙌 Shout-out, 🔥 3-Week Streak', '2026-10-30', '2026-10-31 19:00', '96.5', 'ann.l@example.org'],
+      ['8005678', 'Bo K.', 'Grey', '8', '3', '0', '0', '0', '', '2', '0', '0', '🍞 First Trait Dough, 📈 STAR Grower', '2026-10-20', '2026-10-31 19:00', '91', 'bo.k@example.org']]),
     makeSheet('Challenges', [['Show', 'Title', 'Description', 'Event Types', 'Measure', 'Goal', 'Start', 'End', 'Bonus Points', 'Awarded'],
       [true, 'Trait Dough Week', 'Turn in Trait Dough bills all week!', 'trait_dough', 'Points', 25, '2026-10-26', '2099-12-31', 50, ''],
       [true, 'Growth Push', 'Every point from any project counts.', '', 'Points', 200, '2026-09-01', '2099-12-31', 0, '']]),
@@ -51,13 +52,13 @@ function build() {
     newDataValidation: function () { var b = new Proxy({}, { get: function () { return function () { return b; }; } }); return b; }, openById: function () { return { getSheetByName: function (n) {
     return n === 'reflections' ? makeSheet(n, [['insight_level', 'created_at'], ['High', new Date()], ['Medium', new Date()]]) : n === 'panel_sessions' ? makeSheet(n, [['clash_squad', 'status'], ['GOLD', 'complete']]) : null; } }; } };
   window.DriveApp = { getFileById: function () { return { getLastUpdated: function () { return new Date(updated); } }; } };
-  window.CacheService = { getScriptCache: function () { return { get: function (k) { return cache[k] || null; }, put: function (k, v) { cache[k] = v; } }; } };
+  window.CacheService = { getScriptCache: function () { return { get: function (k) { return cache[k] || null; }, put: function (k, v) { cache[k] = v; }, remove: function (k) { delete cache[k]; } }; } };
   window.PropertiesService = { getScriptProperties: function () { return { getProperty: function (k) { return props[k] || null; }, setProperty: function (k, v) { props[k] = v; } }; } };
   window.LockService = { getScriptLock: function () { return { waitLock: function () {}, releaseLock: function () {} }; } };
   window.Utilities = { getUuid: function () { return 'u' + Math.random().toString(36).slice(2); },
     computeDigest: function (a, s) { return s.split('').map(function (ch) { return ch.charCodeAt(0) % 128; }); }, // preview only
     DigestAlgorithm: {}, Charset: {}, formatDate: function (d) { return d.toISOString().slice(0, 10); } };
-  window.Session = { getScriptTimeZone: function () { return 'America/New_York'; } };
+  window.Session = { getScriptTimeZone: function () { return 'America/New_York'; }, getActiveUser: function () { return { getEmail: function () { return 'ann.l@example.org'; } }; } };
   window.HtmlService = {}; window.ContentService = {};
   window.__previewTouch = function () { updated = Date.now(); };
   window.__previewSheets = sheets;
@@ -69,7 +70,7 @@ ensureSettings_(); setSettingValue_('GENERALS_CODE', 'preview'); ensureGeneralsT
 getSheet_('MLC Roster').appendRow(['8001234', 'Ann L.', 'Gold', 'General', '']);
 getSheet_('Sign-up Events').appendRow(['Dodgeball', '2026-11-20', 8, true]);
 getSheet_('Sign-up Events').appendRow(['Lip Sync Battle', '2026-12-04', 4, true]);
-getSheet_('Student Board').appendRow(['8009999', 'Gus T.', 'Gold', '7', '1', '0', '0', '0', '', '0', '0', '0', '', '', '']);
+getSheet_('Student Board').appendRow(['8009999', 'Gus T.', 'Gold', '7', '1', '0', '0', '0', '', '0', '0', '0', '', '', '', '89', 'gus.t@example.org']);
 ensurePollTabs_(); getSheet_('Daily Polls').rows.slice(1).forEach(function (r) { r[0] = true; });
 ensureFreezeTab_(); getSheet_('Point Freezes').appendRow(['GREY', '2026-11-01', '2099-11-07', 'preview', '', 'Peaks', 'points: 30; everyone: 60%; Squad reflection with your advisor', '', false, '', '']);
 getSheet_('Point Freezes').appendRow(['GOLD', '2026-11-01', '', 'preview', '', 'Fun', 'points: 4', '2099-11-20', false, '', '']);
@@ -84,6 +85,11 @@ getSheet_('Sign-up Events').appendRow(['Squad Bowl (trivia)', '2027-03-16', 4, t
 getSheet_('Sign-up Events').appendRow(['Tug-o-war', '2027-03-19', 15, true, 'Squad Night', 'Active', false]);
 getSheet_('events').appendRow([104, 'Paper Chain Challenge', 'mayhem_week', '2026-10-30', '', '', 3, 5, 1, 2]);
 getSheet_('events').appendRow([105, 'Penny Tower Race', 'mayhem_week', '2026-10-31', '', '', 2, 0, 4, 1]);
+ensureGameTabs_(); ensureMeTabs_();
+setSettingValue_('MY_CLIMB_HOURS', '00:00-23:59'); setSettingValue_('MY_CLIMB_SCHOOL_DAYS', 'OFF'); // preview only: always open
+getSheet_('Monsters').rows.forEach(function (r, i) { if (i && r[3] === 'Shady') r[0] = true; });
+(function () { var t = todayYmd_(); getSheet_('events').appendRow([106, 'Daily Poll', 'daily_poll', t, '', '', 2, 6, 3, 1]); getSheet_('events').appendRow([107, 'Mindset summits', 'mountaineer_mindset', t, '', '', 4, 1, 2, 6]); getSheet_('events').appendRow([108, 'Trait Dough: Ann L.', 'trait_dough', t, '', '', 0, 9, 3, 2]); })();
+getSheet_('Squad Hand').appendRow(['GOLD', 'Flip Three', 'flip_three', 0, todayYmd_(), 'Held', '']);
 </script>
 <script>
 // google.script.run → the .gs functions above, asynchronously, like the real thing.
@@ -98,13 +104,14 @@ window.google = { script: { get run() {
   return runner;
 } } };
 </script>`;
-  return html.replace('<head>', '<head>\n' + fake);
+  return html.replace('<head>', () => '<head>\n' + fake); // a function, so "$&" in the server code stays as written
 }
 
 const out = path.join(__dirname, 'preview.html');
 fs.writeFileSync(out, build());
 http.createServer((req, res) => {
-  fs.writeFileSync(out, build());
+  if (req.url === '/shield.png') { res.writeHead(200, { 'Content-Type': 'image/png' }); return res.end(fs.readFileSync(path.join(__dirname, '..', 'assets', 'shield-2026-27.png'))); }
+  fs.writeFileSync(out, build(/page=me/.test(req.url) ? 'me' : ''));
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
   res.end(fs.readFileSync(out));
 }).listen(3041, () => console.log('Preview on http://localhost:3041'));

@@ -82,6 +82,9 @@ function ensureGameTabs_() {
       [true, 'Summit', 'Rope Team', '+2 points every time you bank a Hot Streak.', 'wings: 1', 'streak', 2, ''],
       [true, 'Summit', 'Summit Guides', 'Another +1 point for every zone you hold, every week.', 'round goals: 1', 'rent', 1, '']]],
    ['Monsters', MONSTER_HEADERS_, [
+      // Shady: the small blue hairy gremlin of schadenfreude, back from a project that never left beta.
+      [false, m0[0], m0[1], 'Shady', 'Shady is a small blue gremlin who feeds on schadenfreude: every laugh at someone else\'s stumble makes his fur stand taller. ' +
+        'He can\'t stand Freudenfreude. Every Trait Dough bill for someone doing the right thing, every cheer for someone else\'s win, shrinks him.', '', 'entries: trait_dough 150', 5, ''],
       [false, m0[0], m0[1], 'The Tardy Troll', 'It lives under the bell and feeds on late arrivals. Every Daily Poll vote is a stone thrown at its bridge.', '', 'voters: 400', 5, ''],
       [false, m1[0], m1[1], 'The Hallway Litter Beast', 'It grows with every wrapper left behind. Every positive point the school earns shrinks it.', '', 'points: 1500', 5, '']]]
   ].forEach(function (t) {
