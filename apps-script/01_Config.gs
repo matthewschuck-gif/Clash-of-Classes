@@ -132,6 +132,8 @@ const DEFAULT_SETTINGS = [
   ['SQUAD_NIGHT_PRICE', '$5', 'Entry for Squad Night if a student isn\'t competing and didn\'t buy a shirt.'],
   ['SQUAD_NIGHT_POINTS', '1', 'Squad points per student who comes to Squad Night. Sent with Clash of Classes › Send Squad Night attendance points.'],
   ['PASSPORT_POLL_VOTES', '5', 'Daily Poll votes a student needs for the 🗳️ passport stamp.'],
+  ['FUN_THAW_TIERS', '1=25, 2=50, 3=100', 'Fun Freeze: reaching the thaw goal once gets back 25% of the points frozen out, twice 50%, three times 100% ("times the goal = percent back").'],
+  ['FUN_SECOND_CHANCE_DAYS', '2', 'Fun Freeze: school days a squad\'s one second chance adds to Thaw By.'],
   ['SCHOOL_START', '', 'First day of school (yyyy-mm-dd) for the home page day counts. Blank = the date set in the site\'s admin settings.'],
   ['LAST_DAY', '', 'Last day of school (yyyy-mm-dd). Blank = the date set in the site\'s admin settings.'],
   ['SCHOOL_CALENDAR', '', 'Optional: the district calendar, as its Google Calendar ID or its iCal (.ics) link. Clash of Classes › Sync days off from the district calendar adds its days off to the School Calendar tab.'],

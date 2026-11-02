@@ -296,8 +296,6 @@
         ? '<b>' + title(st.squad) + '</b> is in <b>1st place</b>, ' + st.leadBy.toLocaleString() + ' points ahead. Keep it up!'
         : '<b>' + title(st.squad) + '</b> is in <b>' + ['1st', '2nd', '3rd', '4th'][st.place - 1] + ' place</b>, ' +
           st.behindBy.toLocaleString() + ' points behind ' + title(st.ahead) + '. Every bill helps!';
-      if (st.frozen) standing += '<br>❄️ Your squad is on a <b>point freeze</b>' + (st.frozen.until ? ' until <b>' + esc(st.frozen.until) + '</b>' : '') +
-        '. You keep every point you have, but new points won\'t count until the freeze ends.';
     }
     var tiles = [
       [me.bills, 'Trait Dough bills'], [me.billsWeek, 'Bills this week'], [me.wins, 'Trait Dough wins'],
@@ -317,7 +315,7 @@
         (r.theme && r.theme.theme ? '<div class="ms-standing">Squad theme: <b>' + esc(r.theme.theme) + '</b>' + (r.theme.meaning ? ' · ' + esc(r.theme.meaning) : '') +
           (r.theme.project ? '<br>Service project: ' + esc(r.theme.project) + (r.theme.goal ? ' (' + r.theme.progress + ' of ' + r.theme.goal + ')' : '') : '') + '</div>' : '') +
         (r.theme && r.theme.trait ? '<div class="ms-standing">Squad trait: <b>' + esc(r.theme.trait) + '</b></div>' : '') +
-        '<div class="ms-standing">' + standing + '</div></div>' +
+        '<div class="ms-standing">' + standing + '</div>' + (st && st.frozen && window.thawHtml ? window.thawHtml(st.frozen) : '') + '</div>' +
       loreCard(r.theme, me.squad) + chaptersCard(r.lore, me.squad) +
       (r.duels || []).map(function (d) { return duelCard(d, me.squad); }).join('') +
       '<div class="ms-card"><div class="ms-h">What you\'ve added</div><div class="ms-tiles">' +

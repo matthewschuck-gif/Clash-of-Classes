@@ -40,7 +40,7 @@ function standingFor_(squad, totals) {
     squad: squad, place: place + 1, total: totals[squad],
     ahead: ahead, behindBy: ahead ? totals[ahead] - totals[squad] : 0,
     leadBy: place === 0 ? totals[squad] - totals[order[1]] : 0,
-    frozen: freezeToday_(squad), // { until } while the squad can't earn points (07_Freezes.gs)
+    frozen: freezeDetail_(squad), // the freeze and its thaw progress while the squad can't earn points (14_Thaw.gs)
   };
 }
 

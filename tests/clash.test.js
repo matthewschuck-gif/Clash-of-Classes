@@ -386,11 +386,12 @@ test('point freeze: a frozen squad keeps its points but earns nothing new, from 
   assert.deepStrictEqual(J(w.squadTotals_()), totals, 'running again changes nothing');
   assert.strictEqual(w.freezeToday_('GOLD'), null, 'not frozen today (freeze ended)');
   fz.rows.push(['GREY', '2026-01-01', '', 'Open-ended', '']);
-  assert.deepStrictEqual(J(w.standingFor_('GREY', totals).frozen), { until: '' });
+  const gf = J(w.standingFor_('GREY', totals).frozen);
+  assert.deepStrictEqual([gf.until, gf.kind, gf.ready], ['', 'Peaks', false], 'blank Kind = Peaks; no sign-off yet, so not ready');
   // The leaderboard and TV get today's freezes; an admin save never stores them, and an event
   // the admin adds for GREY during the freeze is saved as 0 for GREY.
   const loaded = JSON.parse(w.clashLoad()).value;
-  assert.deepStrictEqual(loaded.freezes, [{ squad: 'GREY', until: '' }]);
+  assert.deepStrictEqual(loaded.freezes, [{ squad: 'GREY', until: '', kind: 'Peaks' }]);
   const t = login(w, 'oldpw');
   loaded.events.push({ id: 200, name: 'Admin add', type: 'event', date: '2026-10-25', note: '', pts: { BLACK: 1, GOLD: 0, GREY: 3, PURPLE: 0 } });
   w.clashSave(t, JSON.stringify(loaded), JSON.stringify({ seen: loaded.events.map(e => e.id + '|' + e.name) }));
@@ -683,6 +684,57 @@ test('school calendar: days off on an editable tab, synced from a district iCal 
   assert.strictEqual(page.countSchoolDays('2026-11-22', '2026-12-01'), 1, 'only Tue Dec 1 (Mon Nov 30 is still break)');
   assert.strictEqual(page.countSchoolDays('2026-11-02', '2026-11-06'), 5, 'a full week');
   assert.strictEqual(page.countSchoolDays('2027-02-01', '2027-02-05'), 3, 'snow days off');
+});
+
+test('thaw: a Peaks Freeze needs every group goal and staff sign-off; a Fun Freeze cashes out by tier, melts at Thaw By', () => {
+  const w = world();
+  const today = w.todayYmd_(), ago = n => w.ymdShift_(today, -n);
+  w.ensureFreezeTab_();
+  const fz = w.book.getSheetByName('Point Freezes');
+  assert.deepStrictEqual(fz.rows[0].slice(5), ['Kind', 'Thaw Goals', 'Thaw By', 'Staff Sign-off', 'Thawed', 'Second Chance']);
+  // Peaks: GOLD must earn 10 points together, 50% must pitch in, and have an advisor reflection.
+  fz.rows.push(['GOLD', ago(3), '', 'Peaks expectations as a squad', 'Mr. S', 'Peaks', 'points: 10; everyone: 50%; Squad reflection with advisor', '', false, '', '']);
+  const ev = w.book.getSheetByName('events');
+  ev.rows.push([201, 'Trait Dough: Ann L.', 'trait_dough', ago(1), '', '', 0, 12, 0, 0]);
+  // Two GOLD students, both pitched in since the freeze began (made-up names).
+  w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade', 'Trait Dough Bills', 'Bills This Week', 'Trait Dough Wins', 'Mindset Summits', 'Trail Journal Growth', 'STAR Growth Points', 'Shout-outs', 'Streak (weeks)', 'Badges', 'Last Contribution', 'Updated'],
+    ['8001111', 'Ann L.', 'Gold', '7', '', '', '', '', '', '', '', '', '', ago(1), ''], ['8002222', 'Ed P.', 'Gold', '8', '', '', '', '', '', '', '', '', '', ago(2), '']];
+  let d = J(w.freezeDetail_('GOLD'));
+  assert.strictEqual(d.kind, 'Peaks');
+  assert.deepStrictEqual(d.goals.map(g => g.met), [true, true, false], '12 frozen points, everyone pitched in, staff goal waits on sign-off');
+  assert.strictEqual(d.ready, false);
+  w.checkThaws_();
+  assert.ok(w.freezeToday_('GOLD'), 'still frozen without the sign-off');
+  fz.rows[1][8] = true;
+  assert.strictEqual(J(w.freezeDetail_('GOLD')).ready, true);
+  w.checkThaws_();
+  assert.strictEqual(w.freezeToday_('GOLD'), null, 'thawed together');
+  assert.ok(/^Thawed together/.test(fz.rows[1][9]));
+  assert.ok(!ev.rows.some(r => r[2] === 'freeze_thaw'), 'a Peaks thaw gives nothing back');
+  // Fun: GREY's goal is 5 points; 11 frozen out = past twice the goal = 50% back.
+  fz.rows.push(['GREY', ago(2), '', 'Freeze card from the Wheel', 'Mr. S', 'Fun', 'points: 5', w.ymdShift_(today, 3), false, '', '']);
+  ev.rows.push([202, 'Poll', 'daily_poll', ago(1), '', '', 0, 0, 11, 0]);
+  d = J(w.freezeDetail_('GREY'));
+  assert.deepStrictEqual([d.kind, d.pct, d.iced, d.cash], ['Fun', 50, 11, 6]);
+  assert.deepStrictEqual(d.tiers.map(t => t.reached), [true, true, false]);
+  // A General cashes out: +6 back as a freeze_thaw event, and the freeze ends.
+  w.CacheService.getScriptCache().put('hq-tok', JSON.stringify({ id: '8005678', name: 'Bo K.', squad: 'GREY' }));
+  w.clashGeneralsHq = () => '{}';
+  w.clashGeneralsCashOut('tok');
+  const back = ev.rows.find(r => r[2] === 'freeze_thaw');
+  assert.ok(back && back[8] === 6 && back[3] === today, 'GREY gets 6 points back today');
+  assert.strictEqual(w.freezeToday_('GREY'), null);
+  assert.strictEqual(J(w.squadTotals_()).GREY >= 6, true, 'the points back count (not frozen)');
+  // Fun that melts: PURPLE's Thaw By passed with nothing reached.
+  fz.rows.push(['PURPLE', ago(5), '', 'Freeze card', 'Mr. S', 'Fun', 'points: 50', ago(1), false, '', '']);
+  w.checkThaws_();
+  assert.ok(/^Melted/.test(fz.rows[3][9]) && w.freezeToday_('PURPLE') === null, 'melted at Thaw By, nothing back');
+  // Second chance moves Thaw By once.
+  fz.rows.push(['BLACK', ago(1), '', 'Freeze card', 'Mr. S', 'Fun', 'points: 50', today, false, '', '']);
+  w.CacheService.getScriptCache().put('hq-tok2', JSON.stringify({ id: '8000001', name: 'Cy R.', squad: 'BLACK' }));
+  w.clashGeneralsSecondChance('tok2');
+  assert.ok(fz.rows[4][7] > today && /^Used/.test(fz.rows[4][10]));
+  assert.throws(() => w.clashGeneralsSecondChance('tok2'), /already used/);
 });
 
 test('page files: scripts parse, no old token or Supabase key left', () => {

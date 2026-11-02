@@ -88,8 +88,7 @@
         '<div class="hq-stat"><div class="v"' + (st && !counted ? ' data-count="' + st.total + '"' : '') + '>' + (st ? st.total.toLocaleString() : '0') + '</div><div class="l">Points</div></div>' +
         '<div class="hq-stat ' + (d.notPlaced ? 'need' : 'done') + '"><div class="v">' + d.notPlaced + '</div><div class="l">Not placed</div><div class="g">of ' + d.roster.length + ' members</div></div>' +
       '</div>' +
-      (st && st.frozen ? '<div class="hq-freeze">❄️ <b>Point freeze</b>' + (st.frozen.until ? ' until ' + esc(st.frozen.until) : '') +
-        '. The squad keeps its points; new ones won\'t count until it ends. Talk to your advisor about what it takes to lift it.</div>' : '') +
+      (st && st.frozen && window.thawHtml ? window.thawHtml(st.frozen, { hq: true }) : '') + // thaw goals and, for a Fun Freeze, cash out (Pop.html)
       (tags ? '<div class="hq-tags">' + tags + '</div>' : '') + '</div>';
     var tabs = [['roster', '👥 Roster & sign-ups'], ['mayhem', '⚡ Mayhem checklist'], ['hype', '📣 Hype script'], ['meeting', '🎤 Squad meeting'], ['service', '🤝 Service project'], ['nominate', '📝 Nominate & letters'], ['shirts', '👕 Shirt designs']];
     var body = { roster: rosterView, mayhem: mayhemView, hype: hypeView, meeting: meetingView, service: serviceView, nominate: nominateView, shirts: shirtsView }[view]();
@@ -256,6 +255,14 @@
   }
 
   function wire() {
+    // Fun Freeze buttons in the thaw panel (14_Thaw.gs).
+    var cash = document.getElementById('thawCashOut'), second = document.getElementById('thawSecond');
+    if (cash) cash.onclick = function () {
+      if (!confirm('Cash out now? Your squad gets these points back and the freeze ends. You can\'t push for a bigger share after this.')) return;
+      var from = cash.getBoundingClientRect();
+      act('clashGeneralsCashOut').then(function () { if (window.craftCelebrate) window.craftCelebrate({ getBoundingClientRect: function () { return from; } }); });
+    };
+    if (second) second.onclick = function () { if (confirm('Use your squad\'s one second chance? Thaw By moves a couple of school days later.')) act('clashGeneralsSecondChance'); };
     var ds = document.getElementById('dsGo');
     if (ds) ds.onclick = function () {
       var f = document.getElementById('dsFile').files[0], err = document.getElementById('dsErr');

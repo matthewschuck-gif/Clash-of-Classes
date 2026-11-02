@@ -144,6 +144,32 @@ html[data-squad="BLACK"] .hero-sq-card[data-sq="BLACK"], html[data-squad="GOLD"]
 @keyframes popShine { from { transform: translateX(-120%); } to { transform: translateX(120%); } }
 @keyframes popShine2 { from { transform: translateX(-120%); } to { transform: translateX(120%); } }
 
+/* Thawing a freeze (14_Thaw.gs), on My Squad and in Generals HQ. A sheet of ice whose cracks
+   grow as the squad gets closer to thawing it. Peaks Freeze: cold blue, every goal plus the
+   advisor's sign-off. Fun Freeze: the same ice, with push-your-luck tiers. */
+.thaw { position: relative; overflow: hidden; margin-top: 14px; padding: 16px 16px 14px; border-radius: 16px; color: #e0f2fe;
+  background: linear-gradient(160deg, rgba(147, 197, 253, .2), rgba(14, 40, 72, .55)); border: 1px solid rgba(147, 197, 253, .4); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25); }
+.thaw-ice { position: absolute; inset: 0; pointer-events: none; opacity: .55; }
+.thaw-ice path { fill: none; stroke: #e0f2fe; stroke-width: 1.4; stroke-linecap: round; stroke-dasharray: 1; transition: stroke-dashoffset 1.4s var(--craft-spring, ease-out); }
+.thaw > :not(.thaw-ice) { position: relative; }
+.thaw-h { font-family: 'Fraunces', serif; font-weight: 900; font-size: 19px; color: #fff; }
+.thaw p { margin: 6px 0 10px; font-size: 13.5px; line-height: 1.55; color: #cfe6fb; }
+.thaw-goals { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.thaw-goals li { display: grid; grid-template-columns: 22px 1fr auto; gap: 4px 8px; align-items: center; font-size: 14px; }
+.thaw-goals .ck { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; background: rgba(255, 255, 255, .12); border: 1px solid rgba(224, 242, 254, .45); }
+.thaw-goals li.met .ck { background: #86efac; border-color: #86efac; color: #052e16; }
+.thaw-goals .n { font-family: 'DM Mono', monospace; font-size: 12px; color: #bae6fd; }
+.thaw-goals .bar { grid-column: 2 / -1; height: 6px; border-radius: 99px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+.thaw-goals .bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #7dd3fc, #e0f2fe); }
+.thaw-sign { margin-top: 10px; font-size: 13px; font-weight: 700; color: #bae6fd; }
+.thaw-sign.ok { color: #86efac; }
+.thaw-tiers { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 10px; }
+.thaw-tiers span { font-family: 'DM Mono', monospace; font-size: 12px; padding: 5px 10px; border-radius: 999px; border: 1px dashed rgba(224, 242, 254, .5); color: #cfe6fb; }
+.thaw-tiers span.on { border-style: solid; background: #e0f2fe; color: #0c4a6e; font-weight: 700; }
+.thaw-now { font-size: 14px; color: #fff; }
+.thaw-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+@media (prefers-reduced-motion: reduce) { .thaw-ice path { transition: none; } }
+
 /* Race bars grow from the left as the scoreboard scrolls in: the gap between squads is the story. */
 @supports (animation-timeline: view()) {
   .pop-race .fill { animation: popGrow linear both; animation-timeline: view(); animation-range: entry 20% cover 40%; }
@@ -217,6 +243,45 @@ html[data-squad="BLACK"] .hero-sq-card[data-sq="BLACK"], html[data-squad="GOLD"]
     timers[el.id] = setInterval(tick, 30000);
   };
   // Squad skin: remembered on this device; '' clears it. Applied at once on load.
+  // Thaw panel (14_Thaw.gs freezeDetail_), shared by My Squad and Generals HQ. opts.hq adds the
+  // Generals' Fun Freeze buttons (#thawCashOut, #thawSecond).
+  window.thawHtml = function (fz, opts) {
+    if (!fz) return '';
+    opts = opts || {};
+    var e = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var frac = function (have, need) { return need ? Math.max(0, Math.min(1, have / need)) : 0; };
+    var progress = 0, body = '';
+    if (fz.kind === 'Fun') {
+      var g = fz.goal || {}, top = fz.tiers && fz.tiers.length ? fz.tiers[fz.tiers.length - 1].need : 1;
+      progress = frac(g.have, top);
+      body = '<div class="thaw-h">🧊 Fun Freeze!</div>' +
+        '<p>Thaw goal: <b>' + e(g.text) + '</b> (' + e(g.have) + (g.type === 'everyone' ? '%' : '') + ' so far). Push your luck: the further past the goal you get, ' +
+        'the more of your frozen points come back.' + (fz.thawBy ? ' Thaw by <b>' + e(fz.thawBy) + '</b>, or the ice melts and nothing comes back.' : '') + '</p>' +
+        '<div class="thaw-tiers">' + (fz.tiers || []).map(function (t) { return '<span class="' + (t.reached ? 'on' : '') + '">' + (t.reached ? '✓ ' : '') + t.pct + '% at ' + t.need + (g.type === 'everyone' ? '%' : '') + '</span>'; }).join('') + '</div>' +
+        '<div class="thaw-now">' + (fz.pct ? 'Cash out now: <b>' + fz.pct + '%</b> of ' + fz.iced + ' frozen points = <b>+' + fz.cash + '</b>.' : fz.iced + ' points frozen out so far. Reach the goal to unlock the first cash-out.') + '</div>' +
+        (opts.hq ? '<div class="thaw-acts">' + (fz.pct ? '<button class="btn btn-gold" id="thawCashOut">Cash out +' + fz.cash + '</button>' : '') +
+          (fz.secondChanceLeft && fz.thawBy ? '<button class="btn" id="thawSecond">Use our second chance</button>' : '') + '</div>' : '');
+    } else {
+      var goals = fz.goals || [];
+      progress = goals.length ? goals.reduce(function (n, x) { return n + frac(x.have, x.need); }, 0) / goals.length : (fz.signoff ? 1 : 0);
+      body = '<div class="thaw-h">❄️ Peaks Freeze</div>' +
+        '<p>Your squad wasn\'t meeting Mountaineer Peaks expectations together. You keep every point you have, but new points won\'t count until your squad thaws this, together:</p>' +
+        (goals.length ? '<ul class="thaw-goals">' + goals.map(function (x) {
+          var staff = x.type === 'staff';
+          return '<li class="' + (x.met ? 'met' : '') + '"><span class="ck">' + (x.met ? '✓' : '') + '</span><span>' + e(x.text) + '</span>' +
+            '<span class="n">' + (staff ? (x.met ? 'done' : 'advisor checks') : e(x.have) + (x.type === 'everyone' ? '%' : '') + ' / ' + e(x.need) + (x.type === 'everyone' ? '%' : '')) + '</span>' +
+            (staff ? '' : '<span class="bar"><i style="width:' + Math.round(100 * frac(x.have, x.need)) + '%"></i></span>') + '</li>';
+        }).join('') + '</ul>' : '') +
+        '<div class="thaw-sign ' + (fz.signoff ? 'ok' : '') + '">' + (fz.signoff ? '✓ Your advisor signed off.' : goals.length ? 'Then your advisor signs off.' : 'Your advisor will share what your squad needs to do together.') + (fz.until ? ' (Ends ' + e(fz.until) + ' at the latest.)' : '') + '</div>';
+    }
+    // Three cracks across the ice; each grows with the squad's progress.
+    var off = (1 - progress).toFixed(3);
+    var ice = '<svg class="thaw-ice" viewBox="0 0 300 120" preserveAspectRatio="none" aria-hidden="true">' +
+      '<path pathLength="1" style="stroke-dashoffset:' + off + '" d="M0 30 L46 38 L70 22 L112 44 L150 36 L196 58 L240 46 L300 64"/>' +
+      '<path pathLength="1" style="stroke-dashoffset:' + off + '" d="M112 44 L120 72 L104 96 L118 120"/>' +
+      '<path pathLength="1" style="stroke-dashoffset:' + off + '" d="M196 58 L212 84 L250 92 L270 120"/></svg>';
+    return '<div class="thaw ' + (fz.kind === 'Fun' ? 'fun' : 'peaks') + '" role="status">' + ice + body + '</div>';
+  };
   window.popSkin = function (squad) {
     var sq = String(squad || '').toUpperCase().replace('GRAY', 'GREY');
     if (['BLACK', 'GOLD', 'GREY', 'PURPLE'].indexOf(sq) < 0) sq = '';

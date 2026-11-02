@@ -43,6 +43,7 @@ function publicLoad_(raw) {
   const res = loadAppData_('coc');
   if (res.value) {
     delete res.value.password;
+    maybeCheckThaws_(); // thaws a freeze whose goals are met (14_Thaw.gs), at most every 5 minutes
     res.value.freezes = activeFreezes_(); // read-only, from the Point Freezes tab
     try { res.value.schoolCalendar = schoolCalendar_(); } catch (e) { /* the page falls back to its built-in list */ }
     if (!raw && Array.isArray(res.value.events)) res.value.events = res.value.events.map(publicEvent_);
@@ -269,6 +270,7 @@ function onOpen() {
     .addItem('Send shirt sale points', 'menuSendShirtPoints_')
     .addItem('Send Squad Night attendance points', 'menuSendSquadNightPoints_')
     .addSeparator()
+    .addItem('Check thaw goals now', 'menuCheckThaws_')
     .addItem('Sync days off from the district calendar', 'menuSyncSchoolCalendar_')
     .addItem('Turn on daily calendar sync', 'menuTurnOnCalendarSync_')
     .addToUi();

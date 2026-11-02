@@ -1798,7 +1798,8 @@ function renderHomeText(){
 function freezeTag(sq, cls){
   const f=(D.freezes||[]).find(x=>x.squad===sq);
   if(!f) return '';
-  return `<div class="${cls||''}" style="color:#93c5fd;font-size:.8em;font-weight:700;margin-top:2px">❄️ Point freeze${f.until?' until '+String(f.until).replace(/[<>&"]/g,''):''}</div>`;
+  const label=f.kind==='Fun'?'🧊 Fun Freeze':'❄️ Peaks Freeze';
+  return `<div class="${cls||''}" style="color:#93c5fd;font-size:.8em;font-weight:700;margin-top:2px">${label}${f.until?' until '+String(f.until).replace(/[<>&"]/g,''):''}</div>`;
 }
 
 function renderMini(){
