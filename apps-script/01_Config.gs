@@ -100,7 +100,7 @@ function setupSpreadsheet() {
   ensureGameTabs_();
   ensureMeTabs_();
   setupHelpTab_();
-  SpreadsheetApp.getUi().alert('Done -- app_data, events, metrics, Settings and "How To Use This Sheet" tabs are set up. Clash of Classes has no separate PII tab (unlike Trail Journal), so there is no extra sharing/protection step required here. You can now add/edit rows directly in the events and metrics tabs and the site will pick them up within a few seconds. Staff directions live in the "How To Use This Sheet" tab -- start there.');
+  try { SpreadsheetApp.getUi().alert('Done -- app_data, events, metrics, Settings and "How To Use This Sheet" tabs are set up. Clash of Classes has no separate PII tab (unlike Trail Journal), so there is no extra sharing/protection step required here. You can now add/edit rows directly in the events and metrics tabs and the site will pick them up within a few seconds. Staff directions live in the "How To Use This Sheet" tab -- start there.'); } catch (e) { console.log("Setup done (no pop-up when run from the editor).") } // the editor's Run button can't show pop-ups
 }
 
 // ── SETTINGS TAB (Key | Value | Notes) ──────────────────────────────
