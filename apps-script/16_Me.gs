@@ -268,7 +268,14 @@ function mascotFor_(squad) {
   const t = sheetRows_('Squad Themes').filter(function (r) { return squadOf_(r['Squad']) === squad; })[0] || {};
   const image = String(t['Mascot Image'] || '').trim();
   return { squad: squad, animal: String(t['Mascot'] || '').trim() || MASCOTS_[squad] || '', name: String(t['Mascot Name'] || '').trim(),
-    image: /^https:\/\//i.test(image) ? image : '' };
+    image: /^https:\/\//i.test(image) ? image : mascotArt_(squad) };
+}
+
+// The official rendered mascot art (the repo's assets folder). Squad Themes › Mascot Image overrides it;
+// Settings › MASCOT_ART = OFF uses the drawn versions instead.
+const ART_BASE_ = 'https://raw.githubusercontent.com/matthewschuck-gif/Clash-of-Classes/ready-to-go-live/assets/';
+function mascotArt_(squad) {
+  return String(getSetting_('MASCOT_ART') || 'ON').toUpperCase() === 'OFF' ? '' : ART_BASE_ + 'mascot-' + String(squad).toLowerCase() + '.jpg';
 }
 
 function clashMascots() {

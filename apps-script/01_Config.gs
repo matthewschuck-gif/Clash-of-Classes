@@ -153,6 +153,7 @@ const DEFAULT_SETTINGS = [
   ['STUDENT_EMAIL_PATTERN', '', 'My Climb sign-in when the Student Board has no Email column: how a student email is built from the 800#, e.g. {800}@easdpa.org. Blank = use the Email column only.'],
   ['MY_CLIMB_HOURS', '07:00-16:00', 'My Climb is open to students only between these times (24-hour clock). Keeps it school-focused.'],
   ['MY_CLIMB_SCHOOL_DAYS', 'ON', 'ON = My Climb is open only on school days (weekdays not on the School Calendar tab). Staff previews are never locked.'],
+  ['MASCOT_ART', 'ON', 'ON = squad pages, the TV and Shady use the rendered mascot art (repo assets folder). OFF = the drawn versions. A link in Squad Themes › Mascot Image always wins. Students always customize the drawn version.'],
   ['SHIELD_LOGO_URL', 'https://raw.githubusercontent.com/matthewschuck-gif/Clash-of-Classes/ready-to-go-live/assets/shield-2026-27.png', 'The 2026-27 shield logo shown on My Climb (any https picture link).'],
   ['STUDENT_LINK', '', 'The student link (the second deployment, Anyone within EASD). The site\'s My Climb button opens it with ?page=me.'],
   ['SCHOOL_START', '', 'First day of school (yyyy-mm-dd) for the home page day counts. Blank = the date set in the site\'s admin settings.'],

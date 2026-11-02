@@ -437,7 +437,8 @@ function monster_(events) {
   const prog = monsterMeasure_(r['Defeat Goal'], from, to, events || readEventsTab_());
   const defeated = /^defeated/i.test(String(r['Status'] || '')) || (prog && prog.have >= prog.need);
   const image = String(r['Image'] || '').trim();
-  return { row: r._row, name: String(r['Monster']).trim(), story: String(r['Story'] || ''), image: /^https:\/\//i.test(image) ? image : '',
+  const art = /shady/i.test(String(r['Monster'])) && String(getSetting_('MASCOT_ART') || 'ON').toUpperCase() !== 'OFF' ? ART_BASE_ + 'monster-shady.jpg' : ''; // 16_Me.gs
+  return { row: r._row, name: String(r['Monster']).trim(), story: String(r['Story'] || ''), image: /^https:\/\//i.test(image) ? image : art,
     goal: String(r['Defeat Goal'] || ''), progress: prog, health: defeated ? 0 : prog ? Math.max(0, 1 - prog.have / Math.max(1, prog.need)) : 1,
     defeated: !!defeated, reward: Number(r['Reward']) || 0, end: to, status: String(r['Status'] || '') };
 }
