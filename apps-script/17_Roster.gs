@@ -90,3 +90,11 @@ function rosterStudent_(sid) {
   return { '800#': sid, 'Name': String(r['First Name'] || '').trim() + (last ? ' ' + last.charAt(0) + '.' : ''), 'Squad': squadOf_(r['Squad']),
     'Grade': String(r['Grade'] || ''), 'Email': String(r['Email'] || '').trim().toLowerCase() };
 }
+
+// Run from the Apps Script editor (pick importStudentRoster in the function list, then Run):
+// makes the Students tab and fills it, with no menu needed. The result shows in the Execution log.
+function importStudentRoster() {
+  const r = importRoster_();
+  console.log('Students tab: ' + r.students + ' students copied, ' + r.squads + ' with a squad, ' + r.missingSquad + ' still need one.');
+  return r;
+}
