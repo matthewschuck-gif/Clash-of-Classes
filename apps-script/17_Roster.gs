@@ -65,6 +65,12 @@ function importRoster_() {
 
 function menuImportRoster_() {
   const ui = SpreadsheetApp.getUi();
+  // No roster link yet: ask for it once and remember it on Settings.
+  if (!sheetIdFrom_(getSetting_('ROSTER_SHEET'))) {
+    const ask = ui.prompt('Student roster', 'Paste the link to the roster Sheet (800 Number, Email Address, First Name, Last Name, Grade Level):', ui.ButtonSet.OK_CANCEL);
+    if (ask.getSelectedButton() !== ui.Button.OK || !ask.getResponseText().trim()) return;
+    setSettingValue_('ROSTER_SHEET', ask.getResponseText().trim());
+  }
   try {
     const r = importRoster_();
     ui.alert('Students tab: ' + r.students + ' students copied.\n' + r.squads + ' have a squad.' +
