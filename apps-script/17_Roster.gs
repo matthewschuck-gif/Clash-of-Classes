@@ -39,7 +39,8 @@ function sheetIdFrom_(v) {
 
 // Copies the district roster in. Returns { students, squads, missingSquad }.
 function importRoster_() {
-  const id = sheetIdFrom_(getSetting_('ROSTER_SHEET'));
+  // A blank ROSTER_SHEET row (made by an older setup) falls back to the built-in roster link.
+  const id = sheetIdFrom_(getSetting_('ROSTER_SHEET')) || sheetIdFrom_((DEFAULT_SETTINGS.filter(function (d) { return d[0] === 'ROSTER_SHEET'; })[0] || [])[1]);
   if (!id) throw new Error('Put the roster Sheet\'s link in Settings › ROSTER_SHEET first.');
   const src = SpreadsheetApp.openById(id).getSheets()[0].getDataRange().getValues();
   const h = src[0].map(function (x) { return String(x).trim().toLowerCase(); });
@@ -66,7 +67,7 @@ function importRoster_() {
 function menuImportRoster_() {
   const ui = SpreadsheetApp.getUi();
   // No roster link yet: ask for it once and remember it on Settings.
-  if (!sheetIdFrom_(getSetting_('ROSTER_SHEET'))) {
+  if (!sheetIdFrom_(getSetting_('ROSTER_SHEET')) && !sheetIdFrom_((DEFAULT_SETTINGS.filter(function (d) { return d[0] === 'ROSTER_SHEET'; })[0] || [])[1])) {
     const ask = ui.prompt('Student roster', 'Paste the link to the roster Sheet (800 Number, Email Address, First Name, Last Name, Grade Level):', ui.ButtonSet.OK_CANCEL);
     if (ask.getSelectedButton() !== ui.Button.OK || !ask.getResponseText().trim()) return;
     setSettingValue_('ROSTER_SHEET', ask.getResponseText().trim());
