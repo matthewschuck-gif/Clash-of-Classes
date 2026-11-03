@@ -56,9 +56,10 @@ function boardRows_() { return sheetRows_(getSetting_('STUDENT_BOARD_TAB') || 'S
 function signedInId_() {
   const email = String(Session.getActiveUser().getEmail() || '').trim().toLowerCase();
   if (!email) throw new Error('SIGN_IN: Open My Climb with the student link, signed in with your school Google account.');
-  const row = boardRows_().filter(function (r) { return String(r['Email'] || '').trim().toLowerCase() === email; })[0];
+  const row = boardRows_().filter(function (r) { return String(r['Email'] || '').trim().toLowerCase() === email; })[0] ||
+    sheetRows_(ROSTER_TAB_).filter(function (r) { return String(r['Email'] || '').trim().toLowerCase() === email; })[0];
   if (row) return id800_(row['800#']);
-  const pattern = String(getSetting_('STUDENT_EMAIL_PATTERN') || '').trim().toLowerCase();
+  const pattern = studentEmailPattern_(); // {800}@gomounts.org: the email itself is the 800#
   if (pattern.indexOf('{800}') > -1) {
     const re = new RegExp('^' + pattern.replace(/[.*+?^$()|[\]\\]/g, '\\$&').replace('\\{800\\}', '(\\d{5,})').replace('{800}', '(\\d{5,})') + '$');
     const m = email.match(re);
@@ -199,8 +200,8 @@ function clashMeKeepTickets(names, asId, adminToken) {
   if (!keep.length) throw new Error('Keep at least one ticket.');
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
-    const row = boardRows_().filter(function (r) { return id800_(r['800#']) === id; })[0];
-    if (!row) throw new Error('You\'re not on the Student Board yet.');
+    const row = boardRows_().filter(function (r) { return id800_(r['800#']) === id; })[0] || rosterStudent_(id);
+    if (!row) throw new Error('You\'re not on the student list yet.');
     const me = { bills: row['Trait Dough Bills'], mindset: row['Mindset Summits'], shoutouts: row['Shout-outs'], star: row['STAR Growth Points'],
       ambassador: row['Ambassador Buddies'], streak: row['Streak (weeks)'] };
     const held = sheetRows_('Student Tickets').filter(function (t) { return id800_(t['800#']) === id && String(t['Status'] || 'Holding') === 'Holding'; }).length;

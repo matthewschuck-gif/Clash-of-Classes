@@ -53,13 +53,19 @@ function clashMyPage(id) {
 
   const want = String(id || '').replace(/\D/g, '');
   if (want.length < 5) throw new Error('Type your 800 number.');
+  // Climb-er's Student Board first (it has the counts); the Students tab (17_Roster.gs) for anyone
+  // it doesn't have yet, with every count at 0.
   const sheet = getSheetSafe_(getSetting_('STUDENT_BOARD_TAB') || 'Student Board');
-  if (!sheet || sheet.getLastRow() < 2) throw new Error('My Squad isn\'t set up yet.');
-  const data = sheet.getDataRange().getValues();
+  const data = sheet && sheet.getLastRow() > 1 ? sheet.getDataRange().getValues() : [[]];
   const h = data[0].map(function (x) { return String(x).trim(); });
-  const row = data.slice(1).filter(function (r) { return String(r[0]).replace(/\D/g, '') === want; })[0];
-  if (!row) throw new Error('That 800 number isn\'t on the list. Check it, or ask your homeroom teacher.');
-  const get = function (name) { const i = h.indexOf(name); return i > -1 ? row[i] : ''; };
+  let row = data.slice(1).filter(function (r) { return String(r[0]).replace(/\D/g, '') === want; })[0];
+  let get = function (name) { const i = h.indexOf(name); return i > -1 ? row[i] : ''; };
+  if (!row) {
+    const r = rosterStudent_(want);
+    if (!r) throw new Error('That 800 number isn\'t on the list. Check it, or ask your homeroom teacher.');
+    if (!r.Squad) throw new Error('You\'re on the list, but your squad isn\'t set yet. Ask your homeroom teacher.');
+    row = r; get = function (name) { return r[name] === undefined ? '' : r[name]; };
+  }
   const num = function (name) { return Number(get(name)) || 0; };
   const squad = String(get('Squad')).toUpperCase().replace('GRAY', 'GREY');
   const me = {

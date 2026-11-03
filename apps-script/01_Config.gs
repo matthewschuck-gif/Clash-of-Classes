@@ -99,6 +99,7 @@ function setupSpreadsheet() {
   ensureSchoolCalendarTab_();
   ensureGameTabs_();
   ensureMeTabs_();
+  ensureRosterTab_();
   setupHelpTab_();
   try { SpreadsheetApp.getUi().alert('Done -- app_data, events, metrics, Settings and "How To Use This Sheet" tabs are set up. Clash of Classes has no separate PII tab (unlike Trail Journal), so there is no extra sharing/protection step required here. You can now add/edit rows directly in the events and metrics tabs and the site will pick them up within a few seconds. Staff directions live in the "How To Use This Sheet" tab -- start there.'); } catch (e) { console.log("Setup done (no pop-up when run from the editor).") } // the editor's Run button can't show pop-ups
 }
@@ -150,7 +151,8 @@ const DEFAULT_SETTINGS = [
   ['TICKETS_HELD', '3', 'Destination tickets a student can hold at once.'],
   ['TICKET_CHOICES', '3', 'Destination tickets offered per draw (the student keeps at least one).'],
   ['AVATAR_GEAR', 'boots=bills>=1; pack=bills>=5; rope=mindset>=1; lantern=shoutouts>=1; compass=star>=1; scarf=streak>=3; badge=tickets>=3; flag=passport>=1', 'My Climb: gear a student\'s climber earns. gear=thing>=number; things: bills, mindset, shoutouts, star, streak, buddy, tickets, passport.'],
-  ['STUDENT_EMAIL_PATTERN', '', 'My Climb sign-in when the Student Board has no Email column: how a student email is built from the 800#, e.g. {800}@easdpa.org. Blank = use the Email column only.'],
+  ['ROSTER_SHEET', '', 'The district roster Sheet (link or ID) with 800 Number, Email Address, First Name, Last Name, Grade Level. Clash of Classes › Import student roster copies it to the Students tab.'],
+  ['STUDENT_EMAIL_PATTERN', '{800}@gomounts.org', 'My Climb sign-in when the Student Board has no Email column: how a student email is built from the 800#, e.g. {800}@easdpa.org. Blank = use the Email column only.'],
   ['MY_CLIMB_HOURS', '07:00-16:00', 'My Climb is open to students only between these times (24-hour clock). Keeps it school-focused.'],
   ['MY_CLIMB_SCHOOL_DAYS', 'ON', 'ON = My Climb is open only on school days (weekdays not on the School Calendar tab). Staff previews are never locked.'],
   ['MASCOT_ART', 'ON', 'ON = squad pages, the TV and Shady use the rendered mascot art (repo assets folder). OFF = the drawn versions. A link in Squad Themes › Mascot Image always wins. Students always customize the drawn version.'],

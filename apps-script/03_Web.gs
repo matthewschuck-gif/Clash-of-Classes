@@ -276,6 +276,7 @@ function onOpen() {
     .addSeparator()
     .addItem('Check thaw goals now', 'menuCheckThaws_')
     .addSeparator()
+    .addItem('Import student roster', 'menuImportRoster_')
     .addItem('Turn on game awards', 'menuTurnOnGame_')
     .addItem('Turn off game awards', 'menuTurnOffGame_')
     .addItem('Show or hide Monster of the Month', 'menuToggleMonster_')

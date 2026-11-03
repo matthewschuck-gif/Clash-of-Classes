@@ -862,6 +862,33 @@ test('game layer: map claims, wing bonus, chance cards + Flip Three, Hot Streak,
   assert.ok(!/8002222|ed\.p@/.test(w.clashGame()));
 });
 
+test('roster: the Students tab copies the district roster, keeps squads, and lets students sign in by 800#@gomounts.org', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureMeTabs_();
+  w.setSettingValue_('ROSTER_SHEET', 'https://docs.google.com/spreadsheets/d/ROSTER_SAMPLE_ID_0000000000/edit');
+  // Made-up students in the district roster's layout.
+  const roster = makeSheet('Roster', [['800 Number', 'Email Address', 'First Name', 'Last Name', 'Grade Level'],
+    ['8090001', '8090001@gomounts.org', 'Ada', 'Lark', '7'], ['8090002', '', 'Ben', 'Moss', '8'], ['8090003', '8090003@gomounts.org', 'Cy', 'Pine', '8']]);
+  w.SpreadsheetApp.openById = id => { assert.strictEqual(id, 'ROSTER_SAMPLE_ID_0000000000'); return { getSheets: () => [roster] }; };
+  w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade', 'Trait Dough Bills'], ['8090003', 'Cy P.', 'Grey', '8', '4']];
+  let r = J(w.importRoster_());
+  assert.deepStrictEqual([r.students, r.squads, r.missingSquad], [3, 1, 2], 'Cy gets GREY from the Student Board');
+  const tab = w.book.getSheetByName('Students');
+  assert.strictEqual(tab.rows[2][4], '8090002@gomounts.org', 'a missing email is built from the 800#');
+  tab.rows[1][5] = 'GOLD'; // staff type Ada's squad
+  r = J(w.importRoster_());
+  assert.strictEqual(tab.rows[1][5], 'GOLD', 'typed squads survive a re-import');
+  // Ada isn't on the Student Board yet: My Squad still works from the Students tab.
+  const page = JSON.parse(w.clashMyPage('8090001'));
+  assert.deepStrictEqual([page.me.name, page.me.squad, page.me.bills], ['Ada L.', 'GOLD', 0]);
+  assert.throws(() => w.clashMyPage('8090002'), /squad isn't set yet/);
+  // My Climb sign-in: the school email is the 800#.
+  w.setSettingValue_('MY_CLIMB_HOURS', '00:00-23:59'); w.setSettingValue_('MY_CLIMB_SCHOOL_DAYS', 'OFF');
+  w.Session.getActiveUser = () => ({ getEmail: () => '8090001@gomounts.org' });
+  assert.strictEqual(w.signedInId_(), '8090001');
+  assert.strictEqual(JSON.parse(w.clashMe()).me.squad, 'GOLD');
+});
+
 test('page files: scripts parse, no old token or Supabase key left', () => {
   for (const f of ['App.html', 'Widgets.html', 'Index.html', 'Student.html', 'Generals.html', 'Pop.html']) {
     const h = fs.readFileSync(path.join(dir, f), 'utf8');
