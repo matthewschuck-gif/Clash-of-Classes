@@ -19,6 +19,7 @@
  *   The building layout is areas only (gyms, cafeteria, halls): never room numbers, doors or exits.
  * MAP BATTLES tab: every capture, shown under the map on the site, HQ and the TV.
  * The admin panel's Map tab (MapEditor.html) edits zones and rules by dragging and picking.
+ * HOW THE MAP WORKS tab: the staff guide to all of this, rewritten on every Run setup.
  */
 
 const RULE_HEADERS_ = ['Show', 'Rule', 'How It Works', 'Method', 'Counts', 'Window Days', 'Must Border', 'Defense %', 'Far Attack %'];
@@ -306,4 +307,127 @@ function applyBuildingMap_() {
   const sh = getSheetSafe_('Conquest Rules');
   BUILDING_RULES_.forEach(function (r) { if (!have[r[1].toLowerCase()]) sh.appendRow(r); });
   writeRowsByHeader_(getSheetSafe_('Map Zones'), buildingZoneRows_());
+  setupMapGuideTab_();
+}
+
+// ── THE "HOW THE MAP WORKS" TAB ─────────────────────────────────────
+// Staff guide to the map, the ways to conquer and what owning pays. Rewritten every Run setup
+// (and by the building-map menu), like "How To Use This Sheet", so it never drifts from the code.
+const MAP_GUIDE_TAB_ = 'How The Map Works';
+
+function setupMapGuideTab_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(MAP_GUIDE_TAB_);
+  if (!sheet) sheet = ss.insertSheet(MAP_GUIDE_TAB_);
+  else sheet.clear();
+  const H = '## '; // section heading marker (stripped below and bolded)
+  const rows = [
+    'Clash of Classes -- How The Map Works (zones, ways to conquer, what owning pays)',
+    '',
+    'The school map is a Risk-style game laid on top of the points squads already earn. Each area of the',
+    'building is a zone. A squad takes a zone by earning the most of the right kind of points; holding zones',
+    'pays bonus points every week. Nothing on the map ever takes points away.',
+    '',
+    H + 'THE EASY WAY: THE ADMIN PANEL',
+    'clashofclasses.org -> Admin -> 🗺️ Map edits everything on this page without touching the Sheet:',
+    '- Drag a zone to move it. Drag its bottom-right corner to resize it. Zones snap to a grid.',
+    '- Click a zone to rename it, set its wing, pick how it is won, set its weekly points, tick it as the',
+    '  Summit, or hide it.',
+    '- Below the map, "Ways to conquer" is the Conquest Rules tab: edit, add or delete rules there.',
+    '- Click "Save map" when you are done. Nothing changes until you save.',
+    'Everything below can also be typed straight into the tabs; both ways stay in sync.',
+    '',
+    H + 'THE TABS',
+    'Map Zones -- one row per zone:',
+    '     Show          -- untick to hide a zone without deleting it.',
+    '     Zone          -- the name students see (e.g. Cafeteria, 60s Hall). Must be unique.',
+    '     Wing          -- a color set. Hold every zone in a wing for the wing bonus (see WHAT OWNING PAYS).',
+    '     Summit        -- tick ONE zone. Its holder is King of the Mountain and it pays double.',
+    '     Conquer By    -- the name of a rule on the Conquest Rules tab. Blank = the old way (Claimed By).',
+    '     Claimed By    -- only used when Conquer By is blank: event types or words; * = every point.',
+    '     Weekly Points -- what the holder earns each week.',
+    '     X, Y, W, H    -- where the zone sits on the grid and how big it is (the Map editor sets these).',
+    '     Borders       -- zones it connects to that do not touch on the map, comma-separated (a hallway).',
+    '     Holder, Since -- filled in automatically. Only type a Holder on a Staff Pick zone.',
+    'Conquest Rules -- one row per way to win a zone (see HOW A ZONE CHANGES HANDS).',
+    'Map Battles -- every capture, written automatically. Shown under the map. Do not type here.',
+    'Engine Powers -- lasting powers a squad unlocks; the "rent" ones pay extra for every zone held.',
+    'Chance Cards / Squad Hand -- the Summit Fever card doubles one week of territory points.',
+    '',
+    H + 'HOW A ZONE CHANGES HANDS (THE CONQUEST RULES TAB)',
+    'Each zone picks one rule. Each rule row has:',
+    '     Show          -- untick to switch a rule off (zones using it go back to the old way).',
+    '     Rule          -- its name. This is what Conquer By on Map Zones points to.',
+    '     How It Works  -- one sentence students see under the map ("How to win each zone").',
+    '     Method        -- most points  = most points from the Counts events in the window.',
+    '                      most entries = most TIMES a squad earned from those events (rewards turnout,',
+    '                                     not one big score).',
+    '                      staff pick   = never changes on its own. Type the squad in Holder on Map Zones',
+    '                                     (or pick "Held by" in the Map editor).',
+    '     Counts        -- which points count: event types or words in the event name, comma-separated.',
+    '                      * = every point. Common types: trait_dough, daily_poll, star_growth,',
+    '                      mountaineer_mindset, duel_bonus, mayhem_week, mayhem, shout, lunch.',
+    '                      Game bonuses (territory, chance cards, etc.) and private behavior rows never count.',
+    '     Window Days   -- how many days back it looks. Blank = CLAIM_DAYS on the Settings tab (14).',
+    '     Must Border   -- the Risk rule. Tick it to make the zone a Siege zone (see below).',
+    '     Defense %     -- the holder\'s edge: a challenger needs this much MORE than the holder. 0 = just more.',
+    '     Far Attack %  -- Siege zones only: how much more a squad from farther away needs. Blank = only',
+    '                      squads next door can attack.',
+    'The holder always keeps a zone on a tie or when nobody scored (king of the hill).',
+    'Claims are checked about every 10 minutes (and on the hourly game check).',
+    '',
+    H + 'SIEGE ZONES (MUST BORDER) -- RISK RULES',
+    '- Zones are neighbors when their boxes touch on the map, or when one lists the other in Borders.',
+    '- A squad that holds a zone next door attacks with the Defense % bar.',
+    '- A squad with NO zones at all counts as next door everywhere, so nobody is ever shut out.',
+    '- A squad from farther away can still take it with the Far Attack % bar (if Far Attack % is filled in).',
+    '- On an open zone (nobody holds it), a squad from farther away must beat the best squad next door by',
+    '  the Far Attack %.',
+    '- It works both ways: whoever holds the zone defends with the same bars, so a zone taken from afar can',
+    '  be taken back by a neighbor with just the Defense % edge.',
+    'Example (Siege: Defense 25%, Far Attack 75%). GOLD holds the 60s Hall with 40 points this window.',
+    '     PURPLE holds the 50s Hall next door and has 52 points -> 52 is more than 40 x 1.25 = 50 -> PURPLE takes it.',
+    '     BLACK holds nothing next door and has 65 points -> it needs more than 40 x 1.75 = 70 -> not yet.',
+    '',
+    H + 'WHAT OWNING PAYS (THE MULTIPLIERS)',
+    'Once a week, each squad gets one "Territory" row on the events tab for the week that just ended:',
+    '     Weekly Points     -- every zone held pays its Weekly Points (Map Zones column). Change per zone.',
+    '     The Summit        -- the zone with Summit ticked pays 2x its Weekly Points. (2x is fixed.)',
+    '     Wing bonus        -- hold EVERY zone in a wing and that wing\'s weekly points pay again.',
+    '                          Settings -> WING_MULTIPLIER (2 = the wing pays double in total, 3 = triple).',
+    '     Engine powers     -- Engine Powers rows with Effect "rent" add Value points per zone held, once',
+    '                          the squad unlocks them (Unlock When, e.g. "zones: 2").',
+    '     Summit Fever card -- a squad that plays it gets that week\'s territory total doubled. (2x is fixed.)',
+    'Territory points only go out when Clash of Classes -> Turn on game awards is ON. Until then the map',
+    'still shows who holds what, but sends no points.',
+    'Example: GOLD holds the Cafeteria (Summit, 5), Music Wing (3) and Auditorium (3) = The Arts wing.',
+    '     5 x 2 + 3 + 3 = 16, plus The Arts again (3 + 3) at WING_MULTIPLIER 2 = 22,',
+    '     plus a +1-per-zone engine power x 3 zones = 25 points that week.',
+    '',
+    H + 'SETTINGS TAB KEYS FOR THE MAP',
+    '     GAME_MAP          -- OFF hides the map everywhere.',
+    '     GAME_AWARDS       -- ON sends the weekly territory points (use the menu to turn it on or off).',
+    '     CLAIM_DAYS        -- the window for zones and rules with no Window Days.',
+    '     WING_MULTIPLIER   -- the wing bonus (above).',
+    '     MAP_STYLE         -- puzzle (rough jigsaw cuts, the default), clean (plain areas) or mountain.',
+    '',
+    H + 'HOW TO...',
+    '- Add a new way to conquer: add a row on Conquest Rules (or "+ Way to conquer" in the Map editor),',
+    '  then pick it in a zone\'s Conquer By.',
+    '- Rename a zone or move it: use the Map editor (renaming in the editor keeps the holder).',
+    '- Connect two zones that do not touch: type the other zone\'s name in Borders.',
+    '- Hand a zone to a squad yourself: set its rule to Staff Pick and type the squad in Holder.',
+    '- Start over with the building layout: Clash of Classes -> Use the building map (holders start fresh;',
+    '  your rules are kept).',
+    '',
+    H + 'KEEP IT SAFE',
+    'The map shows areas of the building only (gyms, cafeteria, halls). Never add room numbers, doors,',
+    'exits or anything that maps how to move through the building.',
+  ];
+  const values = rows.map(function (r) { return [r.indexOf(H) === 0 ? r.slice(H.length) : r]; });
+  sheet.getRange(1, 1, values.length, 1).setValues(values);
+  sheet.getRange(1, 1).setFontWeight('bold').setFontSize(14).setFontColor('#490e6f');
+  rows.forEach(function (r, i) { if (r.indexOf(H) === 0) sheet.getRange(i + 1, 1).setFontWeight('bold').setFontColor('#490e6f'); });
+  sheet.setColumnWidth(1, 900);
+  sheet.setFrozenRows(1);
 }

@@ -965,6 +965,10 @@ test('conquest: rules from the Sheet, Risk borders + defense edge, staff pick, e
   assert.ok(old.rows.slice(1).some(r => r[1] === 'Cafeteria'));
   assert.ok(!old.rows.slice(1).some(r => r[1] === 'The Summit'));
   assert.ok(w2.book.getSheetByName('Conquest Rules').rows.some(r => r[1] === 'My Rule'));
+  // The staff guide tab comes with it, headings without their marker.
+  const guide = w2.book.getSheetByName('How The Map Works').rows.map(r => r[0]);
+  assert.ok(guide.includes('WHAT OWNING PAYS (THE MULTIPLIERS)') && guide.some(t => /WING_MULTIPLIER/.test(t)) && guide.some(t => /Far Attack %/.test(t)));
+  assert.ok(!guide.some(t => /^## /.test(t)));
 });
 
 test('roster: the Students tab copies the district roster, keeps squads, and lets students sign in by 800#@gomounts.org', () => {
