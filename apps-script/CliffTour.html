@@ -123,16 +123,16 @@
   }
   window.CliffTour = { init: init, start: start, SPOTLIGHTS: SPOTLIGHTS };
 
-  // The main site: load the "site" tour once the home page is up (not on the TV screen).
-  if (document.getElementById('page-home') && !/[?&](tv|kiosk)\b/i.test(location.search)) {
-    var boot = function () {
-      if (!window.gasRun_) return;
-      window.gasRun_('clashTour', 'site').then(function (t) {
-        t = typeof t === 'string' ? JSON.parse(t) : t;
-        init(t, { site: true, delay: 2500, go: function (name) { if (window.goTo && window.__currentPage !== name) window.goTo(name); return new Promise(function (ok) { setTimeout(ok, 400); }); } });
-      }).catch(function () {});
-    };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 2000); }); else setTimeout(boot, 2000);
+  // The main site: load the "site" tour once the home page is up (not on the TV screen). This file
+  // loads in the <head>, so wait for the page before looking for it.
+  function boot(tries) {
+    if (!document.getElementById('page-home') || /[?&](tv|kiosk)/i.test(location.search) || document.getElementById('me')) return;
+    if (!window.gasRun_) { if (tries < 20) setTimeout(function () { boot(tries + 1); }, 500); return; }
+    window.gasRun_('clashTour', 'site').then(function (t) {
+      t = typeof t === 'string' ? JSON.parse(t) : t;
+      init(t, { site: true, delay: 2500, go: function (name) { if (window.goTo && window.__currentPage !== name) window.goTo(name); return new Promise(function (ok) { setTimeout(ok, 400); }); } });
+    }).catch(function () {});
   }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(function () { boot(0); }, 1500); }); else setTimeout(function () { boot(0); }, 1500);
 })();
 </script>
