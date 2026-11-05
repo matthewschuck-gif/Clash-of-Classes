@@ -971,6 +971,70 @@ test('conquest: rules from the Sheet, Risk borders + defense edge, staff pick, e
   assert.ok(!guide.some(t => /^## /.test(t)));
 });
 
+test('evolution: Climb XP stages, male/female art, boosts at each stage (different columns), weekly boost points, perks', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureMeTabs_(); w.ensurePollTabs_();
+  const tok = login(w, 'oldpw');
+  // Made-up student. XP = bills 4 + summit 5 + STAR 2x1 + streak 2x2 = 15: stage 1.
+  const board = w.book.insertSheet('Student Board');
+  board.rows = [['800#', 'Name', 'Squad', 'Grade', 'Trait Dough Bills', 'Bills This Week', 'Trait Dough Wins', 'Mindset Summits', 'Trail Journal Growth', 'STAR Growth Points', 'Shout-outs', 'Ambassador Buddies', 'Streak (weeks)', 'Badges', 'Last Contribution', 'Updated', 'Attendance %', 'Email'],
+    ['8001111', 'Ann L.', 'Gold', '7', '4', '0', '0', '1', '', '2', '0', '0', '2', '', '', '', '96', 'ann.l@easdpa.org']];
+  const set = (col, v) => { board.rows[1][board.rows[0].indexOf(col)] = v; };
+  let c = JSON.parse(w.clashMe('8001111', tok)).creature;
+  assert.strictEqual(c.xp, 15); assert.strictEqual(c.stage, 1);
+  assert.deepStrictEqual(c.next, { stage: 2, name: 'Ridge', need: 15, at: 30 });
+  assert.ok(/creatures\/gold-1\.jpg$/.test(c.art[0].m) && /creatures\/gold-1f\.jpg$/.test(c.art[0].f));
+  assert.deepStrictEqual(c.choices, {}, 'no boosts before stage 2');
+  assert.throws(() => w.clashMePickBoost(2, 'Trait Dough', '8001111', tok), /hasn't reached/);
+  // Stage 2 at 30 XP: pick a x1.25 boost. Columns not on the Student Board are not offered.
+  set('Trait Dough Bills', '20');
+  c = JSON.parse(w.clashMe('8001111', tok)).creature;
+  assert.strictEqual(c.stage, 2);
+  const offered = c.choices[2].map(b => b.boost);
+  assert.ok(offered.includes('Trait Dough') && offered.includes('Poll Turnout') && offered.includes('Attendance'));
+  assert.ok(!offered.includes('Behavior') && !offered.includes('Student of the Month'), 'no Student Board column yet = not offered');
+  assert.strictEqual(c.choices[2].find(b => b.boost === 'Trait Dough').mult, 1.25);
+  c = JSON.parse(w.clashMePickBoost(2, 'Trait Dough', '8001111', tok)).creature;
+  assert.deepStrictEqual(c.boosts.map(b => [b.stage, b.boost, b.mult]), [[2, 'Trait Dough', 1.25]]);
+  assert.throws(() => w.clashMePickBoost(2, 'Attendance', '8001111', tok), /already picked/);
+  // Stage 3: a second, different boost at x2 (Trait Dough is taken).
+  set('Trait Dough Bills', '90');
+  c = JSON.parse(w.clashMe('8001111', tok)).creature;
+  assert.strictEqual(c.stage, 3); assert.strictEqual(c.next, null);
+  assert.ok(!c.choices[3].some(b => b.boost === 'Trait Dough'));
+  c = JSON.parse(w.clashMePickBoost(3, 'Attendance', '8001111', tok)).creature;
+  assert.strictEqual(c.boosts.length, 2);
+  // Weekly payout: Trait Dough grew 70 bills x 1 x 0.25 = 17.5, Attendance 96% >= 95 pays 4 x (2 - 1) = 4: 21.5 -> 22 for GOLD.
+  const ev = w.book.getSheetByName('events');
+  w.props['boost-paid-week'] = 'old';
+  w.payBoosts_();
+  const row = ev.rows.find(r => r[2] === 'evolution_boost');
+  assert.ok(row, 'one Evolution boosts row');
+  assert.strictEqual(row[7], 22); assert.ok(!/Ann/.test(row.join(' ')), 'no student names on the points row');
+  w.payBoosts_();
+  assert.strictEqual(ev.rows.filter(r => r[2] === 'evolution_boost').length, 1, 'once a week');
+  w.props['boost-paid-week'] = 'old2';
+  w.payBoosts_();
+  assert.strictEqual(ev.rows.filter(r => r[2] === 'evolution_boost').length, 2, 'next week: attendance pays again, Trait Dough only on new bills');
+  assert.strictEqual(ev.rows.filter(r => r[2] === 'evolution_boost')[1][7], 4);
+  assert.strictEqual(J(w.pointsBy_(w.readEventsTab_(), '2000-01-01', '2999-12-31', e => e.type === 'evolution_boost')).points.GOLD, 0, 'boost points never count toward map claims');
+  // Look: female art, show an earlier stage; can't show a stage not reached.
+  c = JSON.parse(w.clashMeSaveCreature({ form: 'f', show: 1 }, '8001111', tok)).creature;
+  assert.strictEqual(c.form, 'f'); assert.strictEqual(c.show, 1);
+  // Perks: equip an unlocked one, tap again to take it off; locked ones refuse.
+  c = JSON.parse(w.clashMeSaveCreature({ perk: 'Gold Rim' }, '8001111', tok)).creature;
+  assert.strictEqual(c.perks.equipped.frame, 'Gold Rim');
+  c = JSON.parse(w.clashMeSaveCreature({ perk: 'Gold Rim' }, '8001111', tok)).creature;
+  assert.strictEqual(c.perks.equipped.frame, undefined);
+  assert.throws(() => w.clashMeSaveCreature({ perk: 'Iron Streak' }, '8001111', tok), /haven't unlocked/);
+  assert.ok(c.perks.list.find(p => p.perk === 'Peak Legend').open);
+  // The old look saver keeps the creature's choices.
+  w.clashMeSaveLook({ fur: 1 }, '8001111', tok);
+  assert.strictEqual(JSON.parse(w.clashMe('8001111', tok)).creature.form, 'f');
+  // Cliff is on every page.
+  assert.ok(/cliff\.png$/.test(JSON.parse(w.clashMe('8001111', tok)).cliff.image));
+});
+
 test('roster: the Students tab copies the district roster, keeps squads, and lets students sign in by 800#@gomounts.org', () => {
   const w = world();
   w.ensureSettings_(); w.ensureGameTabs_(); w.ensureMeTabs_();

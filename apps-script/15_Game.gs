@@ -30,7 +30,7 @@
  *   the Month"; an older Monsters tab is renamed, and the code still calls it monster inside.)
  */
 
-const GAME_TYPES_ = ['territory', 'chance', 'streak_bank', 'round_goal', 'engine', 'monster', 'destination_ticket', 'freeze_thaw'];
+const GAME_TYPES_ = ['territory', 'chance', 'streak_bank', 'round_goal', 'engine', 'monster', 'destination_ticket', 'freeze_thaw', 'evolution_boost'];
 const MAP_HEADERS_ = ['Show', 'Zone', 'Wing', 'Summit', 'Claimed By', 'Weekly Points', 'X', 'Y', 'W', 'H', 'Holder', 'Since', 'Conquer By', 'Borders'];
 const CARD_HEADERS_ = ['Show', 'Card', 'Text', 'Effect', 'Value', 'Copies'];
 const HAND_HEADERS_ = ['Squad', 'Card', 'Effect', 'Value', 'Drawn', 'Status', 'Note'];
@@ -489,6 +489,8 @@ function gameTick() {
       if (rsheet) rsheet.getRange(g.row, ROUND_HEADERS_.indexOf('Status') + 1, 1, 2).setValues([['Awarded ' + todayYmd_(), res.join('; ')]]);
       lines.push('Round goal ' + g.goal + ': ' + res.join(', '));
     });
+    // Evolution boosts (19_Evolve.gs), once a week.
+    Array.prototype.push.apply(lines, payBoosts_());
     // The monster, once defeated.
     const mon = monster_(events);
     if (mon && mon.defeated && !/defeated/i.test(mon.status)) {

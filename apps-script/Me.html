@@ -92,6 +92,72 @@ body { margin: 0; background: #0d0518; color: var(--text, #f5f0ff); font-family:
 .me-skel { height: 160px; border-radius: 22px; background: linear-gradient(100deg, rgba(255,255,255,.04) 30%, rgba(255,255,255,.09) 50%, rgba(255,255,255,.04) 70%); background-size: 300% 100%; animation: meShimmer 1.4s linear infinite; margin-bottom: 14px; }
 @keyframes meShimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
 @media (prefers-reduced-motion: reduce) { .me-skel { animation: none; } .me-bars i { animation: none; } }
+/* Creature (19_Evolve.gs): the student's rendered squad animal, three stages, male or female. */
+.me-cr { position: relative; border-radius: 20px; overflow: hidden; aspect-ratio: 1; background: #24113f; box-shadow: 0 18px 40px -22px #000, inset 0 0 0 1px rgba(255,255,255,.06); }
+.me-cr img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.me-cr .stg { position: absolute; left: 10px; bottom: 10px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; background: rgba(13,5,24,.72); color: #fff; padding: 4px 9px; border-radius: 999px; }
+.me-hero { position: relative; overflow: hidden; }
+.me-hero .me-cr { animation: meFloat 5s ease-in-out infinite; }
+@keyframes meFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+/* Cliff, the Mountaineer: always on the trail with them. */
+.me-cliff { position: absolute; right: 8px; bottom: 0; height: 190px; width: auto; pointer-events: none; filter: drop-shadow(0 10px 18px rgba(0,0,0,.45)); transform-origin: bottom center; animation: meCliff 6s ease-in-out infinite; }
+@keyframes meCliff { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-1.5deg); } }
+.me-hero .me-say { position: absolute; right: 150px; bottom: 120px; max-width: 220px; }
+.me-hero > div:nth-child(2) { padding-right: 150px; }
+.me-say { position: relative; background: #fff; color: #1a0b2e; font-size: 13.5px; font-weight: 700; line-height: 1.4; padding: 9px 12px; border-radius: 14px; box-shadow: 0 8px 20px -10px #000; }
+.me-say b { display: block; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #6b21a8; margin-bottom: 2px; }
+.me-hero .me-say::after { content: ''; position: absolute; right: -7px; bottom: 14px; border: 8px solid transparent; border-left-color: #fff; border-right: 0; }
+.me-guide { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: center; margin: 4px 0 14px; }
+.me-guide img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; object-position: 50% 6%; background: radial-gradient(circle at 50% 30%, #6b3fa0, #24113f); border: 2px solid var(--squad, #bb8ef5); }
+.me-guide .me-say::after { content: ''; position: absolute; left: -7px; top: 18px; border: 8px solid transparent; border-right-color: #fff; border-left: 0; }
+@media (max-width: 720px) { .me-cliff { height: 130px; right: 0; } .me-hero .me-say { display: none; } .me-hero > div:nth-child(2) { padding-right: 90px; } }
+@media (max-width: 420px) { .me-cliff { display: none; } .me-hero > div:nth-child(2) { padding-right: 0; } }
+.me-evo { display: grid; grid-template-columns: minmax(180px, 280px) 1fr; gap: 18px; align-items: start; }
+.me-stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.me-st { font: inherit; padding: 0; border: 2px solid transparent; border-radius: 14px; background: none; cursor: pointer; color: #e9ddff; text-align: center; }
+.me-st .me-cr { border-radius: 12px; }
+.me-st span { display: block; font-size: 12px; font-weight: 700; margin-top: 4px; }
+.me-st.on { border-color: var(--pop-gold, #ffe100); }
+.me-st.locked { cursor: default; }
+.me-st.locked img { filter: brightness(.18) blur(5px); }
+.me-st.locked .me-cr::after { content: '🔒'; position: absolute; inset: 0; display: grid; place-items: center; font-size: 22px; }
+.me-xp { margin: 4px 0 14px; }
+.me-xp .bar { height: 12px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+.me-xp .bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--squad, #bb8ef5), var(--pop-gold, #ffe100)); transform-origin: left; animation: popGrow 1s var(--craft-out, ease-out) both; }
+.me-xp .t { display: flex; justify-content: space-between; font-family: 'DM Mono', monospace; font-size: 12px; color: #cbb6ef; margin-top: 4px; }
+.me-seg { display: inline-flex; border-radius: 999px; background: rgba(255,255,255,.06); padding: 3px; gap: 2px; margin-bottom: 14px; }
+.me-seg button { font: inherit; font-weight: 700; font-size: 13px; border: 0; border-radius: 999px; padding: 7px 14px; background: none; color: #cbb6ef; cursor: pointer; }
+.me-seg button[aria-pressed="true"] { background: var(--squad, #bb8ef5); color: #12081f; }
+.me-boosts { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 8px; }
+.me-boost { text-align: left; font: inherit; color: #fff; padding: 12px; border-radius: 14px; background: rgba(255,225,0,.08); border: 1px solid rgba(255,225,0,.35); }
+.me-boost b { display: block; font-size: 15px; }
+.me-boost em { font-style: normal; font-family: 'DM Mono', monospace; font-weight: 700; color: var(--pop-gold, #ffe100); float: right; }
+.me-boost p { margin: 4px 0 0; font-size: 12.5px; color: #e9ddff; line-height: 1.4; }
+button.me-boost { cursor: pointer; background: rgba(255,255,255,.04); border: 1px dashed rgba(255,225,0,.5); }
+button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,0,.12); }
+@media (max-width: 640px) { .me-evo { grid-template-columns: 1fr; } .me-evo > :first-child { max-width: 260px; margin: 0 auto; width: 100%; } }
+/* Perks (19_Evolve.gs): titles, frames, scenes, rewards. */
+.me-perks { display: grid; gap: 10px; }
+.me-perk-row > b { display: block; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #b09ec8; margin-bottom: 6px; }
+.me-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.me-chip { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 11px; border-radius: 999px; border: 1px solid rgba(187,142,245,.35); background: rgba(255,255,255,.05); color: #e9ddff; cursor: pointer; }
+.me-chip[aria-pressed="true"] { background: var(--pop-gold, #ffe100); color: #1a0b2e; border-color: transparent; }
+.me-chip.locked { cursor: default; opacity: .55; border-style: dashed; }
+.me-chip i { font-style: normal; display: inline-block; width: 12px; height: 12px; border-radius: 4px; margin-right: 6px; vertical-align: -1px; }
+.me-reward { font-size: 13px; padding: 10px 12px; border-radius: 12px; background: rgba(134,239,172,.1); border: 1px solid rgba(134,239,172,.35); color: #dcfce7; }
+.me-reward.locked { background: rgba(255,255,255,.03); border: 1px dashed rgba(255,255,255,.14); color: #8f7fa8; }
+/* Evolving! Slow glow pulses (no strobing), then the new form. */
+.me-evolve { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px; background: rgba(8,3,16,.88); }
+.me-evolve-box { width: min(420px, 100%); text-align: center; }
+.me-evolve .me-cr { width: min(300px, 80vw); margin: 0 auto 16px; }
+.me-evolve .me-cr img { position: absolute; inset: 0; }
+.me-evolve .from { animation: meGlow 1.1s ease-in-out 3 both, meOut .5s 3.3s forwards; }
+.me-evolve .to { opacity: 0; animation: meIn .8s 3.4s forwards; }
+@keyframes meGlow { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(2.4) saturate(.3); } }
+@keyframes meOut { to { opacity: 0; transform: scale(1.08); } }
+@keyframes meIn { from { opacity: 0; transform: scale(.92); filter: brightness(2.4); } to { opacity: 1; transform: none; filter: none; } }
+.me-evolve h2 { font-family: 'Fraunces', serif; font-weight: 900; font-size: 28px; margin: 0 0 6px; }
+@media (prefers-reduced-motion: reduce) { .me-hero .me-cr, .me-cliff { animation: none; } .me-evolve .from { display: none; } .me-evolve .to { opacity: 1; animation: none; } }
 </style>
 </head>
 <body>
@@ -119,10 +185,10 @@ body { margin: 0; background: #0d0518; color: var(--text, #f5f0ff); font-family:
   function msg(e) { return String(e && e.message || e).replace(/^Exception:\s*/, '').replace(/^(SIGN_IN|NOT_FOUND|CLOSED):\s*/, ''); }
 
   function load() {
-    run.apply(null, ['clashMe'].concat(who())).then(function (d) { D = d; look = Object.assign({}, BLANK, d.look || {}); if (window.popSkin) popSkin(d.me.squad); render(); })
+    run.apply(null, ['clashMe'].concat(who())).then(function (d) { D = d; look = Object.assign({}, BLANK, d.look || {}); if (window.popSkin) popSkin(d.me.squad); render(); if (!D.preview) maybeEvolve(); })
       .catch(function (e) {
         var m = msg(e), raw = String(e && e.message), signin = /SIGN_IN|NOT_FOUND/.test(raw), closed = /CLOSED/.test(raw);
-        $('me').innerHTML = '<div class="me-card me-err">' + (closed ? '<div style="max-width:180px;margin:0 auto 6px">' + GameUi.mascot(['GOLD', 'PURPLE', 'GREY', 'BLACK'][new Date().getDay() % 4]) + '</div>' : '') +
+        $('me').innerHTML = '<div class="me-card me-err">' + (closed ? '<img src="https://raw.githubusercontent.com/matthewschuck-gif/Clash-of-Classes/ready-to-go-live/assets/cliff.png" alt="Cliff, the Mountaineer" style="height:180px;display:block;margin:0 auto 6px">' : '') +
           '<h2>' + (closed ? 'The trail is resting' : signin ? 'Almost there' : 'Something went wrong') + '</h2><p class="me-sub">' + esc(m) + '</p>' +
           '<details style="margin-top:18px;color:#b09ec8"><summary style="cursor:pointer">Staff: preview a student</summary><div class="me-form">' +
           '<input id="pv800" inputmode="numeric" placeholder="Student 800#" aria-label="Student 800 number"><input id="pvPw" type="password" placeholder="Clash admin password" aria-label="Clash admin password">' +
@@ -135,12 +201,76 @@ body { margin: 0; background: #0d0518; color: var(--text, #f5f0ff); font-family:
   }
 
   function animal() { return String((D.mascot && D.mascot.animal) || 'mascot').toLowerCase(); }
-  function mascotLine() {
-    var st = D.standing || {};
+  // Cliff, the Mountaineer, says the most useful thing first.
+  function cliffLine() {
+    var st = D.standing || {}, c = D.creature || {};
+    if (c.choices && Object.keys(c.choices).length) return 'You evolved! Pick a boost for your ' + animal() + ' in the Me tab.';
+    if (c.next && c.next.need <= 10) return 'Only ' + c.next.need + ' XP until your ' + animal() + ' evolves!';
     if (st.frozen) return st.frozen.kind === 'Fun' ? 'Ice breaker time! Push our luck!' : 'We thaw this one together.';
     if (D.tickets.some(function (t) { return t.status === 'Completed' && t.completed === new Date().toISOString().slice(0, 10); })) return 'Ticket done! That one counts for all of us.';
     if (st.place === 1) return 'Top of the mountain. Let\'s stay here!';
     return 'Every point moves us up the mountain.';
+  }
+  function cliffName() { return (D && D.cliff && D.cliff.name) || 'Cliff'; }
+  function cliffSay(text) {
+    return '<div class="me-guide"><img src="' + esc(D.cliff.image) + '" alt="' + esc(cliffName()) + ', the Mountaineer"><div class="me-say"><b>' + esc(cliffName()) + '</b>' + text + '</div></div>';
+  }
+  function art(stage) { var c = D.creature, a = c.art[(stage || c.show) - 1]; return c.form === 'f' ? a.f : a.m; }
+  function creatureImg(stage, label) {
+    var c = D.creature, st = stage || c.show;
+    return '<div class="me-cr" style="' + frameCss() + '"><img src="' + esc(art(st)) + '" alt="Your ' + esc(animal()) + ', ' + esc(c.names[st - 1]) + ' form" loading="lazy">' + (label ? '<span class="stg">' + esc(c.names[st - 1]) + '</span>' : '') + '</div>';
+  }
+  // Perk looks: a frame's glow and a scene's background.
+  var SCENES = {
+    night: 'radial-gradient(110% 130% at 100% 0%, color-mix(in srgb, var(--squad, #bb8ef5) 30%, transparent), transparent 60%), #14082a',
+    sunrise: 'radial-gradient(120% 90% at 20% 110%, rgba(255,170,90,.55), transparent 60%), linear-gradient(180deg, #3b1466, #7a2f6b 70%, #c45a4a)',
+    forest: 'radial-gradient(100% 80% at 50% 120%, rgba(60,140,90,.5), transparent 65%), linear-gradient(180deg, #0f1f24, #133628)',
+    aurora: 'radial-gradient(80% 60% at 30% 0%, rgba(80,255,180,.35), transparent 70%), radial-gradient(70% 60% at 80% 10%, rgba(150,110,255,.45), transparent 70%), #0b0a24'
+  };
+  function equipped(kind) { var p = D.creature.perks; var name = p.equipped[kind]; return name ? p.list.filter(function (x) { return x.perk === name; })[0] : null; }
+  function frameCss() {
+    var f = equipped('frame'); if (!f) return '';
+    var v = f.value.toLowerCase();
+    if (v === 'aurora') return 'box-shadow:0 0 0 3px #7dffc4,0 0 0 6px #9b7bff,0 0 36px rgba(125,255,196,.55)';
+    var c = v === 'squad' || !v ? 'var(--squad, #bb8ef5)' : /^#[0-9a-f]{3,8}$/i.test(v) ? v : 'var(--squad, #bb8ef5)';
+    return 'box-shadow:0 0 0 4px ' + c + ',0 0 32px ' + c;
+  }
+  function sceneCss() {
+    var sc = equipped('scene'); if (!sc) return '';
+    if (/^https:\/\//i.test(sc.value)) return 'background:linear-gradient(rgba(13,5,24,.55),rgba(13,5,24,.55)),url(' + JSON.stringify(sc.value) + ') center/cover';
+    return SCENES[sc.value.toLowerCase()] ? 'background:' + SCENES[sc.value.toLowerCase()] : '';
+  }
+  function perksHtml() {
+    var p = D.creature.perks; if (!p.list.length) return '';
+    var row = function (kind, label) {
+      var list = p.list.filter(function (x) { return x.kind === kind; }); if (!list.length) return '';
+      return '<div class="me-perk-row"><b>' + label + '</b><div class="me-chips">' + list.map(function (x) {
+        var sw = kind === 'frame' ? '<i style="background:' + (x.value.toLowerCase() === 'aurora' ? 'linear-gradient(90deg,#7dffc4,#9b7bff)' : /^#/.test(x.value) ? esc(x.value) : 'var(--squad,#bb8ef5)') + '"></i>' : '';
+        return x.open ? '<button class="me-chip craft-press" data-perk="' + esc(x.perk) + '" aria-pressed="' + (p.equipped[kind] === x.perk) + '" title="' + esc(x.text) + '">' + sw + esc(x.perk) + '</button>'
+          : '<span class="me-chip locked" title="' + esc(x.text) + '">🔒 ' + esc(x.perk) + '</span>';
+      }).join('') + '</div></div>';
+    };
+    var rewards = p.list.filter(function (x) { return x.kind === 'reward'; }).map(function (x) {
+      return '<div class="me-reward' + (x.open ? '' : ' locked') + '">' + (x.open ? '🎁 <b>' + esc(x.perk) + '</b>: ' + esc(x.value || x.text) : '🔒 <b>' + esc(x.perk) + '</b>: ' + esc(x.text)) + '</div>';
+    }).join('');
+    return '<h3 style="font-family:Fraunces,serif;margin:16px 0 6px">Perks</h3><p class="me-sub" style="margin-bottom:8px">Unlock them as you climb. Tap one to wear it, tap again to take it off.</p>' +
+      '<div class="me-perks">' + row('title', 'Title') + row('frame', 'Frame') + row('scene', 'Scene') + (rewards ? '<div class="me-perk-row"><b>Rewards</b><div class="me-perks">' + rewards + '</div></div>' : '') + '</div>';
+  }
+
+  // Evolving! Once per new stage, on this device.
+  function maybeEvolve() {
+    var c = D.creature, key = 'clash-stage-' + D.me.id, seen = 0;
+    try { seen = Number(localStorage.getItem(key)) || 0; localStorage.setItem(key, c.stage); } catch (e) { return; }
+    if (c.stage <= 1 || seen >= c.stage) return;
+    var from = Math.max(1, seen || c.stage - 1), el = document.createElement('div');
+    el.className = 'me-evolve'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Your creature evolved');
+    el.innerHTML = '<div class="me-evolve-box"><div class="me-cr"><img class="from" src="' + esc(art(from)) + '" alt=""><img class="to" src="' + esc(art(c.stage)) + '" alt="Your ' + esc(animal()) + ', ' + esc(c.names[c.stage - 1]) + ' form"></div>' +
+      '<h2>Your ' + esc(animal()) + ' evolved!</h2><p class="me-sub">It reached its <b>' + esc(c.names[c.stage - 1]) + '</b> form. ' + (c.choices[c.stage] ? 'Pick a boost to help your squad.' : '') + '</p>' +
+      '<button class="btn btn-gold craft-press" id="evoOk">' + (c.choices[c.stage] ? 'Pick my boost' : 'Awesome!') + '</button></div>';
+    document.body.appendChild(el);
+    var ok = el.querySelector('#evoOk');
+    ok.focus();
+    ok.onclick = function () { el.remove(); tab = 'me'; render(); var b = $('boosts'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
   }
 
   function render() {
@@ -149,10 +279,11 @@ body { margin: 0; background: #0d0518; color: var(--text, #f5f0ff); font-family:
     var standing = st.place ? '<b>' + title(st.squad) + '</b> is in <b>' + ['1st', '2nd', '3rd', '4th'][st.place - 1] + ' place</b>' +
       (st.place > 1 ? ', ' + st.behindBy.toLocaleString() + ' behind ' + title(st.ahead) + '.' : ', ' + st.leadBy.toLocaleString() + ' ahead.') : '';
     var tabs = [['me', 'Me'], ['tickets', 'Tickets'], ['squad', 'My Squad'], ['map', 'Map'], ['game', 'Game']];
-    $('me').innerHTML = (D.preview ? '<div class="me-card" style="border-color:#fbbf24">Staff preview of ' + esc(me.name) + '. Saving their mascot or keeping tickets here changes their real account.</div>' : '') +
-      '<section class="me-hero craft-lit craft-motes"><div class="me-mascot gc-hop" tabindex="0" aria-label="Your ' + esc(animal()) + '">' + GameUi.character(me.squad, look, D.gear, D.mascot) + '<div class="me-bubble">' + esc(mascotLine()) + '</div></div><div>' +
-      '<h1>Hi, ' + esc(first) + '!</h1><div class="me-pills"><span class="me-pill">' + esc(title(me.squad)) + ' Squad</span>' +
-      (D.roles || []).map(function (r) { return '<span class="me-pill alt">' + esc(r) + '</span>'; }).join('') + '</div><div class="me-standing">' + standing + '</div></div></section>' +
+    $('me').innerHTML = (D.preview ? '<div class="me-card" style="border-color:#fbbf24">Staff preview of ' + esc(me.name) + '. Changing their creature, picking a boost or keeping tickets here changes their real account.</div>' : '') +
+      '<section class="me-hero craft-lit craft-motes" style="' + sceneCss() + '"><div class="me-mascot">' + creatureImg(0, true) + '</div><div>' +
+      '<h1>Hi, ' + esc(first) + '!</h1>' + (equipped('title') ? '<div style="font-family:DM Mono,monospace;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--pop-gold,#ffe100);margin-top:4px">' + esc(equipped('title').value || equipped('title').perk) + '</div>' : '') + '<div class="me-pills"><span class="me-pill">' + esc(title(me.squad)) + ' Squad</span>' +
+      (D.roles || []).map(function (r) { return '<span class="me-pill alt">' + esc(r) + '</span>'; }).join('') + '</div><div class="me-standing">' + standing + '</div></div>' +
+      '<div class="me-say"><b>' + esc(cliffName()) + '</b>' + esc(cliffLine()) + '</div><img class="me-cliff" src="' + esc(D.cliff.image) + '" alt="' + esc(cliffName()) + ', the Mountaineer"></section>' +
       '<nav class="me-tabs" role="tablist">' + tabs.map(function (t) { return '<button class="me-tab craft-press" role="tab" data-t="' + t[0] + '" aria-selected="' + (tab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</nav>' +
       '<div id="meBody">' + ({ me: meTab, tickets: ticketsTab, squad: squadTab, map: mapTab, game: gameTab }[tab])() + '</div>';
     document.querySelectorAll('.me-tab').forEach(function (b) { b.onclick = function () { tab = b.getAttribute('data-t'); render(); }; });
@@ -172,15 +303,42 @@ body { margin: 0; background: #0d0518; color: var(--text, #f5f0ff); font-family:
     var gear = (D.gear || []).map(function (g) { return '<span class="' + (g.have ? '' : 'locked') + '" title="' + (g.have ? 'Earned' : 'Earn it: ' + esc(g.need)) + '">' + (g.have ? '✓ ' : '🔒 ') + esc(g.gear) + '</span>'; }).join('');
     var badges = (D.me.badges || []).map(function (b) { return '<span class="ms-badge">' + esc(b) + '</span>'; }).join('') || '<span class="me-sub">Your first badge is one Trait Dough bill away.</span>';
     var stamps = D.passport ? D.passport.stamps.map(function (s) { return '<span class="me-pill ' + (s.done ? '' : 'alt') + '" style="text-transform:none;letter-spacing:0;font-family:inherit">' + (s.done ? '✓ ' : '') + esc(s.label) + '</span>'; }).join(' ') : '';
-    var LBL = { fur: 'Fur', eyes: 'Eyes', mood: 'Mood', hat: 'Hat', accent: 'Color' };
-    var opts = Object.keys(GameUi.LOOK).map(function (k) {
-      return '<div class="me-opt"><span>' + LBL[k] + '</span><button data-k="' + k + '" data-d="-1" aria-label="Previous ' + LBL[k] + '">‹</button><span class="n">' + ((look[k] || 0) + 1) + ' / ' + GameUi.LOOK[k] + '</span><button data-k="' + k + '" data-d="1" aria-label="Next ' + LBL[k] + '">›</button></div>';
-    }).join('');
-    return '<section class="me-card"><h2>You and your squad</h2><p class="me-sub">Your numbers next to the ' + esc(title(D.me.squad)) + ' Squad\'s average. Only you see your own.</p><div class="me-metrics">' + metrics + '</div></section>' +
+    return creatureCard() + '<section class="me-card"><h2>You and your squad</h2><p class="me-sub">Your numbers next to the ' + esc(title(D.me.squad)) + ' Squad\'s average. Only you see your own.</p><div class="me-metrics">' + metrics + '</div></section>' +
       '<section class="me-card"><h2>Your ' + esc(animal()) + '\'s gear</h2><p class="me-sub">Gear comes from what you do: bills, summits, shout-outs, streaks, tickets.</p><div class="me-gear">' + gear + '</div></section>' +
-      '<section class="me-card"><h2>Make your ' + esc(animal()) + ' your own</h2><p class="me-sub">Every ' + esc(title(D.me.squad)) + ' Squad member has their own. Gear you earn shows up on it.</p><div class="me-build"><div id="lookPrev">' + GameUi.character(D.me.squad, look, D.gear, D.mascot) + '</div><div class="me-opts">' + opts +
-      '<div><button class="btn btn-gold craft-press" id="saveLook">Save</button> <span class="me-sub" id="lookMsg"></span></div></div></div></section>' +
       '<section class="me-card"><h2>Badges and passport</h2><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">' + badges + '</div>' + stamps + '</section>';
+  }
+
+  // ── Your creature: stages, XP, male or female look, evolution boosts ──
+  function creatureCard() {
+    var c = D.creature, pct = c.next ? Math.round(100 * (c.xp - c.from) / Math.max(1, c.next.at - c.from)) : 100;
+    var say = c.choices && Object.keys(c.choices).length ? 'Your ' + esc(animal()) + ' evolved! Pick a boost below. It adds extra points to the ' + esc(title(D.me.squad)) + ' Squad every week.'
+      : c.next ? 'Earn <b>' + c.next.need + ' more XP</b> and your ' + esc(animal()) + ' evolves into its ' + esc(c.next.name) + ' form. XP comes from Trait Dough, summits, shout-outs, STAR growth, streaks and tickets.'
+      : 'Your ' + esc(animal()) + ' reached its final form. Legendary.';
+    var stages = c.art.map(function (a) {
+      return '<button class="me-st' + (a.open ? '' : ' locked') + (a.stage === c.show ? ' on' : '') + '" ' + (a.open ? 'data-show="' + a.stage + '"' : 'disabled') +
+        ' aria-pressed="' + (a.stage === c.show) + '" aria-label="' + esc(a.name) + (a.open ? ' form' : ' form, locked until ' + c.at[a.stage] + ' XP') + '">' +
+        '<div class="me-cr">' + (a.open ? '<img src="' + esc(c.form === 'f' ? a.f : a.m) + '" alt="" loading="lazy">' : '<img src="' + esc(c.form === 'f' ? a.f : a.m) + '" alt="" loading="lazy">') + '</div>' +
+        '<span>' + esc(a.name) + (a.open ? '' : ' · ' + c.at[a.stage] + ' XP') + '</span></button>';
+    }).join('');
+    var picked = c.boosts.map(function (b) {
+      return '<div class="me-boost"><em>×' + b.mult + '</em><b>⚡ ' + esc(b.boost) + '</b><p>' + esc(b.text) + (b.bonus ? ' So far: +' + b.bonus + ' for your squad.' : '') + '</p></div>';
+    }).join('');
+    var choose = Object.keys(c.choices).map(function (s) {
+      var list = c.choices[s];
+      return '<p class="me-sub" style="margin:10px 0 6px"><b>' + esc(c.names[s - 1]) + ' boost:</b> pick one. It\'s yours for the year.</p>' +
+        (list.length ? '<div class="me-boosts">' + list.map(function (b) {
+          return '<button class="me-boost craft-press" data-boost="' + esc(b.boost) + '" data-stage="' + s + '"><em>×' + b.mult + '</em><b>' + esc(b.boost) + '</b><p>' + esc(b.text) + '</p></button>';
+        }).join('') + '</div>' : '<p class="me-sub">No boosts are open yet. Check back soon.</p>');
+    }).join('');
+    var later = c.stage < 2 ? '<p class="me-sub">At ' + esc(c.names[1]) + ' you pick a ×1.25 boost; at ' + esc(c.names[2]) + ' you add a ×2 boost.</p>'
+      : c.stage < 3 && !c.choices[2] ? '<p class="me-sub">At ' + esc(c.names[2]) + ' you add a second boost.</p>' : '';
+    return '<section class="me-card"><h2>Your ' + esc(animal()) + '</h2>' + cliffSay(say) + '<div class="me-evo"><div>' + creatureImg(0, true) + '</div><div>' +
+      '<div class="me-stages">' + stages + '</div>' +
+      '<div class="me-xp"><div class="bar" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100" aria-label="XP to the next form"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="t"><span>' + c.xp + ' XP</span><span>' + (c.next ? c.next.at + ' XP: ' + esc(c.next.name) : 'Final form') + '</span></div></div>' +
+      '<div class="me-seg" role="group" aria-label="Look"><button data-form="m" aria-pressed="' + (c.form !== 'f') + '">♂ Male</button><button data-form="f" aria-pressed="' + (c.form === 'f') + '">♀ Female</button></div>' +
+      '<div id="boosts"><h3 style="font-family:Fraunces,serif;margin:4px 0 6px">Evolution boosts</h3>' + (picked ? '<div class="me-boosts">' + picked + '</div>' : '') + choose + later + '</div>' + perksHtml() + '<p class="me-sub" id="crMsg"></p>' +
+      '</div></div></section>';
   }
 
   // ── Tickets: Ticket to Ride's destination tickets, as personal goals ──
@@ -245,19 +403,24 @@ body { margin: 0; background: #0d0518; color: var(--text, #f5f0ff); font-family:
   }
 
   function wire() {
-    document.querySelectorAll('.me-opt button').forEach(function (b) {
+    var saveCreature = function (choice) {
+      if ($('crMsg')) $('crMsg').textContent = 'Saving…';
+      run.apply(null, ['clashMeSaveCreature', choice].concat(who())).then(function (d) { D = d; render(); }).catch(function (e) { if ($('crMsg')) $('crMsg').textContent = msg(e); });
+    };
+    document.querySelectorAll('[data-show]').forEach(function (b) { b.onclick = function () { saveCreature({ show: Number(b.getAttribute('data-show')) }); }; });
+    document.querySelectorAll('[data-perk]').forEach(function (b) { b.onclick = function () { saveCreature({ perk: b.getAttribute('data-perk') }); }; });
+    document.querySelectorAll('[data-form]').forEach(function (b) { b.onclick = function () { if (b.getAttribute('aria-pressed') !== 'true') saveCreature({ form: b.getAttribute('data-form') }); }; });
+    document.querySelectorAll('[data-boost]').forEach(function (b) {
       b.onclick = function () {
-        var k = b.getAttribute('data-k'), n = GameUi.LOOK[k];
-        look[k] = ((look[k] || 0) + Number(b.getAttribute('data-d')) + n) % n;
-        $('lookPrev').innerHTML = GameUi.character(D.me.squad, look, D.gear, D.mascot);
-        b.parentNode.querySelector('.n').textContent = (look[k] + 1) + ' / ' + n;
+        var name = b.getAttribute('data-boost');
+        if (!confirm('Pick the ' + name + ' boost? It stays for the whole year.')) return;
+        $('crMsg').textContent = 'Locking it in…';
+        var from = b.getBoundingClientRect();
+        run.apply(null, ['clashMePickBoost', Number(b.getAttribute('data-stage')), name].concat(who())).then(function (d) {
+          D = d; render(); if (window.craftCelebrate) craftCelebrate({ getBoundingClientRect: function () { return from; } });
+        }).catch(function (e) { $('crMsg').textContent = msg(e); });
       };
     });
-    if ($('saveLook')) $('saveLook').onclick = function () {
-      $('lookMsg').textContent = 'Saving…';
-      run.apply(null, ['clashMeSaveLook', look].concat(who())).then(function (r) { look = r.look; D.look = r.look; $('lookMsg').textContent = 'Saved!'; if (window.craftPop) craftPop($('lookPrev')); })
-        .catch(function (e) { $('lookMsg').textContent = msg(e); });
-    };
     if ($('drawT')) $('drawT').onclick = function () {
       $('offer').innerHTML = '<p class="me-sub">Drawing…</p>';
       run.apply(null, ['clashMeDrawTickets'].concat(who())).then(function (r) {

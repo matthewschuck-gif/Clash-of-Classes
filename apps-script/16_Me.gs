@@ -17,8 +17,9 @@
  * polls, signups, buddy, tools (different kinds of things), streak. Join with + to need both.
  * Finishing one earns the squad its Points (once GAME_AWARDS is ON) and frees a slot.
  *
- * MY MASCOT (tab Avatars): each student makes their own version of their squad's animal (fur, eyes,
- * mood, hat, color); the gear on it comes from what they've done (AVATAR_GEAR).
+ * MY CREATURE (tab Avatars, 19_Evolve.gs): each student's own rendered version of their squad's
+ * animal, male or female, that evolves with Climb XP; evolutions unlock squad-point boosts.
+ * Gear (AVATAR_GEAR) is earned from what they've done. Cliff guides them.
  */
 
 const TICKET_HEADERS_ = ['Show', 'Ticket', 'Text', 'Requirement', 'Points'];
@@ -48,6 +49,7 @@ function ensureMeTabs_() {
     sh.setFrozenRows(1);
     if (t[2]) sh.getRange(2, 1, t[2].length, t[1].length).setValues(t[2]);
   });
+  ensureEvolveTabs_(); // 19_Evolve.gs
 }
 
 // ── WHO IS SIGNED IN ────────────────────────────────────────────────
@@ -237,7 +239,8 @@ function clashMeSaveLook(look, asId, adminToken) {
   try {
     const sheet = getSheet_('Avatars');
     const r = sheetRows_('Avatars').filter(function (a) { return id800_(a['800#']) === id; })[0];
-    const row = [id, JSON.stringify(clean), todayYmd_()];
+    let kept = {}; try { kept = r ? JSON.parse(String(r['Look'] || '{}')) : {}; } catch (e) { kept = {}; } // keeps the creature's form and stage
+    const row = [id, JSON.stringify(Object.assign(kept, clean)), todayYmd_()];
     if (r) sheet.getRange(r._row, 1, 1, 3).setValues([row]); else sheet.appendRow(row);
   } finally { lock.releaseLock(); }
   return JSON.stringify({ look: clean });
@@ -260,6 +263,8 @@ function clashMe(asId, adminToken) {
   page.look = lookFor_(id);
   page.gear = gearFor_(page.me, { tickets: page.tickets.filter(function (t) { return t.status === 'Completed'; }).length, passport: page.passport && page.passport.complete ? 1 : 0 });
   page.mascot = mascotFor_(squad);
+  page.creature = creatureFor_(id, squad, climbVals_(id, page), page.look); // 19_Evolve.gs
+  page.cliff = cliffInfo_();
   page.game = gameState_();
   page.preview = !!(asId && adminToken);
   return JSON.stringify(page);
