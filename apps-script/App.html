@@ -3672,7 +3672,7 @@ function openAdmin(){ document.getElementById('adminModal').classList.add('open'
 function close1(id){ const m=document.getElementById(id); if(!m) return; m.classList.remove('open'); m.style.display=''; }
 
 function aTab(name){
-  const names=['points','metrics','pages','navorder','mayhem','champs','kickoff','links','gallery','scores','history','settings'];
+  const names=['points','metrics','pages','navorder','mayhem','champs','kickoff','links','gallery','scores','history','settings','map'];
   document.querySelectorAll('#adminModal .a-tab').forEach((b,i)=>b.classList.toggle('on',names[i]===name));
   names.forEach(n=>{ const el=document.getElementById('ap-'+n); if(el) el.classList.toggle('on',n===name); });
   if(name==='scores') renderScoreSummary();
@@ -3680,6 +3680,7 @@ function aTab(name){
   if(name==='links'){ lTab('mindset'); }
   if(name==='pages'){ pTab(window._currentPageTab||'home'); }
   if(name==='mayhem'){ loadMayhemEditor(); }
+  if(name==='map'&&window.MapEditor){ MapEditor.open(); }
   if(name==='champs'){ loadChampsEditor(); }
   if(name==='kickoff'){ loadKickoffEditor(); }
   if(name==='navorder'){ renderNavOrder(); }

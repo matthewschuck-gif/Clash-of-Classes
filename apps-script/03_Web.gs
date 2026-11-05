@@ -279,6 +279,7 @@ function onOpen() {
     .addItem('Import student roster', 'menuImportRoster_')
     .addItem('Turn on game awards', 'menuTurnOnGame_')
     .addItem('Turn off game awards', 'menuTurnOffGame_')
+    .addItem('Use the building map (replaces Map Zones)', 'menuBuildingMap_')
     .addItem('Show or hide Monster of the Month', 'menuToggleMonster_')
     .addItem('Sync days off from the district calendar', 'menuSyncSchoolCalendar_')
     .addItem('Turn on daily calendar sync', 'menuTurnOnCalendarSync_')

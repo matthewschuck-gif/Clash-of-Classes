@@ -1,0 +1,231 @@
+<style>
+/* Admin panel › Map: drag zones around the building, pick how each one is won, edit the ways to conquer. */
+.me-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.me-top .me-msg { font-size: 13px; color: var(--text3); }
+.me-btn { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-weight: 700; cursor: pointer; font-size: 13px; }
+.me-btn.go { background: var(--gold, #ffe100); color: #12081f; border-color: transparent; }
+.me-btn.warn { color: #fca5a5; }
+.me-board { position: relative; border-radius: 12px; overflow: hidden; background: #170b29; touch-action: none; user-select: none; }
+.me-board svg { display: block; width: 100%; height: auto; }
+.me-board .mz { cursor: grab; }
+.me-board .mz.sel rect.box { stroke: #ffe100; stroke-width: 4; }
+.me-board .mz.nb rect.box { stroke: #7dd3fc; stroke-width: 3; stroke-dasharray: 6 4; }
+.me-board .mz.off { opacity: .4; }
+.me-board .grip { cursor: nwse-resize; }
+.me-cols { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 12px; }
+.me-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; padding: 12px; border-radius: 12px; background: var(--surface); }
+.me-form label { display: block; font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+.me-form input[type=text], .me-form input[type=number], .me-form select, .me-rules input[type=text], .me-rules input[type=number], .me-rules select {
+  width: 100%; box-sizing: border-box; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg, #12081f); color: var(--text); font-size: 13px; }
+.me-form .wide { grid-column: 1 / -1; }
+.me-form .me-hint, .me-rules .me-hint { font-size: 12px; color: var(--text3); margin-top: 4px; }
+.me-rules { width: 100%; border-collapse: collapse; font-size: 13px; }
+.me-rules th { text-align: left; font-size: 11px; color: var(--text3); text-transform: uppercase; padding: 6px 4px; }
+.me-rules td { padding: 4px; vertical-align: top; }
+.me-rules-wrap { overflow-x: auto; }
+.me-h { margin: 18px 0 6px; font-size: 15px; color: var(--text); }
+</style>
+<script>
+(function () {
+  var SQ = { BLACK: '#c5c9d1', GOLD: '#ffe100', GREY: '#99a8bb', PURPLE: '#bb8ef5' };
+  var st = { zones: [], rules: [], methods: [], building: null, sel: -1, dirty: false, loaded: false };
+  var drag = null;
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function box() { return document.getElementById('mapEditor'); }
+  function msg(t) { var m = document.getElementById('meMsg'); if (m) m.textContent = t; }
+  function touch(a, b) {
+    var xo = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), yo = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+    return (xo === 0 && yo > 0) || (yo === 0 && xo > 0);
+  }
+  function neighbors(i) {
+    var z = st.zones[i], out = [];
+    st.zones.forEach(function (o, j) {
+      if (j === i || !o.zone) return;
+      var listed = function (a, b) { return String(a.borders || '').split(',').some(function (n) { return n.trim().toLowerCase() === String(b.zone).toLowerCase(); }); };
+      if (touch(z, o) || listed(z, o) || listed(o, z)) out.push(j);
+    });
+    return out;
+  }
+  function grid() {
+    var c = 12, r = 8;
+    st.zones.forEach(function (z) { c = Math.max(c, z.x + z.w); r = Math.max(r, z.y + z.h); });
+    return { cols: c + 2, rows: r + 2 }; // room to drag past the edge
+  }
+  function changed() { st.dirty = true; msg('Unsaved changes'); }
+
+  function svg() {
+    var g = grid(), cell = 40, W = g.cols * cell, H = g.rows * cell, lines = '';
+    for (var x = 0; x <= g.cols; x++) lines += '<path d="M' + x * cell + ' 0 V' + H + '" stroke="#bb8ef5" stroke-opacity=".12"/>';
+    for (var y = 0; y <= g.rows; y++) lines += '<path d="M0 ' + y * cell + ' H' + W + '" stroke="#bb8ef5" stroke-opacity=".12"/>';
+    var nb = st.sel > -1 ? neighbors(st.sel) : [];
+    var zones = st.zones.map(function (z, i) {
+      var cls = 'mz' + (i === st.sel ? ' sel' : '') + (nb.indexOf(i) > -1 ? ' nb' : '') + (z.show ? '' : ' off');
+      var X = z.x * cell, Y = z.y * cell, w = z.w * cell, h = z.h * cell;
+      var fs = Math.max(10, Math.min(16, (w - 8) / Math.max(4, String(z.zone).length * .6)));
+      return '<g class="' + cls + '" data-i="' + i + '"><rect class="box" data-act="move" x="' + (X + 2) + '" y="' + (Y + 2) + '" width="' + (w - 4) + '" height="' + (h - 4) + '" rx="8" fill="' + (z.holder ? SQ[z.holder] : '#3a2a52') + '" fill-opacity=".85" stroke="#12081f" stroke-width="2"/>' +
+        '<text x="' + (X + w / 2) + '" y="' + (Y + h / 2) + '" text-anchor="middle" font-family="Fraunces,serif" font-weight="900" font-size="' + fs.toFixed(1) + '" fill="' + (z.holder && z.holder !== 'PURPLE' ? '#12081f' : '#fff') + '" pointer-events="none">' + (z.summit ? '👑 ' : '') + esc(z.zone) + '</text>' +
+        '<text x="' + (X + w / 2) + '" y="' + (Y + h / 2 + 15) + '" text-anchor="middle" font-family="DM Mono,monospace" font-size="10" fill="' + (z.holder && z.holder !== 'PURPLE' ? '#12081f' : '#d6c2ff') + '" pointer-events="none">' + esc(z.conquerBy || ('old: ' + (z.claimedBy || '*'))) + '</text>' +
+        '<rect class="grip" data-act="size" x="' + (X + w - 16) + '" y="' + (Y + h - 16) + '" width="14" height="14" rx="3" fill="#12081f" fill-opacity=".55"/></g>';
+    }).join('');
+    return '<svg id="meSvg" viewBox="0 0 ' + W + ' ' + H + '">' + lines + zones + '</svg>';
+  }
+  function drawBoard() { var b = document.getElementById('meBoard'); if (b) b.innerHTML = svg(); }
+
+  function ruleOptions(cur) {
+    var names = st.rules.filter(function (r) { return r.rule; }).map(function (r) { return r.rule; });
+    return '<option value="">(old way: Claimed By words)</option>' + names.map(function (n) { return '<option' + (n === cur ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') +
+      (cur && names.indexOf(cur) === -1 ? '<option selected>' + esc(cur) + '</option>' : '');
+  }
+  function drawForm() {
+    var f = document.getElementById('meForm');
+    if (!f) return;
+    var z = st.zones[st.sel];
+    if (!z) { f.innerHTML = '<div class="wide me-hint">Click a zone to edit it. Drag a zone to move it; drag its corner to resize. Zones that touch are neighbors (Risk borders).</div>'; return; }
+    var rule = st.rules.filter(function (r) { return r.rule === z.conquerBy; })[0];
+    var nb = neighbors(st.sel).map(function (j) { return st.zones[j].zone; });
+    f.innerHTML =
+      '<div><label>Zone name</label><input type="text" data-f="zone" value="' + esc(z.zone) + '"></div>' +
+      '<div><label>Wing (color set)</label><input type="text" data-f="wing" value="' + esc(z.wing) + '" list="meWings"></div>' +
+      '<div><label>How it\'s won</label><select data-f="conquerBy">' + ruleOptions(z.conquerBy) + '</select></div>' +
+      '<div><label>Weekly points</label><input type="number" min="0" max="100" data-f="weekly" value="' + esc(z.weekly) + '"></div>' +
+      '<div><label>Held by</label><select data-f="holder"><option value="">nobody</option>' + ['BLACK', 'GOLD', 'GREY', 'PURPLE'].map(function (s) { return '<option' + (z.holder === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></div>' +
+      '<div><label>&nbsp;</label><label style="text-transform:none;font-size:13px;color:var(--text)"><input type="checkbox" data-f="summit"' + (z.summit ? ' checked' : '') + '> 👑 Summit (King of the Mountain, pays x2)</label>' +
+      '<label style="text-transform:none;font-size:13px;color:var(--text)"><input type="checkbox" data-f="show"' + (z.show ? ' checked' : '') + '> Show on the map</label></div>' +
+      (z.conquerBy ? '' : '<div class="wide"><label>Claimed By (old way: event types or words, * = everything)</label><input type="text" data-f="claimedBy" value="' + esc(z.claimedBy) + '"></div>') +
+      '<div class="wide"><label>Extra borders (zones it connects to that don\'t touch, comma-separated)</label><input type="text" data-f="borders" value="' + esc(z.borders) + '">' +
+      '<div class="me-hint">Next to: ' + esc(nb.join(', ') || 'nothing yet') + (rule ? ' · ' + esc(rule.text) : '') + '</div></div>' +
+      '<div class="wide" style="display:flex;gap:8px"><button class="me-btn warn" data-do="delZone">Delete this zone</button></div>';
+    var wings = {}; st.zones.forEach(function (o) { if (o.wing) wings[o.wing] = 1; });
+    f.innerHTML += '<datalist id="meWings">' + Object.keys(wings).map(function (w) { return '<option value="' + esc(w) + '">'; }).join('') + '</datalist>';
+  }
+  function drawRules() {
+    var t = document.getElementById('meRules');
+    if (!t) return;
+    t.innerHTML = '<thead><tr><th>Show</th><th>Rule</th><th>What students see</th><th>Method</th><th>Counts (event types or words; * = all)</th><th>Days</th><th>⚔ Must border</th><th>Defense %</th><th></th></tr></thead><tbody>' +
+      st.rules.map(function (r, i) {
+        return '<tr data-r="' + i + '"><td><input type="checkbox" data-rf="show"' + (r.show ? ' checked' : '') + '></td>' +
+          '<td style="min-width:120px"><input type="text" data-rf="rule" value="' + esc(r.rule) + '"></td>' +
+          '<td style="min-width:220px"><input type="text" data-rf="text" value="' + esc(r.text) + '"></td>' +
+          '<td style="min-width:120px"><select data-rf="method">' + st.methods.map(function (m) { return '<option' + (m === r.method ? ' selected' : '') + '>' + m + '</option>'; }).join('') + '</select></td>' +
+          '<td style="min-width:160px"><input type="text" data-rf="counts" value="' + esc(r.counts) + '"' + (r.method === 'staff pick' ? ' disabled' : '') + '></td>' +
+          '<td style="width:64px"><input type="number" min="1" max="365" data-rf="days" value="' + esc(r.days) + '" placeholder="' + st.claimDays + '"></td>' +
+          '<td style="text-align:center"><input type="checkbox" data-rf="border"' + (r.border ? ' checked' : '') + '></td>' +
+          '<td style="width:64px"><input type="number" min="0" max="500" data-rf="defense" value="' + esc(r.defense) + '"></td>' +
+          '<td><button class="me-btn warn" data-do="delRule" data-r="' + i + '">✕</button></td></tr>';
+      }).join('') + '</tbody>';
+  }
+  function render() {
+    var b = box();
+    if (!b) return;
+    b.innerHTML = '<div class="me-top"><button class="me-btn go" data-do="save">💾 Save map</button><button class="me-btn" data-do="addZone">+ Zone</button>' +
+      '<button class="me-btn" data-do="building">🏫 Start from the building layout</button><button class="me-btn" data-do="reload">↺ Reload</button><span class="me-msg" id="meMsg"></span></div>' +
+      '<div class="me-board" id="meBoard"></div><div class="me-cols"><div class="me-form" id="meForm"></div></div>' +
+      '<h3 class="me-h">Ways to conquer</h3><div class="me-hint" style="font-size:12px;color:var(--text3);margin-bottom:6px">Each zone picks one. most points = most points from Counts in the last Days · most entries = most times a squad earned · staff pick = you set Held by. ' +
+      '⚔ Must border = Risk rule: only a squad holding a zone next door can take it (a squad with no zones can land anywhere). Defense % = how much more than the holder a challenger needs. Claims update about every 10 minutes.</div>' +
+      '<div class="me-rules-wrap"><table class="me-rules" id="meRules"></table></div><button class="me-btn" style="margin-top:8px" data-do="addRule">+ Way to conquer</button>';
+    drawBoard(); drawForm(); drawRules();
+    if (st.dirty) msg('Unsaved changes');
+  }
+
+  // Pointer: drag to move, corner to resize, snapped to the grid.
+  function gridPoint(e) {
+    var s = document.getElementById('meSvg'), p = s.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+    var q = p.matrixTransform(s.getScreenCTM().inverse());
+    return { x: q.x / 40, y: q.y / 40 };
+  }
+  function onDown(e) {
+    var g = e.target.closest && e.target.closest('.mz');
+    if (!g || !document.getElementById('meBoard').contains(g)) return;
+    var i = Number(g.getAttribute('data-i')), z = st.zones[i];
+    var act = e.target.getAttribute('data-act') || 'move', p = gridPoint(e);
+    drag = { i: i, act: act, p: p, x: z.x, y: z.y, w: z.w, h: z.h, moved: false };
+    if (st.sel !== i) { st.sel = i; drawForm(); }
+    drawBoard();
+    e.preventDefault();
+  }
+  function onMove(e) {
+    if (!drag) return;
+    var p = gridPoint(e), dx = Math.round(p.x - drag.p.x), dy = Math.round(p.y - drag.p.y), z = st.zones[drag.i];
+    if (drag.act === 'size') { z.w = Math.max(1, drag.w + dx); z.h = Math.max(1, drag.h + dy); }
+    else { z.x = Math.max(0, drag.x + dx); z.y = Math.max(0, drag.y + dy); }
+    if (z.x !== drag.x || z.y !== drag.y || z.w !== drag.w || z.h !== drag.h) { drag.moved = true; drawBoard(); }
+  }
+  function onUp() {
+    if (!drag) return;
+    if (drag.moved) { changed(); drawForm(); }
+    drag = null;
+  }
+
+  function onInput(e) {
+    var t = e.target, f = t.getAttribute('data-f'), rf = t.getAttribute('data-rf');
+    if (f && st.zones[st.sel]) {
+      var z = st.zones[st.sel];
+      z[f] = t.type === 'checkbox' ? t.checked : t.type === 'number' ? Number(t.value) || 0 : t.value;
+      changed(); drawBoard();
+      if (t.tagName === 'SELECT' || t.type === 'checkbox') drawForm();
+    } else if (rf) {
+      var r = st.rules[Number(t.closest('tr').getAttribute('data-r'))], before = r.rule;
+      r[rf] = t.type === 'checkbox' ? t.checked : t.type === 'number' ? (t.value === '' ? '' : Number(t.value)) : t.value;
+      // Renaming a rule renames it on every zone that uses it.
+      if (rf === 'rule') st.zones.forEach(function (z) { if (z.conquerBy && z.conquerBy === before) z.conquerBy = r.rule; });
+      changed();
+      if (rf === 'method') drawRules();
+      if (rf === 'rule') { drawBoard(); drawForm(); }
+    }
+  }
+  function onClick(e) {
+    var b = e.target.closest && e.target.closest('[data-do]');
+    if (!b) return;
+    var d = b.getAttribute('data-do');
+    if (d === 'save') return save();
+    if (d === 'reload') { if (!st.dirty || confirm('Throw away your unsaved changes?')) load(); return; }
+    if (d === 'addZone') {
+      var g = grid();
+      st.zones.push({ show: true, zone: 'New Zone ' + (st.zones.length + 1), wing: '', summit: false, conquerBy: (st.rules[0] || {}).rule || '', claimedBy: '', weekly: 3, x: 0, y: g.rows - 2, w: 2, h: 2, borders: '', holder: '' });
+      st.sel = st.zones.length - 1; changed(); render(); return;
+    }
+    if (d === 'delZone') { if (confirm('Delete ' + st.zones[st.sel].zone + '?')) { st.zones.splice(st.sel, 1); st.sel = -1; changed(); render(); } return; }
+    if (d === 'addRule') { st.rules.push({ show: true, rule: 'New Rule ' + (st.rules.length + 1), text: '', method: 'most points', counts: '*', days: '', border: false, defense: 0 }); changed(); drawRules(); drawForm(); return; }
+    if (d === 'delRule') {
+      var r = st.rules[Number(b.getAttribute('data-r'))], used = st.zones.filter(function (z) { return z.conquerBy === r.rule; }).map(function (z) { return z.zone; });
+      if (used.length && !confirm(r.rule + ' is used by ' + used.join(', ') + '. Delete it anyway? Those zones go back to the old way.')) return;
+      st.rules.splice(Number(b.getAttribute('data-r')), 1); changed(); drawRules(); drawForm(); return;
+    }
+    if (d === 'building') {
+      if (!confirm('Replace every zone with the building layout (gyms, cafeteria, halls)? Holders start fresh. Your ways to conquer stay, and missing ones are added. Nothing is saved until you click Save.')) return;
+      st.zones = st.building.zones.map(function (z) {
+        return { show: true, zone: z.Zone, wing: z.Wing, summit: z.Summit, conquerBy: z['Conquer By'], claimedBy: '', weekly: z['Weekly Points'], x: z.X, y: z.Y, w: z.W, h: z.H, borders: '', holder: '' };
+      });
+      var have = {}; st.rules.forEach(function (r) { have[String(r.rule).toLowerCase()] = 1; });
+      st.building.rules.forEach(function (r) { if (!have[r.rule.toLowerCase()]) st.rules.push(Object.assign({}, r)); });
+      st.sel = -1; changed(); render();
+    }
+  }
+
+  function load() {
+    var b = box();
+    if (!b || !window.gasRun_) return;
+    b.innerHTML = '<p style="color:var(--text3)">Loading the map…</p>';
+    window.gasRun_('clashMapLoad', window.ADMIN_SESSION || '').then(function (d) {
+      d = typeof d === 'string' ? JSON.parse(d) : d;
+      st.zones = d.zones; st.rules = d.rules; st.methods = d.methods; st.building = d.building; st.claimDays = d.claimDays;
+      st.sel = -1; st.dirty = false; st.loaded = true; render();
+    }).catch(function (e) { b.innerHTML = '<p style="color:#fca5a5">Couldn\'t load the map: ' + esc(e && e.message || e) + '</p>'; });
+  }
+  function save() {
+    msg('Saving…');
+    window.gasRun_('clashMapSave', window.ADMIN_SESSION || '', JSON.stringify({ zones: st.zones, rules: st.rules })).then(function (r) {
+      r = typeof r === 'string' ? JSON.parse(r) : r;
+      st.dirty = false; msg('✓ Saved ' + r.zones + ' zones and ' + r.rules + ' ways to conquer. The map updates within about 10 minutes (or right away on the next page load).');
+    }).catch(function (e) { msg('✕ ' + (e && e.message || e)); });
+  }
+
+  document.addEventListener('pointerdown', onDown);
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
+  document.addEventListener('input', function (e) { if (box() && box().contains(e.target)) onInput(e); });
+  document.addEventListener('change', function (e) { if (box() && box().contains(e.target) && (e.target.tagName === 'SELECT' || e.target.type === 'checkbox')) onInput(e); });
+  document.addEventListener('click', function (e) { if (box() && box().contains(e.target)) onClick(e); });
+  window.MapEditor = { open: function () { if (!st.loaded || !st.dirty) load(); else render(); } };
+})();
+</script>

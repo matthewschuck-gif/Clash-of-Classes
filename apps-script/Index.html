@@ -1632,7 +1632,11 @@
       <button class="a-tab" onclick="aTab('scores')">Scores</button>
       <button class="a-tab" onclick="aTab('history')">History</button>
       <button class="a-tab" onclick="aTab('settings')">Settings</button>
+      <button class="a-tab" onclick="aTab('map')">🗺️ Map</button>
     </div>
+
+    <!-- MAP (MapEditor.html): zones on the building, the ways to conquer -->
+    <div class="a-panel" id="ap-map"><div id="mapEditor"></div></div>
 
     <!-- POINTS -->
     <div class="a-panel on" id="ap-points">
@@ -2326,6 +2330,7 @@ document.addEventListener('click', function (ev) {
 <?!= include('Widgets'); ?>
 <?!= include('Student'); ?>
 <?!= include('Generals'); ?>
+<?!= include('MapEditor'); ?>
 
 <div class="overlay" id="embedOverlay" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal" style="max-width:560px">

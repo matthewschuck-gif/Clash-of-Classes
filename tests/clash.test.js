@@ -751,28 +751,28 @@ test('game layer: map claims, wing bonus, chance cards + Flip Three, Hot Streak,
     ['8002222', 'Ed P.', 'Gold', '8', '0', '0', '0', '0', '', '0', '1', '0', '0', '', '', '', '90', 'ed.p@easdpa.org'],
     ['8003333', 'Cy R.', 'Grey', '7', '1', '0', '0', '0', '', '0', '0', '0', '0', '', ago(3), '', '', '']];
   const ev = w.book.getSheetByName('events');
-  // GOLD wins the poll zone and everything overall; GREY wins the Trait Dough zone.
+  // GOLD wins the poll zone and everything overall; GREY wins the Trait Dough zones (building map).
   ev.rows.push([301, 'Daily Poll', 'daily_poll', ago(2), '', '', 0, 9, 2, 0], [302, 'Trait Dough: Cy R.', 'trait_dough', ago(1), '', '', 0, 0, 5, 0]);
   let zones = J(w.mapZones_(null, true));
   const z = name => zones.find(x => x.zone === name);
-  assert.strictEqual(z('Echo Falls').holder, 'GOLD');
-  assert.strictEqual(z('Dough Meadow').holder, 'GREY');
-  assert.strictEqual(z('The Summit').holder, 'GOLD', 'King of the Mountain = most points overall');
+  assert.strictEqual(z('Music Wing').holder, 'GOLD');
+  assert.strictEqual(z('50s Hall').holder, 'GREY');
+  assert.strictEqual(z('Cafeteria').holder, 'GOLD', 'King of the Mountain (the Cafeteria) = most points overall');
   // King of the hill: a tie doesn't take it away.
   ev.rows.push([303, 'Trait Dough: Ann L.', 'trait_dough', ago(1), '', '', 0, 5, 0, 0]);
   zones = J(w.mapZones_(null, true));
-  assert.strictEqual(z('Dough Meadow').holder, 'GREY', 'tie: the holder keeps it');
-  // A wing held whole pays again: give GOLD all of Commons Valley.
+  assert.strictEqual(z('50s Hall').holder, 'GREY', 'tie: the holder keeps it');
+  // A wing held whole pays again: give GOLD all of The Arts.
   const mz = w.book.getSheetByName('Map Zones');
-  mz.rows.forEach(r => { if (r[2] === 'Commons Valley') r[10] = 'GOLD'; });
+  mz.rows.forEach(r => { if (r[2] === 'The Arts') r[10] = 'GOLD'; });
   w.setSettingValue_('GAME_AWARDS', 'ON');
   w.props['game-paid-week'] = 'old';
   w.gameTick();
   const terr = ev.rows.filter(r => r[2] === 'territory');
   const goldTerr = terr.find(r => r[7] > 0);
-  // GOLD: Summit 5x2 + Echo Falls 3 + Lunch Basin 3 + Duelers' Pass 3 + Commons wing again (3+3) = 25,
-  // + 1 per zone from Switchback Builders (unlocks at 2 zones) = 29.
-  assert.strictEqual(goldTerr[7], 29, 'zones, the Summit doubled, the wing paid twice, +4 from the Switchback Builders engine power (4 zones)');
+  // GOLD: Cafeteria (summit) 5x2 + Music Wing 3 + Auditorium 3 + 60s and 80s Halls 3+3 (Siege: a squad with
+  // no zones lands anywhere) + The Arts again (3+3) = 28, + 1 per zone from Switchback Builders = 33.
+  assert.strictEqual(goldTerr[7], 33, 'zones, the Summit doubled, the wing paid twice, +5 from the Switchback Builders engine power (5 zones)');
   w.gameTick();
   assert.strictEqual(ev.rows.filter(r => r[2] === 'territory').length, terr.length, 'paid once a week');
   // Chance cards: a General draws one a week.
@@ -860,6 +860,91 @@ test('game layer: map claims, wing bonus, chance cards + Flip Three, Hot Streak,
   assert.ok(me.gear.find(g => g.gear === 'boots').have && !me.gear.find(g => g.gear === 'lantern').have);
   // The public site never gets other students' numbers.
   assert.ok(!/8002222|ed\.p@/.test(w.clashGame()));
+});
+
+test('conquest: rules from the Sheet, Risk borders + defense edge, staff pick, entries, battle log, admin map editor, building swap', () => {
+  const w = world();
+  const today = w.todayYmd_(), ago = n => w.ymdShift_(today, -n);
+  w.ensureSettings_(); w.ensureGameTabs_();
+  const ev = w.book.getSheetByName('events'), mz = w.book.getSheetByName('Map Zones');
+  // A small map: West | Middle | East in a row, plus Island (not touching) joined to West by Borders.
+  const zoneRows = [
+    { Show: true, Zone: 'West', Wing: 'Row', 'Conquer By': 'Open', 'Weekly Points': 3, X: 0, Y: 0, W: 2, H: 2 },
+    { Show: true, Zone: 'Middle', Wing: 'Row', 'Conquer By': 'Siege', 'Weekly Points': 3, X: 2, Y: 0, W: 2, H: 2 },
+    { Show: true, Zone: 'East', Wing: 'Row', 'Conquer By': 'Open', 'Weekly Points': 3, X: 4, Y: 0, W: 2, H: 2, Holder: 'PURPLE' },
+    { Show: true, Zone: 'Island', 'Conquer By': 'Count', 'Weekly Points': 2, X: 8, Y: 5, W: 1, H: 1, Borders: 'west' },
+    { Show: true, Zone: 'Office', 'Conquer By': 'Pick', X: 0, Y: 4, W: 1, H: 1, Holder: 'BLACK' },
+  ];
+  w.writeRowsByHeader_(mz, zoneRows);
+  w.writeRowsByHeader_(w.book.getSheetByName('Conquest Rules'), [
+    { Show: true, Rule: 'Open', Method: 'most points', Counts: 'trait_dough', 'Window Days': 7 },
+    { Show: true, Rule: 'Siege', Method: 'most points', Counts: '*', 'Window Days': 7, 'Must Border': true, 'Defense %': 50 },
+    { Show: true, Rule: 'Count', Method: 'most entries', Counts: 'shout' },
+    { Show: true, Rule: 'Pick', Method: 'staff pick' },
+  ]);
+  // GOLD tops Trait Dough (West, East); GREY tops everything overall and holds nothing yet.
+  ev.rows.push([401, 'Trait Dough', 'trait_dough', ago(1), '', '', 0, 6, 2, 0], [402, 'Kickoff', 'event', ago(1), '', '', 0, 0, 30, 0],
+    [403, 'Shout-out', 'shout', ago(1), '', '', 0, 1, 0, 0], [404, 'Shout-out', 'shout', ago(2), '', '', 0, 1, 0, 0], [405, 'Shout-out', 'shout', ago(1), '', '', 0, 0, 9, 0]);
+  let zones = J(w.mapZones_(null, true));
+  const z = n => zones.find(x => x.zone === n);
+  assert.strictEqual(z('West').holder, 'GOLD');
+  assert.strictEqual(z('East').holder, 'GOLD', 'Trait Dough: GOLD 6 beats the holder PURPLE 0');
+  assert.strictEqual(z('Middle').holder, 'GREY', 'a squad with no zones can land anywhere, even a Siege zone');
+  assert.strictEqual(z('Island').holder, 'GOLD', 'most entries: GOLD 2 shout-outs beats GREY 1 (even though GREY earned 9 points)');
+  assert.strictEqual(z('Office').holder, 'BLACK', 'staff pick never changes on its own');
+  assert.deepStrictEqual(z('Island').neighbors, ['West'], 'Borders joins zones that do not touch');
+  assert.deepStrictEqual(z('Middle').neighbors.slice().sort(), ['East', 'West']);
+  assert.ok(!z('West').neighbors.includes('Office'), 'boxes that do not touch are not neighbors');
+  const battles = w.book.getSheetByName('Map Battles').rows.slice(1);
+  assert.ok(battles.some(b => b[1] === 'East' && b[2] === 'GOLD' && b[3] === 'PURPLE' && b[4] === 'Open'), 'captures are logged');
+  // Siege: GOLD (next to Middle) now out-earns GREY, but needs 50% more than GREY to take it.
+  ev.rows.push([406, 'Spirit', 'event', ago(1), '', '', 0, 34, 0, 0]); // GOLD 42 vs GREY 41: not enough (needs 61.5)
+  zones = J(w.mapZones_(null, true));
+  assert.strictEqual(z('Middle').holder, 'GREY', 'defense edge: 42 is not 50% more than 41');
+  ev.rows.push([407, 'Spirit 2', 'event', ago(1), '', '', 0, 20, 0, 0]); // GOLD 62 > 61.5
+  zones = J(w.mapZones_(null, true));
+  assert.strictEqual(z('Middle').holder, 'GOLD', 'past the defense edge, a neighbor takes it');
+  // Must Border: BLACK holds only the Office (not next to Middle) and can't attack it however much it earns.
+  w.writeRowsByHeader_(mz, zoneRows.map(r => Object.assign({}, r, r.Zone === 'West' || r.Zone === 'East' ? { Holder: 'GOLD' } : {})));
+  ev.rows.push([408, 'Black Out', 'event', ago(1), '', '', 500, 0, 0, 0]);
+  zones = J(w.mapZones_(null, false));
+  assert.strictEqual(z('Middle').holder, 'GOLD', 'BLACK leads but does not border Middle; GOLD is the best squad that does');
+  // The page payload: grid fits the zones, rules explained, recent battles.
+  const pay = J(w.mapPayload_(null));
+  assert.deepStrictEqual(pay.grid, { cols: 12, rows: 8 });
+  assert.ok(pay.rules.find(r => r.rule === 'Siege' && r.border && r.defense === 50 && r.zones.includes('Middle')));
+  assert.ok(pay.battles.length >= 1 && pay.battles[0].zone);
+  assert.strictEqual(pay.style, 'building');
+  // Admin map editor: needs a signed-in admin, round-trips zones and rules, a staff-set holder starts today.
+  assert.throws(() => w.clashMapLoad('nope'));
+  assert.throws(() => w.clashMapSave('nope', '{}'));
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  const loaded = JSON.parse(w.clashMapLoad('T'));
+  assert.strictEqual(loaded.zones.length, 5);
+  assert.ok(loaded.building.zones.length >= 10 && loaded.methods.includes('staff pick'));
+  const west = loaded.zones.find(x => x.zone === 'West');
+  west.x = 1; west.zone = 'West Wing'; loaded.zones.find(x => x.zone === 'Office').holder = 'GREY';
+  loaded.rules.push({ show: true, rule: 'New Idea', text: 'Most poll points', method: 'most points', counts: 'daily_poll', days: 10, border: false, defense: 0 });
+  w.clashMapSave('T', JSON.stringify(loaded));
+  const again = JSON.parse(w.clashMapLoad('T'));
+  assert.strictEqual(again.zones.find(x => x.zone === 'West Wing').x, 1);
+  assert.strictEqual(again.zones.find(x => x.zone === 'Office').holder, 'GREY');
+  assert.strictEqual(again.zones.find(x => x.zone === 'Office').since, today, 'a staff-set holder starts today');
+  assert.ok(again.rules.find(r => r.rule === 'New Idea' && r.days === 10));
+  loaded.rules.push({ rule: 'new idea' });
+  assert.throws(() => w.clashMapSave('T', JSON.stringify(loaded)), /Two rules/);
+  // An older Map Zones tab (no Conquer By / Borders) gets the columns; the building swap keeps old rules.
+  const w2 = world(); w2.ensureSettings_();
+  const old = w2.book.insertSheet('Map Zones');
+  old.rows = [['Show', 'Zone', 'Wing', 'Summit', 'Claimed By', 'Weekly Points', 'X', 'Y', 'W', 'H', 'Holder', 'Since'], [true, 'The Summit', 'Summit', true, '*', 5, 5, 0, 2, 2, 'GOLD', '2026-11-03']];
+  w2.ensureGameTabs_();
+  assert.deepStrictEqual(old.rows[0].slice(-2), ['Conquer By', 'Borders']);
+  assert.strictEqual(J(w2.mapZones_(null, false))[0].holder, 'GOLD', 'old zones keep working with no Conquer By');
+  w2.book.getSheetByName('Conquest Rules').rows.push([true, 'My Rule', '', 'most points', '*', 7, false, 0]);
+  w2.applyBuildingMap_();
+  assert.ok(old.rows.slice(1).some(r => r[1] === 'Cafeteria'));
+  assert.ok(!old.rows.slice(1).some(r => r[1] === 'The Summit'));
+  assert.ok(w2.book.getSheetByName('Conquest Rules').rows.some(r => r[1] === 'My Rule'));
 });
 
 test('roster: the Students tab copies the district roster, keeps squads, and lets students sign in by 800#@gomounts.org', () => {

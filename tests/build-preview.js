@@ -114,4 +114,4 @@ http.createServer((req, res) => {
   fs.writeFileSync(out, build(/page=me/.test(req.url) ? 'me' : ''));
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
   res.end(fs.readFileSync(out));
-}).listen(3041, () => console.log('Preview on http://localhost:3041'));
+}).listen(Number(process.env.PORT) || 3041, () => console.log('Preview on http://localhost:' + (Number(process.env.PORT) || 3041)));

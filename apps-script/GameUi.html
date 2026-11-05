@@ -21,6 +21,14 @@
 .gb-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; font-size: 13px; }
 .gb-legend span { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.06); color: var(--text2, #d6c2ff); }
 .gb-legend i { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+.gb-feed { margin-top: 10px; display: grid; gap: 4px; font-size: 13px; color: var(--text2, #d6c2ff); }
+.gb-feed div::before { content: '⚔ '; }
+.gb-feed span { font-family: 'DM Mono', monospace; font-size: 11px; opacity: .7; }
+.gb-rules { margin-top: 10px; font-size: 13px; color: var(--text2, #d6c2ff); }
+.gb-rules summary { cursor: pointer; font-weight: 700; color: #ffe100; }
+.gb-rules div { margin-top: 6px; line-height: 1.45; }
+.gb-rules span { opacity: .7; }
+.gb-rules em { display: block; font-style: normal; font-family: 'DM Mono', monospace; font-size: 11px; opacity: .7; }
 
 /* Monster */
 .gm { position: relative; overflow: hidden; display: grid; grid-template-columns: 110px 1fr; gap: 16px; align-items: center; padding: 18px; border-radius: 18px;
@@ -226,7 +234,7 @@
 
   // ── The territory board ───────────────────────────────────────────
   // Zones sit on a 12 x 8 grid; each is drawn with uneven, hand-cut borders (seeded by its name,
-  // so it looks the same every time). General territories only: never the real building.
+  // so it looks the same every time). MAP_STYLE building draws clean areas instead, like a floor plan.
   function seeded(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return function () { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296; }; }
   function blob(z, cell) {
     var rnd = seeded(z.zone), x = z.x * cell + 6, y = z.y * cell + 6, w = z.w * cell - 12, h = z.h * cell - 12, pts = [], n = 5;
@@ -240,23 +248,49 @@
   function board(map, opts) {
     if (!map || !map.zones || !map.zones.length) return '';
     opts = opts || {};
-    var cell = 80, W = 12 * cell, H = 8 * cell;
-    var wingColor = {};
+    var grid = map.grid || { cols: 12, rows: 8 }, cell = Math.round(960 / grid.cols), W = grid.cols * cell, H = grid.rows * cell;
+    var building = map.style !== 'mountain';
+    var pad = building ? Math.max(3, cell * .08) : 6;
+    // Building look: one dark slab under every zone (the footprint), then each area on top.
+    var slab = building ? map.zones.map(function (z) { return '<rect x="' + (z.x * cell - 3) + '" y="' + (z.y * cell - 3) + '" width="' + (z.w * cell + 6) + '" height="' + (z.h * cell + 6) + '" fill="#2a1a40"/>'; }).join('') : '';
     var zones = map.zones.map(function (z) {
       var fill = z.holder ? SQ_LIGHT[z.holder] : '#3a2a52', ink = z.holder === 'GOLD' || z.holder === 'GREY' || z.holder === 'BLACK' ? '#12081f' : '#fff';
-      var cx = (z.x + z.w / 2) * cell, cy = (z.y + z.h / 2) * cell;
-      var crown = z.summit ? '<path d="M' + (cx - 18) + ' ' + (cy - 30) + ' l6 -16 l12 10 l12 -10 l6 16 Z" fill="#ffe100" stroke="#12081f" stroke-width="2"/>' : '';
+      var cx = (z.x + z.w / 2) * cell, cy = (z.y + z.h / 2) * cell, zw = z.w * cell - pad * 2, zh = z.h * cell - pad * 2;
       var wingHeld = map.wings && map.wings[z.wing];
-      return '<g class="zone"><path d="' + blob(z, cell) + '" fill="' + fill + '" fill-opacity="' + (z.holder ? .92 : .6) + '" stroke="' + (wingHeld ? '#ffe100' : '#12081f') + '" stroke-width="' + (wingHeld ? 6 : 4) + '" stroke-linejoin="round"><title>' + esc(z.zone + (z.holder ? ', held by ' + z.holder : ', unclaimed') + ' · ' + z.wing) + '</title></path>' +
-        crown + '<text x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle" font-family="Fraunces,serif" font-weight="900" font-size="' + (z.w * cell > 170 ? 22 : 17) + '" fill="' + (z.holder ? ink : '#d6c2ff') + '">' + esc(z.zone) + '</text>' +
-        '<text x="' + cx + '" y="' + (cy + 26) + '" text-anchor="middle" font-family="DM Mono,monospace" font-size="13" fill="' + (z.holder ? ink : '#b09ec8') + '" opacity=".85">' + esc(z.holder ? (z.summit ? 'KING OF THE MOUNTAIN' : z.holder) : 'unclaimed') + '</text></g>';
+      var stroke = wingHeld ? '#ffe100' : '#12081f', sw = wingHeld ? 5 : building ? 2.5 : 4;
+      var shape = building
+        ? '<rect x="' + (z.x * cell + pad) + '" y="' + (z.y * cell + pad) + '" width="' + zw + '" height="' + zh + '" rx="' + Math.min(14, cell * .3) + '"'
+        : '<path d="' + blob(z, cell) + '"';
+      var fs = Math.max(11, Math.min(22, (zw - 8) / Math.max(4, String(z.zone).length * .6)));
+      var crown = z.summit ? '<path d="M' + (cx - 14) + ' ' + (cy - fs - 18) + ' l5 -13 l9 8 l9 -8 l5 13 Z" fill="#ffe100" stroke="#12081f" stroke-width="2"/>' : '';
+      var tag = z.border ? '⚔ ' : z.method === 'staff pick' ? '★ ' : '';
+      var sub = z.holder ? (z.summit ? 'KING OF THE MOUNTAIN' : z.holder) : 'unclaimed';
+      var small = Math.max(9, Math.min(12, fs * .6)), line = Math.min(20, fs);
+      return '<g class="zone">' + shape + ' fill="' + fill + '" fill-opacity="' + (z.holder ? .92 : .6) + '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linejoin="round"><title>' +
+        esc(z.zone + (z.holder ? ', held by ' + z.holder : ', unclaimed') + (z.wing ? ' · ' + z.wing : '') + (z.rule ? ' · won by ' + z.rule : '') +
+          (z.neighbors && z.neighbors.length ? ' · next to ' + z.neighbors.join(', ') : '')) + '</title>' + (building ? '</rect>' : '</path>') +
+        crown + '<text x="' + cx + '" y="' + (cy + 2) + '" text-anchor="middle" font-family="Fraunces,serif" font-weight="900" font-size="' + fs.toFixed(1) + '" fill="' + (z.holder ? ink : '#d6c2ff') + '">' + esc(z.zone) + '</text>' +
+        '<text x="' + cx + '" y="' + (cy + 2 + line) + '" text-anchor="middle" font-family="DM Mono,monospace" font-size="' + small.toFixed(1) + '" fill="' + (z.holder ? ink : '#b09ec8') + '" opacity=".85">' + esc(sub) + '</text>' +
+        (z.rule && zh > fs * 3.2 && (tag + z.rule).length * (small - 1) * .62 < zw - 8 ? '<text x="' + cx + '" y="' + (cy + 2 + line * 1.9) + '" text-anchor="middle" font-family="DM Mono,monospace" font-size="' + Math.max(9, small - 1).toFixed(1) + '" fill="' + (z.holder ? ink : '#b09ec8') + '" opacity=".7">' + esc(tag + z.rule) + '</text>' : '') + '</g>';
     }).join('');
     var held = map.wings ? Object.keys(map.wings) : [];
     var legend = '<div class="gb-legend">' + held.map(function (w) { return '<span><i style="background:' + SQ_LIGHT[map.wings[w]] + '"></i>' + esc(w) + ': all held by ' + esc(map.wings[w]) + '</span>'; }).join('') +
-      '<span>Claimed by the most points in the last ' + (map.claimDays || 14) + ' days</span></div>';
-    return '<div class="gb"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Clash territory map">' +
-      '<defs><pattern id="gbTopo" width="160" height="80" patternUnits="userSpaceOnUse"><path d="M0 60 Q40 40 80 56 T160 50" fill="none" stroke="#bb8ef5" stroke-opacity=".12" stroke-width="1.5"/></pattern></defs>' +
-      '<rect width="' + W + '" height="' + H + '" fill="#170b29"/><rect width="' + W + '" height="' + H + '" fill="url(#gbTopo)"/>' + zones + '</svg></div>' + (opts.legend === false ? '' : legend);
+      (map.rules && map.rules.some(function (r) { return r.border; }) ? '<span>⚔ Siege: only a squad next door can attack</span>' : '') +
+      (map.rules ? '' : '<span>Claimed by the most points in the last ' + (map.claimDays || 14) + ' days</span>') + '</div>';
+    var feed = map.battles && map.battles.length ? '<div class="gb-feed">' + map.battles.slice(0, opts.battles || 3).map(function (b) {
+      return '<div><b style="color:' + SQ_LIGHT[b.to] + '">' + esc(b.to) + '</b> took <b>' + esc(b.zone) + '</b>' + (b.from ? ' from ' + esc(b.from) : '') +
+        ' <span>' + esc(b.date.slice(5).replace('-', '/')) + (b.rule ? ' · ' + esc(b.rule) : '') + '</span></div>';
+    }).join('') + '</div>' : '';
+    var rules = map.rules && map.rules.length && opts.rules !== false ? '<details class="gb-rules"><summary>How to win each zone</summary>' + map.rules.map(function (r) {
+      return '<div><b>' + (r.border ? '⚔ ' : r.method === 'staff pick' ? '★ ' : '') + esc(r.rule) + '</b>: ' + esc(r.text) +
+        (r.method !== 'staff pick' ? ' <span>(last ' + r.days + ' days' + (r.defense ? ', the holder has a ' + r.defense + '% edge' : '') + ')</span>' : '') +
+        '<em>' + esc(r.zones.join(' · ')) + '</em></div>';
+    }).join('') + '</details>' : '';
+    return '<div class="gb' + (building ? ' gb-building' : '') + '"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Clash territory map">' +
+      '<defs><pattern id="gbTopo" width="160" height="80" patternUnits="userSpaceOnUse"><path d="M0 60 Q40 40 80 56 T160 50" fill="none" stroke="#bb8ef5" stroke-opacity=".12" stroke-width="1.5"/></pattern>' +
+      '<pattern id="gbTiles" width="' + cell + '" height="' + cell + '" patternUnits="userSpaceOnUse"><path d="M' + cell + ' 0 V' + cell + ' H0" fill="none" stroke="#bb8ef5" stroke-opacity=".06"/></pattern></defs>' +
+      '<rect width="' + W + '" height="' + H + '" fill="#170b29"/><rect width="' + W + '" height="' + H + '" fill="url(#' + (building ? 'gbTiles' : 'gbTopo') + ')"/>' + slab + zones + '</svg></div>' +
+      (opts.legend === false ? '' : legend + feed + rules);
   }
 
   // ── Monster of the Month ──────────────────────────────────────────
@@ -305,7 +339,7 @@
       var link = g.studentLink ? g.studentLink + (g.studentLink.indexOf('?') > -1 ? '&' : '?') + 'page=me' : '';
       box.innerHTML = (link ? '<div style="display:flex;justify-content:center;margin:0 0 16px"><a class="btn btn-gold craft-press" href="' + esc(link) + '" target="_top" style="font-size:16px;padding:12px 22px">🏔️ Open My Climb</a></div>' : '') +
         (g.monster ? '<div style="margin-bottom:16px">' + monster(g.monster) + '</div>' : '') +
-        (g.map ? '<div class="pop-h"><h3>The mountain</h3><span class="tag">King of the Mountain</span></div>' + board(g.map) : '');
+        (g.map ? '<div class="pop-h"><h3>' + (g.map.style === 'mountain' ? 'The mountain' : 'Conquer the school') + '</h3><span class="tag">King of the Mountain</span></div>' + board(g.map) : '');
     }).catch(function () {});
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(homeGame, 1500); }); else setTimeout(homeGame, 1500);

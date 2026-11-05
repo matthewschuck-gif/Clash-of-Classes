@@ -145,6 +145,7 @@ const DEFAULT_SETTINGS = [
   ['GAME_ENGINE', 'ON', 'OFF hides engine powers.'],
   ['MONSTER_VISIBLE', 'ON', 'OFF hides Monster of the Month everywhere (one click: Clash of Classes › Show or hide Monster of the Month). Each monster also needs Show ticked on the Monsters tab.'],
   ['CLAIM_DAYS', '14', 'School map: a zone goes to the squad with the most points from its events in the last this-many days.'],
+  ['MAP_STYLE', 'building', 'School map look: building (clean areas like a floor plan) or mountain (hand-cut territory blobs).'],
   ['WING_MULTIPLIER', '2', 'School map: holding every zone in a wing pays that wing this many times.'],
   ['CHANCE_DRAWS_PER_WEEK', '1', 'Chance cards each squad\'s Generals can draw a week (engine powers can add more).'],
   ['STREAK_BANK', '2=2, 3=4, 4=7, 5=11, 6=16', 'Hot Streak: days in a row = points when banked.'],

@@ -10,9 +10,8 @@
  *   The holder keeps it on a tie or a quiet stretch (king of the hill). The Summit zone's holder
  *   is King of the Mountain. Every week each holder earns the zone's Weekly Points (Summit
  *   x2), and holding every zone in a Wing (a color set) pays that wing again (WING_MULTIPLIER).
- *   Map: X, Y, W, H place each zone on a 12 x 8 grid, drawn as a game board with uneven,
- *   Risk-style borders. For safety it is NOT the real building: general territories only,
- *   never a floor plan, room numbers or exits.
+ *   How each zone is won (Conquer By), the Risk borders and the layout live in 18_Conquest.gs.
+ *   The map is laid out like the building, by area only: never room numbers, doors or exits.
  * CHANCE CARDS (tabs Chance Cards, Squad Hand): Generals draw CHANCE_DRAWS_PER_WEEK cards a week
  *   in Generals HQ. Points cards count at once; the rest wait in the squad's hand:
  *   double_rent (next territory payout x2), freeze_pass (ends a Fun Freeze, never a Peaks
@@ -31,7 +30,7 @@
  */
 
 const GAME_TYPES_ = ['territory', 'chance', 'streak_bank', 'round_goal', 'engine', 'monster', 'destination_ticket', 'freeze_thaw'];
-const MAP_HEADERS_ = ['Show', 'Zone', 'Wing', 'Summit', 'Claimed By', 'Weekly Points', 'X', 'Y', 'W', 'H', 'Holder', 'Since'];
+const MAP_HEADERS_ = ['Show', 'Zone', 'Wing', 'Summit', 'Claimed By', 'Weekly Points', 'X', 'Y', 'W', 'H', 'Holder', 'Since', 'Conquer By', 'Borders'];
 const CARD_HEADERS_ = ['Show', 'Card', 'Text', 'Effect', 'Value', 'Copies'];
 const HAND_HEADERS_ = ['Squad', 'Card', 'Effect', 'Value', 'Drawn', 'Status', 'Note'];
 const BANK_HEADERS_ = ['Squad', 'Through', 'Length', 'Points', 'At', 'By'];
@@ -50,16 +49,7 @@ function monthBounds_(offset) {
 function ensureGameTabs_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const m0 = monthBounds_(0), m1 = monthBounds_(1);
-  [['Map Zones', MAP_HEADERS_, [
-      [true, 'The Summit', 'Summit', true, '*', 5, 5, 0, 2, 2, '', ''],
-      [true, 'Lunch Basin', 'Commons Valley', false, 'mayhem_week, lunch', 3, 0, 2, 3, 2, '', ''],
-      [true, 'Duelers\' Pass', 'Commons Valley', false, 'duel_bonus', 3, 3, 2, 2, 2, '', ''],
-      [true, 'Mindset Woods', 'Learning Ridge', false, 'mountaineer_mindset', 3, 7, 2, 3, 2, '', ''],
-      [true, 'Growth Ledge', 'Learning Ridge', false, 'star_growth', 3, 10, 2, 2, 2, '', ''],
-      [true, 'Game Day Gulch', 'Spirit Hollow', false, 'mayhem, gaming, field', 3, 0, 5, 3, 3, '', ''],
-      [true, 'Echo Falls', 'Spirit Hollow', false, 'daily_poll', 3, 3, 5, 3, 3, '', ''],
-      [true, 'Dough Meadow', 'Spirit Hollow', false, 'trait_dough', 3, 6, 5, 3, 3, '', ''],
-      [true, 'Shout-out Outpost', 'Spirit Hollow', false, 'shout', 2, 9, 5, 3, 3, '', '']]],
+  [['Map Zones', MAP_HEADERS_, null],
    ['Chance Cards', CARD_HEADERS_, [
       [true, 'Trail Magic', 'Someone left snacks at the trailhead. +3', 'points', 3, 3],
       [true, 'Base Camp Supplies', 'Your squad restocks. +2', 'points', 2, 4],
@@ -93,7 +83,9 @@ function ensureGameTabs_() {
     sh.getRange(1, 1, 1, t[1].length).setValues([t[1]]).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
     sh.setFrozenRows(1);
     if (t[2]) sh.getRange(2, 1, t[2].length, t[1].length).setValues(t[2]);
+    if (t[0] === 'Map Zones') writeRowsByHeader_(sh, buildingZoneRows_()); // 18_Conquest.gs
   });
+  ensureConquestTabs_();
 }
 
 function gameOn_(key) { return String(getSetting_(key) || 'ON').toUpperCase() !== 'OFF'; }
@@ -125,29 +117,7 @@ function eventMatcher_(spec) {
 }
 
 // ── SCHOOL MAP ──────────────────────────────────────────────────────
-function mapZones_(events, write) {
-  const days = Math.max(1, Number(getSetting_('CLAIM_DAYS')) || 14);
-  const today = todayYmd_(), from = ymdShift_(today, -days + 1);
-  events = events || readEventsTab_();
-  const sheet = write ? getSheetSafe_('Map Zones') : null;
-  return sheetRows_('Map Zones').filter(function (r) { return ticked_(r['Show']) && String(r['Zone'] || '').trim(); }).map(function (r) {
-    const score = pointsBy_(events, from, today, eventMatcher_(r['Claimed By'])).points;
-    let holder = squadOf_(r['Holder']);
-    if (SQUAD_KEYS_.indexOf(holder) === -1) holder = '';
-    const best = Math.max.apply(null, SQUAD_KEYS_.map(function (s) { return score[s]; }));
-    const leaders = SQUAD_KEYS_.filter(function (s) { return best > 0 && score[s] === best; });
-    let since = String(r['Since'] || '');
-    // King of the hill: the holder keeps it on a tie or when nobody scored.
-    if (leaders.length && leaders.indexOf(holder) === -1 && leaders.length === 1) {
-      holder = leaders[0]; since = today;
-      if (sheet) sheet.getRange(r._row, MAP_HEADERS_.indexOf('Holder') + 1, 1, 2).setValues([[holder, since]]);
-    }
-    return { row: r._row, zone: String(r['Zone']).trim(), wing: String(r['Wing'] || '').trim(), summit: ticked_(r['Summit']),
-      claimedBy: String(r['Claimed By'] || ''), weekly: Number(r['Weekly Points']) || 0,
-      x: Number(r['X']) || 0, y: Number(r['Y']) || 0, w: Math.max(1, Number(r['W']) || 1), h: Math.max(1, Number(r['H']) || 1),
-      holder: holder, since: since, score: score };
-  });
-}
+// mapZones_ (who holds each zone) is in 18_Conquest.gs.
 
 // Wings fully held by one squad: { wing: squad }.
 function heldWings_(zones) {
@@ -455,8 +425,7 @@ function gameState_(events) {
   const zones = gameOn_('GAME_MAP') ? mapZones_(events) : [];
   const engine = gameOn_('GAME_ENGINE') ? enginePowers_(false, events) : [];
   return {
-    map: gameOn_('GAME_MAP') ? { zones: zones.map(function (z) { const o = Object.assign({}, z); delete o.row; return o; }), wings: heldWings_(zones),
-      claimDays: Number(getSetting_('CLAIM_DAYS')) || 14 } : null,
+    map: mapPayload_(events, zones),
     streaks: gameOn_('GAME_STREAK') ? (function () { const s = hotStreaks_(); Object.keys(s).forEach(function (k) { s[k].bank = streakValue_(s[k].length, k, engine); }); return s; })() : null,
     rounds: gameOn_('GAME_ROUNDS') ? roundGoals_(events).filter(function (g) { return g.active || (g.done && !/awarded/i.test(g.status)); }).map(function (g) { delete g.row; return g; }) : [],
     engine: engine,
@@ -558,7 +527,7 @@ function hqGame_(squad) {
       drawsLeft: gameOn_('GAME_CARDS') ? drawsLeft_(squad, engine) : 0,
       streak: st ? { length: st.length, bank: streakValue_(st.length, squad, engine), shields: st.shields } : null,
       engine: engine,
-      map: gameOn_('GAME_MAP') ? (function () { const z = mapZones_(events); return { zones: z.map(function (x) { const o = Object.assign({}, x); delete o.row; return o; }), wings: heldWings_(z), claimDays: Number(getSetting_('CLAIM_DAYS')) || 14 }; })() : null,
+      map: mapPayload_(events),
       monster: monster_(events),
     };
   } catch (e) { return { error: e.message }; }
