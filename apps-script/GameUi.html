@@ -1,5 +1,5 @@
 <style>
-/* ── GameUi: characters, the territory board, the monster (shared by the site, TV and My Climb) ──
+/* ── GameUi: characters, the territory board, the Opponent (shared by the site, TV and My Climb) ──
    Original characters in the spirit of the 2026-27 shield: each squad's Pennsylvania mountain
    animal on the logo's snowy peak with its boot-print trail. Round, soft, big-eyed (an ode to
    Pixar's craft, not its characters). They blink and breathe; both stop for reduced motion. */
@@ -30,13 +30,15 @@
 .gb-rules span { opacity: .7; }
 .gb-rules em { display: block; font-style: normal; font-family: 'DM Mono', monospace; font-size: 11px; opacity: .7; }
 
-/* Monster */
+/* The Opponent */
 .gm { position: relative; overflow: hidden; display: grid; grid-template-columns: 110px 1fr; gap: 16px; align-items: center; padding: 18px; border-radius: 18px;
   background: radial-gradient(90% 120% at 0% 0%, rgba(239, 68, 68, .22), transparent 60%), #1a0b2e; border: 1px solid rgba(248, 113, 113, .35); }
 .gm h3 { margin: 0; font-family: 'Fraunces', serif; font-weight: 900; font-size: 22px; color: #fff; }
 .gm p { margin: 6px 0 10px; color: #f5d0d0; font-size: 14px; line-height: 1.5; }
 .gm-hp { height: 14px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
 .gm-hp i { display: block; height: 100%; background: linear-gradient(90deg, #f87171, #fbbf24); border-radius: 99px; transition: width 1.2s var(--craft-spring, ease-out); }
+.gm-kicker { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #fca5a5; margin-bottom: 2px; }
+.gm.dead .gm-kicker { color: #86efac; }
 .gm-goal { font-family: 'DM Mono', monospace; font-size: 12px; color: #fecaca; margin-top: 6px; }
 .gm.dead { border-color: rgba(134, 239, 172, .5); background: radial-gradient(90% 120% at 0% 0%, rgba(134, 239, 172, .2), transparent 60%), #10261a; }
 .gm img { width: 110px; height: 110px; object-fit: cover; border-radius: 14px; }
@@ -234,8 +236,21 @@
 
   // ── The territory board ───────────────────────────────────────────
   // Zones sit on a 12 x 8 grid; each is drawn with uneven, hand-cut borders (seeded by its name,
-  // so it looks the same every time). MAP_STYLE building draws clean areas instead, like a floor plan.
+  // so it looks the same every time). MAP_STYLE puzzle (the default) cuts the building layout like
+  // a jigsaw: every point on an edge is nudged by its own grid spot, so two zones that touch share
+  // the exact same rough cut. MAP_STYLE clean draws plain rounded areas.
   function seeded(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return function () { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296; }; }
+  function cut(z, cell) {
+    var pts = [], x0 = z.x * 2, y0 = z.y * 2, x1 = (z.x + z.w) * 2, y1 = (z.y + z.h) * 2, i;
+    for (i = x0; i < x1; i++) pts.push([i, y0]);
+    for (i = y0; i < y1; i++) pts.push([x1, i]);
+    for (i = x1; i > x0; i--) pts.push([i, y1]);
+    for (i = y1; i > y0; i--) pts.push([x0, i]);
+    return 'M' + pts.map(function (p) {
+      var rnd = seeded('cut:' + p[0] + ',' + p[1]), amp = cell * (p[0] % 2 || p[1] % 2 ? .1 : .17);
+      return (p[0] * cell / 2 + (rnd() - .5) * 2 * amp).toFixed(1) + ' ' + (p[1] * cell / 2 + (rnd() - .5) * 2 * amp).toFixed(1);
+    }).join(' L') + ' Z';
+  }
   function blob(z, cell) {
     var rnd = seeded(z.zone), x = z.x * cell + 6, y = z.y * cell + 6, w = z.w * cell - 12, h = z.h * cell - 12, pts = [], n = 5;
     function j() { return (rnd() - .5) * cell * .28; }
@@ -249,18 +264,20 @@
     if (!map || !map.zones || !map.zones.length) return '';
     opts = opts || {};
     var grid = map.grid || { cols: 12, rows: 8 }, cell = Math.round(960 / grid.cols), W = grid.cols * cell, H = grid.rows * cell;
-    var building = map.style !== 'mountain';
-    var pad = building ? Math.max(3, cell * .08) : 6;
-    // Building look: one dark slab under every zone (the footprint), then each area on top.
-    var slab = building ? map.zones.map(function (z) { return '<rect x="' + (z.x * cell - 3) + '" y="' + (z.y * cell - 3) + '" width="' + (z.w * cell + 6) + '" height="' + (z.h * cell + 6) + '" fill="#2a1a40"/>'; }).join('') : '';
-    var zones = map.zones.map(function (z) {
+    var style = map.style === 'mountain' || map.style === 'clean' ? map.style : 'puzzle', building = style !== 'mountain', clean = style === 'clean';
+    var pad = clean ? Math.max(3, cell * .08) : style === 'puzzle' ? cell * .15 : 6;
+    // Clean look: one dark slab under every zone (the footprint), then each area on top.
+    var slab = clean ? map.zones.map(function (z) { return '<rect x="' + (z.x * cell - 3) + '" y="' + (z.y * cell - 3) + '" width="' + (z.w * cell + 6) + '" height="' + (z.h * cell + 6) + '" fill="#2a1a40"/>'; }).join('') : '';
+    // Wings held whole draw last so their gold outline isn't covered by a neighbor's cut.
+    var order = map.zones.slice().sort(function (a, b) { return (map.wings && map.wings[a.wing] ? 1 : 0) - (map.wings && map.wings[b.wing] ? 1 : 0); });
+    var zones = order.map(function (z) {
       var fill = z.holder ? SQ_LIGHT[z.holder] : '#3a2a52', ink = z.holder === 'GOLD' || z.holder === 'GREY' || z.holder === 'BLACK' ? '#12081f' : '#fff';
       var cx = (z.x + z.w / 2) * cell, cy = (z.y + z.h / 2) * cell, zw = z.w * cell - pad * 2, zh = z.h * cell - pad * 2;
       var wingHeld = map.wings && map.wings[z.wing];
-      var stroke = wingHeld ? '#ffe100' : '#12081f', sw = wingHeld ? 5 : building ? 2.5 : 4;
-      var shape = building
+      var stroke = wingHeld ? '#ffe100' : '#12081f', sw = wingHeld ? 5 : clean ? 2.5 : style === 'puzzle' ? 3.5 : 4;
+      var shape = clean
         ? '<rect x="' + (z.x * cell + pad) + '" y="' + (z.y * cell + pad) + '" width="' + zw + '" height="' + zh + '" rx="' + Math.min(14, cell * .3) + '"'
-        : '<path d="' + blob(z, cell) + '"';
+        : '<path d="' + (building ? cut(z, cell) : blob(z, cell)) + '"';
       var fs = Math.max(11, Math.min(22, (zw - 8) / Math.max(4, String(z.zone).length * .6)));
       var crown = z.summit ? '<path d="M' + (cx - 14) + ' ' + (cy - fs - 18) + ' l5 -13 l9 8 l9 -8 l5 13 Z" fill="#ffe100" stroke="#12081f" stroke-width="2"/>' : '';
       var tag = z.border ? '⚔ ' : z.method === 'staff pick' ? '★ ' : '';
@@ -268,14 +285,14 @@
       var small = Math.max(9, Math.min(12, fs * .6)), line = Math.min(20, fs);
       return '<g class="zone">' + shape + ' fill="' + fill + '" fill-opacity="' + (z.holder ? .92 : .6) + '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linejoin="round"><title>' +
         esc(z.zone + (z.holder ? ', held by ' + z.holder : ', unclaimed') + (z.wing ? ' · ' + z.wing : '') + (z.rule ? ' · won by ' + z.rule : '') +
-          (z.neighbors && z.neighbors.length ? ' · next to ' + z.neighbors.join(', ') : '')) + '</title>' + (building ? '</rect>' : '</path>') +
+          (z.neighbors && z.neighbors.length ? ' · next to ' + z.neighbors.join(', ') : '')) + '</title>' + (clean ? '</rect>' : '</path>') +
         crown + '<text x="' + cx + '" y="' + (cy + 2) + '" text-anchor="middle" font-family="Fraunces,serif" font-weight="900" font-size="' + fs.toFixed(1) + '" fill="' + (z.holder ? ink : '#d6c2ff') + '">' + esc(z.zone) + '</text>' +
         '<text x="' + cx + '" y="' + (cy + 2 + line) + '" text-anchor="middle" font-family="DM Mono,monospace" font-size="' + small.toFixed(1) + '" fill="' + (z.holder ? ink : '#b09ec8') + '" opacity=".85">' + esc(sub) + '</text>' +
         (z.rule && zh > fs * 3.2 && (tag + z.rule).length * (small - 1) * .62 < zw - 8 ? '<text x="' + cx + '" y="' + (cy + 2 + line * 1.9) + '" text-anchor="middle" font-family="DM Mono,monospace" font-size="' + Math.max(9, small - 1).toFixed(1) + '" fill="' + (z.holder ? ink : '#b09ec8') + '" opacity=".7">' + esc(tag + z.rule) + '</text>' : '') + '</g>';
     }).join('');
     var held = map.wings ? Object.keys(map.wings) : [];
     var legend = '<div class="gb-legend">' + held.map(function (w) { return '<span><i style="background:' + SQ_LIGHT[map.wings[w]] + '"></i>' + esc(w) + ': all held by ' + esc(map.wings[w]) + '</span>'; }).join('') +
-      (map.rules && map.rules.some(function (r) { return r.border; }) ? '<span>⚔ Siege: only a squad next door can attack</span>' : '') +
+      (map.rules && map.rules.some(function (r) { return r.border; }) ? '<span>⚔ Siege: next door attacks with a small edge; farther away needs a big lead</span>' : '') +
       (map.rules ? '' : '<span>Claimed by the most points in the last ' + (map.claimDays || 14) + ' days</span>') + '</div>';
     var feed = map.battles && map.battles.length ? '<div class="gb-feed">' + map.battles.slice(0, opts.battles || 3).map(function (b) {
       return '<div><b style="color:' + SQ_LIGHT[b.to] + '">' + esc(b.to) + '</b> took <b>' + esc(b.zone) + '</b>' + (b.from ? ' from ' + esc(b.from) : '') +
@@ -283,17 +300,17 @@
     }).join('') + '</div>' : '';
     var rules = map.rules && map.rules.length && opts.rules !== false ? '<details class="gb-rules"><summary>How to win each zone</summary>' + map.rules.map(function (r) {
       return '<div><b>' + (r.border ? '⚔ ' : r.method === 'staff pick' ? '★ ' : '') + esc(r.rule) + '</b>: ' + esc(r.text) +
-        (r.method !== 'staff pick' ? ' <span>(last ' + r.days + ' days' + (r.defense ? ', the holder has a ' + r.defense + '% edge' : '') + ')</span>' : '') +
+        (r.method !== 'staff pick' ? ' <span>(last ' + r.days + ' days' + (r.defense ? ', the holder has a ' + r.defense + '% edge' : '') + (r.border ? (r.far != null ? ', ' + r.far + '% from farther away' : ', next door only') : '') + ')</span>' : '') +
         '<em>' + esc(r.zones.join(' · ')) + '</em></div>';
     }).join('') + '</details>' : '';
-    return '<div class="gb' + (building ? ' gb-building' : '') + '"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Clash territory map">' +
+    return '<div class="gb' + (building ? ' gb-building' : '') + '"><svg viewBox="' + (-cell / 4) + ' ' + (-cell / 4) + ' ' + (W + cell / 2) + ' ' + (H + cell / 2) + '" role="img" aria-label="Clash territory map">' +
       '<defs><pattern id="gbTopo" width="160" height="80" patternUnits="userSpaceOnUse"><path d="M0 60 Q40 40 80 56 T160 50" fill="none" stroke="#bb8ef5" stroke-opacity=".12" stroke-width="1.5"/></pattern>' +
       '<pattern id="gbTiles" width="' + cell + '" height="' + cell + '" patternUnits="userSpaceOnUse"><path d="M' + cell + ' 0 V' + cell + ' H0" fill="none" stroke="#bb8ef5" stroke-opacity=".06"/></pattern></defs>' +
-      '<rect width="' + W + '" height="' + H + '" fill="#170b29"/><rect width="' + W + '" height="' + H + '" fill="url(#' + (building ? 'gbTiles' : 'gbTopo') + ')"/>' + slab + zones + '</svg></div>' +
+      '<rect x="' + (-cell / 4) + '" y="' + (-cell / 4) + '" width="' + (W + cell / 2) + '" height="' + (H + cell / 2) + '" fill="#170b29"/><rect width="' + W + '" height="' + H + '" fill="url(#' + (building ? 'gbTiles' : 'gbTopo') + ')"/>' + slab + zones + '</svg></div>' +
       (opts.legend === false ? '' : legend + feed + rules);
   }
 
-  // ── Monster of the Month ──────────────────────────────────────────
+  // ── The Opponent (was Monster of the Month) ───────────────────────
   // Shady: the small blue hairy gremlin of schadenfreude. His fur tufts shrink with his health;
   // defeated, he's tiny, sheepish and blushing.
   function shady(defeated, health) {
@@ -325,13 +342,13 @@
       (m.defeated ? '' : '<path d="M48 86 l4 6 l4 -6 M64 86 l4 6 l4 -6" fill="#fff"/>') + '</g></svg>';
     var prog = m.progress ? m.progress.have + (m.progress.pct ? '%' : '') + ' of ' + m.progress.need + (m.progress.pct ? '%' : '') : 'Staff will mark it defeated';
     return '<div class="gm' + (m.defeated ? ' dead' : '') + '"><div>' + art + '</div><div>' +
-      '<h3>' + (m.defeated ? '🎉 ' : '👹 ') + esc(m.name) + (m.defeated ? ' is defeated!' : '') + '</h3><p>' + esc(m.story) + '</p>' +
-      '<div class="gm-hp" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100" aria-label="Monster health"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="gm-kicker">' + (m.defeated ? 'Opponent defeated' : 'This month\'s Opponent') + '</div><h3>' + (m.defeated ? '🎉 ' : '⚔️ ') + esc(m.name) + (m.defeated ? ' is defeated!' : '') + '</h3><p>' + esc(m.story) + '</p>' +
+      '<div class="gm-hp" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100" aria-label="Opponent strength"><i style="width:' + pct + '%"></i></div>' +
       '<div class="gm-goal">Defeat it together: ' + esc(m.goal) + ' · ' + esc(prog) + (m.reward ? ' · every squad gets +' + m.reward : '') + '</div></div></div>';
   }
 
 
-  // Home page block (Index #homeGame): the My Climb button, Monster of the Month and the map.
+  // Home page block (Index #homeGame): the My Climb button, the Opponent and the map.
   function homeGame() {
     var box = document.getElementById('homeGame');
     if (!box || !window.gasRun_) return;

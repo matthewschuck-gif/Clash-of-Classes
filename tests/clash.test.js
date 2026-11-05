@@ -809,14 +809,14 @@ test('game layer: map claims, wing bonus, chance cards + Flip Three, Hot Streak,
   w.gameTick();
   const rgEv = ev.rows.find(r => r[2] === 'round_goal' && /Most voters/.test(r[1]));
   assert.ok(rgEv && rgEv[7] === 8 && rgEv[8] === 5, 'GOLD 1st, GREY 2nd');
-  // Monster: hidden until shown; defeated together.
+  // The Opponent (was Monster of the Month): hidden until shown; defeated together.
   assert.strictEqual(w.monster_(), null, 'seeded monsters start hidden');
-  const mon = w.book.getSheetByName('Monsters');
+  const mon = w.book.getSheetByName('Opponents');
   mon.rows.push([true, ago(5), w.ymdShift_(today, 5), 'Test Beast', 'Grr', '', 'voters: 9', 2, '']);
   assert.ok(J(w.monster_()).defeated, '9 votes this week defeats it');
   w.gameTick();
   assert.strictEqual(ev.rows.filter(r => r[2] === 'monster').length, 1);
-  w.setSettingValue_('MONSTER_VISIBLE', 'OFF');
+  w.setSettingValue_('OPPONENT_VISIBLE', 'OFF');
   assert.strictEqual(w.monster_(), null, 'one switch hides it everywhere');
   // My Climb is school-day only: 7:00 to 4:00, weekdays not on the School Calendar.
   w.ensureSchoolCalendarTab_();
@@ -878,7 +878,7 @@ test('conquest: rules from the Sheet, Risk borders + defense edge, staff pick, e
   w.writeRowsByHeader_(mz, zoneRows);
   w.writeRowsByHeader_(w.book.getSheetByName('Conquest Rules'), [
     { Show: true, Rule: 'Open', Method: 'most points', Counts: 'trait_dough', 'Window Days': 7 },
-    { Show: true, Rule: 'Siege', Method: 'most points', Counts: '*', 'Window Days': 7, 'Must Border': true, 'Defense %': 50 },
+    { Show: true, Rule: 'Siege', Method: 'most points', Counts: '*', 'Window Days': 7, 'Must Border': true, 'Defense %': 50 }, // no Far Attack: next door only
     { Show: true, Rule: 'Count', Method: 'most entries', Counts: 'shout' },
     { Show: true, Rule: 'Pick', Method: 'staff pick' },
   ]);
@@ -909,12 +909,32 @@ test('conquest: rules from the Sheet, Risk borders + defense edge, staff pick, e
   ev.rows.push([408, 'Black Out', 'event', ago(1), '', '', 500, 0, 0, 0]);
   zones = J(w.mapZones_(null, false));
   assert.strictEqual(z('Middle').holder, 'GOLD', 'BLACK leads but does not border Middle; GOLD is the best squad that does');
+  // Far Attack: with it set, a squad from farther away can take a Siege zone, but needs the bigger lead.
+  const sieges = w.book.getSheetByName('Conquest Rules');
+  const farCol = sieges.rows[0].indexOf('Far Attack %');
+  assert.ok(farCol > -1);
+  sieges.rows.forEach(r => { if (r[1] === 'Siege') r[farCol] = 1000; });
+  w.writeRowsByHeader_(mz, zoneRows.map(r => Object.assign({}, r, r.Zone === 'Middle' ? { Holder: 'GOLD' } : r.Zone === 'West' || r.Zone === 'East' ? { Holder: 'GOLD' } : {})));
+  zones = J(w.mapZones_(null, false));
+  assert.strictEqual(z('Middle').holder, 'GOLD', 'BLACK 500 from afar is not 1000% more than GOLD 62');
+  sieges.rows.forEach(r => { if (r[1] === 'Siege') r[farCol] = 75; });
+  zones = J(w.mapZones_(null, false));
+  assert.strictEqual(z('Middle').holder, 'BLACK', 'BLACK 500 from afar is more than 75% over GOLD 62');
+  // Both ways: GOLD (next door) takes it back with just the 50% edge, not the far bar.
+  w.writeRowsByHeader_(mz, zoneRows.map(r => Object.assign({}, r, r.Zone === 'Middle' ? { Holder: 'BLACK' } : r.Zone === 'West' || r.Zone === 'East' ? { Holder: 'GOLD' } : {})));
+  ev.rows.push([409, 'Comeback', 'event', ago(1), '', '', 0, 700, 0, 0]); // GOLD 762 > BLACK 500 x 1.5 = 750
+  zones = J(w.mapZones_(null, false));
+  assert.strictEqual(z('Middle').holder, 'GOLD', 'next door only needs the Defense edge');
+  // Open zone: a far squad must beat the best squad next door by the far bar.
+  w.writeRowsByHeader_(mz, zoneRows.map(r => Object.assign({}, r, r.Zone === 'West' || r.Zone === 'East' ? { Holder: 'GOLD' } : {})));
+  zones = J(w.mapZones_(null, false));
+  assert.strictEqual(z('Middle').holder, 'GOLD', 'BLACK 500 from afar does not beat GOLD 762 next door');
   // The page payload: grid fits the zones, rules explained, recent battles.
   const pay = J(w.mapPayload_(null));
   assert.deepStrictEqual(pay.grid, { cols: 12, rows: 8 });
-  assert.ok(pay.rules.find(r => r.rule === 'Siege' && r.border && r.defense === 50 && r.zones.includes('Middle')));
+  assert.ok(pay.rules.find(r => r.rule === 'Siege' && r.border && r.defense === 50 && r.far === 75 && r.zones.includes('Middle')));
   assert.ok(pay.battles.length >= 1 && pay.battles[0].zone);
-  assert.strictEqual(pay.style, 'building');
+  assert.strictEqual(pay.style, 'puzzle');
   // Admin map editor: needs a signed-in admin, round-trips zones and rules, a staff-set holder starts today.
   assert.throws(() => w.clashMapLoad('nope'));
   assert.throws(() => w.clashMapSave('nope', '{}'));

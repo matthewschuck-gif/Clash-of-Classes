@@ -87,7 +87,7 @@ getSheet_('events').appendRow([104, 'Paper Chain Challenge', 'mayhem_week', '202
 getSheet_('events').appendRow([105, 'Penny Tower Race', 'mayhem_week', '2026-10-31', '', '', 2, 0, 4, 1]);
 ensureGameTabs_(); ensureMeTabs_();
 setSettingValue_('MY_CLIMB_HOURS', '00:00-23:59'); setSettingValue_('MY_CLIMB_SCHOOL_DAYS', 'OFF'); // preview only: always open
-getSheet_('Monsters').rows.forEach(function (r, i) { if (i && r[3] === 'Shady') r[0] = true; });
+getSheet_('Opponents').rows.forEach(function (r, i) { if (i && r[3] === 'Shady') r[0] = true; });
 (function () { var t = todayYmd_(); getSheet_('events').appendRow([106, 'Daily Poll', 'daily_poll', t, '', '', 2, 6, 3, 1]); getSheet_('events').appendRow([107, 'Mindset summits', 'mountaineer_mindset', t, '', '', 4, 1, 2, 6]); getSheet_('events').appendRow([108, 'Trait Dough: Ann L.', 'trait_dough', t, '', '', 0, 9, 3, 2]); })();
 getSheet_('Squad Hand').appendRow(['GOLD', 'Flip Three', 'flip_three', 0, todayYmd_(), 'Held', '']);
 </script>

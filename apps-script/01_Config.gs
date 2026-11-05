@@ -137,15 +137,15 @@ const DEFAULT_SETTINGS = [
   ['PASSPORT_POLL_VOTES', '5', 'Daily Poll votes a student needs for the 🗳️ passport stamp.'],
   ['FUN_THAW_TIERS', '1=25, 2=50, 3=100', 'Fun Freeze: reaching the thaw goal once gets back 25% of the points frozen out, twice 50%, three times 100% ("times the goal = percent back").'],
   ['FUN_SECOND_CHANCE_DAYS', '2', 'Fun Freeze: school days a squad\'s one second chance adds to Thaw By.'],
-  ['GAME_AWARDS', 'OFF', 'ON = the game layer gives points: weekly territory, round goals, the monster, destination tickets (checked hourly). Turn on with Clash of Classes › Turn on game awards. OFF = the map, cards and goals still show; no bonus points.'],
+  ['GAME_AWARDS', 'OFF', 'ON = the game layer gives points: weekly territory, round goals, the Opponent, destination tickets (checked hourly). Turn on with Clash of Classes › Turn on game awards. OFF = the map, cards and goals still show; no bonus points.'],
   ['GAME_MAP', 'ON', 'OFF hides the school map (King of the Mountain, territories, wings).'],
   ['GAME_CARDS', 'ON', 'OFF hides Chance cards.'],
   ['GAME_STREAK', 'ON', 'OFF hides Hot Streaks.'],
   ['GAME_ROUNDS', 'ON', 'OFF hides round goals.'],
   ['GAME_ENGINE', 'ON', 'OFF hides engine powers.'],
-  ['MONSTER_VISIBLE', 'ON', 'OFF hides Monster of the Month everywhere (one click: Clash of Classes › Show or hide Monster of the Month). Each monster also needs Show ticked on the Monsters tab.'],
+  ['OPPONENT_VISIBLE', 'ON', 'OFF hides the Opponent everywhere (one click: Clash of Classes › Show or hide the Opponent). Each Opponent also needs Show ticked on the Opponents tab.'],
   ['CLAIM_DAYS', '14', 'School map: a zone goes to the squad with the most points from its events in the last this-many days.'],
-  ['MAP_STYLE', 'building', 'School map look: building (clean areas like a floor plan) or mountain (hand-cut territory blobs).'],
+  ['MAP_STYLE', 'puzzle', 'School map look: puzzle (the building cut into rough jigsaw pieces), clean (plain areas like a floor plan) or mountain (separate hand-cut blobs).'],
   ['WING_MULTIPLIER', '2', 'School map: holding every zone in a wing pays that wing this many times.'],
   ['CHANCE_DRAWS_PER_WEEK', '1', 'Chance cards each squad\'s Generals can draw a week (engine powers can add more).'],
   ['STREAK_BANK', '2=2, 3=4, 4=7, 5=11, 6=16', 'Hot Streak: days in a row = points when banked.'],
@@ -184,7 +184,12 @@ function ensureSettings_() {
     sheet.setFrozenRows(1);
   }
   const have = {};
-  sheet.getDataRange().getValues().slice(1).forEach(function (r) { have[String(r[0]).trim()] = true; });
+  sheet.getDataRange().getValues().slice(1).forEach(function (r, i) {
+    let key = String(r[0]).trim();
+    // Renamed keys keep their value: MONSTER_VISIBLE is OPPONENT_VISIBLE now.
+    if (key === 'MONSTER_VISIBLE') { key = 'OPPONENT_VISIBLE'; sheet.getRange(i + 2, 1).setValue(key); }
+    have[key] = true;
+  });
   const missing = DEFAULT_SETTINGS.filter(function (d) { return !have[d[0]]; });
   if (missing.length) sheet.getRange(sheet.getLastRow() + 1, 1, missing.length, 3).setValues(missing);
 }

@@ -127,7 +127,7 @@
         return '<div class="hq-row"><div><b>' + (on ? '⚡ ' : '🔒 ') + esc(p.power) + '</b> <span class="hq-pill">' + esc(p.habitat) + '</span><br><span class="ms-small">' + esc(p.text) + (on ? '' : ' · Unlocks: ' + esc(p.hint || p.rule)) + '</span></div></div>';
       }).join('') + '</div>';
     }
-    if (g.monster && window.GameUi) out += '<div class="ms-card"><div class="ms-h">👹 Monster of the Month</div>' + GameUi.monster(g.monster) + '</div>';
+    if (g.monster && window.GameUi) out += '<div class="ms-card"><div class="ms-h">⚔️ The Opponent</div>' + GameUi.monster(g.monster) + '</div>';
     if (g.map && window.GameUi) out += '<div class="ms-card"><div class="ms-h">🗺️ The mountain</div><p class="ms-small">Win the most points in a territory to claim it. Hold a whole region and it pays double.</p>' + GameUi.board(g.map) + '</div>';
     return out || '<div class="ms-card ms-small">The game layer is off right now.</div>';
   }

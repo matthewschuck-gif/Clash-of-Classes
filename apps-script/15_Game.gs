@@ -25,8 +25,9 @@
  *   1st / 2nd / 3rd get their points after End.
  * ENGINE POWERS (tab Engine Powers): lasting powers a squad unlocks (Unlock When), in three
  *   habitats: Foothills, Ridge, Summit. Effects: rent, draws, streak, tickets, poll.
- * MONSTER OF THE MONTH (tab Monsters): the whole school against one monster. Show box per row,
- *   and Clash of Classes › Show or hide Monster of the Month flips MONSTER_VISIBLE.
+ * THE OPPONENT (tab Opponents): the whole school against one opponent. Show box per row,
+ *   and Clash of Classes › Show or hide the Opponent flips OPPONENT_VISIBLE. (It was "Monster of
+ *   the Month"; an older Monsters tab is renamed, and the code still calls it monster inside.)
  */
 
 const GAME_TYPES_ = ['territory', 'chance', 'streak_bank', 'round_goal', 'engine', 'monster', 'destination_ticket', 'freeze_thaw'];
@@ -36,7 +37,7 @@ const HAND_HEADERS_ = ['Squad', 'Card', 'Effect', 'Value', 'Drawn', 'Status', 'N
 const BANK_HEADERS_ = ['Squad', 'Through', 'Length', 'Points', 'At', 'By'];
 const ROUND_HEADERS_ = ['Show', 'Start', 'End', 'Goal', 'Measure', '1st', '2nd', '3rd', 'Status', 'Results'];
 const ENGINE_HEADERS_ = ['Show', 'Habitat', 'Power', 'Text', 'Unlock When', 'Effect', 'Value', 'Unlocked'];
-const MONSTER_HEADERS_ = ['Show', 'Start', 'End', 'Monster', 'Story', 'Image', 'Defeat Goal', 'Reward', 'Status'];
+const MONSTER_HEADERS_ = ['Show', 'Start', 'End', 'Opponent', 'Story', 'Image', 'Defeat Goal', 'Reward', 'Status'];
 
 function monthBounds_(offset) {
   const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + (offset || 0));
@@ -49,6 +50,13 @@ function monthBounds_(offset) {
 function ensureGameTabs_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const m0 = monthBounds_(0), m1 = monthBounds_(1);
+  // "Monster of the Month" is "the Opponent" now: rename an older tab and its name column.
+  const oldTab = ss.getSheetByName('Monsters');
+  if (oldTab && !ss.getSheetByName('Opponents')) {
+    oldTab.setName('Opponents');
+    const col = oldTab.getRange(1, 1, 1, oldTab.getLastColumn()).getValues()[0].map(String).indexOf('Monster');
+    if (col > -1) oldTab.getRange(1, col + 1).setValue('Opponent');
+  }
   [['Map Zones', MAP_HEADERS_, null],
    ['Chance Cards', CARD_HEADERS_, [
       [true, 'Trail Magic', 'Someone left snacks at the trailhead. +3', 'points', 3, 3],
@@ -71,7 +79,7 @@ function ensureGameTabs_() {
       [true, 'Ridge', 'Storytellers', '+1 point for every destination ticket your squad completes.', 'tickets: 10', 'tickets', 1, ''],
       [true, 'Summit', 'Rope Team', '+2 points every time you bank a Hot Streak.', 'wings: 1', 'streak', 2, ''],
       [true, 'Summit', 'Summit Guides', 'Another +1 point for every zone you hold, every week.', 'round goals: 1', 'rent', 1, '']]],
-   ['Monsters', MONSTER_HEADERS_, [
+   ['Opponents', MONSTER_HEADERS_, [
       // Shady: the small blue hairy gremlin of schadenfreude, back from a project that never left beta.
       [false, m0[0], m0[1], 'Shady', 'Shady is a small blue gremlin who feeds on schadenfreude: every laugh at someone else\'s stumble makes his fur stand taller. ' +
         'He can\'t stand Freudenfreude. Every Trait Dough bill for someone doing the right thing, every cheer for someone else\'s win, shrinks him.', '', 'entries: trait_dough 150', 5, ''],
@@ -396,10 +404,10 @@ function monsterMeasure_(goal, from, to, events) {
 }
 
 function monster_(events) {
-  if (!gameOn_('MONSTER_VISIBLE')) return null;
+  if (!gameOn_('OPPONENT_VISIBLE')) return null;
   const today = todayYmd_();
-  const r = sheetRows_('Monsters').filter(function (x) {
-    return ticked_(x['Show']) && String(x['Monster'] || '').trim() &&
+  const r = sheetRows_('Opponents').filter(function (x) {
+    return ticked_(x['Show']) && String(x['Opponent'] || '').trim() &&
       (!x['Start'] || String(x['Start']).slice(0, 10) <= today) && (!x['End'] || String(x['End']).slice(0, 10) >= today || /^defeated/i.test(String(x['Status'])));
   })[0];
   if (!r) return null;
@@ -407,16 +415,16 @@ function monster_(events) {
   const prog = monsterMeasure_(r['Defeat Goal'], from, to, events || readEventsTab_());
   const defeated = /^defeated/i.test(String(r['Status'] || '')) || (prog && prog.have >= prog.need);
   const image = String(r['Image'] || '').trim();
-  const art = /shady/i.test(String(r['Monster'])) && String(getSetting_('MASCOT_ART') || 'ON').toUpperCase() !== 'OFF' ? ART_BASE_ + 'monster-shady.jpg' : ''; // 16_Me.gs
-  return { row: r._row, name: String(r['Monster']).trim(), story: String(r['Story'] || ''), image: /^https:\/\//i.test(image) ? image : art,
+  const art = /shady/i.test(String(r['Opponent'])) && String(getSetting_('MASCOT_ART') || 'ON').toUpperCase() !== 'OFF' ? ART_BASE_ + 'monster-shady.jpg' : ''; // 16_Me.gs
+  return { row: r._row, name: String(r['Opponent']).trim(), story: String(r['Story'] || ''), image: /^https:\/\//i.test(image) ? image : art,
     goal: String(r['Defeat Goal'] || ''), progress: prog, health: defeated ? 0 : prog ? Math.max(0, 1 - prog.have / Math.max(1, prog.need)) : 1,
     defeated: !!defeated, reward: Number(r['Reward']) || 0, end: to, status: String(r['Status'] || '') };
 }
 
 function menuToggleMonster_() {
-  const on = !gameOn_('MONSTER_VISIBLE');
-  setSettingValue_('MONSTER_VISIBLE', on ? 'ON' : 'OFF');
-  SpreadsheetApp.getUi().alert('Monster of the Month is now ' + (on ? 'VISIBLE (rows with Show ticked, inside their dates).' : 'HIDDEN everywhere.'));
+  const on = !gameOn_('OPPONENT_VISIBLE');
+  setSettingValue_('OPPONENT_VISIBLE', on ? 'ON' : 'OFF');
+  SpreadsheetApp.getUi().alert('The Opponent is now ' + (on ? 'VISIBLE (rows with Show ticked, inside their dates).' : 'HIDDEN everywhere.'));
 }
 
 // ── EVERYTHING THE PAGES NEED ───────────────────────────────────────
@@ -485,8 +493,8 @@ function gameTick() {
     const mon = monster_(events);
     if (mon && mon.defeated && !/defeated/i.test(mon.status)) {
       const o = {}; SQUAD_KEYS_.forEach(function (s) { o[s] = mon.reward; });
-      addPointsEvent_('Monster defeated: ' + mon.name, 'monster', 'The whole school, together', o);
-      getSheet_('Monsters').getRange(mon.row, MONSTER_HEADERS_.indexOf('Status') + 1).setValue('Defeated ' + todayYmd_());
+      addPointsEvent_('Opponent defeated: ' + mon.name, 'monster', 'The whole school, together', o);
+      getSheet_('Opponents').getRange(mon.row, MONSTER_HEADERS_.indexOf('Status') + 1).setValue('Defeated ' + todayYmd_());
       lines.push(mon.name + ' defeated');
     }
     return lines;
@@ -506,7 +514,7 @@ function menuTurnOnGame_() {
   ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'gameTick') ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('gameTick').timeBased().everyHours(1).create();
   const lines = gameTick();
-  SpreadsheetApp.getUi().alert('Game awards are ON (checked every hour): weekly territory, round goals, the monster.\n\n' + (lines.length ? lines.join('\n') : 'Nothing to award yet.'));
+  SpreadsheetApp.getUi().alert('Game awards are ON (checked every hour): weekly territory, round goals, the Opponent.\n\n' + (lines.length ? lines.join('\n') : 'Nothing to award yet.'));
 }
 
 function menuTurnOffGame_() {

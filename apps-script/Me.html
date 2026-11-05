@@ -219,7 +219,7 @@ body { margin: 0; background: #0d0518; color: var(--text, #f5f0ff); font-family:
 
   function gameTab() {
     var g = D.game || {}, sq = D.me.squad, out = '';
-    if (g.monster) out += '<section class="me-card"><h2>Monster of the Month</h2>' + GameUi.monster(g.monster) + '</section>';
+    if (g.monster) out += '<section class="me-card"><h2>The Opponent</h2>' + GameUi.monster(g.monster) + '</section>';
     (g.rounds || []).forEach(function (r) {
       var top = Math.max.apply(null, ['BLACK', 'GOLD', 'GREY', 'PURPLE'].map(function (s) { return r.scores[s]; }).concat([1]));
       out += '<section class="me-card"><h2>Round goal: ' + esc(r.goal) + '</h2><p class="me-sub">' + esc(r.start) + ' to ' + esc(r.end) + ' · 1st +' + r.prizes[0] + ', 2nd +' + r.prizes[1] + ', 3rd +' + r.prizes[2] + '</p><div class="me-rg">' +

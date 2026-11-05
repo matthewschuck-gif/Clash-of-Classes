@@ -6,9 +6,13 @@
  *   Method:      most points | most entries (times a squad earned) | staff pick (staff type Holder)
  *   Counts:      event types or words in the event name, comma-separated (* = every point)
  *   Window Days: how far back it looks (blank = CLAIM_DAYS)
- *   Must Border: Risk rule. Only a squad that holds a zone next door can take it. A squad with
- *                no zones at all can land anywhere, so nobody gets shut out.
+ *   Must Border: Risk rule. A squad that holds a zone next door attacks with the normal bar. A squad
+ *                with no zones at all counts as next door everywhere, so nobody gets shut out.
  *   Defense %:   the holder's edge. A challenger needs this much more than the holder to take it.
+ *   Far Attack %: Must Border zones only. A squad from farther away can still take the zone if it
+ *                beats the holder by this much (on an open zone: beats the best squad next door by
+ *                this much). The same bars for every squad, attacking or defending. Blank = only
+ *                squads next door can attack.
  *   A zone with no Conquer By works the old way: most points from its Claimed By, CLAIM_DAYS.
  * THE MAP: zones are boxes on a grid (X, Y, W, H); the grid grows to fit them. Neighbors are
  *   zones whose boxes touch, plus anything listed in Borders (a hallway that connects two areas).
@@ -17,20 +21,20 @@
  * The admin panel's Map tab (MapEditor.html) edits zones and rules by dragging and picking.
  */
 
-const RULE_HEADERS_ = ['Show', 'Rule', 'How It Works', 'Method', 'Counts', 'Window Days', 'Must Border', 'Defense %'];
+const RULE_HEADERS_ = ['Show', 'Rule', 'How It Works', 'Method', 'Counts', 'Window Days', 'Must Border', 'Defense %', 'Far Attack %'];
 const BATTLE_HEADERS_ = ['Date', 'Zone', 'Taken By', 'From', 'Rule'];
 const RULE_METHODS_ = ['most points', 'most entries', 'staff pick'];
 
 const BUILDING_RULES_ = [
-  [true, 'Full Climb', 'Every point your squad earns, anywhere, counts.', 'most points', '*', 14, false, 0],
-  [true, 'Game Day', 'Win Mayhem events, gaming and field days, and Squad Duels.', 'most points', 'mayhem, gaming, field, duel_bonus', 21, false, 0],
-  [true, 'Poll Turnout', 'Get your squad voting in the Daily Poll.', 'most points', 'daily_poll', 14, false, 0],
-  [true, 'Trait Dough Drive', 'Turn in the most Trait Dough.', 'most points', 'trait_dough', 14, false, 0],
-  [true, 'Growth Grind', 'STAR growth and Mountaineer Mindset summits.', 'most points', 'star_growth, mountaineer_mindset', 30, false, 0],
-  [true, 'Shout-out Storm', 'Recognize each other: the most shout-outs and Trait Dough turn-ins.', 'most entries', 'shout, trait_dough', 14, false, 0],
-  [true, 'Lunch Battles', 'Win the lunch challenges.', 'most points', 'lunch, mayhem_week', 21, false, 0],
-  [true, 'Siege', 'Risk rules: only a squad holding a zone next door can attack, and it needs 25% more points than the holder.', 'most points', '*', 14, true, 25],
-  [true, 'Staff Pick', 'Staff decide who holds it.', 'staff pick', '', '', false, 0],
+  [true, 'Full Climb', 'Every point your squad earns, anywhere, counts.', 'most points', '*', 14, false, 0, ''],
+  [true, 'Game Day', 'Win Mayhem events, gaming and field days, and Squad Duels.', 'most points', 'mayhem, gaming, field, duel_bonus', 21, false, 0, ''],
+  [true, 'Poll Turnout', 'Get your squad voting in the Daily Poll.', 'most points', 'daily_poll', 14, false, 0, ''],
+  [true, 'Trait Dough Drive', 'Turn in the most Trait Dough.', 'most points', 'trait_dough', 14, false, 0, ''],
+  [true, 'Growth Grind', 'STAR growth and Mountaineer Mindset summits.', 'most points', 'star_growth, mountaineer_mindset', 30, false, 0, ''],
+  [true, 'Shout-out Storm', 'Recognize each other: the most shout-outs and Trait Dough turn-ins.', 'most entries', 'shout, trait_dough', 14, false, 0, ''],
+  [true, 'Lunch Battles', 'Win the lunch challenges.', 'most points', 'lunch, mayhem_week', 21, false, 0, ''],
+  [true, 'Siege', 'Risk rules: a squad next door needs 25% more points than the holder. A squad from farther away can still take it with 75% more.', 'most points', '*', 14, true, 25, 75],
+  [true, 'Staff Pick', 'Staff decide who holds it.', 'staff pick', '', '', false, 0, ''],
 ];
 
 // Areas of the building on a 24 x 16 grid, roughly where they sit on the school map.
@@ -88,6 +92,11 @@ function ensureConquestTabs_() {
       } catch (e) { console.warn('Conquest Rules dropdown: ' + e.message); }
     }
   });
+  const cr = ss.getSheetByName('Conquest Rules');
+  if (cr && cr.getLastColumn()) {
+    const head = cr.getRange(1, 1, 1, cr.getLastColumn()).getValues()[0].map(function (h) { return String(h).trim(); });
+    if (head.indexOf('Far Attack %') === -1) cr.getRange(1, head.length + 1).setValue('Far Attack %').setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
+  }
   const mz = ss.getSheetByName('Map Zones');
   if (mz && mz.getLastColumn()) {
     const head = mz.getRange(1, 1, 1, mz.getLastColumn()).getValues()[0].map(function (h) { return String(h).trim(); });
@@ -106,7 +115,8 @@ function conquestRules_() {
     if (!name || !ticked_(r['Show'])) return;
     const method = String(r['Method'] || '').trim().toLowerCase();
     out[name.toLowerCase()] = { rule: name, text: String(r['How It Works'] || ''), method: RULE_METHODS_.indexOf(method) > -1 ? method : 'most points',
-      counts: String(r['Counts'] || ''), days: Number(r['Window Days']) || 0, border: ticked_(r['Must Border']), defense: Math.max(0, Number(r['Defense %']) || 0) };
+      counts: String(r['Counts'] || ''), days: Number(r['Window Days']) || 0, border: ticked_(r['Must Border']), defense: Math.max(0, Number(r['Defense %']) || 0),
+      far: String(r['Far Attack %'] == null ? '' : r['Far Attack %']).trim() === '' ? null : Math.max(0, Number(r['Far Attack %']) || 0) };
   });
   return out;
 }
@@ -145,12 +155,12 @@ function mapZones_(events, write) {
   const zones = sheetRows_('Map Zones').filter(function (r) { return ticked_(r['Show']) && String(r['Zone'] || '').trim(); }).map(function (r) {
     const named = String(r['Conquer By'] || '').trim();
     const rule = rules[named.toLowerCase()] ||
-      { rule: '', text: '', method: 'most points', counts: String(r['Claimed By'] || ''), days: 0, border: false, defense: 0 };
+      { rule: '', text: '', method: 'most points', counts: String(r['Claimed By'] || ''), days: 0, border: false, defense: 0, far: null };
     let holder = squadOf_(r['Holder']);
     if (SQUAD_KEYS_.indexOf(holder) === -1) holder = '';
     return { row: r._row, zone: String(r['Zone']).trim(), wing: String(r['Wing'] || '').trim(), summit: ticked_(r['Summit']),
       rule: rule.rule, ruleText: rule.text, method: rule.method, claimedBy: rule.counts, days: rule.days || claimDays,
-      border: rule.border, defense: rule.defense, weekly: Number(r['Weekly Points']) || 0,
+      border: rule.border, defense: rule.defense, far: rule.border ? rule.far : null, weekly: Number(r['Weekly Points']) || 0,
       x: Math.max(0, Number(r['X']) || 0), y: Math.max(0, Number(r['Y']) || 0), w: Math.max(1, Number(r['W']) || 1), h: Math.max(1, Number(r['H']) || 1),
       borders: String(r['Borders'] || ''), holder: holder, since: String(r['Since'] || '') };
   });
@@ -165,15 +175,23 @@ function mapZones_(events, write) {
     z.score = z.method === 'most entries' ? tally.rows : tally.points;
     z.neighbors = nb[z.zone];
     if (z.method === 'staff pick') return;
-    const canAttack = SQUAD_KEYS_.filter(function (s) {
-      return !z.border || s === z.holder || !count[s] || z.neighbors.some(function (n) { return held[n] === s; });
+    // Next door (or no border rule, or no zones yet): the normal bar. From farther away: the Far
+    // Attack bar, the same for every squad (blank = only next door can attack).
+    const nextDoor = function (s) { return !z.border || s === z.holder || !count[s] || z.neighbors.some(function (n) { return held[n] === s; }); };
+    const qualifies = SQUAD_KEYS_.filter(function (s) {
+      if (s === z.holder || !(z.score[s] > 0)) return false;
+      const near = nextDoor(s);
+      if (!near && z.far === null) return false;
+      // The bar is the holder's score; on an open zone, the best squad that could walk in.
+      const ref = z.holder ? (z.score[z.holder] || 0)
+        : Math.max.apply(null, SQUAD_KEYS_.filter(function (o) { return o !== s && nextDoor(o); }).map(function (o) { return z.score[o]; }).concat([0]));
+      const edge = near ? (z.holder ? z.defense : 0) : z.far;
+      return z.score[s] > ref * (1 + edge / 100);
     });
-    const best = Math.max.apply(null, canAttack.map(function (s) { return z.score[s]; }).concat([0]));
-    const leaders = canAttack.filter(function (s) { return best > 0 && z.score[s] === best; });
-    // King of the hill: the holder keeps it on a tie, a quiet stretch, or inside its defense edge.
-    if (leaders.length !== 1 || leaders[0] === z.holder) return;
-    const needed = z.holder ? (z.score[z.holder] || 0) * (1 + z.defense / 100) : 0;
-    if (best <= needed) return;
+    const best = Math.max.apply(null, qualifies.map(function (s) { return z.score[s]; }).concat([0]));
+    const leaders = qualifies.filter(function (s) { return z.score[s] === best; });
+    // King of the hill: the holder keeps it on a tie, a quiet stretch, or when nobody clears the bar.
+    if (leaders.length !== 1) return;
     battles.push([today, z.zone, leaders[0], z.holder, z.rule || 'Most points']);
     z.holder = leaders[0]; z.since = today;
     if (sheet && hCol) sheet.getRange(z.row, hCol).setValue(z.holder);
@@ -200,13 +218,13 @@ function mapPayload_(events, zones) {
   zones.forEach(function (z) {
     const k = z.rule || 'Most points';
     rules[k] = rules[k] || { rule: k, text: z.ruleText || 'Most points from ' + (z.claimedBy || 'anything') + ' in the last ' + z.days + ' days.',
-      border: z.border, defense: z.defense, days: z.days, method: z.method, zones: [] };
+      border: z.border, defense: z.defense, far: z.far, days: z.days, method: z.method, zones: [] };
     rules[k].zones.push(z.zone);
   });
   return {
     zones: zones.map(function (z) { const o = Object.assign({}, z); delete o.row; return o; }),
     wings: heldWings_(zones), grid: mapGrid_(zones), rules: Object.keys(rules).map(function (k) { return rules[k]; }),
-    battles: recentBattles_(5), style: String(getSetting_('MAP_STYLE') || 'building').toLowerCase(),
+    battles: recentBattles_(5), style: String(getSetting_('MAP_STYLE') || 'puzzle').toLowerCase(),
     claimDays: Number(getSetting_('CLAIM_DAYS')) || 14,
   };
 }
@@ -223,11 +241,12 @@ function clashMapLoad(token) {
   });
   const rules = sheetRows_('Conquest Rules').filter(function (r) { return String(r['Rule'] || '').trim(); }).map(function (r) {
     return { show: ticked_(r['Show']), rule: String(r['Rule']).trim(), text: String(r['How It Works'] || ''), method: String(r['Method'] || 'most points').toLowerCase(),
-      counts: String(r['Counts'] || ''), days: r['Window Days'] === '' ? '' : Number(r['Window Days']) || '', border: ticked_(r['Must Border']), defense: Number(r['Defense %']) || 0 };
+      counts: String(r['Counts'] || ''), days: r['Window Days'] === '' ? '' : Number(r['Window Days']) || '', border: ticked_(r['Must Border']), defense: Number(r['Defense %']) || 0,
+      far: r['Far Attack %'] === '' || r['Far Attack %'] == null ? '' : Number(r['Far Attack %']) || 0 };
   });
   return JSON.stringify({ zones: zones, rules: rules, methods: RULE_METHODS_, claimDays: Number(getSetting_('CLAIM_DAYS')) || 14,
     building: { zones: buildingZoneRows_(), rules: BUILDING_RULES_.map(function (r) {
-      return { show: r[0], rule: r[1], text: r[2], method: r[3], counts: r[4], days: r[5], border: r[6], defense: r[7] }; }) } });
+      return { show: r[0], rule: r[1], text: r[2], method: r[3], counts: r[4], days: r[5], border: r[6], defense: r[7], far: r[8] }; }) } });
 }
 
 function clashMapSave(token, json) {
@@ -246,7 +265,8 @@ function clashMapSave(token, json) {
       names[name.toLowerCase()] = 1;
       const method = String(r.method || '').toLowerCase();
       return { 'Show': r.show !== false, 'Rule': name, 'How It Works': clip(r.text, 300), 'Method': RULE_METHODS_.indexOf(method) > -1 ? method : 'most points',
-        'Counts': clip(r.counts, 200), 'Window Days': r.days === '' || r.days == null ? '' : num(r.days, 1, 365), 'Must Border': !!r.border, 'Defense %': num(r.defense, 0, 500) };
+        'Counts': clip(r.counts, 200), 'Window Days': r.days === '' || r.days == null ? '' : num(r.days, 1, 365), 'Must Border': !!r.border, 'Defense %': num(r.defense, 0, 500),
+        'Far Attack %': r.far === '' || r.far == null ? '' : num(r.far, 0, 1000) };
     });
     const old = {};
     sheetRows_('Map Zones').forEach(function (r) { old[String(r['Zone'] || '').trim().toLowerCase()] = r; });

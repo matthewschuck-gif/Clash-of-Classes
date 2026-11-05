@@ -3823,7 +3823,7 @@ function openDisplay(){
 }
 function closeDisplay(){ document.getElementById('tvView').classList.remove('active'); clearInterval(tvTimer); clearInterval(tvPTimer); }
 
-// The game slides (15_Game.gs): the mountain map and Monster of the Month, refreshed with the rest.
+// The game slides (15_Game.gs): the map and the Opponent, refreshed with the rest.
 function buildTvGame(){
   if(!window.gasRun_||!window.GameUi) return;
   window.gasRun_('clashGame').then(function(g){ window._tvGame=g; const m=document.getElementById('tvMap'), mo=document.getElementById('tvMonster');
@@ -3884,7 +3884,7 @@ function buildTV(){
   document.getElementById('tvNav').innerHTML=Array.from({length:TV_SLIDE_COUNT},(_,i)=>i).map(i=>`<div class="tv-dot${i===tvSlide?' on':''}" onclick="showSlide(${i});startAuto()"></div>`).join('');
 }
 
-const TV_SLIDE_COUNT=9; // 7 = the mountain map, 8 = Monster of the Month (skipped when none is showing)
+const TV_SLIDE_COUNT=9; // 7 = the map, 8 = the Opponent (skipped when none is showing)
 
 // Summit Map slide, built for a hallway TV read in a few seconds from across the hall.
 // Left: a night mountain with a switchback trail; each squad is a pennant with its place on it.
