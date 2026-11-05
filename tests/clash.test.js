@@ -969,13 +969,15 @@ test('conquest: rules from the Sheet, Risk borders + defense edge, staff pick, e
   const guide = w2.book.getSheetByName('How The Map Works').rows.map(r => r[0]);
   assert.ok(guide.includes('WHAT OWNING PAYS (THE MULTIPLIERS)') && guide.some(t => /WING_MULTIPLIER/.test(t)) && guide.some(t => /Far Attack %/.test(t)));
   assert.ok(!guide.some(t => /^## /.test(t)));
+  w2.setupClimbGuideTab_();
+  assert.ok(w2.book.getSheetByName('How My Climb Works').rows.some(r => /EVOLUTION BOOSTS/.test(r[0])));
 });
 
 test('evolution: Climb XP stages, male/female art, boosts at each stage (different columns), weekly boost points, perks', () => {
   const w = world();
   w.ensureSettings_(); w.ensureGameTabs_(); w.ensureMeTabs_(); w.ensurePollTabs_();
   const tok = login(w, 'oldpw');
-  // Made-up student. XP = bills 4 + summit 5 + STAR 2x1 + streak 2x2 = 15: stage 1.
+  // Made-up student. LRG points = bills 4 + summit 5 + STAR 2x1 + streak 2x2 = 15: stage 1.
   const board = w.book.insertSheet('Student Board');
   board.rows = [['800#', 'Name', 'Squad', 'Grade', 'Trait Dough Bills', 'Bills This Week', 'Trait Dough Wins', 'Mindset Summits', 'Trail Journal Growth', 'STAR Growth Points', 'Shout-outs', 'Ambassador Buddies', 'Streak (weeks)', 'Badges', 'Last Contribution', 'Updated', 'Attendance %', 'Email'],
     ['8001111', 'Ann L.', 'Gold', '7', '4', '0', '0', '1', '', '2', '0', '0', '2', '', '', '', '96', 'ann.l@easdpa.org']];
@@ -986,7 +988,7 @@ test('evolution: Climb XP stages, male/female art, boosts at each stage (differe
   assert.ok(/creatures\/gold-1\.jpg$/.test(c.art[0].m) && /creatures\/gold-1f\.jpg$/.test(c.art[0].f));
   assert.deepStrictEqual(c.choices, {}, 'no boosts before stage 2');
   assert.throws(() => w.clashMePickBoost(2, 'Trait Dough', '8001111', tok), /hasn't reached/);
-  // Stage 2 at 30 XP: pick a x1.25 boost. Columns not on the Student Board are not offered.
+  // Stage 2 at 30 LRG points: pick a x1.25 boost. Columns not on the Student Board are not offered.
   set('Trait Dough Bills', '20');
   c = JSON.parse(w.clashMe('8001111', tok)).creature;
   assert.strictEqual(c.stage, 2);

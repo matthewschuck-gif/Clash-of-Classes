@@ -102,15 +102,16 @@ body { margin: 0; background: #0d0518; color: var(--text, #f5f0ff); font-family:
 /* Cliff, the Mountaineer: always on the trail with them. */
 .me-cliff { position: absolute; right: 8px; bottom: 0; height: 190px; width: auto; pointer-events: none; filter: drop-shadow(0 10px 18px rgba(0,0,0,.45)); transform-origin: bottom center; animation: meCliff 6s ease-in-out infinite; }
 @keyframes meCliff { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-1.5deg); } }
-.me-hero .me-say { position: absolute; right: 150px; bottom: 120px; max-width: 220px; }
-.me-hero > div:nth-child(2) { padding-right: 150px; }
+.me-hero .me-say { position: absolute; right: 150px; top: 16px; max-width: 210px; }
+.me-hero > div:nth-child(2) { padding-right: 380px; }
+@media (max-width: 1000px) { .me-hero .me-say { display: none; } .me-hero > div:nth-child(2) { padding-right: 150px; } }
 .me-say { position: relative; background: #fff; color: #1a0b2e; font-size: 13.5px; font-weight: 700; line-height: 1.4; padding: 9px 12px; border-radius: 14px; box-shadow: 0 8px 20px -10px #000; }
-.me-say b { display: block; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #6b21a8; margin-bottom: 2px; }
+.me-say > b:first-child { display: block; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #6b21a8; margin-bottom: 2px; }
 .me-hero .me-say::after { content: ''; position: absolute; right: -7px; bottom: 14px; border: 8px solid transparent; border-left-color: #fff; border-right: 0; }
 .me-guide { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: center; margin: 4px 0 14px; }
 .me-guide img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; object-position: 50% 6%; background: radial-gradient(circle at 50% 30%, #6b3fa0, #24113f); border: 2px solid var(--squad, #bb8ef5); }
 .me-guide .me-say::after { content: ''; position: absolute; left: -7px; top: 18px; border: 8px solid transparent; border-right-color: #fff; border-left: 0; }
-@media (max-width: 720px) { .me-cliff { height: 130px; right: 0; } .me-hero .me-say { display: none; } .me-hero > div:nth-child(2) { padding-right: 90px; } }
+@media (max-width: 720px) { .me-cliff { height: 130px; right: 0; } .me-hero > div:nth-child(2) { padding-right: 90px; } }
 @media (max-width: 420px) { .me-cliff { display: none; } .me-hero > div:nth-child(2) { padding-right: 0; } }
 .me-evo { display: grid; grid-template-columns: minmax(180px, 280px) 1fr; gap: 18px; align-items: start; }
 .me-stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
@@ -147,7 +148,7 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 .me-reward { font-size: 13px; padding: 10px 12px; border-radius: 12px; background: rgba(134,239,172,.1); border: 1px solid rgba(134,239,172,.35); color: #dcfce7; }
 .me-reward.locked { background: rgba(255,255,255,.03); border: 1px dashed rgba(255,255,255,.14); color: #8f7fa8; }
 /* Evolving! Slow glow pulses (no strobing), then the new form. */
-.me-evolve { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px; background: rgba(8,3,16,.88); }
+.me-evolve { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px; background: rgba(8,3,16,.96); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .me-evolve-box { width: min(420px, 100%); text-align: center; }
 .me-evolve .me-cr { width: min(300px, 80vw); margin: 0 auto 16px; }
 .me-evolve .me-cr img { position: absolute; inset: 0; }
@@ -205,7 +206,7 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
   function cliffLine() {
     var st = D.standing || {}, c = D.creature || {};
     if (c.choices && Object.keys(c.choices).length) return 'You evolved! Pick a boost for your ' + animal() + ' in the Me tab.';
-    if (c.next && c.next.need <= 10) return 'Only ' + c.next.need + ' XP until your ' + animal() + ' evolves!';
+    if (c.next && c.next.need <= 10) return 'Only ' + c.next.need + ' LRG points until your ' + animal() + ' evolves!';
     if (st.frozen) return st.frozen.kind === 'Fun' ? 'Ice breaker time! Push our luck!' : 'We thaw this one together.';
     if (D.tickets.some(function (t) { return t.status === 'Completed' && t.completed === new Date().toISOString().slice(0, 10); })) return 'Ticket done! That one counts for all of us.';
     if (st.place === 1) return 'Top of the mountain. Let\'s stay here!';
@@ -312,13 +313,13 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
   function creatureCard() {
     var c = D.creature, pct = c.next ? Math.round(100 * (c.xp - c.from) / Math.max(1, c.next.at - c.from)) : 100;
     var say = c.choices && Object.keys(c.choices).length ? 'Your ' + esc(animal()) + ' evolved! Pick a boost below. It adds extra points to the ' + esc(title(D.me.squad)) + ' Squad every week.'
-      : c.next ? 'Earn <b>' + c.next.need + ' more XP</b> and your ' + esc(animal()) + ' evolves into its ' + esc(c.next.name) + ' form. XP comes from Trait Dough, summits, shout-outs, STAR growth, streaks and tickets.'
+      : c.next ? 'Earn <b>' + c.next.need + ' more LRG points</b> and your ' + esc(animal()) + ' evolves into its ' + esc(c.next.name) + ' form. LRG points come from Trait Dough, summits, shout-outs, STAR growth, streaks and tickets.'
       : 'Your ' + esc(animal()) + ' reached its final form. Legendary.';
     var stages = c.art.map(function (a) {
       return '<button class="me-st' + (a.open ? '' : ' locked') + (a.stage === c.show ? ' on' : '') + '" ' + (a.open ? 'data-show="' + a.stage + '"' : 'disabled') +
-        ' aria-pressed="' + (a.stage === c.show) + '" aria-label="' + esc(a.name) + (a.open ? ' form' : ' form, locked until ' + c.at[a.stage] + ' XP') + '">' +
+        ' aria-pressed="' + (a.stage === c.show) + '" aria-label="' + esc(a.name) + (a.open ? ' form' : ' form, locked until ' + c.at[a.stage] + ' LRG points') + '">' +
         '<div class="me-cr">' + (a.open ? '<img src="' + esc(c.form === 'f' ? a.f : a.m) + '" alt="" loading="lazy">' : '<img src="' + esc(c.form === 'f' ? a.f : a.m) + '" alt="" loading="lazy">') + '</div>' +
-        '<span>' + esc(a.name) + (a.open ? '' : ' · ' + c.at[a.stage] + ' XP') + '</span></button>';
+        '<span>' + esc(a.name) + (a.open ? '' : ' · ' + c.at[a.stage] + ' LRG') + '</span></button>';
     }).join('');
     var picked = c.boosts.map(function (b) {
       return '<div class="me-boost"><em>×' + b.mult + '</em><b>⚡ ' + esc(b.boost) + '</b><p>' + esc(b.text) + (b.bonus ? ' So far: +' + b.bonus + ' for your squad.' : '') + '</p></div>';
@@ -334,8 +335,8 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
       : c.stage < 3 && !c.choices[2] ? '<p class="me-sub">At ' + esc(c.names[2]) + ' you add a second boost.</p>' : '';
     return '<section class="me-card"><h2>Your ' + esc(animal()) + '</h2>' + cliffSay(say) + '<div class="me-evo"><div>' + creatureImg(0, true) + '</div><div>' +
       '<div class="me-stages">' + stages + '</div>' +
-      '<div class="me-xp"><div class="bar" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100" aria-label="XP to the next form"><i style="width:' + pct + '%"></i></div>' +
-      '<div class="t"><span>' + c.xp + ' XP</span><span>' + (c.next ? c.next.at + ' XP: ' + esc(c.next.name) : 'Final form') + '</span></div></div>' +
+      '<div class="me-xp"><div class="bar" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100" aria-label="LRG points to the next form"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="t"><span>' + c.xp + ' LRG points</span><span>' + (c.next ? c.next.at + ' LRG: ' + esc(c.next.name) : 'Final form') + '</span></div></div>' +
       '<div class="me-seg" role="group" aria-label="Look"><button data-form="m" aria-pressed="' + (c.form !== 'f') + '">♂ Male</button><button data-form="f" aria-pressed="' + (c.form === 'f') + '">♀ Female</button></div>' +
       '<div id="boosts"><h3 style="font-family:Fraunces,serif;margin:4px 0 6px">Evolution boosts</h3>' + (picked ? '<div class="me-boosts">' + picked + '</div>' : '') + choose + later + '</div>' + perksHtml() + '<p class="me-sub" id="crMsg"></p>' +
       '</div></div></section>';

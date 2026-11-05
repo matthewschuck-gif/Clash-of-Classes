@@ -3,11 +3,11 @@
  * File 19: Evolution. Each student's creature (their squad's animal) grows up as they climb,
  * Pokémon-style, and every evolution lets them pick a boost that earns their squad extra points.
  *
- * CLIMB XP (Settings › CLIMB_XP): points a student earns from what they already do, e.g.
+ * LRG POINTS (Settings › LRG_POINTS): Life Ready Graduate points a student earns from what they already do, e.g.
  *   "bills=1; mindset=5; shoutouts=2; star=1; streak=2; buddy=3; tickets=3; passport=5".
- *   Things: bills, mindset, shoutouts, star, streak, buddy, tickets, passport. XP only goes up.
- * STAGES (Settings › EVOLVE_XP "2=30, 3=100", EVOLVE_NAMES "Foothills, Ridge, Summit"): stage 1
- *   from the start, stage 2 and 3 at those XP. Art: assets/creatures/{squad}-{1|2|3}[f].jpg, a
+ *   Things: bills, mindset, shoutouts, star, streak, buddy, tickets, passport. LRG points only go up.
+ * STAGES (Settings › EVOLVE_LRG "2=30, 3=100", EVOLVE_NAMES "Foothills, Ridge, Summit"): stage 1
+ *   from the start, stage 2 and 3 at those LRG points. Art: assets/creatures/{squad}-{1|2|3}[f].jpg, a
  *   male and a female version of every stage. A student picks either and can show any stage
  *   they've reached.
  * EVOLUTION BOOSTS (tab Evolution Boosts): reaching stage 2 lets a student pick one boost at its
@@ -26,7 +26,7 @@
  *   frame  -- the glow around their creature (Value: a color like #ffe100, squad, or aurora)
  *   scene  -- the background of their hero card (Value: night, sunrise, forest, aurora, or an https image)
  *   reward -- a real-world perk staff honor (Value: what to show staff); nothing to equip
- *   Unlock When: blank (everyone), xp: N, stage: N, boost: any, or bills / mindset / shoutouts /
+ *   Unlock When: blank (everyone), lrg: N (LRG points), stage: N, boost: any, or bills / mindset / shoutouts /
  *   star / streak / buddy / tickets / passport: N.
  * CLIFF: the Mountaineer, the school mascot, guides every student on My Climb (assets/cliff.png;
  *   Settings › CLIFF_IMAGE overrides it).
@@ -65,11 +65,11 @@ function ensureEvolveTabs_() {
       [true, 'Trail Blazer', 'title', '', 'Evolve to stage 2.', 'stage: 2'],
       [true, 'Peak Legend', 'title', '', 'Evolve to stage 3.', 'stage: 3'],
       [true, 'Squad Glow', 'frame', 'squad', 'Your squad color.', ''],
-      [true, 'Gold Rim', 'frame', '#ffe100', 'Reach 60 XP.', 'xp: 60'],
+      [true, 'Gold Rim', 'frame', '#ffe100', 'Reach 60 LRG points.', 'lrg: 60'],
       [true, 'Frost', 'frame', '#9be7ff', 'Evolve to stage 2.', 'stage: 2'],
       [true, 'Aurora', 'frame', 'aurora', 'Evolve to stage 3.', 'stage: 3'],
       [true, 'Night Trail', 'scene', 'night', 'The trail at night.', ''],
-      [true, 'Sunrise Ridge', 'scene', 'sunrise', 'Reach 40 XP.', 'xp: 40'],
+      [true, 'Sunrise Ridge', 'scene', 'sunrise', 'Reach 40 LRG points.', 'lrg: 40'],
       [true, 'Pine Forest', 'scene', 'forest', 'Keep a 3-week streak.', 'streak: 3'],
       [true, 'Aurora Summit', 'scene', 'aurora', 'Evolve to stage 3.', 'stage: 3'],
       [false, 'Front of the Lunch Line', 'reward', 'Show this to a lunch duty teacher once this month.', 'A real perk for Summit climbers (staff decide).', 'stage: 3']]],
@@ -92,12 +92,12 @@ function rulesList_(setting, fallback) {
 }
 
 function climbXp_(vals) {
-  const w = rulesList_('CLIMB_XP', 'bills=1; mindset=5; shoutouts=2; star=1; streak=2; buddy=3; tickets=3; passport=5');
+  const w = rulesList_('LRG_POINTS', 'bills=1; mindset=5; shoutouts=2; star=1; streak=2; buddy=3; tickets=3; passport=5');
   return Math.round(Object.keys(w).reduce(function (n, k) { return n + (Number(vals[k]) || 0) * w[k]; }, 0));
 }
 
 function evolveAt_() {
-  const t = rulesList_('EVOLVE_XP', '2=30, 3=100');
+  const t = rulesList_('EVOLVE_LRG', '2=30, 3=100');
   return { 2: t['2'] || 30, 3: Math.max(t['3'] || 100, (t['2'] || 30) + 1) };
 }
 
@@ -178,7 +178,7 @@ function creatureFor_(id, squad, vals, look) {
     next: stage < 3 ? { stage: stage + 1, name: names[stage], need: at[stage + 1] - xp, at: at[stage + 1] } : null,
     from: stage === 1 ? 0 : at[stage],
     art: [1, 2, 3].map(function (s) { return { stage: s, name: names[s - 1], m: creatureArt_(squad, s, 'm'), f: creatureArt_(squad, s, 'f'), open: s <= stage }; }),
-    boosts: picked, choices: choices, perks: perksFor_(Object.assign({ xp: xp, stage: stage, boost: picked.length }, vals), look),
+    boosts: picked, choices: choices, perks: perksFor_(Object.assign({ lrg: xp, xp: xp, stage: stage, boost: picked.length }, vals), look),
   };
 }
 
@@ -301,4 +301,76 @@ function payBoosts_() {
     lines.push(s + ' +' + pts + ' evolution boosts');
   });
   return lines;
+}
+
+// ── THE "HOW MY CLIMB WORKS" TAB ────────────────────────────────────
+// Staff guide to creatures, LRG points, evolution boosts and perks. Rewritten every Run setup.
+const CLIMB_GUIDE_TAB_ = 'How My Climb Works';
+
+function setupClimbGuideTab_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(CLIMB_GUIDE_TAB_);
+  if (!sheet) sheet = ss.insertSheet(CLIMB_GUIDE_TAB_);
+  else sheet.clear();
+  const H = '## ';
+  const rows = [
+    'Clash of Classes -- How My Climb Works (creatures, LRG points, evolution boosts, perks)',
+    '',
+    'Every student has their own creature: their squad\'s animal (Gold cottontail rabbit, Purple ruffled grouse,',
+    'Grey fisher, Black white-tailed deer), in a male or female version they pick. It evolves as they earn',
+    'LRG (Life Ready Graduate) points. Cliff, the Mountaineer, guides them through it on My Climb.',
+    '',
+    H + 'LRG POINTS',
+    'Settings -> LRG_POINTS sets what each thing a student does is worth, e.g.',
+    '     bills=1; mindset=5; shoutouts=2; star=1; streak=2; buddy=3; tickets=3; passport=5',
+    '     bills = Trait Dough bills, mindset = Mindset summits, shoutouts, star = STAR growth points,',
+    '     streak = weeks in a row, buddy = Ambassador buddies, tickets = destination tickets finished,',
+    '     passport = 1 when the Trail Passport is complete.',
+    'The numbers come from the Student Board, so LRG points only go up during the year.',
+    '',
+    H + 'EVOLVING',
+    'Settings -> EVOLVE_LRG (2=30, 3=100) sets the LRG points for stage 2 and stage 3.',
+    'Settings -> EVOLVE_NAMES (Foothills, Ridge, Summit) names the three stages.',
+    'Students can show any stage they have reached. The first time they open My Climb after evolving,',
+    'they see their creature evolve.',
+    '',
+    H + 'EVOLUTION BOOSTS (THE EVOLUTION BOOSTS TAB)',
+    'At stage 2 a student picks ONE boost at its Ridge x. At stage 3 they add a SECOND, different one at its',
+    'Summit x. Boosts stack and stay for the year. Each row:',
+    '     Show                 -- untick to stop offering it (boosts already picked keep paying).',
+    '     Boost                -- the name students see.',
+    '     What Students See    -- one sentence on the boost card.',
+    '     Student Board Column -- what it watches: any Student Board column, or Poll Votes, Tickets',
+    '                             Completed, Event Sign-ups (counted in this Sheet). A column that is not',
+    '                             on the Student Board yet (e.g. Referral-Free Weeks) is simply not offered.',
+    '     Kind                 -- count: growth in the column since last week. level: the column is at or',
+    '                             above Threshold this week (or says Yes).',
+    '     Threshold            -- level boosts only (e.g. 95 for attendance %).',
+    '     Points Per           -- what one unit is worth to the squad (one bill, one summit, one good week).',
+    '     Ridge x / Summit x   -- the multiplier at each stage. Blank = not offered at that stage.',
+    'What it pays: each week, (growth x Points Per) x (multiplier - 1) goes to the student\'s squad.',
+    'Example: a x1.25 Trait Dough boost and 8 new bills -> 8 x 1 x 0.25 = 2 extra points that week.',
+    'All boosts in a squad are added up into ONE "Evolution boosts" row per squad on the events tab, with no',
+    'student names. The Boost Ledger tab shows who earned what (staff only). Boost points go out with the',
+    'other game awards (Clash of Classes -> Turn on game awards), once a week. Freezes still apply.',
+    '',
+    H + 'PERKS (THE PERKS TAB)',
+    'Things students unlock and wear, one of each kind at a time:',
+    '     title  -- words under their name. Value blank = the Perk name.',
+    '     frame  -- the glow around their creature. Value: a color like #ffe100, squad, or aurora.',
+    '     scene  -- the background of their card. Value: night, sunrise, forest, aurora, or an https image.',
+    '     reward -- a real-world perk staff honor (Value = what the student shows staff). Ships turned off.',
+    'Unlock When: blank (everyone), lrg: N, stage: N, boost: any, or bills / mindset / shoutouts / star /',
+    'streak / buddy / tickets / passport: N. Add a row to add a perk; untick Show to hide one.',
+    '',
+    H + 'CLIFF',
+    'Cliff is on every My Climb page with the most useful tip for that student. Settings -> CLIFF_NAME renames',
+    'him; CLIFF_IMAGE (an https link) swaps his picture.',
+  ];
+  const values = rows.map(function (r) { return [r.indexOf(H) === 0 ? r.slice(H.length) : r]; });
+  sheet.getRange(1, 1, values.length, 1).setValues(values);
+  sheet.getRange(1, 1).setFontWeight('bold').setFontSize(14).setFontColor('#490e6f');
+  rows.forEach(function (r, i) { if (r.indexOf(H) === 0) sheet.getRange(i + 1, 1).setFontWeight('bold').setFontColor('#490e6f'); });
+  sheet.setColumnWidth(1, 900);
+  sheet.setFrozenRows(1);
 }

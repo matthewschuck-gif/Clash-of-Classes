@@ -102,6 +102,7 @@ function setupSpreadsheet() {
   ensureRosterTab_();
   setupHelpTab_();
   setupMapGuideTab_(); // 18_Conquest.gs
+  setupClimbGuideTab_(); // 19_Evolve.gs
   try { SpreadsheetApp.getUi().alert('Done -- app_data, events, metrics, Settings and "How To Use This Sheet" tabs are set up. Clash of Classes has no separate PII tab (unlike Trail Journal), so there is no extra sharing/protection step required here. You can now add/edit rows directly in the events and metrics tabs and the site will pick them up within a few seconds. Staff directions live in the "How To Use This Sheet" tab -- start there.'); } catch (e) { console.log("Setup done (no pop-up when run from the editor).") } // the editor's Run button can't show pop-ups
 }
 
@@ -153,8 +154,8 @@ const DEFAULT_SETTINGS = [
   ['TICKETS_HELD', '3', 'Destination tickets a student can hold at once.'],
   ['TICKET_CHOICES', '3', 'Destination tickets offered per draw (the student keeps at least one).'],
   ['AVATAR_GEAR', 'boots=bills>=1; pack=bills>=5; rope=mindset>=1; lantern=shoutouts>=1; compass=star>=1; scarf=streak>=3; badge=tickets>=3; flag=passport>=1', 'My Climb: gear a student\'s climber earns. gear=thing>=number; things: bills, mindset, shoutouts, star, streak, buddy, tickets, passport.'],
-  ['CLIMB_XP', 'bills=1; mindset=5; shoutouts=2; star=1; streak=2; buddy=3; tickets=3; passport=5', 'My Climb: Climb XP a student earns for each thing they do. thing=xp; things: bills, mindset, shoutouts, star, streak, buddy, tickets, passport. Their creature evolves at EVOLVE_XP.'],
-  ['EVOLVE_XP', '2=30, 3=100', 'My Climb: the Climb XP a creature needs to evolve to stage 2 and stage 3. Each evolution lets the student pick a boost (Evolution Boosts tab).'],
+  ['LRG_POINTS', 'bills=1; mindset=5; shoutouts=2; star=1; streak=2; buddy=3; tickets=3; passport=5', 'My Climb: LRG (Life Ready Graduate) points a student earns for each thing they do. thing=points; things: bills, mindset, shoutouts, star, streak, buddy, tickets, passport. Their creature evolves at EVOLVE_LRG.'],
+  ['EVOLVE_LRG', '2=30, 3=100', 'My Climb: the LRG points a creature needs to evolve to stage 2 and stage 3. Each evolution lets the student pick a boost (Evolution Boosts tab).'],
   ['EVOLVE_NAMES', 'Foothills, Ridge, Summit', 'My Climb: names for the three creature stages.'],
   ['CLIFF_NAME', 'Cliff', 'My Climb: the guide\'s name (the Mountaineer mascot).'],
   ['CLIFF_IMAGE', '', 'My Climb: an https link to a different picture of Cliff. Blank = the built-in one.'],
@@ -261,7 +262,7 @@ function setupHelpTab_() {
     ['refresh anything on your end.'],
     [''],
     ['The school map game (zones, ways to conquer, what owning a zone pays) has its own guide:'],
-    ['the "How The Map Works" tab.'],
+    ['the "How The Map Works" tab. Creatures, LRG points, boosts and perks: the "How My Climb Works" tab.'],
     [''],
     ['HOW TO ADD AN EVENT / GIVE POINTS'],
     ['1. Open the "events" tab (the tab bar is at the very bottom of this spreadsheet).'],
