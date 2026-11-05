@@ -114,7 +114,23 @@ body { margin: 0; background: #0d0518; color: var(--text, #f5f0ff); font-family:
 @media (max-width: 720px) { .me-cliff { height: 130px; right: 0; } .me-hero > div:nth-child(2) { padding-right: 90px; } }
 @media (max-width: 420px) { .me-cliff { display: none; } .me-hero > div:nth-child(2) { padding-right: 0; } }
 .me-evo { display: grid; grid-template-columns: minmax(180px, 280px) 1fr; gap: 18px; align-items: start; }
-.me-stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.me-stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+@media (max-width: 420px) { .me-stages { grid-template-columns: repeat(2, 1fr); } }
+/* Gear (19_Evolve.gs): rendered in the squad's color; worn pieces sit on the creature card. */
+.me-worn { position: absolute; top: 8px; right: 8px; display: grid; gap: 6px; width: 24%; z-index: 1; }
+.me-worn img { width: 100%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 2px solid var(--squad, #bb8ef5); box-shadow: 0 6px 14px -6px #000; animation: meBob 4s ease-in-out infinite; }
+.me-worn img:nth-child(2) { animation-delay: -1.3s; } .me-worn img:nth-child(3) { animation-delay: -2.6s; }
+@keyframes meBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.me-gear-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 112px), 1fr)); gap: 10px; }
+.me-gt { font: inherit; color: #e9ddff; text-align: center; padding: 0; border: 2px solid transparent; border-radius: 16px; background: none; cursor: pointer; }
+.me-gt img { width: 100%; aspect-ratio: 1; border-radius: 14px; display: block; object-fit: cover; }
+.me-gt span { display: block; font-size: 12.5px; font-weight: 700; margin-top: 4px; text-transform: capitalize; }
+.me-gt small { display: block; font-size: 11px; color: #b09ec8; }
+.me-gt[aria-pressed="true"] { border-color: var(--pop-gold, #ffe100); }
+.me-gt[aria-pressed="true"] span::after { content: ' · worn'; color: var(--pop-gold, #ffe100); }
+.me-gt.locked { cursor: default; }
+.me-gt.locked img { filter: grayscale(1) brightness(.35); }
+@media (prefers-reduced-motion: reduce) { .me-worn img { animation: none; } }
 .me-st { font: inherit; padding: 0; border: 2px solid transparent; border-radius: 14px; background: none; cursor: pointer; color: #e9ddff; text-align: center; }
 .me-st .me-cr { border-radius: 12px; }
 .me-st span { display: block; font-size: 12px; font-weight: 700; margin-top: 4px; }
@@ -216,10 +232,14 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
   function cliffSay(text) {
     return '<div class="me-guide"><img src="' + esc(D.cliff.image) + '" alt="' + esc(cliffName()) + ', the Mountaineer"><div class="me-say"><b>' + esc(cliffName()) + '</b>' + text + '</div></div>';
   }
-  function art(stage) { var c = D.creature, a = c.art[(stage || c.show) - 1]; return c.form === 'f' ? a.f : a.m; }
+  function art(stage) { var c = D.creature, a = c.art[(stage || c.show) - 1]; return a.v[c.version] || a.v[1]; }
+  function wornHtml() {
+    var worn = (D.creature.gear || []).filter(function (g) { return g.worn && g.image; });
+    return worn.length ? '<div class="me-worn" aria-label="Gear: ' + esc(worn.map(function (g) { return g.gear; }).join(', ')) + '">' + worn.map(function (g) { return '<img src="' + esc(g.image) + '" alt="" loading="lazy">'; }).join('') + '</div>' : '';
+  }
   function creatureImg(stage, label) {
     var c = D.creature, st = stage || c.show;
-    return '<div class="me-cr" style="' + frameCss() + '"><img src="' + esc(art(st)) + '" alt="Your ' + esc(animal()) + ', ' + esc(c.names[st - 1]) + ' form" loading="lazy">' + (label ? '<span class="stg">' + esc(c.names[st - 1]) + '</span>' : '') + '</div>';
+    return '<div class="me-cr" style="' + frameCss() + '"><img src="' + esc(art(st)) + '" alt="Your ' + esc(animal()) + ', ' + esc(c.names[st - 1]) + ' form" loading="lazy">' + (label ? '<span class="stg">' + esc(c.names[st - 1]) + '</span>' + wornHtml() : '') + '</div>';
   }
   // Perk looks: a frame's glow and a scene's background.
   var SCENES = {
@@ -301,15 +321,21 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
         '<div class="me-bars" aria-hidden="true"><i class="you" style="width:' + Math.round(100 * you / top) + '%"></i><i class="sq" style="width:' + Math.round(100 * avg / top) + '%"></i></div>' +
         (note ? '<div class="note">' + note + '</div>' : '') + '</div>';
     }).join('');
-    var gear = (D.gear || []).map(function (g) { return '<span class="' + (g.have ? '' : 'locked') + '" title="' + (g.have ? 'Earned' : 'Earn it: ' + esc(g.need)) + '">' + (g.have ? '✓ ' : '🔒 ') + esc(g.gear) + '</span>'; }).join('');
+    var c = D.creature, worn = (c.gear || []).filter(function (g) { return g.worn; }).length;
+    var gear = (c.gear || []).map(function (g) {
+      if (!g.image) return '<span class="me-chip' + (g.have ? '' : ' locked') + '">' + (g.have ? '✓ ' : '🔒 ') + esc(g.gear) + '</span>';
+      return '<button class="me-gt' + (g.have ? ' craft-press' : ' locked') + '" ' + (g.have ? 'data-gear="' + esc(g.gear) + '"' : 'disabled') + ' aria-pressed="' + !!g.worn + '"' +
+        ' aria-label="' + esc(g.gear) + (g.have ? (g.worn ? ', worn' : ', earned') : ', locked: ' + esc(g.need)) + '"><img src="' + esc(g.image) + '" alt="" loading="lazy"><span>' + esc(g.gear) + '</span>' +
+        (g.have ? '' : '<small>🔒 ' + esc(g.need) + '</small>') + '</button>';
+    }).join('');
     var badges = (D.me.badges || []).map(function (b) { return '<span class="ms-badge">' + esc(b) + '</span>'; }).join('') || '<span class="me-sub">Your first badge is one Trait Dough bill away.</span>';
     var stamps = D.passport ? D.passport.stamps.map(function (s) { return '<span class="me-pill ' + (s.done ? '' : 'alt') + '" style="text-transform:none;letter-spacing:0;font-family:inherit">' + (s.done ? '✓ ' : '') + esc(s.label) + '</span>'; }).join(' ') : '';
     return creatureCard() + '<section class="me-card"><h2>You and your squad</h2><p class="me-sub">Your numbers next to the ' + esc(title(D.me.squad)) + ' Squad\'s average. Only you see your own.</p><div class="me-metrics">' + metrics + '</div></section>' +
-      '<section class="me-card"><h2>Your ' + esc(animal()) + '\'s gear</h2><p class="me-sub">Gear comes from what you do: bills, summits, shout-outs, streaks, tickets.</p><div class="me-gear">' + gear + '</div></section>' +
+      '<section class="me-card"><h2>Your ' + esc(animal()) + '\'s gear</h2><p class="me-sub">Gear comes from what you do: bills, summits, shout-outs, streaks, tickets. Tap gear you\'ve earned to wear it (up to ' + c.gearMax + ', wearing ' + worn + ').</p><div class="me-gear-grid">' + gear + '</div><p class="me-sub" id="gearMsg" style="margin-top:8px"></p></section>' +
       '<section class="me-card"><h2>Badges and passport</h2><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">' + badges + '</div>' + stamps + '</section>';
   }
 
-  // ── Your creature: stages, XP, male or female look, evolution boosts ──
+  // ── Your creature: stages, LRG points, version, evolution boosts, perks ──
   function creatureCard() {
     var c = D.creature, pct = c.next ? Math.round(100 * (c.xp - c.from) / Math.max(1, c.next.at - c.from)) : 100;
     var say = c.choices && Object.keys(c.choices).length ? 'Your ' + esc(animal()) + ' evolved! Pick a boost below. It adds extra points to the ' + esc(title(D.me.squad)) + ' Squad every week.'
@@ -318,7 +344,7 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
     var stages = c.art.map(function (a) {
       return '<button class="me-st' + (a.open ? '' : ' locked') + (a.stage === c.show ? ' on' : '') + '" ' + (a.open ? 'data-show="' + a.stage + '"' : 'disabled') +
         ' aria-pressed="' + (a.stage === c.show) + '" aria-label="' + esc(a.name) + (a.open ? ' form' : ' form, locked until ' + c.at[a.stage] + ' LRG points') + '">' +
-        '<div class="me-cr">' + (a.open ? '<img src="' + esc(c.form === 'f' ? a.f : a.m) + '" alt="" loading="lazy">' : '<img src="' + esc(c.form === 'f' ? a.f : a.m) + '" alt="" loading="lazy">') + '</div>' +
+        '<div class="me-cr"><img src="' + esc(a.v[c.version] || a.v[1]) + '" alt="" loading="lazy"></div>' +
         '<span>' + esc(a.name) + (a.open ? '' : ' · ' + c.at[a.stage] + ' LRG') + '</span></button>';
     }).join('');
     var picked = c.boosts.map(function (b) {
@@ -331,13 +357,12 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
           return '<button class="me-boost craft-press" data-boost="' + esc(b.boost) + '" data-stage="' + s + '"><em>×' + b.mult + '</em><b>' + esc(b.boost) + '</b><p>' + esc(b.text) + '</p></button>';
         }).join('') + '</div>' : '<p class="me-sub">No boosts are open yet. Check back soon.</p>');
     }).join('');
-    var later = c.stage < 2 ? '<p class="me-sub">At ' + esc(c.names[1]) + ' you pick a ×1.25 boost; at ' + esc(c.names[2]) + ' you add a ×2 boost.</p>'
-      : c.stage < 3 && !c.choices[2] ? '<p class="me-sub">At ' + esc(c.names[2]) + ' you add a second boost.</p>' : '';
+    var later = c.next ? '<p class="me-sub">Every evolution adds another boost, each one stronger. Next: ' + esc(c.next.name) + '.</p>' : '';
     return '<section class="me-card"><h2>Your ' + esc(animal()) + '</h2>' + cliffSay(say) + '<div class="me-evo"><div>' + creatureImg(0, true) + '</div><div>' +
       '<div class="me-stages">' + stages + '</div>' +
       '<div class="me-xp"><div class="bar" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100" aria-label="LRG points to the next form"><i style="width:' + pct + '%"></i></div>' +
       '<div class="t"><span>' + c.xp + ' LRG points</span><span>' + (c.next ? c.next.at + ' LRG: ' + esc(c.next.name) : 'Final form') + '</span></div></div>' +
-      '<div class="me-seg" role="group" aria-label="Look"><button data-form="m" aria-pressed="' + (c.form !== 'f') + '">♂ Male</button><button data-form="f" aria-pressed="' + (c.form === 'f') + '">♀ Female</button></div>' +
+      '<div class="me-seg" role="group" aria-label="Version">' + [1, 2, 3].map(function (v) { return '<button data-version="' + v + '" aria-pressed="' + (c.version === v) + '">' + esc(c.versions[v]) + '</button>'; }).join('') + '</div>' +
       '<div id="boosts"><h3 style="font-family:Fraunces,serif;margin:4px 0 6px">Evolution boosts</h3>' + (picked ? '<div class="me-boosts">' + picked + '</div>' : '') + choose + later + '</div>' + perksHtml() + '<p class="me-sub" id="crMsg"></p>' +
       '</div></div></section>';
   }
@@ -410,7 +435,13 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
     };
     document.querySelectorAll('[data-show]').forEach(function (b) { b.onclick = function () { saveCreature({ show: Number(b.getAttribute('data-show')) }); }; });
     document.querySelectorAll('[data-perk]').forEach(function (b) { b.onclick = function () { saveCreature({ perk: b.getAttribute('data-perk') }); }; });
-    document.querySelectorAll('[data-form]').forEach(function (b) { b.onclick = function () { if (b.getAttribute('aria-pressed') !== 'true') saveCreature({ form: b.getAttribute('data-form') }); }; });
+    document.querySelectorAll('[data-version]').forEach(function (b) { b.onclick = function () { if (b.getAttribute('aria-pressed') !== 'true') saveCreature({ version: Number(b.getAttribute('data-version')) }); }; });
+    document.querySelectorAll('[data-gear]').forEach(function (b) {
+      b.onclick = function () {
+        $('gearMsg').textContent = 'Saving…';
+        run.apply(null, ['clashMeSaveCreature', { gear: b.getAttribute('data-gear') }].concat(who())).then(function (d) { D = d; render(); }).catch(function (e) { $('gearMsg').textContent = msg(e); });
+      };
+    });
     document.querySelectorAll('[data-boost]').forEach(function (b) {
       b.onclick = function () {
         var name = b.getAttribute('data-boost');

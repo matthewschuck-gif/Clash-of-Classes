@@ -263,7 +263,7 @@ function clashMe(asId, adminToken) {
   page.look = lookFor_(id);
   page.gear = gearFor_(page.me, { tickets: page.tickets.filter(function (t) { return t.status === 'Completed'; }).length, passport: page.passport && page.passport.complete ? 1 : 0 });
   page.mascot = mascotFor_(squad);
-  page.creature = creatureFor_(id, squad, climbVals_(id, page), page.look); // 19_Evolve.gs
+  page.creature = creatureFor_(id, squad, climbVals_(id, page), page.look, page.gear); // 19_Evolve.gs
   page.cliff = cliffInfo_();
   page.game = gameState_();
   page.preview = !!(asId && adminToken);

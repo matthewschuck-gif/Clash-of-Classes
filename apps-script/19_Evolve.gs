@@ -6,12 +6,13 @@
  * LRG POINTS (Settings › LRG_POINTS): Life Ready Graduate points a student earns from what they already do, e.g.
  *   "bills=1; mindset=5; shoutouts=2; star=1; streak=2; buddy=3; tickets=3; passport=5".
  *   Things: bills, mindset, shoutouts, star, streak, buddy, tickets, passport. LRG points only go up.
- * STAGES (Settings › EVOLVE_LRG "2=30, 3=100", EVOLVE_NAMES "Foothills, Ridge, Summit"): stage 1
- *   from the start, stage 2 and 3 at those LRG points. Art: assets/creatures/{squad}-{1|2|3}[f].jpg, a
- *   male and a female version of every stage. A student picks either and can show any stage
- *   they've reached.
- * EVOLUTION BOOSTS (tab Evolution Boosts): reaching stage 2 lets a student pick one boost at its
- *   Ridge ×; stage 3 adds a second, different one at its Summit ×. They stack and stay.
+ * STAGES (Settings › EVOLVE_LRG "2=30, 3=60, 4=100", EVOLVE_NAMES "Foothills, Ridge, High Camp, Summit"):
+ *   stage 1 from the start, stages 2-4 at those LRG points. Art: assets/creatures/{squad}-{1-4}{''|f|w}.jpg,
+ *   three versions of every stage (VERSION_NAMES: Version 1, Version 2, Version 3 = the winter coat).
+ *   A student picks a version and can show any stage they've reached.
+ * EVOLUTION BOOSTS (tab Evolution Boosts): each evolution (stages 2, 3, 4) lets a student pick a boost
+ *   at that stage's multiplier (Stage 2 ×, Stage 3 ×, Stage 4 ×), each on a different column.
+ *   They stack and stay.
  *   Each boost watches a Student Board column:
  *     count -- growth in the column since the last payout × Points Per = the student's base points
  *     level -- column at or above Threshold (or Yes) this week = Points Per
@@ -28,11 +29,16 @@
  *   reward -- a real-world perk staff honor (Value: what to show staff); nothing to equip
  *   Unlock When: blank (everyone), lrg: N (LRG points), stage: N, boost: any, or bills / mindset / shoutouts /
  *   star / streak / buddy / tickets / passport: N.
+ * GEAR (Settings › AVATAR_GEAR, 16_Me.gs): earned from what students do. Each piece has art in every
+ *   squad's color (assets/gear/{squad}-{gear}.jpg); students wear up to GEAR_WORN of them as overlays.
  * CLIFF: the Mountaineer, the school mascot, guides every student on My Climb (assets/cliff.png;
  *   Settings › CLIFF_IMAGE overrides it).
  */
 
-const BOOST_HEADERS_ = ['Show', 'Boost', 'What Students See', 'Student Board Column', 'Kind', 'Threshold', 'Points Per', 'Ridge ×', 'Summit ×'];
+const BOOST_HEADERS_ = ['Show', 'Boost', 'What Students See', 'Student Board Column', 'Kind', 'Threshold', 'Points Per', 'Stage 2 ×', 'Stage 3 ×', 'Stage 4 ×'];
+const STAGES_ = [1, 2, 3, 4], BOOST_STAGES_ = [2, 3, 4];
+const VERSION_SUFFIX_ = { 1: '', 2: 'f', 3: 'w' };
+const GEAR_ART_ = ['boots', 'pack', 'rope', 'lantern', 'compass', 'scarf', 'badge', 'flag'];
 const LEDGER_HEADERS_ = ['800#', 'Squad', 'Boost', 'Stage', 'Multiplier', 'Picked', 'Baseline', 'Paid Through', 'Bonus Total'];
 const PERK_HEADERS_ = ['Show', 'Perk', 'Kind', 'Value', 'What Students See', 'Unlock When'];
 const PERK_KINDS_ = ['title', 'frame', 'scene', 'reward'];
@@ -42,19 +48,19 @@ const BUILT_IN_COUNTS_ = ['Poll Votes', 'Tickets Completed', 'Event Sign-ups'];
 function ensureEvolveTabs_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   [['Evolution Boosts', BOOST_HEADERS_, [
-      [true, 'Trait Dough', 'Every Trait Dough bill you turn in counts extra for your squad.', 'Trait Dough Bills', 'count', '', 1, 1.25, 2],
-      [true, 'STAR Growth', 'Every STAR growth point you earn counts extra.', 'STAR Growth Points', 'count', '', 1, 1.25, 2],
-      [true, 'Attendance', 'Each week your attendance is 95% or better, your squad gets extra.', 'Attendance %', 'level', 95, 4, 1.25, 2],
-      [true, 'Mindset', 'Every Mountaineer Mindset summit counts extra.', 'Mindset Summits', 'count', '', 5, 1.25, 2],
-      [true, 'Shout-outs', 'Every shout-out you earn counts extra.', 'Shout-outs', 'count', '', 2, 1.25, 2],
-      [true, 'Behavior', 'Every week with no office referral counts extra.', 'Referral-Free Weeks', 'count', '', 3, 1.25, 2],
-      [true, 'Grades', 'Each week you are passing every class, your squad gets extra.', 'Passing All Classes', 'level', 1, 4, 1.25, 2],
-      [true, 'Student of the Month', 'Being named Student of the Month counts extra.', 'Student of the Month', 'count', '', 10, 1.25, 2],
-      [true, 'Poll Turnout', 'Every Daily Poll vote counts extra.', 'Poll Votes', 'count', '', 1, 1.25, 2],
-      [true, 'Ticket Hunter', 'Every destination ticket you finish counts extra.', 'Tickets Completed', 'count', '', 3, 1.25, 2],
-      [true, 'Squad Events', 'Every squad event you sign up for counts extra.', 'Event Sign-ups', 'count', '', 2, 1.25, 2],
-      [true, 'Steady Streak', 'Each week your streak is 3 weeks or longer, your squad gets extra.', 'Streak (weeks)', 'level', 3, 3, 1.25, 2],
-      [true, 'Ambassador', 'Every new student you buddy up with counts extra.', 'Ambassador Buddies', 'count', '', 3, 1.25, 2]]],
+      [true, 'Trait Dough', 'Every Trait Dough bill you turn in counts extra for your squad.', 'Trait Dough Bills', 'count', '', 1, 1.25, 1.5, 2],
+      [true, 'STAR Growth', 'Every STAR growth point you earn counts extra.', 'STAR Growth Points', 'count', '', 1, 1.25, 1.5, 2],
+      [true, 'Attendance', 'Each week your attendance is 95% or better, your squad gets extra.', 'Attendance %', 'level', 95, 4, 1.25, 1.5, 2],
+      [true, 'Mindset', 'Every Mountaineer Mindset summit counts extra.', 'Mindset Summits', 'count', '', 5, 1.25, 1.5, 2],
+      [true, 'Shout-outs', 'Every shout-out you earn counts extra.', 'Shout-outs', 'count', '', 2, 1.25, 1.5, 2],
+      [true, 'Behavior', 'Every week with no office referral counts extra.', 'Referral-Free Weeks', 'count', '', 3, 1.25, 1.5, 2],
+      [true, 'Grades', 'Each week you are passing every class, your squad gets extra.', 'Passing All Classes', 'level', 1, 4, 1.25, 1.5, 2],
+      [true, 'Student of the Month', 'Being named Student of the Month counts extra.', 'Student of the Month', 'count', '', 10, 1.25, 1.5, 2],
+      [true, 'Poll Turnout', 'Every Daily Poll vote counts extra.', 'Poll Votes', 'count', '', 1, 1.25, 1.5, 2],
+      [true, 'Ticket Hunter', 'Every destination ticket you finish counts extra.', 'Tickets Completed', 'count', '', 3, 1.25, 1.5, 2],
+      [true, 'Squad Events', 'Every squad event you sign up for counts extra.', 'Event Sign-ups', 'count', '', 2, 1.25, 1.5, 2],
+      [true, 'Steady Streak', 'Each week your streak is 3 weeks or longer, your squad gets extra.', 'Streak (weeks)', 'level', 3, 3, 1.25, 1.5, 2],
+      [true, 'Ambassador', 'Every new student you buddy up with counts extra.', 'Ambassador Buddies', 'count', '', 3, 1.25, 1.5, 2]]],
    ['Perks', PERK_HEADERS_, [
       [true, 'Trailhead Rookie', 'title', '', 'Everyone starts here.', ''],
       [true, 'Dough Slinger', 'title', '', 'Turn in 10 Trait Dough bills.', 'bills: 10'],
@@ -63,16 +69,17 @@ function ensureEvolveTabs_() {
       [true, 'Ticket Master', 'title', '', 'Finish 5 destination tickets.', 'tickets: 5'],
       [true, 'Iron Streak', 'title', '', 'Keep a 6-week streak.', 'streak: 6'],
       [true, 'Trail Blazer', 'title', '', 'Evolve to stage 2.', 'stage: 2'],
-      [true, 'Peak Legend', 'title', '', 'Evolve to stage 3.', 'stage: 3'],
+      [true, 'High Camper', 'title', '', 'Evolve to stage 3.', 'stage: 3'],
+      [true, 'Peak Legend', 'title', '', 'Evolve to stage 4.', 'stage: 4'],
       [true, 'Squad Glow', 'frame', 'squad', 'Your squad color.', ''],
       [true, 'Gold Rim', 'frame', '#ffe100', 'Reach 60 LRG points.', 'lrg: 60'],
       [true, 'Frost', 'frame', '#9be7ff', 'Evolve to stage 2.', 'stage: 2'],
-      [true, 'Aurora', 'frame', 'aurora', 'Evolve to stage 3.', 'stage: 3'],
+      [true, 'Aurora', 'frame', 'aurora', 'Evolve to stage 4.', 'stage: 4'],
       [true, 'Night Trail', 'scene', 'night', 'The trail at night.', ''],
       [true, 'Sunrise Ridge', 'scene', 'sunrise', 'Reach 40 LRG points.', 'lrg: 40'],
       [true, 'Pine Forest', 'scene', 'forest', 'Keep a 3-week streak.', 'streak: 3'],
-      [true, 'Aurora Summit', 'scene', 'aurora', 'Evolve to stage 3.', 'stage: 3'],
-      [false, 'Front of the Lunch Line', 'reward', 'Show this to a lunch duty teacher once this month.', 'A real perk for Summit climbers (staff decide).', 'stage: 3']]],
+      [true, 'Aurora Summit', 'scene', 'aurora', 'Evolve to stage 4.', 'stage: 4'],
+      [false, 'Front of the Lunch Line', 'reward', 'Show this to a lunch duty teacher once this month.', 'A real perk for Summit climbers (staff decide).', 'stage: 4']]],
    ['Boost Ledger', LEDGER_HEADERS_, null]].forEach(function (t) {
     if (ss.getSheetByName(t[0])) return;
     const sh = ss.insertSheet(t[0]);
@@ -97,19 +104,34 @@ function climbXp_(vals) {
 }
 
 function evolveAt_() {
-  const t = rulesList_('EVOLVE_LRG', '2=30, 3=100');
-  return { 2: t['2'] || 30, 3: Math.max(t['3'] || 100, (t['2'] || 30) + 1) };
+  const t = rulesList_('EVOLVE_LRG', '2=30, 3=60, 4=100');
+  const at = { 2: t['2'] || 30 };
+  at[3] = Math.max(t['3'] || 60, at[2] + 1);
+  at[4] = Math.max(t['4'] || 100, at[3] + 1);
+  return at;
 }
 
 function stageNames_() {
-  const n = String(getSetting_('EVOLVE_NAMES') || 'Foothills, Ridge, Summit').split(',').map(function (s) { return s.trim(); });
-  return [n[0] || 'Foothills', n[1] || 'Ridge', n[2] || 'Summit'];
+  const n = String(getSetting_('EVOLVE_NAMES') || 'Foothills, Ridge, High Camp, Summit').split(',').map(function (s) { return s.trim(); });
+  return [n[0] || 'Foothills', n[1] || 'Ridge', n[2] || 'High Camp', n[3] || 'Summit'];
 }
 
-function stageFor_(xp) { const at = evolveAt_(); return xp >= at[3] ? 3 : xp >= at[2] ? 2 : 1; }
+function versionNames_() {
+  const n = String(getSetting_('VERSION_NAMES') || 'Version 1, Version 2, Version 3').split(',').map(function (s) { return s.trim(); });
+  return { 1: n[0] || 'Version 1', 2: n[1] || 'Version 2', 3: n[2] || 'Version 3' };
+}
 
-function creatureArt_(squad, stage, form) {
-  return ART_BASE_ + 'creatures/' + String(squad).toLowerCase() + '-' + stage + (form === 'f' ? 'f' : '') + '.jpg';
+function stageFor_(xp) { const at = evolveAt_(); return xp >= at[4] ? 4 : xp >= at[3] ? 3 : xp >= at[2] ? 2 : 1; }
+
+function creatureArt_(squad, stage, version) {
+  return ART_BASE_ + 'creatures/' + String(squad).toLowerCase() + '-' + stage + (VERSION_SUFFIX_[version] || '') + '.jpg';
+}
+
+// The version a look shows (older looks saved form 'f' for version 2).
+function versionOf_(look) { const v = Number(look && look.version); return v >= 1 && v <= 3 ? v : look && look.form === 'f' ? 2 : 1; }
+
+function gearArt_(squad, gear) {
+  return GEAR_ART_.indexOf(gear) > -1 ? ART_BASE_ + 'gear/' + String(squad).toLowerCase() + '-' + gear + '.jpg' : '';
 }
 
 function boardHeader_() {
@@ -126,7 +148,7 @@ function boostDefs_() {
     return { boost: String(r['Boost']).trim(), text: String(r['What Students See'] || ''), column: col,
       kind: String(r['Kind'] || 'count').trim().toLowerCase() === 'level' ? 'level' : 'count',
       threshold: Number(r['Threshold']) || 0, per: Number(r['Points Per']) || 0,
-      mult: { 2: Number(r['Ridge ×']) || 0, 3: Number(r['Summit ×']) || 0 }, ready: !!col && (head.indexOf(col) > -1 || BUILT_IN_COUNTS_.indexOf(col) > -1) };
+      mult: { 2: Number(r['Stage 2 ×']) || 0, 3: Number(r['Stage 3 ×']) || 0, 4: Number(r['Stage 4 ×']) || 0 }, ready: !!col && (head.indexOf(col) > -1 || BUILT_IN_COUNTS_.indexOf(col) > -1) };
   });
 }
 
@@ -153,14 +175,14 @@ function boardNumber_(v) {
 }
 
 // Everything My Climb shows about the creature.
-function creatureFor_(id, squad, vals, look) {
+function creatureFor_(id, squad, vals, look, gear) {
   look = look || {};
   const xp = climbXp_(vals), stage = stageFor_(xp), at = evolveAt_(), names = stageNames_();
-  const form = look.form === 'f' ? 'f' : 'm';
+  const version = versionOf_(look);
   const show = Math.min(stage, Math.max(1, Number(look.show) || stage));
   const defs = boostDefs_();
   const ledger = sheetRows_('Boost Ledger').filter(function (b) { return id800_(b['800#']) === id; });
-  const picked = [2, 3].map(function (s) {
+  const picked = BOOST_STAGES_.map(function (s) {
     const b = ledger.filter(function (x) { return Number(x['Stage']) === s; })[0];
     if (!b) return null;
     const d = defs.filter(function (x) { return x.boost === String(b['Boost']); })[0] || {};
@@ -168,16 +190,18 @@ function creatureFor_(id, squad, vals, look) {
   }).filter(Boolean);
   const takenCols = picked.map(function (p) { const d = defs.filter(function (x) { return x.boost === p.boost; })[0]; return d ? d.column : ''; });
   const choices = {};
-  [2, 3].forEach(function (s) {
+  BOOST_STAGES_.forEach(function (s) {
     if (stage < s || picked.some(function (p) { return p.stage === s; })) return;
     choices[s] = defs.filter(function (d) { return d.ready && d.mult[s] > 0 && takenCols.indexOf(d.column) === -1; })
       .map(function (d) { return { boost: d.boost, text: d.text, mult: d.mult[s] }; });
   });
   return {
-    xp: xp, stage: stage, show: show, form: form, names: names, at: at,
-    next: stage < 3 ? { stage: stage + 1, name: names[stage], need: at[stage + 1] - xp, at: at[stage + 1] } : null,
+    xp: xp, stage: stage, show: show, version: version, versions: versionNames_(), names: names, at: at,
+    next: stage < 4 ? { stage: stage + 1, name: names[stage], need: at[stage + 1] - xp, at: at[stage + 1] } : null,
     from: stage === 1 ? 0 : at[stage],
-    art: [1, 2, 3].map(function (s) { return { stage: s, name: names[s - 1], m: creatureArt_(squad, s, 'm'), f: creatureArt_(squad, s, 'f'), open: s <= stage }; }),
+    art: STAGES_.map(function (s) { return { stage: s, name: names[s - 1], v: { 1: creatureArt_(squad, s, 1), 2: creatureArt_(squad, s, 2), 3: creatureArt_(squad, s, 3) }, open: s <= stage }; }),
+    gear: (gear || []).map(function (g) { return { gear: g.gear, have: g.have, need: g.need, image: gearArt_(squad, g.gear), worn: g.have && (look.gear || []).indexOf(g.gear) > -1 }; }),
+    gearMax: gearMax_(),
     boosts: picked, choices: choices, perks: perksFor_(Object.assign({ lrg: xp, xp: xp, stage: stage, boost: picked.length }, vals), look),
   };
 }
@@ -211,6 +235,8 @@ function perksFor_(vals, look) {
   return { list: list, equipped: equipped };
 }
 
+function gearMax_() { return Math.max(1, Math.min(4, Number(getSetting_('GEAR_WORN')) || 3)); }
+
 function cliffInfo_() {
   const img = String(getSetting_('CLIFF_IMAGE') || '').trim();
   return { name: String(getSetting_('CLIFF_NAME') || 'Cliff').trim(), image: /^https:\/\//i.test(img) ? img : ART_BASE_ + 'cliff.png' };
@@ -224,22 +250,36 @@ function climbVals_(id, page) {
     passport: page.passport && page.passport.complete ? 1 : 0 };
 }
 
-// form: 'm' | 'f'; show: which reached stage to show; perk: equip (or take off) an unlocked perk.
+// version: 1-3; show: which reached stage to show; perk: equip (or take off) an unlocked perk;
+// gear: wear (or take off) an earned piece of gear, up to GEAR_WORN.
 function clashMeSaveCreature(choice, asId, adminToken) {
   const id = meId_(asId, adminToken);
   choice = choice || {};
-  let perk = null;
-  if (choice.perk) {
-    perk = JSON.parse(clashMe(asId, adminToken)).creature.perks.list.filter(function (p) { return p.perk === choice.perk && p.kind !== 'reward'; })[0];
-    if (!perk) throw new Error('That perk isn\'t available.');
-    if (!perk.open) throw new Error('You haven\'t unlocked ' + perk.perk + ' yet.');
+  let perk = null, gear = null;
+  if (choice.perk || choice.gear) {
+    const c = JSON.parse(clashMe(asId, adminToken)).creature;
+    if (choice.perk) {
+      perk = c.perks.list.filter(function (p) { return p.perk === choice.perk && p.kind !== 'reward'; })[0];
+      if (!perk) throw new Error('That perk isn\'t available.');
+      if (!perk.open) throw new Error('You haven\'t unlocked ' + perk.perk + ' yet.');
+    }
+    if (choice.gear) {
+      gear = c.gear.filter(function (g) { return g.gear === choice.gear; })[0];
+      if (!gear || !gear.image) throw new Error('That gear isn\'t available.');
+      if (!gear.have) throw new Error('You haven\'t earned the ' + gear.gear + ' yet.');
+      if (!gear.worn && c.gear.filter(function (g) { return g.worn; }).length >= c.gearMax) throw new Error('You can wear ' + c.gearMax + ' pieces of gear. Take one off first.');
+    }
   }
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
     const r = lookRow_(id);
     let look = {}; try { look = r ? JSON.parse(String(r['Look'] || '{}')) : {}; } catch (e) { look = {}; }
-    if (choice.form === 'm' || choice.form === 'f') look.form = choice.form;
-    if (choice.show) look.show = Math.max(1, Math.min(3, Math.floor(Number(choice.show)) || 1));
+    if (choice.version) { const v = Math.floor(Number(choice.version)); if (v >= 1 && v <= 3) { look.version = v; delete look.form; } }
+    if (choice.show) look.show = Math.max(1, Math.min(4, Math.floor(Number(choice.show)) || 1));
+    if (gear) {
+      const worn = (look.gear || []).filter(function (g) { return g !== gear.gear; });
+      look.gear = gear.worn ? worn : worn.concat([gear.gear]);
+    }
     if (perk) look[perk.kind] = look[perk.kind] === perk.perk ? '' : perk.perk; // pick it again to take it off
     saveLook_(id, look);
   } finally { lock.releaseLock(); }
@@ -317,8 +357,9 @@ function setupClimbGuideTab_() {
     'Clash of Classes -- How My Climb Works (creatures, LRG points, evolution boosts, perks)',
     '',
     'Every student has their own creature: their squad\'s animal (Gold cottontail rabbit, Purple ruffled grouse,',
-    'Grey fisher, Black white-tailed deer), in a male or female version they pick. It evolves as they earn',
-    'LRG (Life Ready Graduate) points. Cliff, the Mountaineer, guides them through it on My Climb.',
+    'Grey fisher, Black white-tailed deer), in one of three versions they pick (Version 3 is the winter coat).',
+    'It evolves through four stages as they earn LRG (Life Ready Graduate) points, and they dress it with gear',
+    'they earn. Cliff, the Mountaineer, guides them through it on My Climb.',
     '',
     H + 'LRG POINTS',
     'Settings -> LRG_POINTS sets what each thing a student does is worth, e.g.',
@@ -329,14 +370,15 @@ function setupClimbGuideTab_() {
     'The numbers come from the Student Board, so LRG points only go up during the year.',
     '',
     H + 'EVOLVING',
-    'Settings -> EVOLVE_LRG (2=30, 3=100) sets the LRG points for stage 2 and stage 3.',
-    'Settings -> EVOLVE_NAMES (Foothills, Ridge, Summit) names the three stages.',
+    'Settings -> EVOLVE_LRG (2=30, 3=60, 4=100) sets the LRG points for stages 2, 3 and 4.',
+    'Settings -> EVOLVE_NAMES (Foothills, Ridge, High Camp, Summit) names the four stages.',
+    'Settings -> VERSION_NAMES (Version 1, Version 2, Version 3) names the three looks.',
     'Students can show any stage they have reached. The first time they open My Climb after evolving,',
     'they see their creature evolve.',
     '',
     H + 'EVOLUTION BOOSTS (THE EVOLUTION BOOSTS TAB)',
-    'At stage 2 a student picks ONE boost at its Ridge x. At stage 3 they add a SECOND, different one at its',
-    'Summit x. Boosts stack and stay for the year. Each row:',
+    'Each evolution lets a student pick a boost: one at stage 2 (Stage 2 x), a second, different one at stage 3',
+    '(Stage 3 x) and a third at stage 4 (Stage 4 x). Boosts stack and stay for the year. Each row:',
     '     Show                 -- untick to stop offering it (boosts already picked keep paying).',
     '     Boost                -- the name students see.',
     '     What Students See    -- one sentence on the boost card.',
@@ -347,7 +389,8 @@ function setupClimbGuideTab_() {
     '                             above Threshold this week (or says Yes).',
     '     Threshold            -- level boosts only (e.g. 95 for attendance %).',
     '     Points Per           -- what one unit is worth to the squad (one bill, one summit, one good week).',
-    '     Ridge x / Summit x   -- the multiplier at each stage. Blank = not offered at that stage.',
+    '     Stage 2 x / Stage 3 x / Stage 4 x -- the multiplier at each stage (1.25, 1.5, 2 to start).',
+    '                             Blank = not offered at that stage.',
     'What it pays: each week, (growth x Points Per) x (multiplier - 1) goes to the student\'s squad.',
     'Example: a x1.25 Trait Dough boost and 8 new bills -> 8 x 1 x 0.25 = 2 extra points that week.',
     'All boosts in a squad are added up into ONE "Evolution boosts" row per squad on the events tab, with no',
@@ -362,6 +405,11 @@ function setupClimbGuideTab_() {
     '     reward -- a real-world perk staff honor (Value = what the student shows staff). Ships turned off.',
     'Unlock When: blank (everyone), lrg: N, stage: N, boost: any, or bills / mindset / shoutouts / star /',
     'streak / buddy / tickets / passport: N. Add a row to add a perk; untick Show to hide one.',
+    '',
+    H + 'GEAR',
+    'Settings -> AVATAR_GEAR sets how gear is earned (e.g. boots=bills>=1; pack=bills>=5; rope=mindset>=1).',
+    'Boots, pack, rope, lantern, compass, scarf, badge and flag have art in every squad\'s color. Students tap',
+    'gear they\'ve earned to wear it on their creature card, up to Settings -> GEAR_WORN (3).',
     '',
     H + 'CLIFF',
     'Cliff is on every My Climb page with the most useful tip for that student. Settings -> CLIFF_NAME renames',
