@@ -265,6 +265,7 @@ function clashMe(asId, adminToken) {
   page.mascot = mascotFor_(squad);
   page.creature = creatureFor_(id, squad, climbVals_(id, page), page.look, page.gear); // 19_Evolve.gs
   page.cliff = cliffInfo_();
+  page.tour = tourFor_('me'); // 20_Tour.gs
   page.game = gameState_();
   page.preview = !!(asId && adminToken);
   return JSON.stringify(page);

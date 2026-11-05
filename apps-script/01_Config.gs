@@ -100,6 +100,7 @@ function setupSpreadsheet() {
   ensureGameTabs_();
   ensureMeTabs_();
   ensureRosterTab_();
+  ensureTourTab_(); // 20_Tour.gs
   setupHelpTab_();
   setupMapGuideTab_(); // 18_Conquest.gs
   setupClimbGuideTab_(); // 19_Evolve.gs
@@ -160,6 +161,8 @@ const DEFAULT_SETTINGS = [
   ['VERSION_NAMES', 'Version 1, Version 2, Version 3', 'My Climb: names for the three looks a student can pick (Version 3 is the winter coat).'],
   ['GEAR_WORN', '3', 'My Climb: how many pieces of earned gear a student can wear on their creature at once (1-4).'],
   ['CLIFF_NAME', 'Cliff', 'My Climb: the guide\'s name (the Mountaineer mascot).'],
+  ['TOUR_AUTO', 'ON', 'Cliff\'s tour (Tutorial Steps tab) plays once on each device the first time someone opens the site or My Climb. OFF = only when they tap Ask Cliff.'],
+  ['TOUR_VERSION', '1', 'Change this (2, 3…) after editing the Tutorial Steps tab to show everyone the new tour once.'],
   ['CLIFF_IMAGE', '', 'My Climb: an https link to a different picture of Cliff. Blank = the built-in one.'],
   ['ROSTER_SHEET', 'https://docs.google.com/spreadsheets/d/1SDmwtkP9RzMZ62WVn6awZW6-6gA_wPtc6altTwoAeME/edit', 'The district roster Sheet (link or ID) with 800 Number, Email Address, First Name, Last Name, Grade Level. Clash of Classes › Import student roster copies it to the Students tab.'],
   ['STUDENT_EMAIL_PATTERN', '{800}@gomounts.org', 'My Climb sign-in when the Student Board has no Email column: how a student email is built from the 800#, e.g. {800}@easdpa.org. Blank = use the Email column only.'],

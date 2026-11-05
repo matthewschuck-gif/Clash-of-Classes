@@ -1055,6 +1055,40 @@ test('evolution: LRG point stages (4), three versions, a boost per evolution (di
   assert.ok(/cliff\.png$/.test(JSON.parse(w.clashMe('8001111', tok)).cliff.image));
 });
 
+test("Cliff's tour: steps per page in order from the Tutorial Steps tab; Opponent art and defeated art", () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureTourTab_();
+  let t = JSON.parse(w.clashTour('site'));
+  assert.ok(t.steps.length >= 5 && t.auto && t.version === '1' && /cliff\.png$/.test(t.cliff.image));
+  assert.strictEqual(t.steps[0].title, "Hi, I'm Cliff!");
+  assert.ok(t.steps.some(s => s.spot === 'map rules'));
+  const me = J(w.tourFor_('me'));
+  assert.ok(me.steps.some(s => s.go === 'tickets' && s.spot === 'tickets'));
+  // Staff edit the tab: order, hide a step, turn auto off.
+  const tab = w.book.getSheetByName('Tutorial Steps');
+  tab.rows.find(r => r[1] === 'site' && r[2] === 2)[0] = false;
+  tab.rows.push([true, 'site', 0, 'home', '', 'First!', 'Added by staff.']);
+  w.setSettingValue_('TOUR_AUTO', 'OFF');
+  t = JSON.parse(w.clashTour('site'));
+  assert.strictEqual(t.steps[0].title, 'First!'); assert.ok(!t.steps.some(s => s.title === 'Every point counts')); assert.strictEqual(t.auto, false);
+  assert.strictEqual(JSON.parse(w.clashTour('anything')).page, 'site');
+  // Opponents: built-in art by name, a defeated version once beaten; a row's Defeated Image wins.
+  assert.ok(/monster-tardy-troll\.jpg$/.test(w.opponentArt_('The Tardy Troll', false)));
+  assert.ok(/monster-litter-beast-defeated\.jpg$/.test(w.opponentArt_('The Hallway Litter Beast', true)));
+  assert.ok(/monster-shady-defeated\.jpg$/.test(w.opponentArt_('Shady', true)));
+  assert.strictEqual(w.opponentArt_('Someone New', true), '');
+  const opp = w.book.getSheetByName('Opponents');
+  assert.ok(opp.rows[0].includes('Defeated Image'));
+  const row = opp.rows.find(r => r[3] === 'The Tardy Troll');
+  const col = h => opp.rows[0].indexOf(h);
+  row[col('Show')] = true; row[col('Status')] = 'Defeated 2026-11-05';
+  let m = J(w.monster_([]));
+  assert.ok(m.defeated && /monster-tardy-troll-defeated\.jpg$/.test(m.image));
+  row[col('Defeated Image')] = 'https://example.org/troll-beaten.png';
+  m = J(w.monster_([]));
+  assert.strictEqual(m.image, 'https://example.org/troll-beaten.png');
+});
+
 test('roster: the Students tab copies the district roster, keeps squads, and lets students sign in by 800#@gomounts.org', () => {
   const w = world();
   w.ensureSettings_(); w.ensureGameTabs_(); w.ensureMeTabs_();

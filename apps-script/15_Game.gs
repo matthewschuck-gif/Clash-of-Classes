@@ -37,7 +37,7 @@ const HAND_HEADERS_ = ['Squad', 'Card', 'Effect', 'Value', 'Drawn', 'Status', 'N
 const BANK_HEADERS_ = ['Squad', 'Through', 'Length', 'Points', 'At', 'By'];
 const ROUND_HEADERS_ = ['Show', 'Start', 'End', 'Goal', 'Measure', '1st', '2nd', '3rd', 'Status', 'Results'];
 const ENGINE_HEADERS_ = ['Show', 'Habitat', 'Power', 'Text', 'Unlock When', 'Effect', 'Value', 'Unlocked'];
-const MONSTER_HEADERS_ = ['Show', 'Start', 'End', 'Opponent', 'Story', 'Image', 'Defeat Goal', 'Reward', 'Status'];
+const MONSTER_HEADERS_ = ['Show', 'Start', 'End', 'Opponent', 'Story', 'Image', 'Defeat Goal', 'Reward', 'Status', 'Defeated Image'];
 
 function monthBounds_(offset) {
   const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + (offset || 0));
@@ -56,6 +56,12 @@ function ensureGameTabs_() {
     oldTab.setName('Opponents');
     const col = oldTab.getRange(1, 1, 1, oldTab.getLastColumn()).getValues()[0].map(String).indexOf('Monster');
     if (col > -1) oldTab.getRange(1, col + 1).setValue('Opponent');
+  }
+  // Older Opponents tabs get the Defeated Image column.
+  const opp = ss.getSheetByName('Opponents');
+  if (opp && opp.getLastColumn()) {
+    const head = opp.getRange(1, 1, 1, opp.getLastColumn()).getValues()[0].map(function (h) { return String(h).trim(); });
+    if (head.indexOf('Defeated Image') === -1) opp.getRange(1, head.length + 1).setValue('Defeated Image').setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
   }
   [['Map Zones', MAP_HEADERS_, null],
    ['Chance Cards', CARD_HEADERS_, [
@@ -82,9 +88,9 @@ function ensureGameTabs_() {
    ['Opponents', MONSTER_HEADERS_, [
       // Shady: the small blue hairy gremlin of schadenfreude, back from a project that never left beta.
       [false, m0[0], m0[1], 'Shady', 'Shady is a small blue gremlin who feeds on schadenfreude: every laugh at someone else\'s stumble makes his fur stand taller. ' +
-        'He can\'t stand Freudenfreude. Every Trait Dough bill for someone doing the right thing, every cheer for someone else\'s win, shrinks him.', '', 'entries: trait_dough 150', 5, ''],
-      [false, m0[0], m0[1], 'The Tardy Troll', 'It lives under the bell and feeds on late arrivals. Every Daily Poll vote is a stone thrown at its bridge.', '', 'voters: 400', 5, ''],
-      [false, m1[0], m1[1], 'The Hallway Litter Beast', 'It grows with every wrapper left behind. Every positive point the school earns shrinks it.', '', 'points: 1500', 5, '']]]
+        'He can\'t stand Freudenfreude. Every Trait Dough bill for someone doing the right thing, every cheer for someone else\'s win, shrinks him.', '', 'entries: trait_dough 150', 5, '', ''],
+      [false, m0[0], m0[1], 'The Tardy Troll', 'It lives under the bell and feeds on late arrivals. Every Daily Poll vote is a stone thrown at its bridge.', '', 'voters: 400', 5, '', ''],
+      [false, m1[0], m1[1], 'The Hallway Litter Beast', 'It grows with every wrapper left behind. Every positive point the school earns shrinks it.', '', 'points: 1500', 5, '', '']]]
   ].forEach(function (t) {
     if (ss.getSheetByName(t[0])) return;
     const sh = ss.insertSheet(t[0]);
@@ -403,6 +409,15 @@ function monsterMeasure_(goal, from, to, events) {
   return { have: have, need: need, pct: m[1] === 'pitched in' };
 }
 
+// Built-in art for the seeded Opponents, matched by name, with a defeated version of each.
+// Settings › MASCOT_ART = OFF turns it off; an https Image / Defeated Image on the row wins.
+const OPPONENT_ART_ = [[/shady/i, 'monster-shady'], [/tardy|troll/i, 'monster-tardy-troll'], [/litter/i, 'monster-litter-beast']];
+function opponentArt_(name, defeated) {
+  if (String(getSetting_('MASCOT_ART') || 'ON').toUpperCase() === 'OFF') return '';
+  const hit = OPPONENT_ART_.filter(function (a) { return a[0].test(String(name || '')); })[0];
+  return hit ? ART_BASE_ + hit[1] + (defeated ? '-defeated' : '') + '.jpg' : ''; // ART_BASE_: 16_Me.gs
+}
+
 function monster_(events) {
   if (!gameOn_('OPPONENT_VISIBLE')) return null;
   const today = todayYmd_();
@@ -414,9 +429,11 @@ function monster_(events) {
   const from = String(r['Start'] || '0000-01-01').slice(0, 10), to = String(r['End'] || '9999-12-31').slice(0, 10);
   const prog = monsterMeasure_(r['Defeat Goal'], from, to, events || readEventsTab_());
   const defeated = /^defeated/i.test(String(r['Status'] || '')) || (prog && prog.have >= prog.need);
-  const image = String(r['Image'] || '').trim();
-  const art = /shady/i.test(String(r['Opponent'])) && String(getSetting_('MASCOT_ART') || 'ON').toUpperCase() !== 'OFF' ? ART_BASE_ + 'monster-shady.jpg' : ''; // 16_Me.gs
-  return { row: r._row, name: String(r['Opponent']).trim(), story: String(r['Story'] || ''), image: /^https:\/\//i.test(image) ? image : art,
+  const https = function (v) { v = String(v || '').trim(); return /^https:\/\//i.test(v) ? v : ''; };
+  // Defeated: the row's Defeated Image, else the built-in defeated art, else the normal picture.
+  const image = defeated ? https(r['Defeated Image']) || opponentArt_(r['Opponent'], true) || https(r['Image'])
+    : https(r['Image']) || opponentArt_(r['Opponent'], false);
+  return { row: r._row, name: String(r['Opponent']).trim(), story: String(r['Story'] || ''), image: image,
     goal: String(r['Defeat Goal'] || ''), progress: prog, health: defeated ? 0 : prog ? Math.max(0, 1 - prog.have / Math.max(1, prog.need)) : 1,
     defeated: !!defeated, reward: Number(r['Reward']) || 0, end: to, status: String(r['Status'] || '') };
 }

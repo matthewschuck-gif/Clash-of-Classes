@@ -414,6 +414,18 @@ function setupClimbGuideTab_() {
     H + 'CLIFF',
     'Cliff is on every My Climb page with the most useful tip for that student. Settings -> CLIFF_NAME renames',
     'him; CLIFF_IMAGE (an https link) swaps his picture.',
+    '',
+    H + 'CLIFF\'S TOUR (THE TUTORIAL STEPS TAB)',
+    'A pop-up walk-through where Cliff lights up each part of the game and explains it, on the main site',
+    '(Page = site) and on My Climb (Page = me). It plays once per device; the Ask Cliff button replays it.',
+    '     Order     -- the step order.',
+    '     Go To     -- the site page (home, squads, mysquad, tracker) or My Climb tab (me, tickets, squad, map, game).',
+    '     Spotlight -- what to light up, in plain words: score, my climb, opponent, map, map rules, poll, squads,',
+    '                  creature, lrg bar, stages, versions, boosts, perks, gear, tickets, metrics, round goals,',
+    '                  engine. Blank (or not on the page) = Cliff talks in the middle of the screen.',
+    '     Title / Text -- what Cliff says.',
+    'After editing the steps, change Settings -> TOUR_VERSION so everyone sees the new tour once.',
+    'Settings -> TOUR_AUTO = OFF stops it from playing by itself.',
   ];
   const values = rows.map(function (r) { return [r.indexOf(H) === 0 ? r.slice(H.length) : r]; });
   sheet.getRange(1, 1, values.length, 1).setValues(values);

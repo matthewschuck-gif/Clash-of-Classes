@@ -1,0 +1,138 @@
+<style>
+/* ── Cliff's tour (20_Tour.gs): Cliff, the Mountaineer, spotlights each part of the game and explains it.
+   Steps come from the Tutorial Steps tab. Plays once per device; "Ask Cliff" replays it. ── */
+.ct-ask { position: fixed; left: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 900; display: flex; align-items: center; gap: 8px; padding: 6px 14px 6px 6px; border-radius: 999px;
+  border: 1px solid rgba(255,225,0,.5); background: #1a0b2e; color: #fff; font: 700 13px 'DM Sans', system-ui, sans-serif; cursor: pointer; box-shadow: 0 10px 24px -12px #000; }
+.ct-ask img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; object-position: 50% 6%; background: radial-gradient(circle at 50% 30%, #6b3fa0, #24113f); }
+.ct-ask:hover, .ct-ask:focus-visible { border-color: #ffe100; }
+@media (max-width: 900px) { .ct-ask.ct-site { bottom: calc(78px + env(safe-area-inset-bottom)); } .ct-ask span { display: none; } .ct-ask { padding: 5px; } }
+.ct-dim { position: fixed; inset: 0; z-index: 2000; background: rgba(8,3,16,.72); }
+.ct-hole { position: fixed; z-index: 2001; border-radius: 16px; box-shadow: 0 0 0 4px #ffe100, 0 0 0 9999px rgba(8,3,16,.72); pointer-events: none; transition: all .35s var(--craft-out, ease-out); }
+.ct-card { position: fixed; z-index: 2002; width: min(380px, calc(100vw - 32px)); display: grid; grid-template-columns: 92px 1fr; gap: 6px; align-items: end; transition: top .35s var(--craft-out, ease-out), left .35s var(--craft-out, ease-out); }
+.ct-card > img { width: 92px; height: auto; filter: drop-shadow(0 8px 14px rgba(0,0,0,.5)); align-self: end; }
+.ct-say { position: relative; background: #fff; color: #1a0b2e; border-radius: 16px; padding: 12px 14px 10px; font: 500 14px/1.45 'DM Sans', system-ui, sans-serif; box-shadow: 0 14px 30px -14px #000; }
+.ct-say::after { content: ''; position: absolute; left: -8px; bottom: 22px; border: 9px solid transparent; border-right-color: #fff; border-left: 0; }
+.ct-say h3 { margin: 0 0 4px; font: 900 18px/1.2 'Fraunces', serif; }
+.ct-say .ct-who { font: 700 10px 'DM Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: #6b21a8; }
+.ct-nav { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+.ct-nav .ct-n { margin-right: auto; font: 500 11px 'DM Mono', monospace; color: #6b5a85; }
+.ct-nav button { font: 700 13px 'DM Sans', system-ui, sans-serif; border-radius: 999px; padding: 7px 13px; cursor: pointer; border: 1px solid #d8c8f0; background: #fff; color: #3b1a5a; }
+.ct-nav button.ct-go { background: #6b21a8; border-color: #6b21a8; color: #fff; }
+.ct-nav button.ct-x { border: 0; background: none; color: #6b5a85; padding: 7px 6px; }
+@media (prefers-reduced-motion: reduce) { .ct-hole, .ct-card { transition: none; } }
+</style>
+<script>
+/* CliffTour.start(tour, opts) / CliffTour.init(tour, opts). tour = clashTour(...) from 20_Tour.gs.
+   opts.go(name) opens a page or tab (returns nothing or a Promise); opts.site marks the main site. */
+(function () {
+  // Plain names staff can type in the Spotlight column.
+  var SPOTLIGHTS = {
+    // the main site
+    'score': '#heroScoreStrip, #miniBoard', 'my climb': '#homeGame a.btn', 'opponent': '#homeGame .gm', 'map': '#homeGame .gb',
+    'map rules': '#homeGame .gb-rules', 'battles': '#homeGame .gb-feed', 'poll': '#dailyPollSection', 'challenges': '#challengeSection, #autoChallengeSection',
+    'duels': '#duelSection', 'squads': '#squadsGrid', 'my squad': '#mySquadApp', 'tracker': '#scoreStrip', 'mayhem': '#mayhemHomeBoard',
+    // My Climb
+    'creature': '.me-hero .me-cr', 'cliff': '.me-cliff', 'lrg bar': '.me-xp', 'stages': '.me-stages', 'versions': '.me-seg', 'boosts': '#boosts',
+    'perks': '.me-perks', 'gear': '.me-gear-grid', 'tickets': '.me-tickets, #drawT', 'metrics': '.me-metrics', 'tabs': '.me-tabs',
+    'round goals': '.me-rg', 'engine': '.me-engine', 'streak': '.me-card h2'
+  };
+  var T = null, O = {}, i = 0, els = {}, btn = null;
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function key() { return 'cliff-tour-' + T.page + '-' + T.version; }
+  function seen() { try { return !!localStorage.getItem(key()); } catch (e) { return true; } }
+  function markSeen() { try { localStorage.setItem(key(), '1'); } catch (e) {} }
+  function target(spot) {
+    if (!spot) return null;
+    var sel = SPOTLIGHTS[spot.toLowerCase()] || spot, el = null;
+    try { el = Array.prototype.filter.call(document.querySelectorAll(sel), function (e) { var r = e.getBoundingClientRect(); return r.width > 4 && r.height > 4; })[0] || null; } catch (e) { el = null; }
+    return el;
+  }
+  function place() {
+    var s = T.steps[i], el = target(s.spot), card = els.card, vw = window.innerWidth, vh = window.innerHeight;
+    var cw = Math.min(380, vw - 32), ch = card.offsetHeight || 200;
+    if (!el) {
+      els.hole.style.display = 'none'; els.dim.style.display = 'block';
+      card.style.left = Math.round((vw - cw) / 2) + 'px'; card.style.top = Math.round(Math.max(16, (vh - ch) / 2)) + 'px';
+      return;
+    }
+    var r = el.getBoundingClientRect(), pad = 8;
+    els.dim.style.display = 'none'; els.hole.style.display = 'block';
+    els.hole.style.left = (r.left - pad) + 'px'; els.hole.style.top = (r.top - pad) + 'px';
+    els.hole.style.width = (r.width + pad * 2) + 'px'; els.hole.style.height = Math.min(r.height + pad * 2, vh - 20) + 'px';
+    // Below the spotlight if it fits, else above, else pinned to the bottom of the screen.
+    var top = r.bottom + 16;
+    if (top + ch > vh - 12) top = r.top - ch - 16;
+    if (top < 12) top = vh - ch - 12;
+    var left = Math.min(Math.max(16, r.left), vw - cw - 16);
+    card.style.left = Math.round(left) + 'px'; card.style.top = Math.round(top) + 'px';
+  }
+  function show() {
+    var s = T.steps[i], last = i === T.steps.length - 1;
+    els.card.innerHTML = '<img src="' + esc(T.cliff.image) + '" alt="">' +
+      '<div class="ct-say" role="dialog" aria-labelledby="ctTitle"><div class="ct-who">' + esc(T.cliff.name) + '</div><h3 id="ctTitle">' + esc(s.title) + '</h3><div>' + esc(s.text) + '</div>' +
+      '<div class="ct-nav"><span class="ct-n">' + (i + 1) + ' / ' + T.steps.length + '</span>' +
+      (last ? '' : '<button class="ct-x" data-ct="skip">Skip</button>') + (i ? '<button data-ct="back">Back</button>' : '') +
+      '<button class="ct-go" data-ct="next">' + (last ? 'Let\'s climb!' : 'Next') + '</button></div></div>';
+    els.card.querySelector('[data-ct="next"]').focus();
+    var go = s.go && O.go ? O.go(s.go) : null;
+    Promise.resolve(go).then(function () {
+      setTimeout(function () {
+        var el = target(s.spot);
+        if (el) el.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+        setTimeout(place, 350);
+        place();
+      }, 60);
+    });
+  }
+  function close() {
+    markSeen();
+    ['dim', 'hole', 'card'].forEach(function (k) { if (els[k]) els[k].remove(); });
+    els = {};
+    window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true); document.removeEventListener('keydown', onKey);
+    if (btn) btn.focus();
+  }
+  function step(d) { var n = i + d; if (n < 0) return; if (n >= T.steps.length) return close(); i = n; show(); }
+  function onKey(e) {
+    if (e.key === 'Escape') close();
+    else if (e.key === 'ArrowRight') step(1);
+    else if (e.key === 'ArrowLeft') step(-1);
+  }
+  function tvOpen() { var tv = document.getElementById('tvView'); if (!tv) return false; var r = tv.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(tv).display !== 'none'; }
+  function start() {
+    if (!T || !T.steps.length || els.card || tvOpen()) return;
+    i = 0;
+    ['dim', 'hole', 'card'].forEach(function (k) { els[k] = document.createElement('div'); els[k].className = 'ct-' + k; document.body.appendChild(els[k]); });
+    els.card.addEventListener('click', function (e) { var b = e.target.closest('[data-ct]'); if (!b) return; var a = b.getAttribute('data-ct'); if (a === 'skip') close(); else step(a === 'back' ? -1 : 1); });
+    window.addEventListener('resize', place); window.addEventListener('scroll', place, true); document.addEventListener('keydown', onKey);
+    show();
+  }
+  function init(tour, opts) {
+    T = tour; O = opts || {};
+    if (!T || !T.steps || !T.steps.length) return;
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.className = 'ct-ask craft-press' + (O.site ? ' ct-site' : '');
+      btn.setAttribute('aria-label', 'Ask ' + T.cliff.name + ': how the game works');
+      btn.innerHTML = '<img src="' + esc(T.cliff.image) + '" alt=""><span>Ask ' + esc(T.cliff.name) + '</span>';
+      btn.onclick = start;
+      document.body.appendChild(btn);
+      // Never over the hallway TV screen.
+      if (document.getElementById('tvView')) setInterval(function () { btn.style.display = tvOpen() ? 'none' : ''; }, 1500);
+    }
+    if (T.auto && !seen() && !O.noAuto) setTimeout(start, O.delay || 900);
+  }
+  window.CliffTour = { init: init, start: start, SPOTLIGHTS: SPOTLIGHTS };
+
+  // The main site: load the "site" tour once the home page is up (not on the TV screen).
+  if (document.getElementById('page-home') && !/[?&](tv|kiosk)\b/i.test(location.search)) {
+    var boot = function () {
+      if (!window.gasRun_) return;
+      window.gasRun_('clashTour', 'site').then(function (t) {
+        t = typeof t === 'string' ? JSON.parse(t) : t;
+        init(t, { site: true, delay: 2500, go: function (name) { if (window.goTo && window.__currentPage !== name) window.goTo(name); return new Promise(function (ok) { setTimeout(ok, 400); }); } });
+      }).catch(function () {});
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 2000); }); else setTimeout(boot, 2000);
+  }
+})();
+</script>

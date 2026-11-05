@@ -8,6 +8,7 @@
 <?!= include('Styles'); ?>
 <?!= include('Pop'); ?>
 <?!= include('GameUi'); ?>
+<?!= include('CliffTour'); ?>
 <style>
 /* ── My Climb: one student's own dashboard (16_Me.gs). Dark purple site, squad skin once loaded. ── */
 body { margin: 0; background: #0d0518; color: var(--text, #f5f0ff); font-family: 'DM Sans', system-ui, sans-serif; min-height: 100dvh; }
@@ -202,7 +203,8 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
   function msg(e) { return String(e && e.message || e).replace(/^Exception:\s*/, '').replace(/^(SIGN_IN|NOT_FOUND|CLOSED):\s*/, ''); }
 
   function load() {
-    run.apply(null, ['clashMe'].concat(who())).then(function (d) { D = d; look = Object.assign({}, BLANK, d.look || {}); if (window.popSkin) popSkin(d.me.squad); render(); if (!D.preview) maybeEvolve(); })
+    run.apply(null, ['clashMe'].concat(who())).then(function (d) { D = d; look = Object.assign({}, BLANK, d.look || {}); if (window.popSkin) popSkin(d.me.squad); render(); var evolving = !D.preview && maybeEvolve();
+      if (window.CliffTour && D.tour) CliffTour.init(D.tour, { noAuto: evolving || D.preview, delay: 1200, go: function (name) { if (tab !== name) { tab = name; render(); } } }); })
       .catch(function (e) {
         var m = msg(e), raw = String(e && e.message), signin = /SIGN_IN|NOT_FOUND/.test(raw), closed = /CLOSED/.test(raw);
         $('me').innerHTML = '<div class="me-card me-err">' + (closed ? '<img src="https://raw.githubusercontent.com/matthewschuck-gif/Clash-of-Classes/ready-to-go-live/assets/cliff.png" alt="Cliff, the Mountaineer" style="height:180px;display:block;margin:0 auto 6px">' : '') +
@@ -281,8 +283,8 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
   // Evolving! Once per new stage, on this device.
   function maybeEvolve() {
     var c = D.creature, key = 'clash-stage-' + D.me.id, seen = 0;
-    try { seen = Number(localStorage.getItem(key)) || 0; localStorage.setItem(key, c.stage); } catch (e) { return; }
-    if (c.stage <= 1 || seen >= c.stage) return;
+    try { seen = Number(localStorage.getItem(key)) || 0; localStorage.setItem(key, c.stage); } catch (e) { return false; }
+    if (c.stage <= 1 || seen >= c.stage) return false;
     var from = Math.max(1, seen || c.stage - 1), el = document.createElement('div');
     el.className = 'me-evolve'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Your creature evolved');
     el.innerHTML = '<div class="me-evolve-box"><div class="me-cr"><img class="from" src="' + esc(art(from)) + '" alt=""><img class="to" src="' + esc(art(c.stage)) + '" alt="Your ' + esc(animal()) + ', ' + esc(c.names[c.stage - 1]) + ' form"></div>' +
@@ -292,6 +294,7 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
     var ok = el.querySelector('#evoOk');
     ok.focus();
     ok.onclick = function () { el.remove(); tab = 'me'; render(); var b = $('boosts'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+    return true;
   }
 
   function render() {
