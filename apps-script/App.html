@@ -229,6 +229,7 @@ const PAGES_DEF = [
   { id:'leaders',    icon:'🏅', label:'Leaderboards'   },
   { id:'week',       icon:'🗞️', label:'This Week'      },
   { id:'year',       icon:'📅', label:'Year Plan'      },
+  { id:'homerooms',  icon:'🏠', label:'Homerooms'      },
   { id:'generals',   icon:'⚔️', label:'Generals'       },
   { id:'hq',         icon:'🛡️', label:'Generals HQ'    },
 ];
@@ -741,6 +742,7 @@ function goTo(id){
   else if(id==='leaders')   renderLeaders();
   else if(id==='week')      renderWeek();
   else if(id==='year')      renderYearPlan();
+  else if(id==='homerooms') renderHomerooms();
   else if(id==='squads')      renderSquads();
   else if(id==='gallery')     renderGallery();
   else if(id==='tracker'){ renderStrip(); renderTable(); renderMetrics(); renderTimeline(); renderSnapshots(); renderPoll(); renderCatChart(); renderSeasonCal(); }
@@ -2954,6 +2956,30 @@ function renderLeaders(){
       (d.names&&d.top?'<h2 style="font-family:Fraunces,serif;margin:26px 0 4px">Top Climbers</h2><p style="color:var(--text3);font-size:13px;margin:0 0 10px">The most LRG points in each grade.</p>'+
         '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px">'+climbers('7',d.top['7'])+climbers('8',d.top['8'])+'</div>':'');
   }).catch(function(){ box.innerHTML='<p style="color:var(--text3)">The leaderboards could not load. Try again in a minute.</p>'; });
+}
+
+// Homerooms page (25_Homerooms.gs): approved homeroom points by room, this month, the latest event.
+function renderHomerooms(){
+  const box=document.getElementById('homeroomsBody');
+  if(!box||!window.gasRun_) return;
+  if(!box.dataset.loaded) box.innerHTML='<p style="color:var(--text3)">Loading homeroom standings…</p>';
+  window.gasRun_('clashHomerooms').then(function(d){
+    box.dataset.loaded='1';
+    if(!d.rooms.length){ box.innerHTML='<p style="color:var(--text3)">No homeroom points yet. They show up here once staff approve the form responses.</p>'; return; }
+    const top=Math.max(1,...d.rooms.map(r=>r.total));
+    const medal=i=>['🥇','🥈','🥉'][i]||(i+1);
+    const standings='<div class="card" style="padding:16px"><div style="font-family:Fraunces,serif;font-weight:700;font-size:17px;margin-bottom:8px">🏠 Season standings</div>'+
+      d.rooms.map((r,i)=>'<div style="display:grid;grid-template-columns:30px 80px 1fr 64px 70px;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:14px">'+
+        '<span style="text-align:center">'+medal(i)+'</span><b>Room '+r.room+'</b>'+
+        '<i style="display:block;height:9px;border-radius:99px;background:var(--gold-soft);width:'+Math.round(100*r.total/top)+'%"></i>'+
+        '<span style="text-align:right;font-variant-numeric:tabular-nums">'+r.total+' pts</span>'+
+        '<span style="text-align:right;font-size:12px;color:var(--text3)">+'+r.month+' this mo.</span></div>').join('')+
+      '<div style="font-size:12px;color:var(--text3);margin-top:8px">'+d.eventsCount+' homeroom events so far.</div></div>';
+    const L=d.latest;
+    const latest=L?'<div class="card" style="padding:16px"><div style="font-family:Fraunces,serif;font-weight:700;font-size:17px;margin-bottom:8px">⭐ Latest: '+String(L.event).replace(/[<>&]/g,'')+' <span style="font-size:12px;color:var(--text3);font-weight:400">'+L.date+'</span></div>'+
+      L.rooms.slice(0,10).map(r=>'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:13px"><span>Room '+r.room+'</span><span>'+r.took+' of '+r.total+' · <b>'+r.points+' pts</b></span></div>').join('')+'</div>':'';
+    box.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:12px">'+standings+latest+'</div>';
+  }).catch(function(){ box.innerHTML='<p style="color:var(--text3)">Homeroom standings could not load. Try again in a minute.</p>'; });
 }
 
 // Year Plan page (24_YearPlan.gs): month by month, the current month open, filter by kind and grade.

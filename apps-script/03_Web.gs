@@ -133,6 +133,7 @@ function backgroundTick() {
   try { maybeCheckThaws_(); } catch (e) { noteError_('thaw check', e); }
   try { maybeGameTick_(); } catch (e) { noteError_('map claims', e); }
   try { flushUsage_(); snapshotStages_(); } catch (e) { noteError_('usage + creature snapshot', e); }
+  try { maybeImportHomerooms_(); } catch (e) { noteError_('homeroom forms', e); } // 25_Homerooms.gs, every 30 minutes
   try { cachedPublicLoad_(true); cachedGame_(true); } catch (e) { noteError_('warm cache', e); }
 }
 
@@ -337,6 +338,7 @@ function onOpen() {
     .addSeparator()
     .addItem('Import student roster', 'menuImportRoster_')
     .addItem('Load Squad Generals from the Squad Leadership doc', 'menuImportGenerals_')
+    .addItem('Import homeroom form responses', 'menuImportHomerooms_')
     .addItem('Turn on game awards', 'menuTurnOnGame_')
     .addItem('Turn off game awards', 'menuTurnOffGame_')
     .addItem('Use the building map (replaces Map Zones)', 'menuBuildingMap_')

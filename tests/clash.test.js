@@ -1321,4 +1321,29 @@ test('Year Plan: seeded month by month from the Monthly Themes docs, hidden rows
   assert.ok(week.next.some(n => n.what === 'Snowball Relay' && n.kind === 'Color Squad Activity'), JSON.stringify(week.next));
 });
 
+test('Homerooms: form responses become homeroom points (10 x share), waiting for Approved, flagged oddities, once only, standings by room', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureHomeroomTabs_();
+  const forms = w.book.getSheetByName('Homeroom Forms');
+  assert.strictEqual(forms.rows.length, 4, 'three forms seeded');
+  const head = ['Timestamp', 'What is your room number? (write the 2-digit number)', 'How many students are wearing a hat? Include yourself', 'How many total students are in your homeroom today? Include yourself in the total!'];
+  const resp = [head, [new Date('2026-10-29T12:10:00Z'), '71', '8', '23'], [new Date('2026-10-29T12:11:00Z'), '84', '20', '22'],
+    [new Date('2026-10-29T12:12:00Z'), '75', '22', '9'], [new Date('2026-10-29T12:30:00Z'), '71', '9', '23'], ['', '', '', '']];
+  const read = () => resp;
+  let r = w.importHomeroomResponses_(read);
+  const pts = w.book.getSheetByName('Homeroom Points').rows;
+  assert.strictEqual(r.added, 4 * 3, 'each seeded form reads the same fake sheet here');
+  const first = pts.slice(1).filter(x => x[2] === 'Red Ribbon Week Hat Day');
+  assert.deepStrictEqual(first.map(x => [x[3], x[6]]), [['71', 3], ['84', 9], ['75', 10], ['71', 4]]);
+  assert.ok(first.every(x => x[0] === false), 'waits for Approved');
+  assert.ok(/More took part/.test(first[2][7]) && /Second entry/.test(first[3][7]));
+  assert.strictEqual(w.importHomeroomResponses_(read).added, 0, 'never imported twice');
+  assert.strictEqual(J(w.homeroomBoard_()).rooms.length, 0, 'nothing counts until approved');
+  pts.forEach((x, i) => { if (i && x[2] === 'Red Ribbon Week Hat Day' && !x[7]) x[0] = true; });
+  const b = J(w.homeroomBoard_());
+  assert.deepStrictEqual(b.rooms.map(x => x.room + ':' + x.total), ['84:9', '71:3']);
+  assert.strictEqual(b.latest.event, 'Red Ribbon Week Hat Day');
+  assert.strictEqual(w.hrPoints_(5, 0), 0);
+});
+
 console.log('\n' + passed + ' tests passed');

@@ -85,7 +85,7 @@ getSheet_('Sign-up Events').appendRow(['Squad Bowl (trivia)', '2027-03-16', 4, t
 getSheet_('Sign-up Events').appendRow(['Tug-o-war', '2027-03-19', 15, true, 'Squad Night', 'Active', false]);
 getSheet_('events').appendRow([104, 'Paper Chain Challenge', 'mayhem_week', '2026-10-30', '', '', 3, 5, 1, 2]);
 getSheet_('events').appendRow([105, 'Penny Tower Race', 'mayhem_week', '2026-10-31', '', '', 2, 0, 4, 1]);
-ensureGameTabs_(); ensureMeTabs_(); ensureTourTab_(); ensureMindsetLinksTab_(); ensureYearPlanTab_();
+ensureGameTabs_(); ensureMeTabs_(); ensureTourTab_(); ensureMindsetLinksTab_(); ensureYearPlanTab_(); ensureHomeroomTabs_();
 setSettingValue_('MY_CLIMB_HOURS', '00:00-23:59'); setSettingValue_('MY_CLIMB_SCHOOL_DAYS', 'OFF'); // preview only: always open
 getSheet_('Opponents').rows.forEach(function (r, i) { if (i && r[3] === 'Shady') r[0] = true; });
 (function () { var t = todayYmd_(); getSheet_('events').appendRow([106, 'Daily Poll', 'daily_poll', t, '', '', 2, 6, 3, 1]); getSheet_('events').appendRow([107, 'Mindset summits', 'mountaineer_mindset', t, '', '', 4, 1, 2, 6]); getSheet_('events').appendRow([108, 'Trait Dough: Ann L.', 'trait_dough', t, '', '', 0, 9, 3, 2]); })();

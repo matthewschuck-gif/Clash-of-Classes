@@ -104,6 +104,7 @@ function setupSpreadsheet() {
   ensureWeekTabs_(); // 22_Week.gs
   ensureMindsetLinksTab_(); // 23_Drive.gs
   ensureYearPlanTab_(); // 24_YearPlan.gs
+  ensureHomeroomTabs_(); // 25_Homerooms.gs
   installBackgroundTick_(); // 03_Web.gs: claims, thaws and a warm cache every 5 minutes
   setupHelpTab_();
   setupMapGuideTab_(); // 18_Conquest.gs
@@ -182,6 +183,7 @@ const DEFAULT_SETTINGS = [
   ['MINDSET_APP', 'https://script.google.com/a/macros/easdpa.org/s/AKfycbwuQCzZfVvgX-k3czsKI74DKnt2qF2XJslElr3HHcwnJTyCcHI4e7NxegIPDpElcowL7w/exec', 'The Grade 8 Mountaineer Mindset web app (bit.ly/ems8-mindset). Shows inside the site\'s Mindset page.'],
   ['GENERALS_DOC', 'https://docs.google.com/document/d/1OeKBx8SOrfkG4zaHuj66LllR1nS6EINA8Dk4KYmM6Zo/edit', 'The Squad Leadership doc (shared Clash drive) that lists the Generals for each squad. Menu › Load Squad Generals copies them onto MLC Roster.'],
   ['GENERALS_HANDBOOK', 'https://docs.google.com/document/d/1DL1VXqEK9OhvJRBPztQvOwadA-UcWpDCg_ZUabP7304/edit', 'The Squad General one-pager / handbook. Generals HQ › My job links to it.'],
+  ['HOMEROOM_AUTO_APPROVE', 'OFF', 'Homeroom form responses (Homeroom Points tab): OFF = staff tick Approved before they count; ON = they count right away (flagged ones still wait).'],
   ['EMBED_APPS', 'ON', 'ON = those three apps show inside their Clash pages (signed in with a school account). OFF = an Open button only.'],
   ['ROSTER_SHEET', 'https://docs.google.com/spreadsheets/d/1SDmwtkP9RzMZ62WVn6awZW6-6gA_wPtc6altTwoAeME/edit', 'The district roster Sheet (link or ID) with 800 Number, Email Address, First Name, Last Name, Grade Level. Clash of Classes › Import student roster copies it to the Students tab.'],
   ['STUDENT_EMAIL_PATTERN', '{800}@gomounts.org', 'My Climb sign-in when the Student Board has no Email column: how a student email is built from the 800#, e.g. {800}@easdpa.org. Blank = use the Email column only.'],

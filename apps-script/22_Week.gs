@@ -19,7 +19,7 @@
 
 const USAGE_HEADERS_ = ['Date', 'Page', 'Opens'];
 const DIGEST_LOG_HEADERS_ = ['Sent', 'Week Of', 'Recipients', 'Subject'];
-const USAGE_PAGES_ = ['year', 'home', 'mysquad', 'trait', 'squads', 'tracker', 'mindset', 'wheel', 'traitdough', 'sotm', 'kickoff', 'mayhem', 'champs', 'gallery',
+const USAGE_PAGES_ = ['homerooms', 'year', 'home', 'mysquad', 'trait', 'squads', 'tracker', 'mindset', 'wheel', 'traitdough', 'sotm', 'kickoff', 'mayhem', 'champs', 'gallery',
   'staff', 'spin', 'growth', 'leaders', 'week', 'generals', 'hq', 'me-me', 'me-tickets', 'me-squad', 'me-map', 'me-game'];
 
 function ensureWeekTabs_() {
