@@ -180,6 +180,7 @@ function clashGeneralsHq(token) {
   try { const v = loadAppData_('coc').value || {}; month = (v.metrics && v.metrics.month) || ''; trait = v.currentTrait || ''; } catch (e) { /* none */ }
   return JSON.stringify({
     me: me, squad: squad, theme: squadTheme_(squad), standing: standingFor_(squad, totals), totals: totals,
+    meeting: (function () { try { return meetingData_(squad); } catch (e) { return null; } })(), // 22_Week.gs: squad meeting slides
     roster: roster, notPlaced: roster.filter(function (s) { return !s.events.length; }).length,
     events: events.map(function (r) {
       const n = signups.filter(function (s) { return String(s['Event']) === String(r['Event']); }).length;

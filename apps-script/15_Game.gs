@@ -30,7 +30,7 @@
  *   the Month"; an older Monsters tab is renamed, and the code still calls it monster inside.)
  */
 
-const GAME_TYPES_ = ['territory', 'chance', 'streak_bank', 'round_goal', 'engine', 'monster', 'destination_ticket', 'freeze_thaw', 'evolution_boost'];
+const GAME_TYPES_ = ['territory', 'chance', 'streak_bank', 'round_goal', 'engine', 'monster', 'destination_ticket', 'freeze_thaw', 'evolution_boost', 'mp_bonus'];
 const MAP_HEADERS_ = ['Show', 'Zone', 'Wing', 'Summit', 'Claimed By', 'Weekly Points', 'X', 'Y', 'W', 'H', 'Holder', 'Since', 'Conquer By', 'Borders'];
 const CARD_HEADERS_ = ['Show', 'Card', 'Text', 'Effect', 'Value', 'Copies'];
 const HAND_HEADERS_ = ['Squad', 'Card', 'Effect', 'Value', 'Drawn', 'Status', 'Note'];
@@ -473,6 +473,7 @@ function cachedGame_(fresh) {
 // ── THE TICK: claims, unlocks, and (with GAME_AWARDS ON) the weekly and end-of-round points ──
 function gameTick() {
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  noteRun_('gameTick'); // 22_Week.gs
   try {
     ensureGameTabs_();
     const events = readEventsTab_(), lines = [];
@@ -518,6 +519,8 @@ function gameTick() {
     });
     // Evolution boosts (19_Evolve.gs), once a week.
     Array.prototype.push.apply(lines, payBoosts_());
+    // Beat our own marking period (22_Week.gs), once each marking period ends.
+    Array.prototype.push.apply(lines, payBeatMp_(events));
     // The monster, once defeated.
     const mon = monster_(events);
     if (mon && mon.defeated && !/defeated/i.test(mon.status)) {

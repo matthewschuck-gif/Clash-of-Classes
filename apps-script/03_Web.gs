@@ -128,9 +128,11 @@ function cachedPublicLoad_(fresh) {
 // Every 5 minutes (installed by Run setup): map claims, thaw checks, and a warm cache, so no
 // visitor waits for them.
 function backgroundTick() {
-  try { maybeCheckThaws_(); } catch (e) { console.warn(e.message); }
-  try { maybeGameTick_(); } catch (e) { console.warn(e.message); }
-  try { cachedPublicLoad_(true); cachedGame_(true); } catch (e) { console.warn('Warm cache: ' + e.message); }
+  noteRun_('backgroundTick'); // 22_Week.gs: for Admin › System
+  try { maybeCheckThaws_(); } catch (e) { noteError_('thaw check', e); }
+  try { maybeGameTick_(); } catch (e) { noteError_('map claims', e); }
+  try { flushUsage_(); snapshotStages_(); } catch (e) { noteError_('usage + creature snapshot', e); }
+  try { cachedPublicLoad_(true); cachedGame_(true); } catch (e) { noteError_('warm cache', e); }
 }
 
 function installBackgroundTick_() {
@@ -336,6 +338,10 @@ function onOpen() {
     .addItem('Turn on game awards', 'menuTurnOnGame_')
     .addItem('Turn off game awards', 'menuTurnOffGame_')
     .addItem('Use the building map (replaces Map Zones)', 'menuBuildingMap_')
+    .addItem('Today\'s morning announcement', 'menuAnnouncement_')
+    .addItem('Turn on the weekly digest email', 'menuTurnOnDigest_')
+    .addItem('Turn off the weekly digest email', 'menuTurnOffDigest_')
+    .addItem('Send me a preview of the weekly digest', 'menuPreviewDigest_')
     .addItem('Show or hide the Opponent', 'menuToggleMonster_')
     .addItem('Sync days off from the district calendar', 'menuSyncSchoolCalendar_')
     .addItem('Turn on daily calendar sync', 'menuTurnOnCalendarSync_')

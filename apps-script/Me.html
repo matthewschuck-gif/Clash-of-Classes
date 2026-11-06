@@ -202,7 +202,11 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
   function who() { return preview ? [preview.id, preview.token] : []; }
   function msg(e) { return String(e && e.message || e).replace(/^Exception:\s*/, '').replace(/^(SIGN_IN|NOT_FOUND|CLOSED):\s*/, ''); }
 
+  // Anonymous page opens (22_Week.gs), once per tab per visit.
+  var tracked = {};
+  function track(t) { if (tracked[t]) return; tracked[t] = 1; try { google.script.run.clashTrack('me-' + t); } catch (e) {} }
   function load() {
+    track('me');
     run.apply(null, ['clashMe'].concat(who())).then(function (d) { D = d; look = Object.assign({}, BLANK, d.look || {}); if (window.popSkin) popSkin(d.me.squad); render(); var evolving = !D.preview && maybeEvolve();
       if (window.CliffTour && D.tour) CliffTour.init(D.tour, { noAuto: evolving || D.preview, delay: 1200, go: function (name) { if (tab !== name) { tab = name; render(); } } }); })
       .catch(function (e) {
@@ -310,7 +314,7 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
       '<div class="me-say"><b>' + esc(cliffName()) + '</b>' + esc(cliffLine()) + '</div><img class="me-cliff" src="' + esc(D.cliff.image) + '" alt="' + esc(cliffName()) + ', the Mountaineer"></section>' +
       '<nav class="me-tabs" role="tablist">' + tabs.map(function (t) { return '<button class="me-tab craft-press" role="tab" data-t="' + t[0] + '" aria-selected="' + (tab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</nav>' +
       '<div id="meBody">' + ({ me: meTab, tickets: ticketsTab, squad: squadTab, map: mapTab, game: gameTab }[tab])() + '</div>';
-    document.querySelectorAll('.me-tab').forEach(function (b) { b.onclick = function () { tab = b.getAttribute('data-t'); render(); }; });
+    document.querySelectorAll('.me-tab').forEach(function (b) { b.onclick = function () { tab = b.getAttribute('data-t'); track(tab); render(); }; });
     wire();
   }
 

@@ -3,6 +3,7 @@
 
 // ── EARLY GLOBALS: exposed before Firebase so UI works instantly ──
 window.goTo = function(id){
+  try { var seen = JSON.parse(sessionStorage.getItem('clash-seen') || '{}'); if (!seen[id] && window.gasRun_) { seen[id] = 1; sessionStorage.setItem('clash-seen', JSON.stringify(seen)); window.gasRun_('clashTrack', id).catch(function(){}); } } catch (e) {}
   window.__currentPage = id;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   var el=document.getElementById('page-'+id);
@@ -226,6 +227,7 @@ const PAGES_DEF = [
   { id:'spin',       icon:'🌀', label:'Spin!'          },
   { id:'growth',     icon:'🏔️', label:'Growth'         },
   { id:'leaders',    icon:'🏅', label:'Leaderboards'   },
+  { id:'week',       icon:'🗞️', label:'This Week'      },
   { id:'generals',   icon:'⚔️', label:'Generals'       },
   { id:'hq',         icon:'🛡️', label:'Generals HQ'    },
 ];
@@ -736,6 +738,7 @@ function goTo(id){
   else if(id==='sotm')        renderSotm();
   else if(id==='growth')    renderGrowth();
   else if(id==='leaders')   renderLeaders();
+  else if(id==='week')      renderWeek();
   else if(id==='squads')      renderSquads();
   else if(id==='gallery')     renderGallery();
   else if(id==='tracker'){ renderStrip(); renderTable(); renderMetrics(); renderTimeline(); renderSnapshots(); renderPoll(); renderCatChart(); renderSeasonCal(); }
@@ -2921,6 +2924,52 @@ function renderLeaders(){
   }).catch(function(){ box.innerHTML='<p style="color:var(--text3)">The leaderboards could not load. Try again in a minute.</p>'; });
 }
 
+// This Week page (22_Week.gs): the week so far and what's up next week.
+function renderWeek(){
+  const box=document.getElementById('weekBody');
+  if(!box||!window.gasRun_) return;
+  if(!box.dataset.loaded) box.innerHTML='<p style="color:var(--text3)">Loading this week…</p>';
+  window.gasRun_('clashWeek').then(function(d){
+    box.dataset.loaded='1';
+    const col={BLACK:'var(--sq-black)',GOLD:'var(--sq-gold)',GREY:'var(--sq-grey)',PURPLE:'var(--sq-purple)'}, T=s=>s?s.charAt(0)+s.slice(1).toLowerCase():'';
+    const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+    const day=ymd=>{ const x=new Date(ymd+'T12:00:00'); return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][x.getDay()]+' '+(x.getMonth()+1)+'/'+x.getDate(); };
+    const card=(t,b)=>'<div class="card" style="padding:16px"><div style="font-family:Fraunces,serif;font-weight:700;font-size:17px;margin-bottom:8px">'+t+'</div>'+b+'</div>';
+    const sub=document.getElementById('weekSubtitle'); if(sub) sub.textContent='Week of '+day(d.weekOf)+' · up next: week of '+day(d.nextWeekOf);
+    const standings=d.place.map((s,i)=>'<div style="display:grid;grid-template-columns:24px 1fr auto auto;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">'+(i+1)+'</span><b style="color:'+col[s]+'">'+T(s)+'</b><span>'+d.totals[s].toLocaleString()+'</span><span style="color:#86efac">+'+d.week[s].toLocaleString()+'</span></div>').join('');
+    const hl=d.highlights.length?d.highlights.map(e=>'<div style="padding:5px 0;border-bottom:1px solid var(--border);font-size:14px">'+esc(e.name)+' <span style="color:var(--text3)">'+day(e.date)+'</span><br>'+['BLACK','GOLD','GREY','PURPLE'].filter(s=>(+e.pts[s]||0)>0).map(s=>'<span style="color:'+col[s]+'">'+T(s)+' +'+e.pts[s]+'</span>').join(' · ')+'</div>').join(''):'<p style="color:var(--text3)">A quiet week so far.</p>';
+    const ev=['BLACK','GOLD','GREY','PURPLE'].reduce((n,s)=>n+d.evolved[s],0);
+    const map=(d.captures.length?d.captures.map(c=>'<div style="font-size:14px;padding:3px 0"><b style="color:'+col[c.to]+'">'+T(c.to)+'</b> took the '+esc(c.zone)+(c.from?' from '+T(c.from):'')+'</div>').join(''):'<p style="color:var(--text3);margin:0">No zones changed hands.</p>')+(d.king?'<p style="margin:8px 0 0">King of the Mountain: <b style="color:'+col[d.king]+'">'+T(d.king)+'</b></p>':'');
+    const climb='<p style="margin:0">'+(ev?'<b>'+ev+'</b> creature evolution'+(ev===1?'':'s')+' this week.':'No new evolutions yet this week.')+(d.boosts?' <b>'+d.boosts+'</b> boost'+(d.boosts===1?'':'s')+' picked.':'')+'</p>'+(d.opponent?'<p style="margin:8px 0 0">'+(d.opponent.defeated?'We beat <b>'+esc(d.opponent.name)+'</b>!':'<b>'+esc(d.opponent.name)+'</b> is '+d.opponent.pct+'% defeated.')+'</p>':'')+'<p style="margin:8px 0 0"><b>'+d.votes+'</b> Daily Poll votes'+(d.streak?' · <b style="color:'+col[d.streak.squad]+'">'+T(d.streak.squad)+'</b> on a '+d.streak.days+'-day Hot Streak':'')+'</p>';
+    const next=d.next.length?d.next.map(n=>'<div style="display:grid;grid-template-columns:76px 1fr auto;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:14px"><b style="color:var(--gold-soft)">'+day(n.date)+'</b><span>'+esc(n.what)+'</span><span style="color:var(--text3);font-size:12px">'+esc(n.kind)+'</span></div>').join(''):'<p style="color:var(--text3)">Nothing dated for next week yet.</p>';
+    const firsts=d.firsts.length?d.firsts.map(f=>'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:13px"><span>'+esc(f.label)+'</span><b style="color:'+col[f.squad]+'">'+T(f.squad)+'</b></div>').join(''):'';
+    box.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:12px">'+
+      card('🏆 Standings <span style="font-size:12px;color:var(--text3);font-weight:400">total · this week</span>',standings)+card('⭐ Highlights',hl)+
+      card('🗺️ Conquer the school',map)+card('🐾 My Climb, the Opponent, polls',climb)+(firsts?card('🏅 Who leads what',firsts):'')+
+      card('📅 Up next: week of '+day(d.nextWeekOf),next)+'</div>';
+  }).catch(function(){ box.innerHTML='<p style="color:var(--text3)">This week could not load. Try again in a minute.</p>'; });
+}
+
+// Admin › System (22_Week.gs): what runs on its own, today's announcement, page opens.
+function renderSystem(){
+  const box=document.getElementById('systemPanel');
+  if(!box||!window.gasRun_) return;
+  box.innerHTML='<p style="color:var(--text3)">Checking…</p>';
+  const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  Promise.all([window.gasRun_('clashHealth', window.ADMIN_SESSION||''), window.gasRun_('clashAnnouncement', window.ADMIN_SESSION||'').catch(()=>({text:''}))]).then(function(r){
+    const h=r[0], a=r[1], ok=b=>b?'<span style="color:#86efac">✓</span>':'<span style="color:#fbbf24">⚠</span>';
+    const jobs=h.jobs.map(j=>'<div style="display:grid;grid-template-columns:22px 1fr auto;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">'+ok(j.ok)+'<span>'+esc(j.label)+(j.expected?'':' <span style="color:var(--text3)">(off)</span>')+(j.expected&&!j.trigger?'<br><span style="color:#fbbf24">No trigger: run setup or its Turn on menu item.</span>':'')+'</span><span style="color:var(--text3)">'+(j.ago||'never')+'</span></div>').join('');
+    box.innerHTML=
+      '<div class="fr"><label>Automatic jobs</label>'+jobs+'</div>'+
+      (h.lastError?'<div class="fr"><label>Last error</label><div style="font-size:13px;color:#fca5a5">'+esc(h.lastError.job)+': '+esc(h.lastError.message)+' <span style="color:var(--text3)">('+esc(h.lastError.ago)+')</span></div></div>':'')+
+      '<div class="fr"><label>Data from Define a Climb-er</label><div style="font-size:13px">'+ok(h.studentBoard.ok)+' Student Board updated '+esc(h.studentBoard.updated||'never')+'<br><span style="color:var(--text3)">'+esc(h.squadBoard)+'</span><br><span style="color:var(--text3)">'+esc(h.metricsNote)+'</span></div></div>'+
+      (h.missing.length?'<div class="fr"><label>Still to fill in</label><div style="font-size:13px;color:#fbbf24">'+h.missing.map(esc).join('<br>')+'</div></div>':'')+
+      '<div class="fr"><label>Game awards</label><div style="font-size:13px">'+(h.gameAwards?'ON':'OFF (Clash of Classes › Turn on game awards)')+(h.emailQuota!=null?' · emails left today: '+h.emailQuota:'')+'</div></div>'+
+      '<div class="fr"><label>Today\'s morning announcement</label><textarea id="sysAnn" rows="5" readonly style="width:100%">'+esc(a.text||'')+'</textarea><button class="btn-submit" style="margin-top:6px" onclick="(function(){var t=document.getElementById(\'sysAnn\');t.select();document.execCommand(\'copy\');})()">Copy</button></div>'+
+      '<div class="fr"><label>Page opens, last 7 days (anonymous)</label><div style="font-size:13px">'+(h.usage.length?h.usage.map(u=>esc(u.page)+' <b>'+u.opens+'</b>').join(' · '):'No counts yet.')+'</div></div>';
+  }).catch(function(e){ box.innerHTML='<p style="color:#fca5a5">'+esc(e&&e.message||e)+'</p>'; });
+}
+
 function renderGrowth(){
   var wrap=document.getElementById('growth-panel-wrap');
   if(!wrap) return;
@@ -3736,7 +3785,7 @@ function openAdmin(){ document.getElementById('adminModal').classList.add('open'
 function close1(id){ const m=document.getElementById(id); if(!m) return; m.classList.remove('open'); m.style.display=''; }
 
 function aTab(name){
-  const names=['points','metrics','pages','navorder','mayhem','champs','kickoff','links','gallery','scores','history','settings','map'];
+  const names=['points','metrics','pages','navorder','mayhem','champs','kickoff','links','gallery','scores','history','settings','map','system'];
   document.querySelectorAll('#adminModal .a-tab').forEach((b,i)=>b.classList.toggle('on',names[i]===name));
   names.forEach(n=>{ const el=document.getElementById('ap-'+n); if(el) el.classList.toggle('on',n===name); });
   if(name==='scores') renderScoreSummary();
@@ -3745,6 +3794,7 @@ function aTab(name){
   if(name==='pages'){ pTab(window._currentPageTab||'home'); }
   if(name==='mayhem'){ loadMayhemEditor(); }
   if(name==='map'&&window.MapEditor){ MapEditor.open(); }
+  if(name==='system'){ renderSystem(); }
   if(name==='champs'){ loadChampsEditor(); }
   if(name==='kickoff'){ loadKickoffEditor(); }
   if(name==='navorder'){ renderNavOrder(); }

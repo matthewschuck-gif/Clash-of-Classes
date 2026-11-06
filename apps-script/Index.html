@@ -1330,6 +1330,15 @@
   <div id="sqd-PURPLE"></div>
 </div>
 
+<!-- THIS WEEK IN CLASH (22_Week.gs) -->
+<div class="page" id="page-week">
+  <div class="page-hero">
+    <h1 class="page-title">This Week <span>in Clash</span></h1>
+    <div class="page-subtitle" id="weekSubtitle">What happened this week and what's up next</div>
+  </div>
+  <div id="weekBody"></div>
+</div>
+
 <!-- LEADERBOARDS (21_Leaders.gs) -->
 <div class="page" id="page-leaders">
   <div class="page-hero">
@@ -1644,7 +1653,11 @@
       <button class="a-tab" onclick="aTab('history')">History</button>
       <button class="a-tab" onclick="aTab('settings')">Settings</button>
       <button class="a-tab" onclick="aTab('map')">🗺️ Map</button>
+      <button class="a-tab" onclick="aTab('system')">🩺 System</button>
     </div>
+
+    <!-- SYSTEM (22_Week.gs): what runs on its own, today's announcement, page opens -->
+    <div class="a-panel" id="ap-system"><div id="systemPanel"></div></div>
 
     <!-- MAP (MapEditor.html): zones on the building, the ways to conquer -->
     <div class="a-panel" id="ap-map"><div id="mapEditor"></div></div>
@@ -1675,6 +1688,7 @@
 
     <!-- METRICS -->
     <div class="a-panel" id="ap-metrics">
+      <p style="font-size:13px;color:var(--gold-soft);margin-bottom:8px">These fill in on their own from Define a Climb-er's newest PowerSchool upload (staff get an email to review them). Fix any number that looks wrong and click Save: your fix stays until the next upload.</p>
       <p style="font-size:13px;color:var(--text3);margin-bottom:16px">Enter this month's percentages. Highest squad in each metric earns 250 pts, 2nd 125, 3rd 50, last 0 (ties share the higher rank's points). Nothing counts toward scores until you click Finalize below.</p>
       <div class="fr"><label>📅 Avg Attendance Rate (%)</label>
         <div class="g4">

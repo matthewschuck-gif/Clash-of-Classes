@@ -198,16 +198,37 @@
       '<span style="white-space:pre-line">' + esc(lore.text) + '</span>']] : []).concat(chapterSlide).concat([
       ['Clash of Classes update', st ? (['1st', '2nd', '3rd', '4th'][st.place - 1] + ' place · ' + st.total.toLocaleString() + ' points<br>') +
         SQ.map(function (s) { return '<span style="color:' + COLOR[s] + '">' + title(s) + ' ' + (d.totals[s] || 0).toLocaleString() + '</span>'; }).join(' &nbsp; ') : ''],
+    ].concat(meetingSlides(d, sq)).concat([
       ['Recent wins', d.recent.length ? d.recent.map(function (e) { return esc(e.name) + ' <b>+' + e.pts + '</b>'; }).join('<br>') : 'Let\'s make some this month!'],
       ['Coming up', d.events.filter(function (e) { return e.open; }).map(function (e) { return esc(e.event) + (e.date ? ' · ' + esc(e.date) : ''); }).join('<br>') || 'Watch the announcements!'],
       ['This month' + (d.month ? ': ' + esc(d.month) : ''), (d.trait ? 'Trait: <b>' + esc(d.trait) + '</b><br>' : '') + (d.theme ? 'How is ' + sq + ' living <b>' + esc(d.theme.theme) + '</b> right now?' : '')],
       ['Delegate voice', 'What are you hearing from the squad?'],
       ['Service update', d.theme && d.theme.project ? esc(d.theme.project) + (d.theme.goal ? '<br>' + d.theme.progress + ' of ' + d.theme.goal : '') : 'Our service project is coming soon.'],
+      ['Exit ticket', 'One thing <b>you</b> will do for ' + sq + ' Squad before the next meeting. Tell a General on your way out.'],
       ['Let\'s go, ' + sq + '!', 'Every member placed. Every bill counts. 🔥'],
-    ]);
+    ]));
+  }
+  // Slides built from the squad's own numbers (22_Week.gs meetingData_).
+  function meetingSlides(d, sq) {
+    var m = d.meeting, out = [];
+    if (!m) return out;
+    if (m.mp) {
+      var mp = m.mp, beat = mp.prevPoints != null && mp.points > mp.prevPoints;
+      out.push(['Our ' + esc(mp.name), '<b>' + mp.points.toLocaleString() + '</b> points so far this marking period' +
+        (mp.prevPoints != null ? '<br>' + esc(mp.prevName) + ': ' + mp.prevPoints.toLocaleString() + (beat ? '<br>🔥 We\'re beating our last marking period!' : '<br>' + (mp.prevPoints - mp.points).toLocaleString() + ' to go to beat it') : '') +
+        (mp.bonus && mp.prevPoints != null ? '<br><span style="opacity:.8">Beat it and every one of us helps earn +' + mp.bonus + '.</span>' : '')]);
+    }
+    if (m.metrics) {
+      var r = m.metrics.rank, n = function (v) { return v == null ? '–' : (Math.round(v * 10) / 10) + '%'; }, pl = function (k) { return ['1st', '2nd', '3rd', '4th'][r[k] - 1] || ''; };
+      out.push(['School counts too', 'Attendance <b>' + n(m.metrics.attendance) + '</b> (' + pl('attendance') + ')<br>No office referral <b>' + n(m.metrics.referral) + '</b> (' + pl('referral') + ')<br>No F <b>' + n(m.metrics.grades) + '</b> (' + pl('grades') + ')<br><span style="opacity:.8">The top squad in each earns 250 every month.</span>']);
+    }
+    out.push(['Our territory', m.zones.length ? 'We hold <b>' + m.zones.length + '</b>: ' + m.zones.map(esc).join(', ') + (m.wings.length ? '<br>Whole wing: ' + m.wings.map(esc).join(', ') : '') : 'No zones yet. Pick one and go take it!']);
+    out.push(['Our climbers', '<b>' + m.evolved + '</b> of ' + m.students + ' creatures have evolved' + (m.summit ? ', ' + m.summit + ' at Summit' : '') + '.<br>Open My Climb and earn LRG points to evolve yours.']);
+    if (m.firsts.length) out.push(['Where we lead', m.firsts.map(esc).join('<br>')]);
+    return out;
   }
   function meetingView() {
-    return '<div class="ms-card"><div class="ms-h">Monthly squad meeting</div><p class="ms-small">Opening · Clash update · Wins · Coming up · This month\'s trait · Delegate voice · Service update · Close</p>' +
+    return '<div class="ms-card"><div class="ms-h">Monthly squad meeting</div><p class="ms-small">Opening · Clash update · Our marking period · School counts · Territory · Climbers · Wins · Coming up · Trait · Delegate voice · Service · Exit ticket</p>' +
       '<button class="btn btn-purple" id="hqMeet">▶ Start full screen</button></div>';
   }
   function showSlide() {

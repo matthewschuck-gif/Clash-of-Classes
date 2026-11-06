@@ -1137,6 +1137,71 @@ test('speed + leaderboards: one Settings read per request, cached public data, p
   assert.strictEqual(w.climbXp_({ journal: 3 }), 6);
 });
 
+test('the week: marking periods + beat-our-own-MP bonus, This Week data + up next, the digest email (once a week, no names), announcement, usage counts, health panel, meeting slides', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureMeTabs_(); w.ensurePollTabs_(); w.ensureWeekTabs_(); w.ensureGeneralsTabs_(); w.ensureFreezeTab_();
+  const today = w.todayYmd_(), ago = n => w.ymdShift_(today, -n), ahead = n => w.ymdShift_(today, n);
+  const sent = [];
+  w.MailApp = { sendEmail: o => sent.push(o), getRemainingDailyQuota: () => 90 };
+  w.Session.getEffectiveUser = () => ({ getEmail: () => 'staff@easdpa.org' });
+  w.ScriptApp = { getProjectTriggers: () => [{ getHandlerFunction: () => 'backgroundTick' }], deleteTrigger() {}, newTrigger: () => ({ timeBased: () => ({ everyMinutes: () => ({ create() {} }), onWeekDay: () => ({ atHour: () => ({ create() {} }) }) }) }), WeekDay: { FRIDAY: 5 } };
+  // The district's marking periods are in Settings.
+  const mps = J(w.markingPeriods_());
+  assert.deepStrictEqual(mps.map(p => p.name), ['MP1', 'MP2', 'MP3', 'MP4']);
+  assert.deepStrictEqual([mps[0].start, mps[0].end, mps[3].end], ['2026-08-31', '2026-10-30', '2027-06-09']);
+  // Beat our own MP: a squad that out-earns its last marking period gets the bonus, once.
+  w.setSettingValue_('MARKING_PERIODS', 'A=' + ago(40) + '..' + ago(21) + '; B=' + ago(20) + '..' + ago(1) + '; C=' + today + '..' + ahead(30));
+  const ev = w.book.getSheetByName('events');
+  ev.rows.push([501, 'Spirit', 'event', ago(30), '', '', 10, 10, 10, 10], [502, 'Trivia', 'event', ago(10), '', '', 0, 25, 5, 0]);
+  w.payBeatMp_(w.readEventsTab_());
+  const bonus = ev.rows.filter(r => r[2] === 'mp_bonus');
+  assert.strictEqual(bonus.length, 1); assert.strictEqual(bonus[0][7], 50, 'GOLD 25 > 10'); assert.strictEqual(bonus[0][6], '', 'BLACK 0 < 10');
+  w.payBeatMp_(w.readEventsTab_());
+  assert.strictEqual(ev.rows.filter(r => r[2] === 'mp_bonus').length, 1, 'once per marking period');
+  const mt = J(w.meetingData_('GOLD'));
+  assert.strictEqual(mt.mp.name, 'C'); assert.strictEqual(mt.mp.prevName, 'B'); assert.strictEqual(mt.mp.prevPoints, 25);
+  // This Week: the week's points, highlights, and next week's dated items.
+  ev.rows.push([503, 'Kickoff Assembly', 'event', today, '', '', 5, 0, 0, 40]);
+  const nextMon = w.ymdShift_(w.weekStart_(today), 7);
+  w.book.getSheetByName('Sign-up Events').rows.push(['Trivia Bowl', w.ymdShift_(nextMon, 1), 4, true]);
+  w.book.getSheetByName('Round Goals').rows.push([true, ago(5), w.ymdShift_(nextMon, 3), 'Most poll voters', 'voters', 8, 5, 3, '', '']);
+  const d = J(w.weekData_());
+  assert.strictEqual(d.week.PURPLE, 40); assert.strictEqual(d.highlights[0].name, 'Kickoff Assembly');
+  assert.ok(d.next.some(n => n.what === 'Trivia Bowl') && d.next.some(n => /Round goal ends/.test(n.what)), JSON.stringify(d.next));
+  // The digest email: HTML, the sections, nobody's name, once a week.
+  assert.strictEqual(w.weeklyDigest(false), 'No recipients: add emails to Settings › DIGEST_EMAILS.');
+  w.setSettingValue_('DIGEST_EMAILS', 'a@easdpa.org, b@easdpa.org, nope');
+  assert.strictEqual(w.weeklyDigest(false), 'Sent to 2.');
+  assert.strictEqual(sent.length, 1);
+  assert.strictEqual(sent[0].to, 'a@easdpa.org,b@easdpa.org');
+  ['This Week in Clash', 'Standings', 'Highlights', 'Up next', 'Trivia Bowl', 'Open Clash of Classes'].forEach(t => assert.ok(sent[0].htmlBody.includes(t), t));
+  assert.strictEqual(w.weeklyDigest(false), 'Already sent this week.');
+  assert.strictEqual(sent.length, 1);
+  assert.ok(w.book.getSheetByName('Weekly Digest Log').rows.length === 2, 'logged');
+  // The morning announcement.
+  const ann = w.announcementScript_();
+  assert.ok(/^Good morning, Mountaineers!/.test(ann) && / leads Clash of Classes/.test(ann), ann);
+  // Usage: anonymous counts per page, unknown pages ignored, written to the Usage tab.
+  const store = {};
+  const c = { get: k => store[k] == null ? null : store[k], put: (k, v) => { store[k] = v; }, remove: k => { delete store[k]; }, putAll: o => Object.assign(store, o),
+    getAll: ks => { const o = {}; ks.forEach(k => { if (store[k] != null) o[k] = store[k]; }); return o; } };
+  w.CacheService.getScriptCache = () => c;
+  w.clashTrack('home'); w.clashTrack('home'); w.clashTrack('leaders'); w.clashTrack('<script>');
+  w.flushUsage_();
+  const usage = w.book.getSheetByName('Usage').rows.slice(1);
+  assert.deepStrictEqual(usage.map(r => [r[1], r[2]]).sort(), [['home', 2], ['leaders', 1]]);
+  w.clashTrack('home'); w.flushUsage_();
+  assert.strictEqual(w.book.getSheetByName('Usage').rows.find(r => r[1] === 'home')[2], 3, 'today\'s row is updated, not duplicated');
+  // Health: admins only; shows jobs, missing settings and usage.
+  assert.throws(() => w.clashHealth('nope'));
+  c.put('clash-admin-T', '1');
+  w.noteRun_('backgroundTick');
+  const h = JSON.parse(w.clashHealth('T'));
+  assert.ok(h.jobs.find(j => j.job === 'backgroundTick').ok);
+  assert.ok(h.missing.some(m => /STUDENT_LINK/.test(m)));
+  assert.ok(h.usage.find(u => u.page === 'home').opens === 3);
+});
+
 test('roster: the Students tab copies the district roster, keeps squads, and lets students sign in by 800#@gomounts.org', () => {
   const w = world();
   w.ensureSettings_(); w.ensureGameTabs_(); w.ensureMeTabs_();

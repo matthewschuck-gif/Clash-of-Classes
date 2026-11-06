@@ -101,6 +101,7 @@ function setupSpreadsheet() {
   ensureMeTabs_();
   ensureRosterTab_();
   ensureTourTab_(); // 20_Tour.gs
+  ensureWeekTabs_(); // 22_Week.gs
   installBackgroundTick_(); // 03_Web.gs: claims, thaws and a warm cache every 5 minutes
   setupHelpTab_();
   setupMapGuideTab_(); // 18_Conquest.gs
@@ -165,6 +166,12 @@ const DEFAULT_SETTINGS = [
   ['TOUR_AUTO', 'ON', 'Cliff\'s tour (Tutorial Steps tab) plays once on each device the first time someone opens the site or My Climb. OFF = only when they tap Ask Cliff.'],
   ['TOUR_VERSION', '1', 'Change this (2, 3…) after editing the Tutorial Steps tab to show everyone the new tour once.'],
   ['CLIFF_IMAGE', '', 'My Climb: an https link to a different picture of Cliff. Blank = the built-in one.'],
+  ['MARKING_PERIODS', 'MP1=2026-08-31..2026-10-30; MP2=2026-11-02..2027-01-15; MP3=2027-01-18..2027-04-02; MP4=2027-04-05..2027-06-09', 'Marking periods, from the district calendar (subject to change for closings): name=first day..last day, separated by semicolons. Squad meeting slides and the beat-our-own-MP bonus use them.'],
+  ['BEAT_MP_BONUS', '50', 'Points for every squad that out-earns its own previous marking period (paid once after each marking period ends, with the game awards). 0 = off.'],
+  ['DIGEST', 'OFF', 'The weekly This Week in Clash email. Turn on with Clash of Classes › Turn on the weekly digest email.'],
+  ['DIGEST_EMAILS', '', 'Who gets the weekly digest email: addresses separated by commas.'],
+  ['DIGEST_DAY', 'FRIDAY', 'Which weekday the digest goes out (MONDAY to FRIDAY).'],
+  ['DIGEST_HOUR', '14', 'About what hour the digest goes out (24-hour clock, 5 to 20).'],
   ['LEADERBOARD_NAMES', 'OFF', 'Leaderboards page: ON adds Top Climbers, the top students per grade by LRG points, shown as First L. OFF = squad leaderboards only.'],
   ['LEADERBOARD_SIZE', '10', 'Leaderboards page: how many Top Climbers per grade (3-25).'],
   ['PITCHED_IN_DAYS', '30', 'Leaderboards page: a student counts as pitching in if they did anything in this many days.'],
