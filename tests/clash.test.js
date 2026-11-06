@@ -1349,9 +1349,9 @@ test('Homerooms: form responses become homeroom points (10 x share), waiting for
 test('every requireAdmin(…) button target is on the page script export list (Edit Generals was not)', () => {
   const app = fs.readFileSync(path.join(dir, 'App.html'), 'utf8');
   const markup = ['Index.html', 'App.html'].map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
-  const list = app.slice(app.indexOf('const _fns = {'), app.indexOf('Object.entries(_fns)'));
+  const start = app.indexOf('const _fns = {'), list = app.slice(start, app.indexOf('Object.entries(_fns)', start));
   const targets = [...new Set([...markup.matchAll(/requireAdmin\(([A-Za-z_]\w*)\)/g)].map(m => m[1]))].filter(n => n !== 'fn');
-  const missing = targets.filter(n => !new RegExp('[{,\s]' + n + '[,}\s]').test(list));
+  const missing = targets.filter(n => !new RegExp('[{,\\s]' + n + '[,}\\s]').test(list));
   assert.deepStrictEqual(missing, []);
   assert.ok(/[{,\s]saveGenerals[,}\s]/.test(list));
 });
