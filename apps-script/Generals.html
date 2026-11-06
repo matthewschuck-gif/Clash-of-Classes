@@ -59,7 +59,19 @@
   function signIn() {
     el().innerHTML = '<div class="ms-card"><div class="ms-h">Generals HQ: sign in</div>' +
       '<div class="ms-form"><input id="hq800" inputmode="numeric" placeholder="Your 800 number"><input id="hqCode" type="password" placeholder="Generals code"><button class="btn btn-purple" id="hqGo">Open HQ</button></div>' +
-      '<div class="ms-err" id="hqErr"></div><div class="ms-small">Only Squad Generals on the MLC Roster can open HQ. Ask your staff advisor for the code.</div></div>';
+      '<div class="ms-err" id="hqErr"></div><div class="ms-small">Only Squad Generals on the MLC Roster can open HQ. Ask your staff advisor for the code.</div>' +
+      '<details style="margin-top:12px"><summary class="ms-small" style="cursor:pointer">Staff: preview a squad\'s HQ</summary>' +
+      '<div class="ms-form" style="margin-top:8px"><select id="hqPrevSq"><option value="BLACK">Black</option><option value="GOLD">Gold</option><option value="GREY">Grey</option><option value="PURPLE">Purple</option></select>' +
+      '<input id="hqPrevPw" type="password" placeholder="Admin password"><button class="btn" id="hqPrevGo">Preview HQ</button></div>' +
+      '<div class="ms-small">Opens the real HQ: anything you sign up, tick or nominate there is saved.</div></details></div>';
+    var preview = function () {
+      var e = document.getElementById('hqErr'); e.textContent = 'Checking…';
+      window.gasRun_('clashGeneralsPreview', document.getElementById('hqPrevPw').value, document.getElementById('hqPrevSq').value).then(function (r) {
+        token = r.token; load();
+      }).catch(function (x) { e.textContent = x.message.replace(/^Exception:\s*/, ''); });
+    };
+    document.getElementById('hqPrevGo').onclick = preview;
+    document.getElementById('hqPrevPw').onkeydown = function (ev) { if (ev.key === 'Enter') preview(); };
     var go = function () {
       var e = document.getElementById('hqErr'); e.textContent = 'Checking…';
       window.gasRun_('clashGeneralsSignIn', document.getElementById('hq800').value, document.getElementById('hqCode').value).then(function (r) {
@@ -81,7 +93,8 @@
     var tags = (d.theme ? '<span>Theme: <b>' + esc(d.theme.theme) + '</b> · ' + esc(d.theme.meaning) + '</span>' : '') +
       (d.theme && d.theme.trait ? '<span>Squad trait: <b>' + esc(d.theme.trait) + '</b></span>' : '') +
       (d.theme && d.theme.lore ? '<span>📜 <b>' + esc(d.theme.lore.title || 'Our story') + '</b> is on My Squad and in the meeting slides</span>' : '');
-    var head = '<div class="ms-card hq-deck craft-lit craft-motes"><div class="hq-kicker">General ' + esc(d.me.name) + '</div>' +
+    var head = (d.me.preview ? '<div class="ms-card" style="border:1.5px solid var(--gold-soft);padding:8px 12px;font-size:13px">👀 Staff preview of ' + title(sq) + ' Squad HQ. Changes made here are real. <a href="#" id="hqSwitchSq">Preview another squad</a></div>' : '') +
+      '<div class="ms-card hq-deck craft-lit craft-motes"><div class="hq-kicker">' + (d.me.preview ? '' : 'General ') + esc(d.me.name) + '</div>' +
       '<div class="ms-hello">' + title(sq) + ' Squad HQ</div>' +
       '<div class="hq-stats">' +
         '<div class="hq-stat"><div class="v">' + place + '</div><div class="l">Place</div>' + (gap ? '<div class="g">' + esc(gap) + '</div>' : '') + '</div>' +
@@ -97,6 +110,8 @@
     el().innerHTML = head + '<div class="hq-tabs">' + tabs.map(function (t) { return '<button class="hq-tab' + (view === t[0] ? ' on' : '') + '" data-v="' + t[0] + '">' + t[1] + '</button>'; }).join('') +
       '<button class="hq-tab" data-v="out">Sign out</button></div>' + body;
     el().querySelectorAll('.hq-tab').forEach(function (b) { b.onclick = function () { if (b.dataset.v === 'out') { token = ''; signIn(); return; } view = b.dataset.v; render(); }; });
+    var sw = document.getElementById('hqSwitchSq');
+    if (sw) sw.onclick = function (ev) { ev.preventDefault(); token = ''; signIn(); var dt = el().querySelector('details'); if (dt) dt.open = true; };
     wire();
     if (!counted && window.popCountUp) { window.popCountUp(el()); counted = true; } // points count up on the first visit only
   }

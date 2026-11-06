@@ -149,6 +149,23 @@ function clashGeneralsSignIn(id, code) {
   return JSON.stringify({ token: token, name: String(me['Name'] || ''), squad: squad });
 }
 
+// Staff preview: the admin password opens any squad's HQ as "Staff preview" (no 800# or Generals
+// code needed). It's the real HQ, so sign-ups, checklist ticks and nominations made here are real.
+function clashGeneralsPreview(pw, squad) {
+  const cache = CacheService.getScriptCache();
+  const fails = Number(cache.get('clash-login-fails')) || 0;
+  if (fails >= 10) throw new Error('Too many tries. Wait 10 minutes.');
+  if (!checkPassword_(String(pw || ''))) {
+    cache.put('clash-login-fails', String(fails + 1), 600);
+    throw new Error('Incorrect admin password.');
+  }
+  squad = squadOf_(squad);
+  if (SQUAD_KEYS_.indexOf(squad) === -1) throw new Error('Pick a squad.');
+  const token = Utilities.getUuid();
+  cache.put('hq-' + token, JSON.stringify({ id: '', name: 'Staff preview', squad: squad, preview: true }), 2 * 3600);
+  return JSON.stringify({ token: token, name: 'Staff preview', squad: squad });
+}
+
 function hqSession_(token) {
   const s = token ? CacheService.getScriptCache().get('hq-' + token) : null;
   if (!s) throw new Error('Please sign in to Generals HQ again.');
