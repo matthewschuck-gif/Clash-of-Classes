@@ -215,11 +215,16 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
           '<h2>' + (closed ? 'The trail is resting' : signin ? 'Almost there' : 'Something went wrong') + '</h2><p class="me-sub">' + esc(m) + '</p>' +
           '<details style="margin-top:18px;color:#b09ec8"><summary style="cursor:pointer">Staff: preview a student</summary><div class="me-form">' +
           '<input id="pv800" inputmode="numeric" placeholder="Student 800#" aria-label="Student 800 number"><input id="pvPw" type="password" placeholder="Clash admin password" aria-label="Clash admin password">' +
-          '<button class="btn btn-purple" id="pvGo">Preview</button></div><p class="me-sub" id="pvErr"></p></details></div>';
-        $('pvGo').onclick = function () {
+          '<button class="btn btn-purple" id="pvGo">Preview</button></div>' +
+          '<p class="me-sub" style="margin:10px 0 4px">No 800#? See a made-up sample student on a squad (nothing saves):</p><div class="me-form">' +
+          '<select id="pvSq" aria-label="Squad"><option value="BLACK">Black</option><option value="GOLD">Gold</option><option value="GREY">Grey</option><option value="PURPLE">Purple</option></select>' +
+          '<button class="btn" id="pvSample">Sample student</button></div><p class="me-sub" id="pvErr"></p></details></div>';
+        var staffPreview = function (asId) {
           $('pvErr').textContent = 'Checking…';
-          run('clashLogin', $('pvPw').value).then(function (r) { preview = { id: $('pv800').value, token: r.token }; load(); }).catch(function (x) { $('pvErr').textContent = msg(x); });
+          run('clashLogin', $('pvPw').value).then(function (r) { preview = { id: asId(), token: r.token }; load(); }).catch(function (x) { $('pvErr').textContent = msg(x); });
         };
+        $('pvGo').onclick = function () { staffPreview(function () { return $('pv800').value; }); };
+        $('pvSample').onclick = function () { staffPreview(function () { return 'sample-' + $('pvSq').value; }); };
       });
   }
 
@@ -307,7 +312,8 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
     var standing = st.place ? '<b>' + title(st.squad) + '</b> is in <b>' + ['1st', '2nd', '3rd', '4th'][st.place - 1] + ' place</b>' +
       (st.place > 1 ? ', ' + st.behindBy.toLocaleString() + ' behind ' + title(st.ahead) + '.' : ', ' + st.leadBy.toLocaleString() + ' ahead.') : '';
     var tabs = [['me', 'Me'], ['tickets', 'Tickets'], ['squad', 'My Squad'], ['map', 'Map'], ['game', 'Game']];
-    $('me').innerHTML = (D.preview ? '<div class="me-card" style="border-color:#fbbf24">Staff preview of ' + esc(me.name) + '. Changing their creature, picking a boost or keeping tickets here changes their real account.</div>' : '') +
+    $('me').innerHTML = (D.sample ? '<div class="me-card" style="border-color:#fbbf24">Sample student on ' + esc(me.squad.charAt(0) + me.squad.slice(1).toLowerCase()) + ' with made-up numbers. Look around every tab; nothing you change here is saved. <a href="#" id="pvAnother">Another squad</a></div>'
+      : D.preview ? '<div class="me-card" style="border-color:#fbbf24">Staff preview of ' + esc(me.name) + '. Changing their creature, picking a boost or keeping tickets here changes their real account.</div>' : '') +
       '<section class="me-hero craft-lit craft-motes" style="' + sceneCss() + '"><div class="me-mascot">' + creatureImg(0, true) + '</div><div>' +
       '<h1>Hi, ' + esc(first) + '!</h1>' + (equipped('title') ? '<div style="font-family:DM Mono,monospace;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--pop-gold,#ffe100);margin-top:4px">' + esc(equipped('title').value || equipped('title').perk) + '</div>' : '') + '<div class="me-pills"><span class="me-pill">' + esc(title(me.squad)) + ' Squad</span>' +
       (D.roles || []).map(function (r) { return '<span class="me-pill alt">' + esc(r) + '</span>'; }).join('') + '</div><div class="me-standing">' + standing + '</div></div>' +
@@ -436,6 +442,9 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
   }
 
   function wire() {
+    // Sample student: "Another squad" steps to the next squad's sample (same staff sign-in).
+    var pa = $('pvAnother');
+    if (pa) pa.onclick = function (ev) { ev.preventDefault(); var sq = ['BLACK', 'GOLD', 'GREY', 'PURPLE']; preview.id = 'sample-' + sq[(sq.indexOf(D.me.squad) + 1) % 4]; load(); };
     var saveCreature = function (choice) {
       if ($('crMsg')) $('crMsg').textContent = 'Saving…';
       run.apply(null, ['clashMeSaveCreature', choice].concat(who())).then(function (d) { D = d; render(); }).catch(function (e) { if ($('crMsg')) $('crMsg').textContent = msg(e); });

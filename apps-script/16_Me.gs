@@ -86,9 +86,43 @@ function climbOpen_(now) {
   try { return schoolCalendar_().noSchool.indexOf(Utilities.formatDate(now, tz, 'yyyy-MM-dd')) === -1; } catch (e) { return true; }
 }
 
+// ── SAMPLE STUDENT (staff preview with no 800#) ─────────────────────
+// asId "sample-GOLD" (admin only) shows My Climb for a made-up student on that squad. The sample
+// lives only while the request runs: the Student Board read gets one extra row, nothing is written
+// to the Sheet, and anything that would save (creature, boost, tickets, look) is refused.
+const SAMPLE_ID_ = '8000000';
+function sampleSquad_(asId) {
+  const m = String(asId || '').match(/^sample-(BLACK|GOLD|GREY|PURPLE)$/i);
+  return m ? m[1].toUpperCase() : '';
+}
+function sampleRow_(squad) {
+  return { '800#': SAMPLE_ID_, 'Name': 'Sample S.', 'Squad': squad.charAt(0) + squad.slice(1).toLowerCase(), 'Grade': '7',
+    'Trait Dough Bills': 14, 'Bills This Week': 2, 'Trait Dough Wins': 1, 'Mindset Summits': 3, 'Trail Journal Growth': 2, 'STAR Growth Points': 6,
+    'Shout-outs': 2, 'Ambassador Buddies': 1, 'Streak (weeks)': 3, 'Badges': '🍞 First Trait Dough, 🔥 3-Week Streak', 'Last Contribution': todayYmd_(),
+    'Updated': todayYmd_(), 'Attendance %': 96, 'Email': '' };
+}
+function withSample_(asId, fn) {
+  const squad = sampleSquad_(asId);
+  if (!squad) return fn();
+  const real = getSheetSafe_, tab = getSetting_('STUDENT_BOARD_TAB') || 'Student Board', row = sampleRow_(squad);
+  getSheetSafe_ = function (name) {
+    const sh = real(name);
+    if (name !== tab || !sh) return sh;
+    const values = sh.getDataRange().getValues();
+    const h = (values[0] || []).map(function (x) { return String(x).trim(); });
+    values.push(h.map(function (k) { return row[k] === undefined ? '' : row[k]; }));
+    return { getName: function () { return tab; }, getLastRow: function () { return values.length; }, getLastColumn: function () { return h.length; },
+      getRange: function (r, c, nr, nc) { nr = nr || 1; nc = nc || 1; return { getValues: function () {
+        const o = []; for (let i = 0; i < nr; i++) { const row = values[r - 1 + i] || []; const l = []; for (let j = 0; j < nc; j++) l.push(row[c - 1 + j] === undefined ? '' : row[c - 1 + j]); o.push(l); } return o; } }; },
+      getDataRange: function () { return { getValues: function () { return values.map(function (r) { return r.slice(); }); } }; } };
+  };
+  try { return fn(); } finally { getSheetSafe_ = real; }
+}
+function noSampleSave_(id) { if (id === SAMPLE_ID_) throw new Error('This is the sample student: nothing here is saved. Preview a real student to change their climb.'); }
+
 // Which student: the signed-in one, or (staff signed in as admin) any student to preview.
 function meId_(asId, adminToken) {
-  if (asId && adminToken) { requireAdmin_(adminToken); return id800_(asId); }
+  if (asId && adminToken) { requireAdmin_(adminToken); return sampleSquad_(asId) ? SAMPLE_ID_ : id800_(asId); }
   if (!climbOpen_()) throw new Error('CLOSED: My Climb is open ' + String(getSetting_('MY_CLIMB_HOURS') || '07:00-16:00').replace('-', ' to ') + ' on school days. See you on the trail!');
   return signedInId_();
 }
@@ -182,7 +216,8 @@ function awardTickets_() {
   return n;
 }
 
-function clashMeDrawTickets(asId, adminToken) {
+function clashMeDrawTickets(asId, adminToken) { return withSample_(asId, function () { return drawTickets_(asId, adminToken); }); }
+function drawTickets_(asId, adminToken) {
   const id = meId_(asId, adminToken);
   const held = sheetRows_('Student Tickets').filter(function (t) { return id800_(t['800#']) === id && String(t['Status'] || 'Holding') === 'Holding'; });
   const max = Math.max(1, Number(getSetting_('TICKETS_HELD')) || 3);
@@ -197,6 +232,7 @@ function clashMeDrawTickets(asId, adminToken) {
 
 function clashMeKeepTickets(names, asId, adminToken) {
   const id = meId_(asId, adminToken);
+  noSampleSave_(id);
   const offered = JSON.parse(CacheService.getScriptCache().get('tickets-' + id) || '[]');
   const keep = (names || []).filter(function (n) { return offered.indexOf(n) > -1; });
   if (!keep.length) throw new Error('Keep at least one ticket.');
@@ -233,6 +269,7 @@ function lookFor_(id) {
 
 function clashMeSaveLook(look, asId, adminToken) {
   const id = meId_(asId, adminToken);
+  noSampleSave_(id);
   const clean = {};
   Object.keys(LOOK_CHOICES_).forEach(function (k) { const v = Math.floor(Number(look && look[k])); clean[k] = v >= 0 && v < LOOK_CHOICES_[k] ? v : 0; });
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
@@ -247,7 +284,8 @@ function clashMeSaveLook(look, asId, adminToken) {
 }
 
 // ── THE DASHBOARD ───────────────────────────────────────────────────
-function clashMe(asId, adminToken) {
+function clashMe(asId, adminToken) { return withSample_(asId, function () { return clashMePage_(asId, adminToken); }); }
+function clashMePage_(asId, adminToken) {
   const id = meId_(asId, adminToken);
   const page = JSON.parse(clashMyPage(id)); // everything My Squad already shows (04_Students.gs)
   const rows = boardRows_();
@@ -268,6 +306,7 @@ function clashMe(asId, adminToken) {
   page.tour = tourFor_('me'); // 20_Tour.gs
   page.game = JSON.parse(cachedGame_()); // 15_Game.gs, cached
   page.preview = !!(asId && adminToken);
+  page.sample = id === SAMPLE_ID_; // made-up student: nothing saves
   return JSON.stringify(page);
 }
 

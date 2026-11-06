@@ -1356,4 +1356,32 @@ test('every requireAdmin(…) button target is on the page script export list (E
   assert.ok(/[{,\s]saveGenerals[,}\s]/.test(list));
 });
 
+test('My Climb sample student: admin sees a made-up student on any squad (no 800#), every tab has data, nothing is written, saving is refused', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGeneralsTabs_(); w.ensureGameTabs_(); w.ensureMeTabs_(); w.ensurePollTabs_(); w.ensureWeekTabs_();
+  addStudentTabs(w);
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  assert.throws(() => w.clashMe('sample-GOLD', 'nope'), /sign in as admin/i, 'admin only');
+  const before = w.book.getSheetByName('Student Board').rows.length;
+  ['BLACK', 'GOLD', 'GREY', 'PURPLE'].forEach(sq => {
+    const d = JSON.parse(w.clashMe('sample-' + sq, 'T'));
+    assert.strictEqual(d.sample, true);
+    assert.strictEqual(d.me.squad, sq);
+    assert.strictEqual(d.me.name, 'Sample S.');
+    assert.strictEqual(d.metrics.find(m => m.key === 'bills').me, 14);
+    assert.ok(d.creature && d.creature.xp > 0 && d.creature.stage === 2, 'creature with LRG points, partway up: ' + (d.creature && d.creature.xp));
+    assert.ok(Array.isArray(d.tickets) && d.game, 'tickets and game tabs have data');
+  });
+  assert.strictEqual(w.book.getSheetByName('Student Board').rows.length, before, 'no sample row written');
+  assert.ok(!w.book.getSheetByName('Student Board').rows.some(r => r[0] === '8000000'));
+  assert.throws(() => w.clashMeSaveCreature({ version: 2 }, 'sample-GOLD', 'T'), /sample student/);
+  assert.throws(() => w.clashMePickBoost(2, 'Trait Dough', 'sample-GOLD', 'T'), /sample student/);
+  assert.throws(() => w.clashMeSaveLook({}, 'sample-GOLD', 'T'), /sample student/);
+  const offer = JSON.parse(w.clashMeDrawTickets('sample-GOLD', 'T'));
+  assert.ok(offer.offer.length >= 1, 'can see a ticket draw');
+  assert.throws(() => w.clashMeKeepTickets([offer.offer[0].ticket], 'sample-GOLD', 'T'), /sample student/);
+  // The real lookup still works afterwards (the Student Board read is back to normal).
+  assert.strictEqual(w.boardRows_().length, before - 1);
+});
+
 console.log('\n' + passed + ' tests passed');

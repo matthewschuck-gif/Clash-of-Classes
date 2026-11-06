@@ -255,6 +255,7 @@ function climbVals_(id, page) {
 // gear: wear (or take off) an earned piece of gear, up to GEAR_WORN.
 function clashMeSaveCreature(choice, asId, adminToken) {
   const id = meId_(asId, adminToken);
+  noSampleSave_(id); // 16_Me.gs
   choice = choice || {};
   let perk = null, gear = null;
   if (choice.perk || choice.gear) {
@@ -289,6 +290,7 @@ function clashMeSaveCreature(choice, asId, adminToken) {
 
 function clashMePickBoost(stage, boost, asId, adminToken) {
   const id = meId_(asId, adminToken);
+  noSampleSave_(id); // 16_Me.gs
   stage = Number(stage);
   const page = JSON.parse(clashMe(asId, adminToken));
   const c = page.creature;
