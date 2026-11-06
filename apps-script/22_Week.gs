@@ -19,7 +19,7 @@
 
 const USAGE_HEADERS_ = ['Date', 'Page', 'Opens'];
 const DIGEST_LOG_HEADERS_ = ['Sent', 'Week Of', 'Recipients', 'Subject'];
-const USAGE_PAGES_ = ['home', 'mysquad', 'trait', 'squads', 'tracker', 'mindset', 'wheel', 'traitdough', 'sotm', 'kickoff', 'mayhem', 'champs', 'gallery',
+const USAGE_PAGES_ = ['year', 'home', 'mysquad', 'trait', 'squads', 'tracker', 'mindset', 'wheel', 'traitdough', 'sotm', 'kickoff', 'mayhem', 'champs', 'gallery',
   'staff', 'spin', 'growth', 'leaders', 'week', 'generals', 'hq', 'me-me', 'me-tickets', 'me-squad', 'me-map', 'me-game'];
 
 function ensureWeekTabs_() {
@@ -279,6 +279,7 @@ function weekData_(asOf) {
   const polls = sheetRows_('Daily Polls').filter(function (r) { return ticked_(r['Show']) && inNext(r['Date']); }).length;
   if (polls) next.push({ date: nextMon, what: polls + ' Daily Poll' + (polls === 1 ? '' : 's') + ' scheduled', kind: 'Poll' });
   try { schoolCalendar_().noSchool.filter(inNext).forEach(function (d) { next.push({ date: d, what: 'No school', kind: 'Day off' }); }); } catch (e) { /* none */ }
+  try { yearPlanItems_().forEach(function (it) { if (it.date && inNext(it.date)) next.push({ date: it.date, what: it.title + (it.who && it.who !== 'All' ? ' (' + it.who + ')' : ''), kind: it.kind || 'Year Plan' }); }); } catch (e) { /* 24_YearPlan.gs */ }
   markingPeriods_().forEach(function (p) { if (inNext(p.end)) next.push({ date: p.end, what: p.name + ' ends', kind: 'Marking period' }); if (inNext(p.start)) next.push({ date: p.start, what: p.name + ' starts', kind: 'Marking period' }); });
   next.sort(function (a, b) { return a.date.localeCompare(b.date); });
   return { weekOf: mon, through: asOf < fri ? asOf : fri, nextWeekOf: nextMon, totals: totals, place: place, week: week, highlights: highlights, captures: caps,

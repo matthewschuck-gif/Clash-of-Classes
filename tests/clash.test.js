@@ -1245,7 +1245,8 @@ test('from the drive: Mindset Links tab fills the Mindset page (site links win),
   let v = { links: { mindset: [] } };
   w.mergeMindsetLinks_(v);
   assert.strictEqual(v.links.mindset.length, 27, '9 months x 7th, 8th, Extension');
-  assert.ok(v.links.mindset.every(l => /^https:\/\/docs\.google\.com\//.test(l.url) && l.fromSheet));
+  assert.ok(v.links.mindset.every(l => /^https:\/\//.test(l.url) && l.fromSheet));
+  assert.ok(/AKfycbwuQCz/.test(v.links.mindset.find(l => l.key === '8th-January').url), '8th grade = the Mindset app');
   assert.ok(v.links.mindset.find(l => l.key === 'ext-February').url.includes('1yVoCQfyx4V4'));
   // A link saved on the site wins for that month; a stale copy of a tab link is replaced by the tab.
   const tab = w.book.getSheetByName('Mindset Links');
@@ -1291,6 +1292,33 @@ test('from the drive: Mindset Links tab fills the Mindset page (site links win),
   assert.deepStrictEqual(r.missing, ['Bo Kim (Black)', 'Dee Fox (Purple)']);
   assert.deepStrictEqual(mlc.rows.slice(1).map(x => x[0] + ' ' + x[1] + ' ' + x[3]), ['8009002 Cy Ross General', '8009001 Ann Lopez General', ' Bo Kim General', ' Dee Fox General']);
   assert.strictEqual(J(w.importGenerals_()).added, 0, 'running it again adds nobody twice');
+});
+
+test('Year Plan: seeded month by month from the Monthly Themes docs, hidden rows left off, links checked, next week\'s items in This Week', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGeneralsTabs_(); w.ensureGameTabs_(); w.ensureMeTabs_(); w.ensurePollTabs_(); w.ensureWeekTabs_();
+  w.ensureYearPlanTab_();
+  const tab = w.book.getSheetByName('Year Plan');
+  assert.ok(tab.rows.length > 60, 'the whole year is seeded');
+  assert.ok(tab.rows.slice(1).every(r => r.length === 9), 'every seed row fills all 9 columns');
+  const d = JSON.parse(w.clashYearPlan());
+  assert.deepStrictEqual(d.months.map(m => m.month), ['September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May']);
+  const sept = d.months[0].items;
+  assert.ok(sept.some(i => i.kind === 'Mindset Lesson' && i.who === '8th' && i.links.length === 2));
+  assert.ok(d.months.every(m => m.items.every(i => i.links.every(u => /^https?:\/\//.test(u)))));
+  // Staff add a row as the year goes, hide another, and give one a bad link.
+  const today = w.todayYmd_(), nextMon = w.ymdShift_(w.weekStart_(today), 7);
+  tab.rows.push([true, '', w.ymdShift_(nextMon, 2), 'Color Squad Activity', 'Snowball Relay', 'All', 'javascript:alert(1)', '', '']);
+  tab.rows[1][0] = false;
+  w.CacheService.getScriptCache = () => ({ get: () => null, put() {}, remove() {}, putAll() {}, getAll: () => ({}) });
+  const items = J(w.yearPlanItems_());
+  const relay = items.find(i => i.title === 'Snowball Relay');
+  assert.ok(relay && relay.month, 'month filled in from the date');
+  assert.deepStrictEqual(relay.links, [], 'only http(s) links');
+  assert.ok(!items.some(i => i.title === tab.rows[1][4]), 'unticked Show hides the row');
+  w.book.getSheetByName('Sign-up Events') || w.ensureGeneralsTabs_();
+  const week = J(w.weekData_());
+  assert.ok(week.next.some(n => n.what === 'Snowball Relay' && n.kind === 'Color Squad Activity'), JSON.stringify(week.next));
 });
 
 console.log('\n' + passed + ' tests passed');

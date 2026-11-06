@@ -5,8 +5,9 @@
  * MINDSET LINKS tab: one row per month -- Month | 7th Grade | 8th Grade | Extension. Paste any
  * Drive / Docs / Slides link into a cell; a blank cell shows "No link yet" on the site. Seeded from
  * the shared drive's Monthly Themes docs (26-27): 7th grade uses the one Mindset Lessons doc all
- * year, 8th grade has a lesson or slide per month, and Extension is the universal Choice Board
- * (February and March have their own Extension Activity docs).
+ * year, 8th grade says "Mindset app" (= Settings › MINDSET_APP, which opens the month's self-paced
+ * lesson), and Extension is the universal Choice Board (February and March have their own Extension
+ * Activity docs). Any cell can be "Mindset app" or a link.
  * A link typed into Admin › Links › Mindset still wins over the tab for that month and grade.
  */
 
@@ -15,22 +16,22 @@ const MINDSET_LINK_COLS_ = [['7th', '7th Grade'], ['8th', '8th Grade'], ['ext', 
 
 function mindsetLinkSeed_() {
   const doc = function (id) { return 'https://docs.google.com/document/d/' + id + '/edit?usp=sharing'; };
-  const deck = function (id) { return 'https://docs.google.com/presentation/d/' + id + '/edit?usp=sharing'; };
   const g7 = doc('1Xijj6wg-cHSjspOWHDGibhlafllkq9zA8v15vj3QWc8'); // 7th Grade Mindset Lessons (all months)
   const board = doc('1IWaNKNHbGdmnM-5bESYd4-vTRi_StiuQr3uZ2tqETeY'); // Universal Choice Board (print the month's page)
-  const info8 = doc('1zTINwnyUIFt4Ur8Izzd9ZG4oYNhxApo7EFUN2zxHqXs'); // Gr 8 Mountaineer Mindset 26-27
+  const app = MINDSET_APP_WORD_; // 8th grade: the Mindset app's self-paced lesson for the month
   return [
-    ['September', g7, deck('1EQv6RKuCzgew3Q9wCjSpwfTfpkhAb03ftDvokEdw948'), board, '8th: trait slide; lessons are in the Mindset app'],
-    ['October', g7, deck('1DQd-qVH0iJasxQ61Q8PRHsWjLZbxx-rLTZJGMOM116E'), board, '8th: trait slide; lessons are in the Mindset app'],
-    ['November', g7, info8, board, ''],
-    ['December', g7, info8, board, ''],
-    ['January', g7, doc('17nDIfrp5li295cQLYppl4p7e4FC8bwX9AYmz-7ak_1w'), board, '8th link is from the Monthly Themes doc; check it is this year\'s'],
-    ['February', g7, doc('13QBpHYjDAw2kpXAFIBvFqTv08fCFjcj2QWy3IbbezTo'), doc('1yVoCQfyx4V4rPGeCZk-K0Zmz618sSrYJNYuLYQY2aAg'), '8th link is from the Monthly Themes doc; check it is this year\'s'],
-    ['March', g7, doc('1lTGwRVbUp1Q55OMXtrWv0h0RQaWZ8DQ3WxwD0uCWFPE'), doc('1oqBWenKjNKPq8zn7FYdU5HU92nxuGlSVnnhwXWIMIr8'), '8th link is from the Monthly Themes doc; check it is this year\'s'],
-    ['April', g7, doc('1gGeA4krvDaouygSsGQ3YoEl1E59Og1Q7fGbOI6PPg_E'), board, '8th link is from the Monthly Themes doc; check it is this year\'s'],
-    ['May', g7, doc('10c9YeVSqTsSx6bmk9u8Au9KGAZMs1BuWDEr-m_lKKe8'), board, '8th link is from the Monthly Themes doc; check it is this year\'s'],
+    ['September', g7, app, board, ''],
+    ['October', g7, app, board, ''],
+    ['November', g7, app, board, ''],
+    ['December', g7, app, board, ''],
+    ['January', g7, app, board, ''],
+    ['February', g7, app, doc('1yVoCQfyx4V4rPGeCZk-K0Zmz618sSrYJNYuLYQY2aAg'), ''],
+    ['March', g7, app, doc('1oqBWenKjNKPq8zn7FYdU5HU92nxuGlSVnnhwXWIMIr8'), ''],
+    ['April', g7, app, board, ''],
+    ['May', g7, app, board, ''],
   ];
 }
+const MINDSET_APP_WORD_ = 'Mindset app';
 
 function ensureMindsetLinksTab_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -44,12 +45,13 @@ function ensureMindsetLinksTab_() {
 
 // [{key:'7th-September', label, url}, …] from the Mindset Links tab.
 function mindsetLinksFromTab_() {
-  const out = [];
+  const out = [], app = String(getSetting_('MINDSET_APP') || '').trim();
   sheetRows_('Mindset Links').forEach(function (r) {
     const month = String(r['Month'] || '').trim();
     if (!month) return;
     MINDSET_LINK_COLS_.forEach(function (c) {
-      const url = String(r[c[1]] || '').trim();
+      let url = String(r[c[1]] || '').trim();
+      if (url.toLowerCase() === MINDSET_APP_WORD_.toLowerCase()) url = app;
       if (/^https?:\/\//i.test(url)) out.push({ key: c[0] + '-' + month, label: month + ' — ' + c[1], url: url, fromSheet: true });
     });
   });

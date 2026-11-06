@@ -103,6 +103,7 @@ function setupSpreadsheet() {
   ensureTourTab_(); // 20_Tour.gs
   ensureWeekTabs_(); // 22_Week.gs
   ensureMindsetLinksTab_(); // 23_Drive.gs
+  ensureYearPlanTab_(); // 24_YearPlan.gs
   installBackgroundTick_(); // 03_Web.gs: claims, thaws and a warm cache every 5 minutes
   setupHelpTab_();
   setupMapGuideTab_(); // 18_Conquest.gs
