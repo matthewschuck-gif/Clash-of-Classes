@@ -1904,34 +1904,42 @@ function renderMetrics(){
 }
 
 // ── SQUADS ──
+// Each squad: up to 3 Generals and up to 5 Captains. Captains pick a type; several Captains on
+// one squad can share a type. Older saves held one General as { name, grade, role, bio, photo }.
+const GENERALS_PER_SQUAD = 3, CAPTAINS_PER_SQUAD = 5;
+const CAPTAIN_TYPES = ['Art / Design', 'Promotion', 'Hype', 'Event', 'Voice'];
+const CAPTAIN_ICONS = {'Art / Design':'🎨','Promotion':'📣','Hype':'🔥','Event':'🎟️','Voice':'🎙️'};
+function squadLeaders(sq){
+  const g=(D.generals||{})[sq]||{};
+  if(Array.isArray(g.generals)) return { generals:g.generals, captains:Array.isArray(g.captains)?g.captains:[] };
+  return { generals: g.name?[{name:g.name,grade:g.grade||'',bio:g.bio||'',photo:g.photo||''}]:[], captains:[] };
+}
+function genEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
 function renderGenerals(){
   const grid=document.getElementById('generalsGrid'); if(!grid) return;
-  const gens=D.generals||{};
   const r=ranked();
   grid.innerHTML=SQUADS.map(sq=>{
-    const g=gens[sq]||{};
-    const hex=SQ_HEX[sq];
-    const rank=r.indexOf(sq)+1;
-    const name=g.name||'';
-    const grade=g.grade||'';
-    const role=g.role||'Squad General';
-    const bio=g.bio||'';
-    const photo=g.photo||'';
-    return `<div style="background:var(--surface);border:1px solid rgba(255,255,255,0.06);border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.18);transition:transform 0.2s,box-shadow 0.2s" onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='0 6px 28px rgba(0,0,0,0.28)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 2px 12px rgba(0,0,0,0.18)'">
-      <div style="height:6px;background:${hex}"></div>
-      <div style="padding:20px">
-        <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-          <div style="width:56px;height:56px;border-radius:50%;background:${hex}22;border:2px solid ${hex}55;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center">
-            ${photo?`<img src="${photo}" style="width:100%;height:100%;object-fit:cover" />`:`<span style="font-size:22px">⚔️</span>`}
-          </div>
-          <div>
-            <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${hex};margin-bottom:2px">${sq} SQUAD · #${rank}</div>
-            <div style="font-size:1rem;font-weight:800;color:var(--text)">${name||'<span style="color:var(--text3);font-style:italic;font-weight:400">No general assigned</span>'}</div>
-            ${grade?`<div style="font-size:12px;color:var(--text3);margin-top:1px">${grade}</div>`:''}
-          </div>
+    const L=squadLeaders(sq), hex=SQ_HEX[sq], rank=r.indexOf(sq)+1;
+    const gens=L.generals.filter(g=>g.name), caps=L.captains.filter(c=>c.name);
+    const gen=g=>`<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+        <div style="width:44px;height:44px;border-radius:50%;background:${hex}22;border:2px solid ${hex}55;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+          ${g.photo?`<img src="${genEsc(g.photo)}" style="width:100%;height:100%;object-fit:cover" />`:`<span style="font-size:18px">⚔️</span>`}
         </div>
-        <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${hex};margin-bottom:4px">${role}</div>
-        ${bio?`<div style="font-size:13px;color:var(--text2);line-height:1.55">${bio}</div>`:''}
+        <div><div style="font-size:0.95rem;font-weight:800;color:var(--text)">${genEsc(g.name)}</div>
+          ${g.grade?`<div style="font-size:12px;color:var(--text3)">${genEsc(g.grade)}</div>`:''}
+          ${g.bio?`<div style="font-size:12px;color:var(--text2);line-height:1.45;margin-top:2px">${genEsc(g.bio)}</div>`:''}</div>
+      </div>`;
+    const cap=c=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-top:1px solid rgba(255,255,255,0.05);font-size:13px">
+        <span style="color:var(--text)">${genEsc(c.name)}${c.grade?` <span style="color:var(--text3);font-size:12px">${genEsc(c.grade)}</span>`:''}</span>
+        <span style="color:${hex};font-weight:700;white-space:nowrap">${CAPTAIN_ICONS[c.type]||'⭐'} ${genEsc(c.type||'Captain')}</span></div>`;
+    return `<div style="background:var(--surface);border:1px solid rgba(255,255,255,0.06);border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.18)">
+      <div style="height:6px;background:${hex}"></div>
+      <div style="padding:18px 20px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${hex};margin-bottom:12px">${sq} SQUAD · #${rank}</div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Squad Generals</div>
+        ${gens.length?gens.map(gen).join(''):'<div style="color:var(--text3);font-style:italic;font-size:13px;margin-bottom:10px">No generals assigned</div>'}
+        ${caps.length?`<div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:12px 0 4px">Captains</div>${caps.map(cap).join('')}`:''}
       </div>
     </div>`;
   }).join('');
@@ -1939,36 +1947,43 @@ function renderGenerals(){
 
 // ── GENERALS ADMIN ──
 function openGeneralsAdmin(){
-  const gens=D.generals||{};
+  const inp='width:100%;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px';
+  const lab='font-size:11px;color:var(--text3);display:block;margin-bottom:3px';
   const rows=SQUADS.map(sq=>{
-    const g=gens[sq]||{};
+    const L=squadLeaders(sq);
+    const genRows=Array.from({length:GENERALS_PER_SQUAD},(_,i)=>{ const g=L.generals[i]||{};
+      return `<div style="display:grid;grid-template-columns:1.2fr 0.8fr 1.6fr;gap:6px;margin-bottom:6px">
+        <div>${i?'':`<label style="${lab}">General name</label>`}<input id="gen-name-${sq}-${i}" value="${genEsc(g.name)}" placeholder="General ${i+1}" style="${inp}" /></div>
+        <div>${i?'':`<label style="${lab}">Grade</label>`}<input id="gen-grade-${sq}-${i}" value="${genEsc(g.grade)}" placeholder="8th" style="${inp}" /></div>
+        <div>${i?'':`<label style="${lab}">Note (optional)</label>`}<input id="gen-bio-${sq}-${i}" value="${genEsc(g.bio)}" placeholder="Short note" style="${inp}" /></div>
+      </div>`; }).join('');
+    const capRows=Array.from({length:CAPTAINS_PER_SQUAD},(_,i)=>{ const c=L.captains[i]||{};
+      return `<div style="display:grid;grid-template-columns:1.2fr 0.8fr 1.6fr;gap:6px;margin-bottom:6px">
+        <div>${i?'':`<label style="${lab}">Captain name</label>`}<input id="cap-name-${sq}-${i}" value="${genEsc(c.name)}" placeholder="Captain ${i+1}" style="${inp}" /></div>
+        <div>${i?'':`<label style="${lab}">Grade</label>`}<input id="cap-grade-${sq}-${i}" value="${genEsc(c.grade)}" placeholder="7th" style="${inp}" /></div>
+        <div>${i?'':`<label style="${lab}">Type</label>`}<select id="cap-type-${sq}-${i}" style="${inp}">${CAPTAIN_TYPES.map(t=>`<option${(c.type||CAPTAIN_TYPES[0])===t?' selected':''}>${t}</option>`).join('')}</select></div>
+      </div>`; }).join('');
     return `<div style="background:var(--surface2);border-radius:12px;padding:14px;margin-bottom:10px">
       <div style="font-size:11px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:${SQ_HEX[sq]};margin-bottom:10px">${sq} SQUAD</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <div><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:3px">Name</label>
-          <input id="gen-name-${sq}" value="${(g.name||'').replace(/"/g,'&quot;')}" placeholder="First Last" style="width:100%;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px" /></div>
-        <div><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:3px">Grade / Info</label>
-          <input id="gen-grade-${sq}" value="${(g.grade||'').replace(/"/g,'&quot;')}" placeholder="8th Grade" style="width:100%;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px" /></div>
-      </div>
-      <div style="margin-bottom:8px"><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:3px">Role Title</label>
-        <input id="gen-role-${sq}" value="${(g.role||'Squad General').replace(/"/g,'&quot;')}" placeholder="Squad General" style="width:100%;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px" /></div>
-      <div><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:3px">Bio / Note</label>
-        <textarea id="gen-bio-${sq}" rows="2" placeholder="Optional short bio or note..." style="width:100%;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px;resize:vertical">${g.bio||''}</textarea></div>
+      ${genRows}
+      <div style="font-size:11px;font-weight:700;color:var(--text3);margin:10px 0 6px">CAPTAINS (up to ${CAPTAINS_PER_SQUAD}; any type, types can repeat)</div>
+      ${capRows}
     </div>`;
   }).join('');
 
   const modal=document.createElement('div');
   modal.id='generalsModal';
   modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px';
-  modal.innerHTML=`<div style="background:var(--bg);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:24px;max-width:640px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.5)">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div style="font-size:1.1rem;font-weight:800;color:var(--text)">⚔️ Edit Squad Generals</div>
+  modal.innerHTML=`<div style="background:var(--bg);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:24px;max-width:720px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.5)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div style="font-size:1.1rem;font-weight:800;color:var(--text)">⚔️ Edit Squad Generals & Captains</div>
       <button onclick="document.getElementById('generalsModal').remove()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;line-height:1">×</button>
     </div>
+    <p style="font-size:12px;color:var(--text3);margin:0 0 14px">Up to ${GENERALS_PER_SQUAD} Generals and ${CAPTAINS_PER_SQUAD} Captains per squad. Leave a row blank to skip it. These show on the public Generals page.</p>
     ${rows}
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
       <button onclick="document.getElementById('generalsModal').remove()" style="padding:8px 18px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:none;color:var(--text2);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
-      <button onclick="saveGenerals()" style="padding:8px 18px;border-radius:10px;background:var(--purple-lt);color:white;border:none;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">Save Generals</button>
+      <button onclick="saveGenerals()" style="padding:8px 18px;border-radius:10px;background:var(--purple-lt);color:white;border:none;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">Save</button>
     </div>
   </div>`;
   document.body.appendChild(modal);
@@ -1976,14 +1991,13 @@ function openGeneralsAdmin(){
 
 async function saveGenerals(){
   if(!D.generals) D.generals={};
+  const v=id=>(document.getElementById(id)?.value||'').trim();
   SQUADS.forEach(sq=>{
-    D.generals[sq]={
-      name: document.getElementById('gen-name-'+sq)?.value.trim()||'',
-      grade: document.getElementById('gen-grade-'+sq)?.value.trim()||'',
-      role: document.getElementById('gen-role-'+sq)?.value.trim()||'Squad General',
-      bio: document.getElementById('gen-bio-'+sq)?.value.trim()||'',
-      photo: (D.generals[sq]||{}).photo||'',
-    };
+    const old=squadLeaders(sq);
+    const generals=[], captains=[];
+    for(let i=0;i<GENERALS_PER_SQUAD;i++){ const name=v(`gen-name-${sq}-${i}`); if(name) generals.push({name, grade:v(`gen-grade-${sq}-${i}`), bio:v(`gen-bio-${sq}-${i}`), photo:(old.generals[i]||{}).photo||''}); }
+    for(let i=0;i<CAPTAINS_PER_SQUAD;i++){ const name=v(`cap-name-${sq}-${i}`); if(name) captains.push({name, grade:v(`cap-grade-${sq}-${i}`), type:v(`cap-type-${sq}-${i}`)||CAPTAIN_TYPES[0]}); }
+    D.generals[sq]={generals, captains};
   });
   await save();
   document.getElementById('generalsModal')?.remove();
