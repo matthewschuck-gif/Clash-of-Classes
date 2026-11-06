@@ -342,6 +342,7 @@
         <p>The Mountaineer Mindset program provides structured monthly lesson plans aligned with each month's LRG trait. Each plan is designed for classroom use and connects the Clash of Classes theme to academic and social-emotional learning.</p>
         <p>Select a month and grade level below to access the lesson plan directly from Google Drive.</p>
       </div>
+      <div id="mindsetAppEmbed" style="margin-top:20px"></div>
       <div style="margin-top:28px" id="mindsetLessonsBlock"></div>
     </div>
     <div class="content-sidebar">
@@ -1329,6 +1330,15 @@
   <div id="sqd-PURPLE"></div>
 </div>
 
+<!-- LEADERBOARDS (21_Leaders.gs) -->
+<div class="page" id="page-leaders">
+  <div class="page-hero">
+    <h1 class="page-title">Leader<span>boards</span></h1>
+    <div class="page-subtitle">Which squad leads in everything students do</div>
+  </div>
+  <div id="leadersBody"></div>
+</div>
+
 <!-- GROWTH / COMMUNITY CULTURE -->
 <div class="page" id="page-growth">
   <div class="page-hero">
@@ -2291,6 +2301,7 @@
 <script>
 // Connection to this Apps Script project. Every server reply is JSON text.
 window.CLASH_CONFIG = <?!= config ?>;
+window.__CLASH_BOOT = <?!= boot ?>; // the first load, served with the page (03_Web.gs)
 window.ADMIN_SESSION = '';
 window.gasRun_ = function (fn) {
   var args = Array.prototype.slice.call(arguments, 1);

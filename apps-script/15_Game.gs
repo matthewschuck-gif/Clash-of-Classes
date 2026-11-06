@@ -458,7 +458,17 @@ function gameState_(events) {
   };
 }
 
-function clashGame() { const g = gameState_(); g.studentLink = String(getSetting_('STUDENT_LINK') || ''); return JSON.stringify(g); }
+function clashGame() { return cachedGame_(); }
+
+// The game data (map, streaks, goals, engine, the Opponent), cached until the Sheet changes (03_Web.gs).
+function cachedGame_(fresh) {
+  const key = 'game-' + dataStamp_();
+  if (!fresh) { const hit = cacheGetBig_(key); if (hit) return hit; }
+  const g = gameState_(); g.studentLink = String(getSetting_('STUDENT_LINK') || '');
+  const text = JSON.stringify(g);
+  cachePutBig_(key, text, 300);
+  return text;
+}
 
 // ── THE TICK: claims, unlocks, and (with GAME_AWARDS ON) the weekly and end-of-round points ──
 function gameTick() {

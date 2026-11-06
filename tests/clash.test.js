@@ -1089,6 +1089,54 @@ test("Cliff's tour: steps per page in order from the Tutorial Steps tab; Opponen
   assert.strictEqual(m.image, 'https://example.org/troll-beaten.png');
 });
 
+test('speed + leaderboards: one Settings read per request, cached public data, program apps, squad boards, Top Climbers only when on, Trail Journal LRG', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureMeTabs_();
+  // Settings are read once, and a write clears the memo.
+  const st = w.book.getSheetByName('Settings');
+  let reads = 0; const orig = st.getDataRange.bind(st);
+  st.getDataRange = () => { reads++; return orig(); };
+  w.SETTINGS_MEMO_ = null;
+  for (let i = 0; i < 50; i++) w.getSetting_('TV_SHOW_NAMES');
+  assert.ok(reads <= 1, 'Settings tab read ' + reads + ' times for 50 lookups');
+  w.setSettingValue_('POLL_SECONDS', '9');
+  assert.strictEqual(w.getSetting_('POLL_SECONDS'), '9', 'a write is seen right away');
+  // The cache splits big values and puts them back together.
+  const store = {};
+  const c = { put: (k, v) => { store[k] = v; }, remove: (k) => { delete store[k]; }, putAll: (o) => Object.assign(store, o),
+    getAll: (ks) => { const o = {}; ks.forEach(k => { if (store[k] != null) o[k] = store[k]; }); return o; }, get: (k) => store[k] == null ? null : store[k] };
+  w.CacheService.getScriptCache = () => c;
+  const big = 'x'.repeat(250000) + 'end';
+  w.cachePutBig_('t', big, 60);
+  assert.strictEqual(store.t, '3'); assert.strictEqual(w.cacheGetBig_('t'), big);
+  delete store['t:1']; assert.strictEqual(w.cacheGetBig_('t'), null, 'a missing piece = a miss, never half the data');
+  // The public data: cached, and it carries the program apps.
+  const first = JSON.parse(w.cachedPublicLoad_());
+  assert.ok(/AKfycbz1P6NE/.test(first.value.apps.traitdough) && /AKfycbzt9HZ0/.test(first.value.apps.sotm) && /AKfycbwuQCz/.test(first.value.apps.mindset));
+  assert.strictEqual(first.value.apps.embed, true);
+  assert.ok(Object.keys(store).some(k => /^pub-load-/.test(k)), 'stored in the cache');
+  assert.strictEqual(w.clashLoad(''), w.cachedPublicLoad_(), 'visitors get the cached copy');
+  // Leaderboards: squads only until names are turned on.
+  const board = w.book.insertSheet('Student Board');
+  board.rows = [['800#', 'Name', 'Squad', 'Grade', 'Trait Dough Bills', 'Mindset Summits', 'STAR Growth Points', 'Shout-outs', 'Ambassador Buddies', 'Streak (weeks)', 'Trail Journal Growth', 'Last Contribution'],
+    ['8001111', 'Ann L.', 'Gold', '7', '40', '1', '2', '0', '0', '2', '3', w.todayYmd_()],
+    ['8002222', 'Ed Parker', 'Grey', '7', '5', '0', '0', '1', '0', '0', '', ''],
+    ['8003333', 'Cy R.', 'Gold', '8', '1', '0', '0', '0', '0', '0', '', '']];
+  let d = J(w.leadersData_());
+  const b = k => d.boards.find(x => x.key === k);
+  assert.strictEqual(b('bills').scores.GOLD, 41); assert.strictEqual(b('bills').scores.GREY, 5);
+  assert.strictEqual(b('journal').scores.GOLD, 3);
+  assert.strictEqual(b('pitched').scores.GOLD, 50, '1 of 2 Gold students pitched in lately');
+  assert.ok(!d.names && !d.top, 'no names unless LEADERBOARD_NAMES is ON');
+  assert.ok(!JSON.stringify(d).includes('Ann'), 'squad boards carry no student names');
+  w.setSettingValue_('LEADERBOARD_NAMES', 'ON');
+  d = J(w.leadersData_());
+  assert.deepStrictEqual(d.top['7'].map(p => p.name), ['Ann L.', 'Ed P.'], 'ranked by LRG points, First L. only');
+  assert.ok(d.top['7'][0].lrg > d.top['7'][1].lrg);
+  // Trail Journal growth counts toward LRG points (2 each).
+  assert.strictEqual(w.climbXp_({ journal: 3 }), 6);
+});
+
 test('roster: the Students tab copies the district roster, keeps squads, and lets students sign in by 800#@gomounts.org', () => {
   const w = world();
   w.ensureSettings_(); w.ensureGameTabs_(); w.ensureMeTabs_();

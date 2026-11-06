@@ -101,6 +101,7 @@ function setupSpreadsheet() {
   ensureMeTabs_();
   ensureRosterTab_();
   ensureTourTab_(); // 20_Tour.gs
+  installBackgroundTick_(); // 03_Web.gs: claims, thaws and a warm cache every 5 minutes
   setupHelpTab_();
   setupMapGuideTab_(); // 18_Conquest.gs
   setupClimbGuideTab_(); // 19_Evolve.gs
@@ -155,7 +156,7 @@ const DEFAULT_SETTINGS = [
   ['TICKETS_HELD', '3', 'Destination tickets a student can hold at once.'],
   ['TICKET_CHOICES', '3', 'Destination tickets offered per draw (the student keeps at least one).'],
   ['AVATAR_GEAR', 'boots=bills>=1; pack=bills>=5; rope=mindset>=1; lantern=shoutouts>=1; compass=star>=1; scarf=streak>=3; badge=tickets>=3; flag=passport>=1', 'My Climb: gear a student\'s climber earns. gear=thing>=number; things: bills, mindset, shoutouts, star, streak, buddy, tickets, passport.'],
-  ['LRG_POINTS', 'bills=1; mindset=5; shoutouts=2; star=1; streak=2; buddy=3; tickets=3; passport=5', 'My Climb: LRG (Life Ready Graduate) points a student earns for each thing they do. thing=points; things: bills, mindset, shoutouts, star, streak, buddy, tickets, passport. Their creature evolves at EVOLVE_LRG.'],
+  ['LRG_POINTS', 'bills=1; mindset=5; shoutouts=2; star=1; streak=2; buddy=3; tickets=3; passport=5; journal=2', 'My Climb: LRG (Life Ready Graduate) points a student earns for each thing they do. thing=points; things: bills, mindset, shoutouts, star, streak, buddy, tickets, passport, journal (Trail Journal growth, once Define a Climb-er shows it). Their creature evolves at EVOLVE_LRG.'],
   ['EVOLVE_LRG', '2=30, 3=60, 4=100', 'My Climb: the LRG points a creature needs to evolve to stages 2, 3 and 4. Each evolution lets the student pick a boost (Evolution Boosts tab).'],
   ['EVOLVE_NAMES', 'Foothills, Ridge, High Camp, Summit', 'My Climb: names for the four creature stages.'],
   ['VERSION_NAMES', 'Version 1, Version 2, Version 3', 'My Climb: names for the three looks a student can pick (Version 3 is the winter coat).'],
@@ -164,6 +165,13 @@ const DEFAULT_SETTINGS = [
   ['TOUR_AUTO', 'ON', 'Cliff\'s tour (Tutorial Steps tab) plays once on each device the first time someone opens the site or My Climb. OFF = only when they tap Ask Cliff.'],
   ['TOUR_VERSION', '1', 'Change this (2, 3…) after editing the Tutorial Steps tab to show everyone the new tour once.'],
   ['CLIFF_IMAGE', '', 'My Climb: an https link to a different picture of Cliff. Blank = the built-in one.'],
+  ['LEADERBOARD_NAMES', 'OFF', 'Leaderboards page: ON adds Top Climbers, the top students per grade by LRG points, shown as First L. OFF = squad leaderboards only.'],
+  ['LEADERBOARD_SIZE', '10', 'Leaderboards page: how many Top Climbers per grade (3-25).'],
+  ['PITCHED_IN_DAYS', '30', 'Leaderboards page: a student counts as pitching in if they did anything in this many days.'],
+  ['TRAIT_DOUGH_APP', 'https://script.google.com/a/macros/easdpa.org/s/AKfycbz1P6NEegeJfY73L3GTA8vKB0oP5M2V4l8nQigjtaRapjTPZsz-DBmlkMVlRkTXe9wH/exec', 'The Trait Dough web app (bit.ly/ems-traitdough). Its info page shows inside the site\'s Trait Dough page.'],
+  ['SOTM_APP', 'https://script.google.com/a/macros/easdpa.org/s/AKfycbzt9HZ0wCw7tLXy7ZBl2ZJkCQfM5xVZzpPqyxV-NbVZL0Hm_xQBXEQyFQjJuTRPrf11/exec', 'The Student of the Month web app (bit.ly/ems-sotm). Shows inside the site\'s Student of the Month page.'],
+  ['MINDSET_APP', 'https://script.google.com/a/macros/easdpa.org/s/AKfycbwuQCzZfVvgX-k3czsKI74DKnt2qF2XJslElr3HHcwnJTyCcHI4e7NxegIPDpElcowL7w/exec', 'The Grade 8 Mountaineer Mindset web app (bit.ly/ems8-mindset). Shows inside the site\'s Mindset page.'],
+  ['EMBED_APPS', 'ON', 'ON = those three apps show inside their Clash pages (signed in with a school account). OFF = an Open button only.'],
   ['ROSTER_SHEET', 'https://docs.google.com/spreadsheets/d/1SDmwtkP9RzMZ62WVn6awZW6-6gA_wPtc6altTwoAeME/edit', 'The district roster Sheet (link or ID) with 800 Number, Email Address, First Name, Last Name, Grade Level. Clash of Classes › Import student roster copies it to the Students tab.'],
   ['STUDENT_EMAIL_PATTERN', '{800}@gomounts.org', 'My Climb sign-in when the Student Board has no Email column: how a student email is built from the 800#, e.g. {800}@easdpa.org. Blank = use the Email column only.'],
   ['MY_CLIMB_HOURS', '07:00-16:00', 'My Climb is open to students only between these times (24-hour clock). Keeps it school-focused.'],
@@ -179,6 +187,7 @@ const DEFAULT_SETTINGS = [
 // Writes one Settings value (used by the menu switches).
 function setSettingValue_(key, value) {
   ensureSettings_();
+  SETTINGS_MEMO_ = null;
   const sheet = getSheet_(SETTINGS_TAB);
   const rows = sheet.getDataRange().getValues();
   for (let i = 1; i < rows.length; i++) {
@@ -188,6 +197,7 @@ function setSettingValue_(key, value) {
 }
 
 function ensureSettings_() {
+  SETTINGS_MEMO_ = null;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(SETTINGS_TAB);
   if (!sheet) {
@@ -206,17 +216,25 @@ function ensureSettings_() {
   if (missing.length) sheet.getRange(sheet.getLastRow() + 1, 1, missing.length, 3).setValues(missing);
 }
 
-function getSetting_(key) {
+// The Settings tab is read ONCE per request and kept here: the public page asks for settings
+// hundreds of times (twice per points row), and each sheet read is a slow round trip.
+// Writes through setSettingValue_ / ensureSettings_ clear it.
+let SETTINGS_MEMO_ = null;
+function settingsMap_() {
+  if (SETTINGS_MEMO_) return SETTINGS_MEMO_;
+  const map = {};
   const sheet = getSheetSafe_(SETTINGS_TAB);
-  if (sheet) {
-    const rows = sheet.getDataRange().getValues();
-    for (let i = 1; i < rows.length; i++) {
-      if (String(rows[i][0]).trim() === key) {
-        const v = String(rows[i][1] == null ? '' : rows[i][1]).trim();
-        return key.slice(-3) === '_ID' ? extractSheetId_(v) : v;
-      }
-    }
-  }
+  if (sheet) sheet.getDataRange().getValues().slice(1).forEach(function (r) {
+    const k = String(r[0]).trim();
+    if (k && !(k in map)) map[k] = String(r[1] == null ? '' : r[1]).trim();
+  });
+  SETTINGS_MEMO_ = map;
+  return map;
+}
+
+function getSetting_(key) {
+  const map = settingsMap_();
+  if (key in map) return key.slice(-3) === '_ID' ? extractSheetId_(map[key]) : map[key];
   const d = DEFAULT_SETTINGS.filter(function (x) { return x[0] === key; })[0];
   return d ? d[1] : '';
 }

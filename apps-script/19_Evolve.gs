@@ -60,7 +60,8 @@ function ensureEvolveTabs_() {
       [true, 'Ticket Hunter', 'Every destination ticket you finish counts extra.', 'Tickets Completed', 'count', '', 3, 1.25, 1.5, 2],
       [true, 'Squad Events', 'Every squad event you sign up for counts extra.', 'Event Sign-ups', 'count', '', 2, 1.25, 1.5, 2],
       [true, 'Steady Streak', 'Each week your streak is 3 weeks or longer, your squad gets extra.', 'Streak (weeks)', 'level', 3, 3, 1.25, 1.5, 2],
-      [true, 'Ambassador', 'Every new student you buddy up with counts extra.', 'Ambassador Buddies', 'count', '', 3, 1.25, 1.5, 2]]],
+      [true, 'Ambassador', 'Every new student you buddy up with counts extra.', 'Ambassador Buddies', 'count', '', 3, 1.25, 1.5, 2],
+      [true, 'Trail Journal', 'Every bit of Trail Journal growth counts extra.', 'Trail Journal Growth', 'count', '', 2, 1.25, 1.5, 2]]],
    ['Perks', PERK_HEADERS_, [
       [true, 'Trailhead Rookie', 'title', '', 'Everyone starts here.', ''],
       [true, 'Dough Slinger', 'title', '', 'Turn in 10 Trait Dough bills.', 'bills: 10'],
@@ -99,7 +100,7 @@ function rulesList_(setting, fallback) {
 }
 
 function climbXp_(vals) {
-  const w = rulesList_('LRG_POINTS', 'bills=1; mindset=5; shoutouts=2; star=1; streak=2; buddy=3; tickets=3; passport=5');
+  const w = rulesList_('LRG_POINTS', 'bills=1; mindset=5; shoutouts=2; star=1; streak=2; buddy=3; tickets=3; passport=5; journal=2');
   return Math.round(Object.keys(w).reduce(function (n, k) { return n + (Number(vals[k]) || 0) * w[k]; }, 0));
 }
 
@@ -245,7 +246,7 @@ function cliffInfo_() {
 // ── STUDENT ACTIONS ─────────────────────────────────────────────────
 function climbVals_(id, page) {
   const me = page.me;
-  return { bills: me.bills, mindset: me.mindset, shoutouts: me.shoutouts, star: me.star, streak: me.streak, buddy: me.ambassador,
+  return { bills: me.bills, mindset: me.mindset, shoutouts: me.shoutouts, star: me.star, streak: me.streak, buddy: me.ambassador, journal: me.journal,
     tickets: (page.tickets || []).filter(function (t) { return t.status === 'Completed'; }).length,
     passport: page.passport && page.passport.complete ? 1 : 0 };
 }
@@ -366,7 +367,8 @@ function setupClimbGuideTab_() {
     '     bills=1; mindset=5; shoutouts=2; star=1; streak=2; buddy=3; tickets=3; passport=5',
     '     bills = Trait Dough bills, mindset = Mindset summits, shoutouts, star = STAR growth points,',
     '     streak = weeks in a row, buddy = Ambassador buddies, tickets = destination tickets finished,',
-    '     passport = 1 when the Trail Passport is complete.',
+    '     passport = 1 when the Trail Passport is complete, journal = Trail Journal growth points',
+    '     (only once Define a Climb-er\'s BOARD_SHOW_JOURNAL is ON).',
     'The numbers come from the Student Board, so LRG points only go up during the year.',
     '',
     H + 'EVOLVING',

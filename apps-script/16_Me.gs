@@ -97,7 +97,7 @@ function meId_(asId, adminToken) {
 const METRICS_ = [
   ['bills', 'Trait Dough Bills', 'Trait Dough bills'], ['mindset', 'Mindset Summits', 'Mindset summits'],
   ['shoutouts', 'Shout-outs', 'Shout-outs'], ['star', 'STAR Growth Points', 'STAR growth points'],
-  ['streak', 'Streak (weeks)', 'Week streak'], ['attendance', 'Attendance %', 'Attendance']];
+  ['streak', 'Streak (weeks)', 'Week streak'], ['journal', 'Trail Journal Growth', 'Trail Journal growth'], ['attendance', 'Attendance %', 'Attendance']];
 
 function metricsFor_(id, squad, rows) {
   rows = rows || boardRows_();
@@ -266,7 +266,7 @@ function clashMe(asId, adminToken) {
   page.creature = creatureFor_(id, squad, climbVals_(id, page), page.look, page.gear); // 19_Evolve.gs
   page.cliff = cliffInfo_();
   page.tour = tourFor_('me'); // 20_Tour.gs
-  page.game = gameState_();
+  page.game = JSON.parse(cachedGame_()); // 15_Game.gs, cached
   page.preview = !!(asId && adminToken);
   return JSON.stringify(page);
 }

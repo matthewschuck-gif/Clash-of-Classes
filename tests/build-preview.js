@@ -11,7 +11,7 @@ function build(page) {
   // ?page=me → My Climb (Me.html), signed in as the sample student Ann L.
   let html = (page === 'me' ? read('Me.html').replace(/<? if (shield) { ?>|<? } ?>/g, '').replace('<?= shield ?>', '/shield.png') : read('Index.html'))
     .replace(/<\?!= include\('([A-Za-z]+)'\); \?>/g, (m, f) => read(f + '.html'))
-    .replace('<?!= config ?>', JSON.stringify({ pollMs: 5000 }));
+    .replace('<?!= config ?>', JSON.stringify({ pollMs: 5000 })).replace('<?!= boot ?>', 'null');
   const gs = fs.readdirSync(dir).filter(f => f.endsWith('.gs')).sort().map(read).join('\n');
   const fake = `<script>
 (function () {

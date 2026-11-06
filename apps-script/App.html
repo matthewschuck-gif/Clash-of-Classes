@@ -95,6 +95,8 @@ const GAS_POLL_MS=(window.CLASH_CONFIG&&window.CLASH_CONFIG.pollMs)||5000;
 
 async function gasCall_(body){
   if(body.action==='load'){
+    // The first load came with the page (window.__CLASH_BOOT): use it once, no server trip.
+    if(window.__CLASH_BOOT&&!window.ADMIN_SESSION){ const b=window.__CLASH_BOOT; window.__CLASH_BOOT=null; return b; }
     return window.gasRun_('clashLoad', window.ADMIN_SESSION||''); // admin: full rows (03_Web.gs publicEvent_)
   }
   if(body.action==='meta') return window.gasRun_('clashMeta');
@@ -223,6 +225,7 @@ const PAGES_DEF = [
   { id:'staff',      icon:'👤', label:'Staff'          },
   { id:'spin',       icon:'🌀', label:'Spin!'          },
   { id:'growth',     icon:'🏔️', label:'Growth'         },
+  { id:'leaders',    icon:'🏅', label:'Leaderboards'   },
   { id:'generals',   icon:'⚔️', label:'Generals'       },
   { id:'hq',         icon:'🛡️', label:'Generals HQ'    },
 ];
@@ -732,6 +735,7 @@ function goTo(id){
   else if(id==='traitdough')  renderTraitDough();
   else if(id==='sotm')        renderSotm();
   else if(id==='growth')    renderGrowth();
+  else if(id==='leaders')   renderLeaders();
   else if(id==='squads')      renderSquads();
   else if(id==='gallery')     renderGallery();
   else if(id==='tracker'){ renderStrip(); renderTable(); renderMetrics(); renderTimeline(); renderSnapshots(); renderPoll(); renderCatChart(); renderSeasonCal(); }
@@ -2345,6 +2349,8 @@ function buildGradeLinks(month){
 // ── MINDSET PAGE ──
 function renderMindset(){
   const pc=D.pageContent||{};
+  const mmEmb=document.getElementById('mindsetAppEmbed');
+  if(mmEmb){ mmEmb.innerHTML=appEmbed_(D.apps&&D.apps.mindset, '⛰️ Mountaineer Mindset · Grade 8', 'Pre and post assessments, self-paced lessons and the choice board. Sign in with your school account if it asks.'); armAppEmbeds_(); }
   document.getElementById('mindsetBody').innerHTML=`<p>${(pc.mindsetBody||DEF.pageContent.mindsetBody).replace(/\n/g,'</p><p>')}</p>`;
 
   const months=TRAITS.map(t=>t.month);
@@ -2837,6 +2843,29 @@ function renderWheel(){
   if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map(l=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via Admin → Links.</div>'}`;
 }
 
+// A program web app (Trait Dough, Student of the Month, Mindset) shown inside its page. The frame
+// only loads once its page is on screen, so the home page stays fast. Students are signed in with
+// their school account; anyone else gets the Open button.
+function appEmbed_(url, title, note){
+  if(!url) return '';
+  const embed=!(D.apps&&D.apps.embed===false);
+  return `<div class="card" style="padding:0;overflow:hidden;margin-top:6px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div style="font-family:'Fraunces',serif;font-weight:700;font-size:16px;color:var(--text)">${title}</div>
+      <a class="btn btn-gold" href="${url}" target="_blank" rel="noopener">Open in a new tab &#8599;</a>
+    </div>
+    ${embed?`<iframe data-src="${url}" title="${title}" style="display:block;width:100%;height:760px;border:0;background:#fff"></iframe>`:''}
+    <div style="padding:8px 16px;font-size:12px;color:var(--text3)">${note}</div>
+  </div>`;
+}
+function armAppEmbeds_(){
+  const frames=document.querySelectorAll('iframe[data-src]:not([src])');
+  if(!frames.length) return;
+  if(!('IntersectionObserver' in window)){ frames.forEach(f=>f.src=f.dataset.src); return; }
+  const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.src=e.target.dataset.src; io.unobserve(e.target); } }),{rootMargin:'200px'});
+  frames.forEach(f=>io.observe(f));
+}
+
 function renderTraitDough(){
   const pc=D.pageContent||{};
   const s=function(id,val){ const el=document.getElementById(id); if(el&&val) el.textContent=val; };
@@ -2855,9 +2884,41 @@ function renderTraitDough(){
   // Body
   const body=document.getElementById('traitdoughBody');
   if(body&&pc.traitdoughBody) body.innerHTML=`<p>${pc.traitdoughBody.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
+  const tdApp=D.apps&&D.apps.traitdough;
+  const tdEmb=document.getElementById('traitdoughEmbeds');
+  if(tdEmb) tdEmb.innerHTML=appEmbed_(tdApp?tdApp+(tdApp.indexOf('?')>-1?'&':'?')+'view=info':'', '💵 Trait Dough', 'The Trait Dough app: how it works, this week\'s winners and the guidelines. Sign in with your school account if it asks.');
+  armAppEmbeds_();
   const links=D.links.traitdough||[];
   const el=document.getElementById('traitdoughLinks');
   if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map(l=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via Admin → Links.</div>'}`;
+}
+
+// Leaderboards page (21_Leaders.gs): squads ranked on each thing students do; Top Climbers when on.
+function renderLeaders(){
+  const box=document.getElementById('leadersBody');
+  if(!box||!window.gasRun_) return;
+  if(!box.dataset.loaded) box.innerHTML='<p style="color:var(--text3)">Loading the leaderboards…</p>';
+  window.gasRun_('clashLeaders').then(function(d){
+    box.dataset.loaded='1';
+    const sq=['BLACK','GOLD','GREY','PURPLE'], col={BLACK:'var(--sq-black)',GOLD:'var(--sq-gold)',GREY:'var(--sq-grey)',PURPLE:'var(--sq-purple)'};
+    const nice=s=>s.charAt(0)+s.slice(1).toLowerCase();
+    const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+    const card=b=>{ const order=sq.slice().sort((x,y)=>b.scores[y]-b.scores[x]), top=Math.max(1,...sq.map(s=>b.scores[s]));
+      return '<div class="card" style="padding:16px"><div style="font-family:Fraunces,serif;font-weight:700;font-size:16px;margin-bottom:2px">'+b.icon+' '+b.label+'</div>'+
+        (b.note?'<div style="font-size:12px;color:var(--text3);margin-bottom:8px">'+b.note+'</div>':'<div style="height:8px"></div>')+
+        order.map((s,i)=>'<div style="display:grid;grid-template-columns:22px 70px 1fr 56px;gap:8px;align-items:center;margin:5px 0;font-size:13px">'+
+          '<span style="color:var(--text3);font-family:DM Mono,monospace">'+(i+1)+'</span><b style="color:'+col[s]+'">'+nice(s)+'</b>'+
+          '<i style="display:block;height:9px;border-radius:99px;background:'+col[s]+';width:'+Math.round(100*b.scores[s]/top)+'%"></i>'+
+          '<span style="text-align:right;font-variant-numeric:tabular-nums">'+b.scores[s].toLocaleString()+(b.unit||'')+'</span></div>').join('')+'</div>'; };
+    const climbers=(g,list)=>'<div class="card" style="padding:16px"><div style="font-family:Fraunces,serif;font-weight:700;font-size:16px;margin-bottom:8px">Grade '+g+'</div>'+
+      (list.length?list.map((p,i)=>'<div style="display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px">'+
+        '<span style="color:var(--text3);font-family:DM Mono,monospace">'+(i+1)+'</span><span><b style="color:'+col[p.squad]+'">'+esc(p.name)+'</b> <span style="color:var(--text3)">· '+esc(p.stage)+'</span></span>'+
+        '<span style="font-variant-numeric:tabular-nums">'+p.lrg+' LRG</span></div>').join(''):'<div style="color:var(--text3);font-size:13px">No climbers yet.</div>')+'</div>';
+    box.innerHTML='<h2 style="font-family:Fraunces,serif;margin:0 0 10px">Squad leaderboards</h2>'+
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px">'+d.boards.map(card).join('')+'</div>'+
+      (d.names&&d.top?'<h2 style="font-family:Fraunces,serif;margin:26px 0 4px">Top Climbers</h2><p style="color:var(--text3);font-size:13px;margin:0 0 10px">The most LRG points in each grade.</p>'+
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px">'+climbers('7',d.top['7'])+climbers('8',d.top['8'])+'</div>':'');
+  }).catch(function(){ box.innerHTML='<p style="color:var(--text3)">The leaderboards could not load. Try again in a minute.</p>'; });
 }
 
 function renderGrowth(){
@@ -3023,6 +3084,9 @@ function renderSotm(){
     </div>`;
 
   // Links
+  const smEmb=document.getElementById('sotmEmbeds');
+  if(smEmb) smEmb.innerHTML=appEmbed_(D.apps&&D.apps.sotm, '🌟 Student of the Month', 'The Student of the Month app. Sign in with your school account if it asks.');
+  armAppEmbeds_();
   const links=D.links.sotm||[];
   const el=document.getElementById('sotmLinks');
   if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map(l=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via Admin → Links.</div>'}`;

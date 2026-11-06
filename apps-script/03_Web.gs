@@ -27,6 +27,10 @@ function serveSite_(e) {
   if (e && e.parameter && e.parameter.page === 'me') return serveMe_(); // My Climb, the student dashboard (16_Me.gs)
   const t = HtmlService.createTemplateFromFile('Index');
   t.config = JSON.stringify({ pollMs: Math.max(3, Number(getSetting_('POLL_SECONDS')) || 5) * 1000 });
+  // The first load rides inside the page, so it shows without a second trip to the server.
+  let boot = 'null';
+  try { boot = cachedPublicLoad_().replace(/</g, '\\u003c'); } catch (err) { console.warn('Boot data: ' + err.message); }
+  t.boot = boot;
   return t.evaluate()
     .setTitle(getSetting_('SITE_TITLE') || 'Clash of Classes — Ephrata Middle School')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, viewport-fit=cover')
@@ -47,11 +51,18 @@ function publicLoad_(raw) {
     maybeCheckThaws_(); // thaws a freeze whose goals are met (14_Thaw.gs), at most every 5 minutes
     maybeGameTick_(); // map claims and engine unlocks (15_Game.gs), at most every 10 minutes
     res.value.studentLink = String(getSetting_('STUDENT_LINK') || '');
+    res.value.apps = programApps_(); // Trait Dough, Student of the Month, Mindset web apps
     res.value.freezes = activeFreezes_(); // read-only, from the Point Freezes tab
     try { res.value.schoolCalendar = schoolCalendar_(); } catch (e) { /* the page falls back to its built-in list */ }
     if (!raw && Array.isArray(res.value.events)) res.value.events = res.value.events.map(publicEvent_);
   }
   return res;
+}
+
+// The program web apps the site shows inside its pages (Settings; links from the EMS Hub).
+function programApps_() {
+  const u = function (k) { const v = String(getSetting_(k) || '').trim(); return /^https:\/\//i.test(v) ? v : ''; };
+  return { embed: String(getSetting_('EMBED_APPS') || 'ON').toUpperCase() !== 'OFF', traitdough: u('TRAIT_DOUGH_APP'), sotm: u('SOTM_APP'), mindset: u('MINDSET_APP') };
 }
 
 // The site is public. Points rows other tools write can hold a student's name (Trait Dough,
@@ -81,7 +92,52 @@ function publicEvent_(e) {
 function clashLoad(token) {
   let admin = false;
   try { if (token) { requireAdmin_(token); admin = true; } } catch (e) { admin = false; }
-  return JSON.stringify(publicLoad_(admin));
+  return admin ? JSON.stringify(publicLoad_(true)) : cachedPublicLoad_();
+}
+
+// ── SPEED: cache the public data until the Sheet changes ────────────
+// Everyone who opens the site gets the same public data, so it's built once and kept in the
+// script cache, keyed by when the Sheet last changed (the same stamp the page polls). New points
+// change the stamp, so nobody sees old numbers. Big values are split across cache keys.
+const CACHE_CHUNK_ = 90000;
+function cachePutBig_(key, text, seconds) {
+  const cache = CacheService.getScriptCache(), parts = {}, n = Math.ceil(text.length / CACHE_CHUNK_) || 1;
+  for (let i = 0; i < n; i++) parts[key + ':' + i] = text.slice(i * CACHE_CHUNK_, (i + 1) * CACHE_CHUNK_);
+  parts[key] = String(n);
+  try { cache.putAll(parts, seconds); } catch (e) { console.warn('Cache put: ' + e.message); }
+}
+function cacheGetBig_(key) {
+  const cache = CacheService.getScriptCache(), n = Number(cache.get(key));
+  if (!n) return null;
+  const keys = [];
+  for (let i = 0; i < n; i++) keys.push(key + ':' + i);
+  const got = cache.getAll(keys);
+  if (keys.some(function (k) { return got[k] == null; })) return null;
+  return keys.map(function (k) { return got[k]; }).join('');
+}
+function dataStamp_() { try { return getAppDataMeta_('coc').updated_at; } catch (e) { return String(Math.floor(Date.now() / 60000)); } }
+
+function cachedPublicLoad_(fresh) {
+  const key = 'pub-load-' + dataStamp_();
+  if (!fresh) { const hit = cacheGetBig_(key); if (hit) return hit; }
+  const text = JSON.stringify(publicLoad_(false));
+  cachePutBig_(key, text, 300);
+  return text;
+}
+
+// Every 5 minutes (installed by Run setup): map claims, thaw checks, and a warm cache, so no
+// visitor waits for them.
+function backgroundTick() {
+  try { maybeCheckThaws_(); } catch (e) { console.warn(e.message); }
+  try { maybeGameTick_(); } catch (e) { console.warn(e.message); }
+  try { cachedPublicLoad_(true); cachedGame_(true); } catch (e) { console.warn('Warm cache: ' + e.message); }
+}
+
+function installBackgroundTick_() {
+  try {
+    ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'backgroundTick') ScriptApp.deleteTrigger(t); });
+    ScriptApp.newTrigger('backgroundTick').timeBased().everyMinutes(5).create();
+  } catch (e) { console.warn('Background trigger: ' + e.message); }
 }
 
 function clashMeta() { return JSON.stringify(getAppDataMeta_('coc')); }
