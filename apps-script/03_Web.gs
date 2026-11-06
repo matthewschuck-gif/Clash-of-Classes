@@ -52,6 +52,7 @@ function publicLoad_(raw) {
     maybeGameTick_(); // map claims and engine unlocks (15_Game.gs), at most every 10 minutes
     res.value.studentLink = String(getSetting_('STUDENT_LINK') || '');
     res.value.apps = programApps_(); // Trait Dough, Student of the Month, Mindset web apps
+    mergeMindsetLinks_(res.value); // the Mindset Links tab fills any month the site has no link for (23_Drive.gs)
     res.value.freezes = activeFreezes_(); // read-only, from the Point Freezes tab
     try { res.value.schoolCalendar = schoolCalendar_(); } catch (e) { /* the page falls back to its built-in list */ }
     if (!raw && Array.isArray(res.value.events)) res.value.events = res.value.events.map(publicEvent_);
@@ -335,6 +336,7 @@ function onOpen() {
     .addItem('Check thaw goals now', 'menuCheckThaws_')
     .addSeparator()
     .addItem('Import student roster', 'menuImportRoster_')
+    .addItem('Load Squad Generals from the Squad Leadership doc', 'menuImportGenerals_')
     .addItem('Turn on game awards', 'menuTurnOnGame_')
     .addItem('Turn off game awards', 'menuTurnOffGame_')
     .addItem('Use the building map (replaces Map Zones)', 'menuBuildingMap_')

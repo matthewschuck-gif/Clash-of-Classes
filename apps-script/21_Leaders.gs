@@ -80,3 +80,55 @@ function clashLeaders() {
   cachePutBig_(key, text, 300);
   return text;
 }
+
+// ── TRAIT DOUGH LEADERBOARD (the Trait Dough page) ───────────────────
+// Squads on Trait Dough bills turned in this year, this week, per student and drawing wins, from the
+// Student Board. Top earners by grade ("First L.") only when Settings › LEADERBOARD_NAMES is ON.
+function traitDoughBoard_() {
+  const rows = boardRows_().filter(function (r) { return SQUAD_KEYS_.indexOf(squadOf_(r['Squad'])) > -1; });
+  const zero = function () { return { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 }; };
+  const year = zero(), week = zero(), wins = zero(), size = zero(), earners = zero(), people = [];
+  rows.forEach(function (r) {
+    const s = squadOf_(r['Squad']), b = Math.max(0, boardNumber_(r['Trait Dough Bills']) || 0);
+    size[s]++;
+    year[s] += b;
+    week[s] += Math.max(0, boardNumber_(r['Bills This Week']) || 0);
+    wins[s] += Math.max(0, boardNumber_(r['Trait Dough Wins']) || 0);
+    if (b > 0) earners[s]++;
+    people.push({ name: String(r['Name'] || '').trim(), squad: s, grade: String(r['Grade'] || '').trim(), bills: b });
+  });
+  const per = zero(), share = zero();
+  SQUAD_KEYS_.forEach(function (s) {
+    per[s] = size[s] ? Math.round(100 * year[s] / size[s]) / 100 : 0;
+    share[s] = size[s] ? Math.round(100 * earners[s] / size[s]) : 0;
+  });
+  const out = {
+    boards: [
+      { key: 'year', label: 'Bills this year', icon: '\u{1F4B5}', scores: year },
+      { key: 'week', label: 'Bills this week', icon: '\u{1F4C5}', scores: week },
+      { key: 'per', label: 'Bills per student', icon: '⚖️', scores: per, note: 'fair across squad sizes' },
+      { key: 'share', label: 'Students earning', icon: '\u{1F64B}', scores: share, unit: '%', note: 'have turned in at least one bill' },
+      { key: 'wins', label: 'Friday drawing wins', icon: '\u{1F3A1}', scores: wins },
+    ],
+    total: SQUAD_KEYS_.reduce(function (a, s) { return a + year[s]; }, 0),
+    names: String(getSetting_('LEADERBOARD_NAMES') || 'OFF').toUpperCase() === 'ON',
+  };
+  if (out.names) {
+    const n = Math.max(3, Math.min(25, Number(getSetting_('LEADERBOARD_SIZE')) || 10));
+    const top = function (g) {
+      return people.filter(function (p) { return p.grade === g && p.bills > 0 && p.name; }).sort(function (a, b) { return b.bills - a.bills; }).slice(0, n)
+        .map(function (p) { return { name: shortName_(p.name), squad: p.squad, bills: p.bills }; });
+    };
+    out.top = { '7': top('7'), '8': top('8') };
+  }
+  return out;
+}
+
+function clashTraitDough() {
+  const key = 'traitdough-' + dataStamp_();
+  const hit = cacheGetBig_(key);
+  if (hit) return hit;
+  const text = JSON.stringify(traitDoughBoard_());
+  cachePutBig_(key, text, 300);
+  return text;
+}

@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const dir = path.join(__dirname, '..', 'apps-script');
-const NEW = ['18_Conquest.gs', '19_Evolve.gs', '20_Tour.gs', '21_Leaders.gs', 'MapEditor.html', 'CliffTour.html'];
+const NEW = ['18_Conquest.gs', '19_Evolve.gs', '20_Tour.gs', '21_Leaders.gs', '22_Week.gs', '23_Drive.gs', 'MapEditor.html', 'CliffTour.html'];
 const files = fs.readdirSync(dir).filter(f => /\.(gs|html)$/.test(f)).sort((a, b) => {
   const ga = a.endsWith('.gs') ? 0 : 1, gb = b.endsWith('.gs') ? 0 : 1;
   return ga - gb || a.localeCompare(b);

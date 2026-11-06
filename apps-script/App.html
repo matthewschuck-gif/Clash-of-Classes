@@ -2891,9 +2891,39 @@ function renderTraitDough(){
   const tdEmb=document.getElementById('traitdoughEmbeds');
   if(tdEmb) tdEmb.innerHTML=appEmbed_(tdApp?tdApp+(tdApp.indexOf('?')>-1?'&':'?')+'view=info':'', '💵 Trait Dough', 'The Trait Dough app: how it works, this week\'s winners and the guidelines. Sign in with your school account if it asks.');
   armAppEmbeds_();
+  renderTraitDoughBoard();
   const links=D.links.traitdough||[];
   const el=document.getElementById('traitdoughLinks');
   if(el) el.innerHTML=`<div class="link-card-title">🔗 Resources & Links</div>${links.length?links.map(l=>`<a href="${l.url}" target="_blank" class="ext-link active-link">${l.label}<span class="link-arrow">↗</span></a>`).join(''):'<div style="color:var(--text3);font-size:13px">Add links via Admin → Links.</div>'}`;
+}
+
+// Trait Dough page leaderboard (21_Leaders.gs): squads on bills this year, this week, per student, earners and wins.
+function renderTraitDoughBoard(){
+  const box=document.getElementById('traitdoughBoard');
+  if(!box||!window.gasRun_) return;
+  if(!box.dataset.loaded) box.innerHTML='<p style="color:var(--text3)">Loading the Trait Dough leaderboard…</p>';
+  window.gasRun_('clashTraitDough').then(function(d){
+    box.dataset.loaded='1';
+    const sq=['BLACK','GOLD','GREY','PURPLE'], col={BLACK:'var(--sq-black)',GOLD:'var(--sq-gold)',GREY:'var(--sq-grey)',PURPLE:'var(--sq-purple)'};
+    const nice=s=>s.charAt(0)+s.slice(1).toLowerCase();
+    const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+    const card=b=>{ const order=sq.slice().sort((x,y)=>b.scores[y]-b.scores[x]), top=Math.max(1,...sq.map(s=>b.scores[s]));
+      return '<div class="card" style="padding:16px"><div style="font-family:Fraunces,serif;font-weight:700;font-size:16px;margin-bottom:2px">'+b.icon+' '+b.label+'</div>'+
+        (b.note?'<div style="font-size:12px;color:var(--text3);margin-bottom:8px">'+b.note+'</div>':'<div style="height:8px"></div>')+
+        order.map((s,i)=>'<div style="display:grid;grid-template-columns:22px 70px 1fr 56px;gap:8px;align-items:center;margin:5px 0;font-size:13px">'+
+          '<span style="color:var(--text3);font-family:DM Mono,monospace">'+(i+1)+'</span><b style="color:'+col[s]+'">'+nice(s)+'</b>'+
+          '<i style="display:block;height:9px;border-radius:99px;background:'+col[s]+';width:'+Math.round(100*b.scores[s]/top)+'%"></i>'+
+          '<span style="text-align:right;font-variant-numeric:tabular-nums">'+b.scores[s].toLocaleString()+(b.unit||'')+'</span></div>').join('')+'</div>'; };
+    const earners=(g,list)=>'<div class="card" style="padding:16px"><div style="font-family:Fraunces,serif;font-weight:700;font-size:16px;margin-bottom:8px">Grade '+g+'</div>'+
+      (list.length?list.map((p,i)=>'<div style="display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px">'+
+        '<span style="color:var(--text3);font-family:DM Mono,monospace">'+(i+1)+'</span><b style="color:'+col[p.squad]+'">'+esc(p.name)+'</b>'+
+        '<span style="font-variant-numeric:tabular-nums">'+p.bills+' bills</span></div>').join(''):'<div style="color:var(--text3);font-size:13px">No bills turned in yet.</div>')+'</div>';
+    box.innerHTML='<h3 style="font-family:Fraunces,serif;margin:0 0 4px">💵 Trait Dough Leaderboard</h3>'+
+      '<p style="color:var(--text3);font-size:13px;margin:0 0 10px">'+(d.total||0).toLocaleString()+' bills turned in this year. Updates when the Student Board does.</p>'+
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:12px">'+d.boards.map(card).join('')+'</div>'+
+      (d.names&&d.top?'<h3 style="font-family:Fraunces,serif;margin:22px 0 8px">Top Earners</h3>'+
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:12px">'+earners('7',d.top['7'])+earners('8',d.top['8'])+'</div>':'');
+  }).catch(function(){ box.innerHTML='<p style="color:var(--text3)">The Trait Dough leaderboard could not load. Try again in a minute.</p>'; });
 }
 
 // Leaderboards page (21_Leaders.gs): squads ranked on each thing students do; Top Climbers when on.
@@ -4192,12 +4222,14 @@ async function saveMindsetLinks(){
   if(!Array.isArray(D.links.mindset)) D.links.mindset=[];
   // Rebuild mindset links from grid
   const kept=D.links.mindset.filter(l=>!l.key); // keep any without keys
+  const fromTab={}; D.links.mindset.forEach(l=>{ if(l.fromSheet) fromTab[l.key]=l.url; }); // the Mindset Links tab's
   document.querySelectorAll('#mindsetLinkGrid input').forEach(input=>{
     const month=input.dataset.month, grade=input.dataset.grade;
     const url=input.value.trim();
     const key=`${grade}-${month}`;
     const label=`${month} — ${grade==='7th'?'7th Grade':grade==='8th'?'8th Grade':'Extension'}`;
-    if(url) kept.push({label,url,key,id:Date.now()+Math.random()});
+    // An unchanged tab link stays the tab's (edit it in the Sheet); a new link here wins over the tab.
+    if(url) kept.push(url===fromTab[key]?{label,url,key,fromSheet:true}:{label,url,key,id:Date.now()+Math.random()});
   });
   D.links.mindset=kept;
   await save(); flash('mindsetLinkOk');

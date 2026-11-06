@@ -190,6 +190,7 @@ function clashGeneralsHq(token) {
     mayhem: sheetRows_('Mayhem Checklist').filter(function (r) { return squadOf_(r['Squad']) === squad; })
       .map(function (r) { return { row: r._row, item: String(r['Item']), done: ticked_(r['Done']) }; }),
     recent: recent, leaders: leaders, month: month, trait: trait,
+    handbook: String(getSetting_('GENERALS_HANDBOOK') || ''), // My job tab (23_Drive.gs)
     challenges: challengeProgress_().filter(function (c) { return c.active; }),
     duels: JSON.parse(clashDuels()).filter(function (d) { return d.squads.indexOf(squad) > -1; }),
     lore: loreFor_(squad),

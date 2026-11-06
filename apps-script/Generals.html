@@ -92,7 +92,8 @@
       (tags ? '<div class="hq-tags">' + tags + '</div>' : '') + '</div>';
     var tabs = [['roster', '👥 Roster & sign-ups'], ['mayhem', '⚡ Mayhem checklist'], ['hype', '📣 Hype script'], ['meeting', '🎤 Squad meeting'], ['service', '🤝 Service project'], ['nominate', '📝 Nominate & letters'], ['shirts', '👕 Shirt designs']];
     tabs.splice(1, 0, ['game', '🎲 Game']);
-    var body = { roster: rosterView, game: gameView, mayhem: mayhemView, hype: hypeView, meeting: meetingView, service: serviceView, nominate: nominateView, shirts: shirtsView }[view]();
+    tabs.push(['job', '🎖️ My job']);
+    var body = { roster: rosterView, game: gameView, mayhem: mayhemView, hype: hypeView, meeting: meetingView, service: serviceView, nominate: nominateView, shirts: shirtsView, job: jobView }[view]();
     el().innerHTML = head + '<div class="hq-tabs">' + tabs.map(function (t) { return '<button class="hq-tab' + (view === t[0] ? ' on' : '') + '" data-v="' + t[0] + '">' + t[1] + '</button>'; }).join('') +
       '<button class="hq-tab" data-v="out">Sign out</button></div>' + body;
     el().querySelectorAll('.hq-tab').forEach(function (b) { b.onclick = function () { if (b.dataset.v === 'out') { token = ''; signIn(); return; } view = b.dataset.v; render(); }; });
@@ -100,6 +101,18 @@
     if (!counted && window.popCountUp) { window.popCountUp(el()); counted = true; } // points count up on the first visit only
   }
 
+
+  // My job: the Squad General one-pager in short, with the full handbook (Settings › GENERALS_HANDBOOK).
+  function jobView() {
+    var col = function (h, sub, items) { return '<div class="ms-card" style="flex:1 1 220px"><div class="ms-h">' + h + '</div><div style="opacity:.8;margin-bottom:6px">' + sub + '</div><ul style="margin:0;padding-left:18px">' + items.map(function (i) { return '<li>' + i + '</li>'; }).join('') + '</ul></div>'; };
+    return '<div style="display:flex;flex-wrap:wrap;gap:12px">' +
+      col('📣 Rally', 'Build energy and pride.', ['Get people excited about events', 'Spread the word and make announcements', 'Celebrate squad wins', 'Pull in quieter students']) +
+      col('🗂️ Organize', 'Get the squad ready.', ['Run sign-ups and hit deadlines', 'Everyone gets a turn before anyone goes twice', 'Notice who needs a check-in', 'Pass on information clearly']) +
+      col('⭐ Model', 'Be the example.', ['Your squad watches how you handle hard moments', 'Show the Life Ready Graduate traits', 'Own mistakes and make them right']) +
+      '</div><div class="ms-card"><div class="ms-h">My commitment</div><ul style="margin:0;padding-left:18px">' +
+      ['Show up to meetings, prepared', 'Follow through on what I say', 'Know what is happening with my squad', 'Include people beyond my friends', 'Lead with character'].map(function (i) { return '<li>✓ ' + i + '</li>'; }).join('') + '</ul>' +
+      (data.handbook ? '<p style="margin-top:12px"><a class="hq-mbtn" href="' + esc(data.handbook) + '" target="_blank" rel="noopener">📘 Open the Squad General handbook</a></p>' : '') + '</div>';
+  }
 
   // Game (15_Game.gs): Chance cards, Flip Three, the Hot Streak, the squad engine, the map.
   function gameView() {

@@ -1237,4 +1237,60 @@ test('page files: scripts parse, no old token or Supabase key left', () => {
   }
 });
 
+test('from the drive: Mindset Links tab fills the Mindset page (site links win), Trait Dough leaderboard, Generals import onto MLC Roster', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGeneralsTabs_();
+  // Mindset links: the seeded tab fills every month and grade.
+  w.ensureMindsetLinksTab_();
+  let v = { links: { mindset: [] } };
+  w.mergeMindsetLinks_(v);
+  assert.strictEqual(v.links.mindset.length, 27, '9 months x 7th, 8th, Extension');
+  assert.ok(v.links.mindset.every(l => /^https:\/\/docs\.google\.com\//.test(l.url) && l.fromSheet));
+  assert.ok(v.links.mindset.find(l => l.key === 'ext-February').url.includes('1yVoCQfyx4V4'));
+  // A link saved on the site wins for that month; a stale copy of a tab link is replaced by the tab.
+  const tab = w.book.getSheetByName('Mindset Links');
+  tab.rows[1][2] = 'https://docs.google.com/document/d/NEW8THSEPT/edit';
+  v = { links: { mindset: [{ key: '7th-September', url: 'https://example.org/mine', label: 'x' }, { key: '8th-September', url: 'https://old', fromSheet: true }] } };
+  w.mergeMindsetLinks_(v);
+  const k = key => v.links.mindset.filter(l => l.key === key);
+  assert.deepStrictEqual(k('7th-September').map(l => l.url), ['https://example.org/mine']);
+  assert.deepStrictEqual(k('8th-September').map(l => l.url), ['https://docs.google.com/document/d/NEW8THSEPT/edit']);
+  // The public load carries them.
+  assert.strictEqual(JSON.parse(JSON.stringify(w.publicLoad_())).value.links.mindset.length, 27);
+  // Trait Dough leaderboard: squads only until names are on.
+  const board = w.book.insertSheet('Student Board');
+  board.rows = [['800#', 'Name', 'Squad', 'Grade', 'Trait Dough Bills', 'Bills This Week', 'Trait Dough Wins'],
+    ['8001111', 'Ann L.', 'Gold', '7', '10', '2', '1'], ['8002222', 'Cy R.', 'Gold', '8', '0', '0', '0'], ['8003333', 'Ed Parker', 'Grey', '7', '4', '4', '0']];
+  let d = J(w.traitDoughBoard_());
+  const b = key => d.boards.find(x => x.key === key).scores;
+  assert.strictEqual(b('year').GOLD, 10); assert.strictEqual(b('week').GREY, 4); assert.strictEqual(b('wins').GOLD, 1);
+  assert.strictEqual(b('per').GOLD, 5); assert.strictEqual(b('share').GOLD, 50); assert.strictEqual(d.total, 14);
+  assert.ok(!d.top && !JSON.stringify(d).includes('Ann'), 'no names unless LEADERBOARD_NAMES is ON');
+  w.setSettingValue_('LEADERBOARD_NAMES', 'ON');
+  d = J(w.traitDoughBoard_());
+  assert.deepStrictEqual(d.top['7'].map(p => p.name + ' ' + p.bills), ['Ann L. 10', 'Ed P. 4']);
+  assert.deepStrictEqual(d.top['8'], [], 'zero bills are left off');
+  // Generals: names from the Squad Leadership doc, 800# from the Students tab.
+  const para = t => ({ getType: () => 'PARAGRAPH', asText: () => ({ getText: () => t }) });
+  const li = t => ({ getType: () => 'LIST_ITEM', asText: () => ({ getText: () => t }) });
+  const cell = kids => ({ getText: () => kids.map(x => x.asText().getText()).join('\n'), getNumChildren: () => kids.length, getChild: i => kids[i] });
+  const row = cells => ({ getNumCells: () => cells.length, getCell: i => cells[i] });
+  const heads = ['Black Squad', 'Gold Squad', 'Grey Squad', 'Purple Squad'].map(h => cell([para(h)]));
+  const table = { getNumRows: () => 2, getRow: i => i === 0 ? row(heads) : row([
+    cell([para('Ann Lopez'), li('Thomas'), li('*Band*'), para('Bo Kim'), li('Trettin')]), cell([para('Cy Ross'), li('Martin')]), cell([]), cell([para('Dee Fox'), li('Segura')])]) };
+  w.DocumentApp = { openById: () => ({ getBody: () => ({ getTables: () => [table] }) }), ElementType: { LIST_ITEM: 'LIST_ITEM' } };
+  const found = J(w.generalsFromDoc_('DOC'));
+  assert.deepStrictEqual(found.map(g => g.name + '/' + g.squad + '/' + g.homeroom), ['Ann Lopez/BLACK/Thomas', 'Bo Kim/BLACK/Trettin', 'Cy Ross/GOLD/Martin', 'Dee Fox/PURPLE/Segura']);
+  assert.deepStrictEqual(found[0].notes, ['Band']);
+  const st = w.book.insertSheet('Students');
+  st.rows = [['800#', 'First Name', 'Last Name', 'Grade', 'Email', 'Squad'], ['8009001', 'Ann', 'Lopez', '8', '', 'BLACK'], ['8009002', 'Cy', 'Ross', '8', '', 'GOLD']];
+  const mlc = w.book.getSheetByName('MLC Roster');
+  mlc.rows.push(['8009002', 'Cy Ross', 'GOLD', 'General', '']);
+  const r = J(w.importGenerals_());
+  assert.strictEqual(r.found, 4); assert.strictEqual(r.added, 3, 'Cy was already on MLC Roster');
+  assert.deepStrictEqual(r.missing, ['Bo Kim (Black)', 'Dee Fox (Purple)']);
+  assert.deepStrictEqual(mlc.rows.slice(1).map(x => x[0] + ' ' + x[1] + ' ' + x[3]), ['8009002 Cy Ross General', '8009001 Ann Lopez General', ' Bo Kim General', ' Dee Fox General']);
+  assert.strictEqual(J(w.importGenerals_()).added, 0, 'running it again adds nobody twice');
+});
+
 console.log('\n' + passed + ' tests passed');
