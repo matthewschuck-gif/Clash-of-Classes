@@ -68,7 +68,7 @@
       var e = document.getElementById('hqErr'); e.textContent = 'Checking…';
       window.gasRun_('clashGeneralsPreview', document.getElementById('hqPrevPw').value, document.getElementById('hqPrevSq').value).then(function (r) {
         token = r.token; load();
-      }).catch(function (x) { e.textContent = x.message.replace(/^Exception:\s*/, ''); });
+      }).catch(function (x) { e.textContent = x.message.replace(/^Exception:\s{0,}/, ''); });
     };
     document.getElementById('hqPrevGo').onclick = preview;
     document.getElementById('hqPrevPw').onkeydown = function (ev) { if (ev.key === 'Enter') preview(); };
@@ -76,14 +76,14 @@
       var e = document.getElementById('hqErr'); e.textContent = 'Checking…';
       window.gasRun_('clashGeneralsSignIn', document.getElementById('hq800').value, document.getElementById('hqCode').value).then(function (r) {
         token = r.token; load();
-      }).catch(function (x) { e.textContent = x.message.replace(/^Exception:\s*/, ''); });
+      }).catch(function (x) { e.textContent = x.message.replace(/^Exception:\s{0,}/, ''); });
     };
     document.getElementById('hqGo').onclick = go;
     document.getElementById('hqCode').onkeydown = function (ev) { if (ev.key === 'Enter') go(); };
   }
 
   function load() { window.gasRun_('clashGeneralsHq', token).then(function (d) { data = d; if (window.popSkin) window.popSkin(d.squad); render(); }).catch(fail); }
-  function act(fn) { var args = Array.prototype.slice.call(arguments, 1); return window.gasRun_.apply(null, [fn, token].concat(args)).then(function (d) { data = d; render(); }).catch(function (x) { alert(x.message.replace(/^Exception:\s*/, '')); }); }
+  function act(fn) { var args = Array.prototype.slice.call(arguments, 1); return window.gasRun_.apply(null, [fn, token].concat(args)).then(function (d) { data = d; render(); }).catch(function (x) { alert(x.message.replace(/^Exception:\s{0,}/, '')); }); }
   function fail(x) { if (/sign in/i.test(x.message)) { token = ''; signIn(); } else el().innerHTML = '<div class="ms-card ms-err">' + esc(x.message) + '</div>'; }
 
   function render() {
@@ -344,7 +344,7 @@
       window.gasRun_('clashGeneralsDrawCard', token).then(function (d) {
         data = d; render();
         if (d.drew) { alert('You drew ' + d.drew.card + (d.drew.status === 'Counted' ? ': +' + d.drew.value + ' for your squad!' : '. It\'s in your hand.')); if (window.craftCelebrate) window.craftCelebrate(document.querySelector('.hq-deck')); }
-      }).catch(function (x) { gd.disabled = false; alert(x.message.replace(/^Exception:\s*/, '')); });
+      }).catch(function (x) { gd.disabled = false; alert(x.message.replace(/^Exception:\s{0,}/, '')); });
     };
     el().querySelectorAll('[data-play]').forEach(function (b) {
       b.onclick = function () {
@@ -356,7 +356,7 @@
             var box = document.getElementById('gFlip');
             if (box) box.innerHTML = '<div class="ms-h" style="margin-top:12px">They flipped:</div>' + d.flipped.map(function (c) { return '<span class="hq-pill ' + (c.status === 'Busted' ? 'need' : 'role') + '">' + esc(c.card) + (c.status === 'Busted' ? ' 💥 bust' : '') + '</span>'; }).join(' ');
           }
-        }).catch(function (x) { alert(x.message.replace(/^Exception:\s*/, '')); });
+        }).catch(function (x) { alert(x.message.replace(/^Exception:\s{0,}/, '')); });
       };
     });
     var bank = document.getElementById('gBank');
@@ -379,7 +379,7 @@
       if (!f) { err.textContent = 'Pick a picture first.'; return; }
       err.textContent = 'Uploading…';
       shrinkImage(f).then(function (url) { return act('clashGeneralsUploadDesign', document.getElementById('dsTitle').value, url); })
-        .catch(function (x) { err.textContent = (x && x.message || '').replace(/^Exception:\s*/, ''); });
+        .catch(function (x) { err.textContent = (x && x.message || '').replace(/^Exception:\s{0,}/, ''); });
     };
     el().querySelectorAll('img[data-design]').forEach(function (im) {
       var id = im.getAttribute('data-design');

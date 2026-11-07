@@ -107,7 +107,7 @@
       if (card) card.outerHTML = signupsCard(su);
       // You're in: a burst from the button you pressed (Craft, in Pop.html).
       if (joining && window.craftCelebrate) window.craftCelebrate({ getBoundingClientRect: function () { return from; } });
-    }).catch(function (x) { if (err) err.textContent = (x && x.message || '').replace(/^Exception:\s*/, ''); });
+    }).catch(function (x) { if (err) err.textContent = (x && x.message || '').replace(/^Exception:\s{0,}/, ''); });
   });
 
   // Mayhem shirt designs (12_ShirtDesigns.gs): a student votes for their squad's design; the
@@ -158,7 +158,7 @@
       paintShirts(s);
       if (window.craftCelebrate) window.craftCelebrate({ getBoundingClientRect: function () { return from; } });
     })
-      .catch(function (x) { if (err) err.textContent = (x && x.message || '').replace(/^Exception:\s*/, ''); });
+      .catch(function (x) { if (err) err.textContent = (x && x.message || '').replace(/^Exception:\s{0,}/, ''); });
   });
 
   // Mayhem Week scoreboard (from EVENT_PAGES, loaded by App.html) for the home page and TV.
@@ -207,13 +207,13 @@
       var b = document.getElementById('doorIn');
       if (b) b.onclick = function () {
         window.gasRun_('clashDoorAdmit', window.ADMIN_SESSION, s.id, !s.free).then(function (r2) { show(r2); input.value = ''; input.focus(); })
-          .catch(function (x) { out.insertAdjacentHTML('beforeend', '<div class="ms-err">' + esc((x && x.message || '').replace(/^Exception:\s*/, '')) + '</div>'); });
+          .catch(function (x) { out.insertAdjacentHTML('beforeend', '<div class="ms-err">' + esc((x && x.message || '').replace(/^Exception:\s{0,}/, '')) + '</div>'); });
       };
     };
     var check = function () {
       out.textContent = 'Checking…';
       window.gasRun_('clashDoorCheck', window.ADMIN_SESSION, input.value).then(show)
-        .catch(function (x) { out.innerHTML = '<div class="ms-err">' + esc((x && x.message || '').replace(/^Exception:\s*/, '')) + '</div>'; });
+        .catch(function (x) { out.innerHTML = '<div class="ms-err">' + esc((x && x.message || '').replace(/^Exception:\s{0,}/, '')) + '</div>'; });
     };
     document.getElementById('doorGo').onclick = check;
     input.onkeydown = function (e) { if (e.key === 'Enter') check(); };
@@ -281,7 +281,7 @@
       store(KEY, String(id).replace(/\D/g, ''));
       renderMe(r);
     }).catch(function (e) {
-      if (err) err.textContent = (e && e.message) ? e.message.replace(/^Exception:\s*/, '') : 'Something went wrong.';
+      if (err) err.textContent = (e && e.message) ? e.message.replace(/^Exception:\s{0,}/, '') : 'Something went wrong.';
     });
   }
 
@@ -418,7 +418,7 @@
       polls = d; renderPolls();
       // Your vote earned your squad a point: celebrate it.
       if (window.craftCelebrate) window.craftCelebrate({ getBoundingClientRect: function () { return from; } });
-    }).catch(function (x) { if (err) err.textContent = (x && x.message || '').replace(/^Exception:\s*/, ''); });
+    }).catch(function (x) { if (err) err.textContent = (x && x.message || '').replace(/^Exception:\s{0,}/, ''); });
   });
 
   function start() {

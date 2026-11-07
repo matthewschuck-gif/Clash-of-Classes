@@ -228,7 +228,7 @@ html[data-squad="BLACK"] .hero-sq-card[data-sq="BLACK"], html[data-squad="GOLD"]
   window.popCountdown = function (el, dateText) {
     if (!el) return;
     clearInterval(timers[el.id]);
-    var target = new Date(String(dateText || '').replace(/^[A-Za-z]+,\s*/, ''));
+    var target = new Date(String(dateText || '').replace(/^[A-Za-z]+,\s{0,}/, ''));
     if (isNaN(target)) { el.innerHTML = ''; return; }
     target.setHours(7, 50, 0, 0); // the school day starts
     var tick = function () {

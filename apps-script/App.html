@@ -562,7 +562,7 @@ async function sbLoad(){
       if(!Array.isArray(D.staffLinks)) D.staffLinks=[];
       if(!D.sotmData) D.sotmData=JSON.parse(JSON.stringify(DEF.sotmData));
       if(!Array.isArray(D.sotmData.partners)) D.sotmData.partners=DEF.sotmData.partners.slice();
-      if(D.links.wheel&&D.links.wheel.length===0){D.links.wheel=[{label:'Wheel Demo Video',url:'https://drive.google.com/file/d/1cPO_FGUmweW91kBiQ5rmHOuN-jREN7jQ/view?usp=sharing',id:1},{label:'Wheel Presentation',url:'https://docs.google.com/presentation/d/1GV3jLRh4v_-bLNgHiTio-yk7yyVCv_BFnm7k3DNjLxc/edit?usp=sharing',id:2}];}
+      if(D.links.wheel&&D.links.wheel.length===0){D.links.wheel=[{label:'Wheel Demo Video',url:'https:\/\/drive.google.com/file/d/1cPO_FGUmweW91kBiQ5rmHOuN-jREN7jQ/view?usp=sharing',id:1},{label:'Wheel Presentation',url:'https:\/\/docs.google.com/presentation/d/1GV3jLRh4v_-bLNgHiTio-yk7yyVCv_BFnm7k3DNjLxc/edit?usp=sharing',id:2}];}
       if(!D.pageContent) D.pageContent={...DEF.pageContent};
       Object.keys(DEF.pageContent).forEach(k=>{ if(!D.pageContent[k]) D.pageContent[k]=DEF.pageContent[k]; });
     } else {
@@ -1365,7 +1365,7 @@ function printCertificate(){
   var win=window.open('','_blank','');
   win.document.write('<!DOCTYPE html><html><head><title>Clash of Classes — Certificate</title>'
     +'<style>'
-    +'@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;1,900&family=DM+Sans:wght@400;600&display=swap");'
+    +'@import url("https:\/\/fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;1,900&family=DM+Sans:wght@400;600&display=swap");'
     +'body{margin:0;padding:0;background:#fff;font-family:"DM Sans",sans-serif}'
     +'.cert{width:850px;margin:40px auto;border:8px solid '+SQ_HEX[winner]+';border-radius:16px;padding:60px;text-align:center;position:relative}'
     +'.cert-accent{height:12px;background:'+SQ_HEX[winner]+';margin:-60px -60px 48px}'
@@ -1418,7 +1418,7 @@ function gdocEmbedUrl_(url){
   if(!url) return null;
   const m=url.match(/docs\.google\.com\/(document|presentation|spreadsheets)\/d\/([a-zA-Z0-9_-]+)/);
   if(!m) return null;
-  return 'https://docs.google.com/'+m[1]+'/d/'+m[2]+'/preview';
+  return 'https:\/\/docs.google.com/'+m[1]+'/d/'+m[2]+'/preview';
 }
 
 function renderLandingDoc(){
@@ -2167,7 +2167,7 @@ function openSquadEditor(sq){
   descIn.id='sqEdit-desc'; descIn.rows=3; descIn.placeholder='A few sentences about this squad...'; descIn.textContent=sp.desc||'';
 
   const fileIn=document.createElement('input');
-  fileIn.type='file'; fileIn.id='sqEdit-file'; fileIn.accept='image/*'; fileIn.style.padding='8px';
+  fileIn.type='file'; fileIn.id='sqEdit-file'; fileIn.accept='image/\*'; fileIn.style.padding='8px';
   fileIn.onchange=function(){ previewSquadImg(this); };
 
   const prevDiv=document.createElement('div'); prevDiv.id='sqEdit-preview'; prevDiv.style.cssText='margin-top:8px;display:'+(sp.image?'block':'none');
@@ -2177,7 +2177,7 @@ function openSquadEditor(sq){
   prevDiv.appendChild(prevImg); prevDiv.appendChild(remBtn);
 
   const orDiv=document.createElement('div'); orDiv.style.cssText='font-size:11px;color:var(--text3);margin-top:4px'; orDiv.textContent='— or paste an image URL —';
-  const urlIn=document.createElement('input'); urlIn.type='url'; urlIn.id='sqEdit-url'; urlIn.placeholder='https://…'; urlIn.style.marginTop='6px';
+  const urlIn=document.createElement('input'); urlIn.type='url'; urlIn.id='sqEdit-url'; urlIn.placeholder='https:\/\/…'; urlIn.style.marginTop='6px';
   urlIn.value=(sp.image&&!sp.image.startsWith('data:'))?sp.image:'';
 
   const imgWrap=document.createElement('div'); imgWrap.className='fr';
@@ -2495,7 +2495,7 @@ function isImageUrl(url){
 function validatePhotoUrl(url, errElId){
   if(!isImageUrl(url)){
     const el=document.getElementById(errElId);
-    if(el){ el.textContent='⚠ Please enter a valid https:// URL'; el.style.display='block'; setTimeout(()=>el.style.display='none',3000); }
+    if(el){ el.textContent='⚠ Please enter a valid https:\/\/ URL'; el.style.display='block'; setTimeout(()=>el.style.display='none',3000); }
     return false;
   }
   return true;
@@ -2506,7 +2506,7 @@ async function addPagePhoto(section){
   const capEl=document.getElementById('pe'+section.charAt(0).toUpperCase()+section.slice(1)+'PhotoCaption');
   if(!urlEl||!urlEl.value.trim()) return;
   const url=urlEl.value.trim();
-  if(!isImageUrl(url)){ alert('Please enter a valid https:// URL for the photo.'); return; }
+  if(!isImageUrl(url)){ alert('Please enter a valid https:\/\/ URL for the photo.'); return; }
   const caption=capEl?capEl.value.trim():'';
   if(!D.photos) D.photos={};
   if(!Array.isArray(D.photos[section])) D.photos[section]=[];
@@ -3774,7 +3774,7 @@ async function addGItem(type){
   if(type==='photo'){
     const fileInput=document.getElementById('gPhotoFile');
     const urlInput=document.getElementById('gPhotoUrl').value.trim();
-    if(urlInput && !isImageUrl(urlInput)){ alert('Please enter a valid https:// URL for the photo.'); return; }
+    if(urlInput && !isImageUrl(urlInput)){ alert('Please enter a valid https:\/\/ URL for the photo.'); return; }
     const title=document.getElementById('gPhotoTitle').value.trim();
     const date=document.getElementById('gPhotoDate').value;
     if(fileInput&&fileInput.files&&fileInput.files[0]){
