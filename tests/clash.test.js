@@ -1488,8 +1488,8 @@ test('location data: Pride Day check-ins, fewest LRRs (Least, per 100), capture 
   // Poll Insights: answers by squad and grade, counts only.
   w.writePollInsights_();
   const ins = w.book.getSheetByName('Poll Insights').rows;
-  const bus = ins.find(r => r[2] === 'How do you get to school?' && r[3] === 'Bus');
-  const h = ins[0];
+  const h = ins[0], bus = ins.find(r => r[h.indexOf('Question')] === 'How do you get to school?' && r[h.indexOf('Answer')] === 'Bus');
+  assert.strictEqual(bus[h.indexOf('Share %')], 67, 'Bus is 2 of 3 answers');
   assert.strictEqual(bus[h.indexOf('Total')], 2);
   assert.strictEqual(bus[h.indexOf('Grade 7')], 1);
   assert.strictEqual(bus[h.indexOf('Grade 8')], 1);
@@ -1497,15 +1497,37 @@ test('location data: Pride Day check-ins, fewest LRRs (Least, per 100), capture 
   assert.ok(!JSON.stringify(ins).includes('8001111'));
   // Poll Ideas: a bank of questions; scheduling fills open school days and marks them used.
   const ideas = w.book.getSheetByName('Poll Ideas').rows;
-  assert.ok(ideas.length > 25 && ideas.some(r => /Pride Day/.test(r[1])));
+  const ih = ideas[0];
+  assert.ok(ideas.length > 80 && ideas.some(r => /Pride Day/.test(r[ih.indexOf('Kind')])));
+  assert.ok(new Set(ideas.slice(1).map(r => r[ih.indexOf('Theme')])).size >= 12, 'many themes');
+  assert.ok(ideas.slice(1).every(r => r[ih.indexOf('How To Use It')]), 'every idea says how to use it');
   const before = polls.rows.length;
   const lines = w.schedulePollIdeas_(3);
   assert.strictEqual(lines.length, 3);
   assert.strictEqual(polls.rows.length, before + 3);
   const added = polls.rows.slice(before).map(r => new Date(r[1] + 'T12:00:00Z').getUTCDay());
   assert.ok(added.every(dow => dow > 0 && dow < 6), 'school days only');
-  assert.strictEqual(ideas.slice(1).filter(r => r[5]).length, 3, 'Used On filled in');
+  assert.strictEqual(ideas.slice(1).filter(r => r[ih.indexOf('Used On')]).length, 3, 'Used On filled in');
+  const themes = polls.rows.slice(before).map(r => w.sheetRows_('Poll Ideas').find(x => x.Question === r[3]).Theme);
+  assert.ok(themes[0] !== themes[1] && themes[1] !== themes[2], 'themes rotate day to day');
+  assert.ok(!polls.rows.slice(before).some(r => /check-in/i.test(r[2])), 'check-ins are not auto-scheduled');
   assert.strictEqual(w.schedulePollIdeas_(3).length, 0, 'those days are taken now');
+  // Monthly trend questions come back after 28 days; others never repeat.
+  const trend = w.sheetRows_('Poll Ideas').find(r => /month/.test(r.Repeat)), once = w.sheetRows_('Poll Ideas').find(r => !r.Repeat && r.Kind === 'School Pulse');
+  const uc = ih.indexOf('Used On');
+  ideas[trend._row - 1][uc] = w.ymdShift_(today, -40); ideas[once._row - 1][uc] = w.ymdShift_(today, -40);
+  const ready = w.readyIdeas_(today).map(r => r.Question);
+  assert.ok(ready.includes(trend.Question) && !ready.includes(once.Question));
+  // An older Poll Ideas tab gets the new columns and the new questions, and keeps staff edits.
+  const w4 = world(); w4.ensureSettings_();
+  const oldIdeas = w4.book.insertSheet('Poll Ideas');
+  oldIdeas.rows = [['Use', 'Kind', 'Question', 'Choices', 'Why We Ask', 'Used On'], [false, 'School Pulse', 'Do you feel like you belong at Ephrata Middle School?', 'Yes | No', 'mine', '2026-11-01']];
+  w4.ensurePollIdeaTabs_();
+  assert.ok(['Theme', 'How To Use It', 'Repeat'].every(h => oldIdeas.rows[0].includes(h)));
+  assert.strictEqual(oldIdeas.rows.filter(r => r[2] === 'Do you feel like you belong at Ephrata Middle School?').length, 1, 'no duplicate');
+  assert.strictEqual(oldIdeas.rows[1][3], 'Yes | No', 'staff edits kept');
+  assert.ok(oldIdeas.rows.length > 80);
+
   // The menu that moves a live sheet onto the location rules: old same-name rules are replaced, others kept, holders kept.
   const w3 = world(); w3.ensureSettings_(); w3.ensureGameTabs_();
   const cr3 = w3.book.getSheetByName('Conquest Rules');
