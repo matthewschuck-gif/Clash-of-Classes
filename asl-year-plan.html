@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASL Summit Trail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f0ecf8; --surface:#ffffff; --surface2:#f5f0ff; --border:rgba(109,43,159,.16); --border2:rgba(109,43,159,.30);
+  --purple:#6d2b9f; --purple-deep:#490e6f; --purple-lt:#9d5fcc; --gold:#b08800; --gold-fill:#ffe100; --gold-dim:rgba(180,140,0,.12);
+  --text:#1a0d2e; --text2:#4a3566; --text3:#7a6a8a; --ok:#15803d;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#09010f; --surface:#130920; --surface2:#1d1030; --border:rgba(187,142,245,.14); --border2:rgba(187,142,245,.28);
+    --purple:#bb8ef5; --purple-deep:#6d2b9f; --purple-lt:#bb8ef5; --gold:#ffe100; --gold-dim:rgba(255,225,0,.10);
+    --text:#f4eeff; --text2:#b09ec8; --text3:#8a77a3; --ok:#4ade80;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#09010f; --surface:#130920; --surface2:#1d1030; --border:rgba(187,142,245,.14); --border2:rgba(187,142,245,.28);
+  --purple:#bb8ef5; --purple-deep:#6d2b9f; --purple-lt:#bb8ef5; --gold:#ffe100; --gold-dim:rgba(255,225,0,.10);
+  --text:#f4eeff; --text2:#b09ec8; --text3:#8a77a3; --ok:#4ade80;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 'DM Sans',system-ui,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px 64px}
+h1,h2,h3{font-family:'Fraunces',Georgia,serif;line-height:1.15;margin:0}
+.mono{font-family:'DM Mono',ui-monospace,monospace}
+a{color:var(--purple)}
+
+/* Hero */
+.hero{background:linear-gradient(160deg,#3d1265 0%,#1a0730 100%);color:#f4eeff;position:relative;overflow:hidden;padding:40px 0 92px}
+.hero svg.peaks{position:absolute;left:0;right:0;bottom:0;width:100%;height:120px}
+.hero .wrap{padding-bottom:0;position:relative;z-index:1}
+.brandrow{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.brandrow .mark{width:44px;height:44px;flex:none}
+.eyebrow{font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#ffe100}
+.hero h1{font-size:clamp(34px,6vw,58px);font-weight:900;letter-spacing:-.01em}
+.hero h1 em{font-style:normal;color:#ffe100}
+.hero p.lede{max-width:640px;color:#d9c9f2;font-size:18px;margin:14px 0 0}
+.facts{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.fact{border:1px solid rgba(255,225,0,.35);border-radius:999px;padding:6px 14px;font-size:14px;color:#fff6b8;background:rgba(255,225,0,.06)}
+
+/* Toolbar */
+.toolbar{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--border);}
+.toolbar .wrap{display:flex;align-items:center;gap:14px;padding-top:10px;padding-bottom:10px;flex-wrap:wrap}
+.progress{flex:1;min-width:180px}
+.bar{height:10px;border-radius:99px;background:var(--surface2);border:1px solid var(--border);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--purple-deep),#ffe100);transition:width .3s}
+.plabel{font-size:13px;color:var(--text2);margin-bottom:4px}
+button{font:inherit;font-size:14px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--purple)}
+button.primary{background:var(--purple-deep);color:#fff;border-color:var(--purple-deep)}
+
+section{margin-top:44px}
+.sechead{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.sechead h2{font-size:30px}
+.sechead .eyebrow{color:var(--gold)}
+.muted{color:var(--text2)}
+
+/* Routine */
+.routine{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.step{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;position:relative}
+.step .t{font-family:'DM Mono',monospace;font-size:12px;color:var(--gold);letter-spacing:.06em}
+.step h3{font-size:18px;margin:4px 0 6px}
+.step p{margin:0;font-size:14px;color:var(--text2)}
+.note{margin-top:12px;font-size:14px;color:var(--text2);background:var(--gold-dim);border-left:3px solid var(--gold);padding:10px 14px;border-radius:0 10px 10px 0}
+
+/* Trail map */
+.trail{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;margin-bottom:8px}
+.trail a{display:block;text-decoration:none;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 6px;text-align:center;font-size:12px;line-height:1.25}
+.trail a b{display:block;font-family:'Fraunces',serif;font-size:15px;color:var(--purple)}
+.trail a.done{border-color:var(--ok)}
+
+/* Months */
+.month{margin-top:34px;scroll-margin-top:70px}
+.mhead{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:16px 16px 0 0;padding:16px 18px;border-bottom:none}
+.badge{width:56px;height:56px;border-radius:14px;background:linear-gradient(160deg,#6d2b9f,#3d1265);display:grid;place-items:center;color:#ffe100;font-family:'Fraunces',serif;font-weight:900;font-size:22px}
+.mhead h2{font-size:26px}
+.mhead .trait{font-size:14px;color:var(--text2);margin-top:2px}
+.mhead .trait b{color:var(--gold)}
+.weeks{border:1px solid var(--border);border-radius:0 0 16px 16px;overflow:hidden}
+details.week{background:var(--surface);border-top:1px solid var(--border)}
+details.week:first-child{border-top:none}
+details.week[open]{background:var(--surface2)}
+summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:auto auto 1fr auto;gap:12px;align-items:center;padding:12px 18px}
+summary::-webkit-details-marker{display:none}
+summary .wk{font-family:'DM Mono',monospace;font-size:12px;color:var(--text3);width:52px}
+summary .title{font-weight:700}
+summary .tag{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:99px;white-space:nowrap}
+.tag.peak{background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold)}
+.tag.culture{color:var(--purple);border:1px solid var(--border2)}
+.tag.flex{color:var(--text3);border:1px dashed var(--border2)}
+.chk{width:22px;height:22px;accent-color:#6d2b9f;cursor:pointer}
+.body{padding:2px 18px 18px 52px;display:grid;grid-template-columns:1.2fr 1fr;gap:18px}
+.body h4{margin:12px 0 4px;font-size:12px;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+.body p{margin:0;font-size:15px}
+.signs{display:flex;flex-wrap:wrap;gap:6px}
+.signs span{font-family:'DM Mono',monospace;font-size:12.5px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:3px 7px}
+.body textarea{width:100%;min-height:64px;font:inherit;font-size:14px;border:1px solid var(--border2);border-radius:8px;padding:8px;background:var(--surface);color:var(--text);resize:vertical}
+
+/* Cards */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+.card h3{font-size:19px;margin-bottom:6px}
+.card p,.card li{font-size:15px;color:var(--text2)}
+.card ul{margin:6px 0 0;padding-left:18px}
+.card li{margin:4px 0}
+table.rubric{width:100%;border-collapse:collapse;font-size:14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.rubric th,.rubric td{padding:10px 12px;border-top:1px solid var(--border);text-align:left;vertical-align:top}
+.rubric th{font-family:'Fraunces',serif;font-size:16px;background:var(--surface2)}
+.rubric td:first-child{font-weight:700;white-space:nowrap}
+.tablewrap{overflow-x:auto}
+footer{margin-top:48px;font-size:13px;color:var(--text3);text-align:center}
+
+@media (max-width:860px){
+  .routine{grid-template-columns:1fr 1fr}
+  .trail{grid-template-columns:repeat(5,1fr)}
+  .grid3{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .grid2{grid-template-columns:1fr}
+  .routine{grid-template-columns:1fr}
+  .trail{grid-template-columns:repeat(3,1fr)}
+  .body{grid-template-columns:1fr;padding-left:18px}
+  summary{grid-template-columns:auto 1fr auto;padding:12px 14px}
+  summary .wk{display:none}
+  summary .tag{grid-column:2;justify-self:start}
+}
+@media print{
+  :root{--bg:#fff;--surface:#fff;--surface2:#fff;--text:#000;--text2:#333;--purple:#490e6f;--gold:#8a6a00}
+  .toolbar,.noprint{display:none!important}
+  .hero{padding:20px 0 60px}
+  .month{break-inside:auto}
+  details.week{break-inside:avoid}
+  textarea{border:none!important;min-height:0!important}
+  .body{padding-left:18px}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="brandrow">
+      <svg class="mark" viewBox="0 0 512 512" aria-hidden="true">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe44d"/><stop offset="1" stop-color="#c8960a"/></linearGradient></defs>
+        <rect width="512" height="512" rx="96" fill="#2a0b48"/>
+        <circle cx="256" cy="256" r="210" fill="none" stroke="url(#g)" stroke-width="10" opacity=".5"/>
+        <text x="256" y="330" font-family="Georgia,serif" font-size="250" font-weight="900" text-anchor="middle" fill="url(#g)">C</text>
+      </svg>
+      <div>
+        <div class="eyebrow">Clash of Classes · Ephrata Middle School</div>
+        <div style="font-size:14px;color:#d9c9f2">Mountaineers · 1-on-1 enrichment</div>
+      </div>
+    </div>
+    <h1>The ASL <em>Summit Trail</em></h1>
+    <p class="lede">A year-long introduction to American Sign Language for one middle school student. There are 36 weekly sessions in nine monthly climbs, and each month lines up with that month's Mountaineer Mindset trait.</p>
+    <div class="facts">
+      <span class="fact">36 sessions · 1 per week</span>
+      <span class="fact">20–30 minutes each</span>
+      <span class="fact">~350 signs by the Summit</span>
+      <span class="fact">9 Peak Checks + Summit Showcase</span>
+    </div>
+  </div>
+  <svg class="peaks" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">
+    <polygon points="0,120 160,40 260,80 420,10 560,90 690,30 830,95 960,20 1110,90 1280,35 1440,70 1440,120" fill="#6d2b9f" opacity=".35"/>
+    <polygon points="0,120 220,70 360,105 500,55 640,115 770,60 900,110 1040,50 1200,105 1360,65 1440,90 1440,120" fill="#09010f" opacity=".55"/>
+  </svg>
+</header>
+
+<div class="toolbar noprint">
+  <div class="wrap">
+    <div class="progress">
+      <div class="plabel"><span id="pcount">0</span> of 36 sessions climbed</div>
+      <div class="bar"><i id="pbar"></i></div>
+    </div>
+    <button id="expand">Expand all</button>
+    <button id="theme" title="Switch light / dark">Theme</button>
+    <button class="primary" onclick="window.print()">Print</button>
+  </div>
+</div>
+
+<main class="wrap">
+
+<section>
+  <div class="sechead"><span class="eyebrow">Every session</span><h2>The Climb routine</h2></div>
+  <p class="muted" style="margin-top:0">Run every session the same way. Your student will know what's coming, and you'll barely need to plan. The times add up to 25 minutes.</p>
+  <div class="routine">
+    <div class="step"><div class="t">3 MIN</div><h3>Trailhead</h3><p>Fingerspelling warm-up. Spell 5 words and have them read each one back, then switch roles.</p></div>
+    <div class="step"><div class="t">5 MIN</div><h3>Switchbacks</h3><p>Review last week's signs. Sign them in a random order; the student says or signs back the meaning.</p></div>
+    <div class="step"><div class="t">8 MIN</div><h3>New Ground</h3><p>Teach this week's 8–12 signs. Show each one, have them copy it, then use it in a short sentence.</p></div>
+    <div class="step"><div class="t">7 MIN</div><h3>The Climb</h3><p>The game or activity for the week. Use the signs, not just the vocabulary list.</p></div>
+    <div class="step"><div class="t">2 MIN</div><h3>Trail Journal</h3><p>Exit check: the student signs 3 things they learned today. Check off the week.</p></div>
+  </div>
+  <div class="note"><b>Only 20 minutes?</b> Cut the Climb to 3 minutes and fold Switchbacks into the Trailhead. <b>Have 30?</b> Add a "Culture Corner" chat or a second round of the game.</div>
+</section>
+
+<section>
+  <div class="sechead"><span class="eyebrow">At a glance</span><h2>The trail map</h2></div>
+  <div class="trail" id="trail"></div>
+</section>
+
+<section id="plan"></section>
+
+<section>
+  <div class="sechead"><span class="eyebrow">Grading the climb</span><h2>Peak Check rubric</h2></div>
+  <p class="muted" style="margin-top:0">Use this for the last session of each month and for the Summit Showcase. Encouragement only, no grades. Record a short video each Peak Check so your student can see their own growth.</p>
+  <div class="tablewrap">
+  <table class="rubric">
+    <tr><th>Level</th><th>Handshapes &amp; signs</th><th>Face &amp; grammar</th><th>Understanding</th></tr>
+    <tr><td>⛺ Base Camp</td><td>Uses some of the month's signs with prompting</td><td>Face mostly neutral</td><td>Understands single signs when shown slowly</td></tr>
+    <tr><td>🥾 Ridge</td><td>Uses most signs; a few handshape or location mix-ups</td><td>Some question faces (eyebrows)</td><td>Understands short phrases with repeats</td></tr>
+    <tr><td>🧗 Ascent</td><td>Signs clearly, keeps the same dominant hand</td><td>Uses eyebrows for questions, headshake for "not"</td><td>Follows a short exchange and asks AGAIN / SLOW</td></tr>
+    <tr><td>🏔️ Summit</td><td>Signs smoothly and combines signs from past months</td><td>Facial expression matches meaning</td><td>Keeps a back-and-forth going and repairs mix-ups</td></tr>
+  </table>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="eyebrow">Gear</span><h2>Games &amp; resources</h2></div>
+  <div class="grid3">
+    <div class="card"><h3>Go-to games for two people</h3><ul>
+      <li><b>Mirror Me:</b> you sign and they copy, then switch. Good for handshapes.</li>
+      <li><b>Spell It Back:</b> fingerspell a word and they write or say it. Speed up each round.</li>
+      <li><b>Sign Detective:</b> watch a short Deaf-made video and count the signs they recognize.</li>
+      <li><b>Beat the Timer:</b> how many review signs can they produce in 60 seconds?</li>
+      <li><b>Silent 20 Questions:</b> guess a person or thing with yes/no signs only.</li>
+      <li><b>Draw What I Sign:</b> you sign a scene and they sketch it. Good for classifiers.</li>
+    </ul></div>
+    <div class="card"><h3>Check every sign here</h3><ul>
+      <li><a href="https://www.lifeprint.com" target="_blank" rel="noopener">Lifeprint / ASL University</a>: free lessons and a video dictionary by Dr. Bill Vicars</li>
+      <li><a href="https://www.handspeak.com" target="_blank" rel="noopener">Handspeak</a>: dictionary plus Deaf culture articles</li>
+      <li><a href="https://www.signasl.org" target="_blank" rel="noopener">SignASL</a>: several signers per word, so you can see variations</li>
+      <li><b>The ASL App</b> (free, made by Deaf creators): good for practice at home</li>
+    </ul></div>
+    <div class="card"><h3>Teaching tips</h3><ul>
+      <li>Watch a video of each new sign before the session. Signs vary by region, so pick one version and stick with it.</li>
+      <li>Your student picks a dominant hand on day 1 and keeps it all year.</li>
+      <li>Sign <i>with</i> voice off whenever you can. Gestures and pointing count.</li>
+      <li>Words in CAPS (like THANK-YOU) are <i>glosses</i>, the standard way to write signs.</li>
+      <li>If you can, invite a Deaf guest or watch Deaf storytellers. It's the best way to see ASL at its best.</li>
+    </ul></div>
+  </div>
+</section>
+
+<footer>Clash of Classes · Ephrata Middle School Mountaineers · ASL Summit Trail<br>Progress check-offs and notes save only in this browser.</footer>
+</main>
+
+<script>
+const MONTHS = [
+ {m:'September', short:'SEP', peak:'Base Camp', trait:'Continual Learning & Growth Mindset',
+  why:'Start with the alphabet and greetings, and make a "before" video your student will love watching in May.', weeks:[
+  {t:'What is ASL? + Alphabet A–M', s:['A–M','HELLO','DEAF','HEARING','SIGN','LEARN'], game:'Mirror Me through A–M, then play "which letter?" (you sign, they name it).', culture:'ASL is its own language with its own grammar. It is not English on the hands, and it is not universal: British Sign Language is completely different.', exit:'Sign A–M from memory. Record a 20-second "before" video of them signing the letters.', tag:'culture'},
+  {t:'Alphabet N–Z + your name', s:['N–Z','NAME','MY','YOUR','ME','YOU'], game:'Spell It Back with 3-letter words (CAT, DOG, SUN), then their own name.', culture:'Name signs are given by members of the Deaf community, not made up for yourself. Until then, people fingerspell their names.', exit:'Fingerspell first and last name smoothly.'},
+  {t:'Greetings & meeting someone', s:['HELLO','GOODBYE','NICE','MEET','HOW','FINE','GOOD','BAD','YES','NO','WHAT'], game:'Role-play meeting someone for the first time, 3 rounds. Swap who starts.', culture:'Getting attention: wave in view, tap a shoulder, or flick the lights. Keep eye contact when someone is signing to you.', exit:'Greet you and ask HOW YOU?'},
+  {t:'Feelings & your face', s:['HAPPY','SAD','TIRED','EXCITED','ANGRY','SCARED','BORED','HUNGRY','SICK','OK','FEEL'], game:'Emotion charades: same sign, different face. Does the meaning change?', culture:'In ASL, the face is part of the grammar, not decoration. A small frown or a big one changes the meaning.', exit:'PEAK CHECK 1: HELLO, MY NAME ___, NICE MEET YOU, ME FEEL ___.', tag:'peak'}
+ ]},
+ {m:'October', short:'OCT', peak:'First Ridge', trait:'Critical Thinking & Problem Solving',
+  why:'Numbers and questions. Your student works out how ASL builds meaning from five parts of a sign.', weeks:[
+  {t:'Numbers 1–10 + the 5 parameters', s:['1–10','NUMBER','HOW-MANY'], game:'Number flash: you sign and they hold up a written number. Then try a "minimal pairs" puzzle: two signs that differ in only one parameter.', culture:'Every sign has 5 parameters: handshape, location, movement, palm orientation, and facial expression. Change one and you can change the word.', tag:'culture'},
+  {t:'Numbers 11–20 + age', s:['11–20','OLD','AGE','HOW-OLD','YEAR'], game:'Number lotto: a 3×3 grid of numbers. Cross them off as you sign them.', culture:'Ages start at the chin (OLD) and then flow into the number. It is one smooth sign.', exit:'Sign their age and yours.'},
+  {t:'Question words + question faces', s:['WHO','WHAT','WHERE','WHEN','WHY','HOW','WHICH'], game:'Silent 20 Questions. Check the eyebrows on every question.', culture:'WH-questions: eyebrows down and squeezed. Yes/no questions: eyebrows up. The face shows the question mark.'},
+  {t:'School & classroom', s:['SCHOOL','TEACHER','STUDENT','CLASS','HOMEWORK','TEST','BOOK','PAPER','PENCIL','BATHROOM','LUNCH','LIBRARY'], game:'Point-and-sign tour: walk around the room or hallway and sign what you see.', exit:'PEAK CHECK 2: answer 5 WH-questions about themself in signs.', tag:'peak'}
+ ]},
+ {m:'November', short:'NOV', peak:'Color Ridge', trait:'Creativity & Innovation',
+  why:'Family, squad colors, food, and the first classifiers, which work like drawing pictures in the air.', weeks:[
+  {t:'Family', s:['FAMILY','MOTHER','FATHER','SISTER','BROTHER','GRANDMOTHER','GRANDFATHER','BABY','AUNT','UNCLE','COUSIN','FRIEND'], game:'Draw a quick family tree, then sign each person to you.', culture:'Pattern spotting: many male family signs sit near the forehead, and female ones near the chin.'},
+  {t:'Colors: squad colors first!', s:['COLOR','PURPLE','YELLOW (gold)','GRAY','BLACK','RED','BLUE','GREEN','ORANGE','WHITE','PINK','BROWN','FAVORITE'], game:'"I Spy" in signs: ME SEE SOMETHING ___ (color). Bonus: sign all four Clash squad colors.'},
+  {t:'Food & thankfulness', s:['EAT','DRINK','WATER','MILK','APPLE','BREAD','COOKIE','TURKEY','MORE','FINISH','PLEASE','THANK-YOU'], game:'Pretend restaurant: you order in signs and they take the order, then swap.', tag:'flex', flex:'Thanksgiving week? Make this a quick review game and move on.'},
+  {t:'Classifiers: draw with your hands', s:['CL:1 (person)','CL:3 (vehicle)','CL:B (flat surface)','CL:V (legs)','WALK','CAR','DRIVE'], game:'Draw What I Sign: show a car driving up a hill or a person walking past a wall. They sketch it.', culture:'Classifiers are handshapes that stand for a kind of thing and show where it is and how it moves. This is what makes ASL so visual.', exit:'PEAK CHECK 3: describe their family with 3 people, ages, and favorite colors.', tag:'peak'}
+ ]},
+ {m:'December', short:'DEC', peak:'Integrity Pass', trait:'Honesty, Integrity & Responsibility',
+  why:'Time, everyday verbs, and the signs for doing the right thing. Ends with the first showcase.', weeks:[
+  {t:'Days & time', s:['MONDAY…SUNDAY','TODAY','TOMORROW','YESTERDAY','NOW','LATER','WEEK','TIME'], game:'Schedule swap: sign what you each do on 3 days of the week.', culture:'Time lives on a timeline through the body: the future is in front of you and the past is behind your shoulder.'},
+  {t:'Everyday verbs + "not"', s:['LIKE','DON\'T-LIKE','WANT','DON\'T-WANT','NEED','HAVE','GO','COME','KNOW','DON\'T-KNOW','UNDERSTAND'], game:'Like / Don\'t-like rapid fire: name a food or activity in English, and they sign their opinion.', culture:'Shaking your head while you sign makes the whole sentence negative.'},
+  {t:'Manners & responsibility', s:['PLEASE','THANK-YOU','SORRY','EXCUSE-ME','HELP','RESPONSIBLE','HONEST','TRUE','PROMISE','MISTAKE'], game:'Scenario cards: "You bumped someone." "You forgot homework." They sign the right response.', exit:'Sign one sentence about being honest or responsible.'},
+  {t:'Winter Showcase', s:['WINTER','SNOW','COLD','VACATION','GIFT','CELEBRATE','FAMILY'], game:'Plan and perform a 6-line dialogue together: greeting, a feeling, a family member, winter plans, goodbye.', exit:'PEAK CHECK 4: perform the dialogue. Record it!', tag:'peak'}
+ ]},
+ {m:'January', short:'JAN', peak:'Team Traverse', trait:'Collaboration & Teamwork',
+  why:'Sports, hobbies, bigger numbers, and putting sentences together the ASL way.', weeks:[
+  {t:'Sports & hobbies', s:['PLAY','TEAM','BASKETBALL','FOOTBALL','SOCCER','BASEBALL','SWIM','DANCE','DRAW','READ','MUSIC'], game:'Interview: YOU LIKE PLAY ___? Then each of you reports back what the other likes.'},
+  {t:'Numbers 21–100 + money', s:['21–30','40, 50… 100','DOLLAR','CENT','HOW-MANY','HOW-MUCH','COST'], game:'Price tag: write prices on sticky notes. Sign one and they find it.', culture:'Watch for patterns: doubles like 22, 33, and 44 bounce, and 21–29 have their own shapes.'},
+  {t:'Weather', s:['WEATHER','SUN','RAIN','SNOW','WIND','CLOUD','HOT','COLD','WARM'], game:'Weather report: they sign tomorrow\'s forecast like a TV meteorologist.'},
+  {t:'Sentence structure: topic–comment', s:['TOMORROW ME GO SCHOOL','MY DOG, BIG','PIZZA, ME LIKE'], game:'Translate the trail: you give 5 English sentences and they rebuild them in ASL order (time, then topic, then comment).', culture:'ASL usually puts time first, then the topic, then the comment about it.', exit:'PEAK CHECK 5: sign 4 sentences in ASL order about weekend plans.', tag:'peak'}
+ ]},
+ {m:'February', short:'FEB', peak:'Empathy Overlook', trait:'Communication & Empathy',
+  why:'Deaf history and culture, plus the skills that keep a real conversation going.', weeks:[
+  {t:'Deaf history & community', s:['DEAF','HEARING','HARD-OF-HEARING','CULTURE','COMMUNITY','INTERPRETER','HISTORY'], game:'Make a timeline together: 1817 American School for the Deaf (Hartford), 1864 Gallaudet founded, 1988 Deaf President Now protest.', culture:'"Deaf" with a capital D means a cultural identity and community, not just being unable to hear. Many Deaf people see deafness as a culture, not a disability.', tag:'culture'},
+  {t:'Conversation repair', s:['AGAIN','SLOW','UNDERSTAND','DON\'T-UNDERSTAND','FINGERSPELL','MEAN','SHOW-ME','WHAT'], game:'Sign a little too fast on purpose. They must use AGAIN, SLOW, or FINGERSPELL to get the meaning.', culture:'Asking for a repeat is polite. Pretending you understand is not.'},
+  {t:'Deeper feelings', s:['PROUD','NERVOUS','CONFUSED','WORRIED','FRUSTRATED','SURPRISED','LONELY','CALM','CARE','KIND'], game:'Feelings scale: sign NERVOUS small, medium, and huge. What changes besides the hands?'},
+  {t:'Conversation day', s:['(review all)'], game:'5-minute open conversation about their week with you. Use repair signs whenever they are needed.', exit:'PEAK CHECK 6: a 2-minute back-and-forth conversation, with at least one repair.', tag:'peak'}
+ ]},
+ {m:'March', short:'MAR', peak:'Wellness Spring', trait:'Healthy Living, Wellness & Self-Awareness',
+  why:'Body, health, and daily routines. Then look back at how far they\'ve climbed.', weeks:[
+  {t:'Body & health', s:['HEAD','STOMACH','HURT','SICK','BETTER','DOCTOR','NURSE','MEDICINE','HOSPITAL','EXERCISE'], game:'Nurse\'s office: they act out what hurts and you guess, then swap.', culture:'HURT is signed at the body part that hurts, so the location carries the meaning.'},
+  {t:'My daily routine', s:['WAKE-UP','SHOWER','BRUSH-TEETH','GET-DRESSED','BREAKFAST','DINNER','SLEEP','MORNING','AFTERNOON','NIGHT'], game:'Routine relay: sign your morning in order while they put picture cards in order.'},
+  {t:'Self-awareness check-in', s:['(student\'s choice)'], game:'Watch the September video together. They pick 5 signs they want to improve and practice them.', tag:'flex', flex:'Spring break week? Do this one at home or skip it.'},
+  {t:'Peak Check: my day', s:['FIRST','NEXT','THEN','FINISH'], game:'Practice linking routine signs with FIRST / NEXT / FINISH.', exit:'PEAK CHECK 7: tell their full daily routine using time signs.', tag:'peak'}
+ ]},
+ {m:'April', short:'APR', peak:'Grit Ridge', trait:'Resilience & Grit',
+  why:'Places, animals, and storytelling, the hardest and most rewarding part of the climb.', weeks:[
+  {t:'Places & directions', s:['HOME','HOUSE','STORE','PARK','RESTAURANT','CITY','LEFT','RIGHT','STRAIGHT','NEAR','FAR','WHERE'], game:'Treasure map: sign directions to a hidden object in the room.', culture:'Signers set up places in the space in front of them, then point back to them later.'},
+  {t:'Animals + movement', s:['DOG','CAT','BIRD','HORSE','COW','FISH','BEAR','MOUSE','ANIMAL'], game:'Animal classifiers: show a cat jumping onto a table or a fish swimming around a rock.'},
+  {t:'Storytelling & role shift', s:['STORY','TRY','FAIL','CONTINUE','GIVE-UP','SUCCEED','FAST','SLOW'], game:'Retell "The Tortoise and the Hare." Turn your shoulders to become each character.', culture:'Role shift: shift your body and eye gaze to "become" a character. This is how ASL tells who\'s talking.'},
+  {t:'Peak Check: tell a story', s:['(review)'], game:'Rehearse the story with more face and less English.', exit:'PEAK CHECK 8: a 30–60 second story.', tag:'peak'}
+ ]},
+ {m:'May', short:'MAY', peak:'The Summit', trait:'Adaptability & Flexibility',
+  why:'ASL as an art form, real-world variation, and the Summit Showcase.', weeks:[
+  {t:'ABC stories & ASL art', s:['A–Z (as handshapes)','ART','POEM','CREATE'], game:'Build a short ABC story together (each sign uses the next letter\'s handshape), or a 1–5 number story.', culture:'ASL has its own literature: ABC stories, handshape poems, and storytelling are a real art form in the Deaf community.', tag:'culture'},
+  {t:'Sign variation: adapt & flex', s:['SAME','DIFFERENT','CHANGE','BIRTHDAY (variants)','PIZZA (variants)'], game:'Sign Detective: compare 2–3 versions of a sign on SignASL. Which do you each use?', culture:'Like accents in speech, signs change by region, age, and community, including Black ASL. All of them are correct.'},
+  {t:'Summit prep', s:['(student\'s choice)'], game:'Plan a 2-minute Summit Showcase: intro, family, hobbies, a short story or ABC story.'},
+  {t:'Summit Showcase 🏔️', s:['ALL'], game:'They perform the showcase. Then watch the September video side by side. Celebrate!', exit:'SUMMIT: the final video and a certificate. Let their homeroom or squad cheer them on.', tag:'peak'}
+ ]}
+];
+
+const KEY='asl-summit-trail-v1';
+let state={done:{},notes:{}};
+try{ state=Object.assign(state, JSON.parse(localStorage.getItem(KEY)||'{}')); }catch(e){}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const plan=document.getElementById('plan'), trail=document.getElementById('trail');
+let n=0, html='<div class="sechead"><span class="eyebrow">Week by week</span><h2>The 36-session plan</h2></div>';
+MONTHS.forEach((mo,i)=>{
+  trail.insertAdjacentHTML('beforeend',`<a href="#m${i}" id="tm${i}"><b>${mo.short}</b>${esc(mo.peak)}</a>`);
+  html+=`<div class="month" id="m${i}"><div class="mhead"><div class="badge">${i+1}</div><div><h2>${mo.m}: ${esc(mo.peak)}</h2><div class="trait">Mindset trait: <b>${esc(mo.trait)}</b></div><div class="trait">${esc(mo.why)}</div></div></div><div class="weeks">`;
+  mo.weeks.forEach(w=>{
+    n++; const id='w'+n;
+    const tag = w.tag==='peak'?'<span class="tag peak">Peak Check</span>': w.tag==='culture'?'<span class="tag culture">Culture</span>': w.tag==='flex'?'<span class="tag flex">Flex week</span>':'<span></span>';
+    html+=`<details class="week" data-id="${id}"><summary><input type="checkbox" class="chk" data-id="${id}" aria-label="Session ${n} done" onclick="event.stopPropagation()"><span class="wk">WEEK ${n}</span><span class="title">${esc(w.t)}</span>${tag}</summary>
+    <div class="body"><div>
+      <h4>New signs</h4><div class="signs">${w.s.map(x=>`<span>${esc(x)}</span>`).join('')}</div>
+      <h4>The Climb (activity)</h4><p>${esc(w.game)}</p>
+      ${w.flex?`<h4>Flex</h4><p>${esc(w.flex)}</p>`:''}
+    </div><div>
+      ${w.culture?`<h4>Culture corner</h4><p>${esc(w.culture)}</p>`:''}
+      <h4>Trail Journal (exit)</h4><p>${esc(w.exit||'Student signs 3 new signs from today without help.')}</p>
+      <h4 class="noprint">My notes</h4><textarea class="noprint" data-id="${id}" placeholder="How did it go? What to review next week?"></textarea>
+    </div></div></details>`;
+  });
+  html+='</div></div>';
+});
+plan.innerHTML=html;
+
+function refresh(){
+  const c=Object.values(state.done).filter(Boolean).length;
+  document.getElementById('pcount').textContent=c;
+  document.getElementById('pbar').style.width=(c/36*100)+'%';
+  MONTHS.forEach((mo,i)=>{ let all=true; for(let k=1;k<=4;k++){ if(!state.done['w'+(i*4+k)]) all=false; } document.getElementById('tm'+i).classList.toggle('done',all); });
+}
+document.querySelectorAll('.chk').forEach(cb=>{ cb.checked=!!state.done[cb.dataset.id]; cb.addEventListener('change',()=>{ state.done[cb.dataset.id]=cb.checked; save(); refresh(); }); });
+document.querySelectorAll('textarea[data-id]').forEach(t=>{ t.value=state.notes[t.dataset.id]||''; t.addEventListener('input',()=>{ state.notes[t.dataset.id]=t.value; save(); }); });
+refresh();
+
+let open=false;
+document.getElementById('expand').onclick=function(){ open=!open; document.querySelectorAll('details.week').forEach(d=>d.open=open); this.textContent=open?'Collapse all':'Expand all'; };
+window.addEventListener('beforeprint',()=>document.querySelectorAll('details.week').forEach(d=>d.open=true));
+document.getElementById('theme').onclick=()=>{ const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark?'light':'dark'; };
+</script>
+</body>
+</html>
