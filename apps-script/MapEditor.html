@@ -88,6 +88,7 @@
       '<div><label>Wing (color set)</label><input type="text" data-f="wing" value="' + esc(z.wing) + '" list="meWings"></div>' +
       '<div><label>How it\'s won</label><select data-f="conquerBy">' + ruleOptions(z.conquerBy) + '</select></div>' +
       '<div><label>Weekly points</label><input type="number" min="0" max="100" data-f="weekly" value="' + esc(z.weekly) + '"></div>' +
+      '<div><label>× Pay for this area (blank = its rule: ×' + esc(rule && rule.mult !== '' && rule.mult != null ? rule.mult : ({ '800# check-in': 2, 'school records': 1.5 })[String(rule && rule.captured || '').toLowerCase()] || 1) + ')</label><input type="text" inputmode="decimal" data-f="mult" value="' + esc(z.mult == null ? '' : z.mult) + '" placeholder="rule"></div>' +
       '<div><label>Held by</label><select data-f="holder"><option value="">nobody</option>' + ['BLACK', 'GOLD', 'GREY', 'PURPLE'].map(function (s) { return '<option' + (z.holder === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></div>' +
       '<div><label>&nbsp;</label><label style="text-transform:none;font-size:13px;color:var(--text)"><input type="checkbox" data-f="summit"' + (z.summit ? ' checked' : '') + '> 👑 Summit (King of the Mountain, pays x2)</label>' +
       '<label style="text-transform:none;font-size:13px;color:var(--text)"><input type="checkbox" data-f="show"' + (z.show ? ' checked' : '') + '> Show on the map</label></div>' +

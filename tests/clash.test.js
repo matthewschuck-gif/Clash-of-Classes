@@ -965,7 +965,7 @@ test('conquest: rules from the Sheet, Risk borders + defense edge, staff pick, e
   const old = w2.book.insertSheet('Map Zones');
   old.rows = [['Show', 'Zone', 'Wing', 'Summit', 'Claimed By', 'Weekly Points', 'X', 'Y', 'W', 'H', 'Holder', 'Since'], [true, 'The Summit', 'Summit', true, '*', 5, 5, 0, 2, 2, 'GOLD', '2026-11-03']];
   w2.ensureGameTabs_();
-  assert.deepStrictEqual(old.rows[0].slice(-2), ['Conquer By', 'Borders']);
+  assert.deepStrictEqual(old.rows[0].slice(-3), ['Conquer By', 'Borders', 'Multiplier']);
   assert.strictEqual(J(w2.mapZones_(null, false))[0].holder, 'GOLD', 'old zones keep working with no Conquer By');
   w2.book.getSheetByName('Conquest Rules').rows.push([true, 'My Rule', '', 'most points', '*', 7, false, 0]);
   w2.applyBuildingMap_();
@@ -1519,6 +1519,71 @@ test('location data: Pride Day check-ins, fewest LRRs (Least, per 100), capture 
   assert.ok(r3['game day'], 'other rules are kept');
   const gym2 = w3.sheetRows_('Map Zones').find(r => r.Zone === 'Gym 2');
   assert.ok(gym2['Conquer By'] === 'Pride Day' && gym2.Holder === 'PURPLE', 'holder kept, rule switched');
+});
+
+test('Cafeteria counts LRRs + LDs from the Follow-Up sheets; every area\'s multiplier can be set any time', () => {
+  const w = world();
+  const today = w.todayYmd_(), lm = w.lastMonthWindow_(today), d = w.ymdShift_(lm.from, 3);
+  const [y, m, dd] = d.split('-');
+  const us = Number(m) + '/' + Number(dd) + '/' + y + ' 12:05:00';
+  w.ensureSettings_(); w.ensureGameTabs_();
+  w.book.insertSheet('Students').rows = [['800#', 'First Name', 'Last Name', 'Grade', 'Email', 'Squad'],
+    ['8001111', 'Ann', 'Lee', '7', '', 'Gold'], ['8002222', 'Ed', 'Park', '8', '', 'Gold'], ['8003333', 'Cy', 'Ro', '7', '', 'Grey'], ['8004444', 'Bo', 'Kim', '8', '', 'Black']];
+  // The LRR responses (Form tab) and the Master Log, like EMS Follow-Up reads them.
+  const sheet = (name, rows, form) => { const s = { getName: () => name, getFormUrl: () => form ? 'form' : '', getLastRow: () => rows.length,
+    getDataRange: () => ({ getValues: () => rows.map(r => r.slice()) }) }; return s; };
+  const lrr = sheet('Form Responses 1', [['Timestamp', 'Email Address', 'First Name', 'Last Name'],
+    [us, '8001111@gomounts.org', 'Ann', 'Lee'], [us, '8001111@gomounts.org', 'Ann', 'Lee'], // the same student twice = 1
+    [us, 'teacher@easdpa.org', 'Cy', 'Ro'],                                                 // matched by name
+    ['1/2/2020 9:00:00', '8004444@gomounts.org', 'Bo', 'Kim'],                               // another month
+    [us, 'x@easdpa.org', 'Nobody', 'Here']], true);
+  const log = sheet('Master Log', [['Entry Date', 'Student Name', 'Student 800#', 'Consequence Type', 'Consequence Date', 'Status'],
+    [d, 'Kim, Bo', '', 'Admin Lunch Detention', d, ''], [d, 'Ed Park', '8002222', 'Teacher Lunch Detention', d, 'Cancelled'],
+    [d, 'Ed Park', '8002222', 'Time in Office', d, '']]);
+  w.SpreadsheetApp.openById = id => {
+    if (id === '1g8VpAeyE8md-1us58uHZxtRAKKFCTCKHhuwC8ZOpzyc') return { getSheets: () => [sheet('Notes', [['x']]), lrr], getSheetByName: () => null };
+    if (id === '1IVFnkQQvSvNSY_OZPMutPzkTqmJ1j5XYRoT9YvNy-v4') return { getSheets: () => [log], getSheetByName: n => n === 'Master Log' ? log : null };
+    throw new Error('no ' + id);
+  };
+  const c = J(w.followUpLrrCounts_());
+  assert.deepStrictEqual(c.counts, { BLACK: 1, GOLD: 1, GREY: 1, PURPLE: 0 }, 'one per student; cancelled LDs and other consequences skipped');
+  assert.strictEqual(c.lrr, 4); assert.strictEqual(c.ld, 1); assert.strictEqual(c.unmatched, 1);
+  w.sendFollowUpStats_();
+  const stats = w.book.getSheetByName('Squad Stats').rows;
+  const row = stats.find(r => r[1] === 'LRR + LD Students');
+  assert.ok(row && row[0] === lm.month && /^Follow-Up/.test(row[6]));
+  w.sendFollowUpStats_();
+  assert.strictEqual(stats.filter(r => r[1] === 'LRR + LD Students').length, 1, 'updates its own row, no duplicate');
+  row[6] = 'typed by Matt'; row[5] = 0;
+  assert.ok(/kept the row staff typed/.test(w.sendFollowUpStats_()));
+  assert.strictEqual(row[5], 0);
+  let zones = J(w.mapZones_(null, true));
+  assert.strictEqual(zones.find(z => z.zone === 'Cafeteria').holder, 'PURPLE', 'PURPLE (0, typed) has the fewest');
+  // Multipliers: an area's own Multiplier beats its rule's; blank goes back to the rule.
+  const mz = w.book.getSheetByName('Map Zones'), h = mz.rows[0], mcol = h.indexOf('Multiplier');
+  assert.ok(mcol > -1, 'Map Zones has a Multiplier column');
+  assert.strictEqual(zones.find(z => z.zone === 'Cafeteria').mult, 1.5);
+  mz.rows.forEach(r => { if (r[1] === 'Cafeteria') r[mcol] = 4; if (r[1] === 'Music Wing') r[mcol] = 0.5; });
+  zones = J(w.mapZones_(null, false));
+  assert.strictEqual(zones.find(z => z.zone === 'Cafeteria').mult, 4);
+  assert.strictEqual(zones.find(z => z.zone === 'Music Wing').mult, 0.5);
+  assert.strictEqual(zones.find(z => z.zone === 'Auditorium').mult, 2, 'blank = the rule (800# check-in x2)');
+  // The weekly pay uses it: PURPLE holds the Cafeteria (Summit): 5 x 4 x 2 = 40.
+  w.setSettingValue_('GAME_AWARDS', 'ON'); w.props['game-paid-week'] = 'old';
+  w.ScriptApp = { getProjectTriggers: () => [], newTrigger: () => ({ timeBased: () => ({ everyHours: () => ({ create() {} }) }) }) };
+  w.gameTick();
+  const ev = w.book.getSheetByName('events').rows, terr = ev.filter(r => r[2] === 'territory').find(r => r[9] > 0);
+  assert.ok(terr && terr[9] >= 40, 'the Cafeteria pays 5 x 4 x 2');
+  // The Map editor round-trips it; blank clears it.
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  const loaded = JSON.parse(w.clashMapLoad('T'));
+  assert.strictEqual(loaded.zones.find(z => z.zone === 'Cafeteria').mult, 4);
+  loaded.zones.find(z => z.zone === 'Cafeteria').mult = '2.5';
+  loaded.zones.find(z => z.zone === 'Music Wing').mult = '';
+  w.clashMapSave('T', JSON.stringify(loaded));
+  zones = J(w.mapZones_(null, false));
+  assert.strictEqual(zones.find(z => z.zone === 'Cafeteria').mult, 2.5);
+  assert.strictEqual(zones.find(z => z.zone === 'Music Wing').mult, 1, 'blank = back to the rule');
 });
 
 console.log('\n' + passed + ' tests passed');

@@ -139,7 +139,7 @@ function ensureConquestTabs_() {
   const mz = ss.getSheetByName('Map Zones');
   if (mz && mz.getLastColumn()) {
     const head = mz.getRange(1, 1, 1, mz.getLastColumn()).getValues()[0].map(function (h) { return String(h).trim(); });
-    ['Conquer By', 'Borders'].forEach(function (h) {
+    ['Conquer By', 'Borders', 'Multiplier'].forEach(function (h) {
       if (head.indexOf(h) > -1) return;
       head.push(h);
       mz.getRange(1, head.length).setValue(h).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
@@ -170,6 +170,10 @@ function ruleMultiplier_(v, captured) {
   if (String(v == null ? '' : v).trim() !== '' && n > 0) return Math.min(10, n);
   return CAPTURE_MULTIPLIERS_[String(captured || '').trim().toLowerCase()] || 1;
 }
+
+// Map Zones › Multiplier: set any time for one area (0 to 10, decimals fine). Blank = the rule's.
+function zoneMultSet_(v) { const t = String(v == null ? '' : v).trim(); return t !== '' && !isNaN(Number(t)); }
+function zoneMult_(v, ruleMult) { return zoneMultSet_(v) ? Math.max(0, Math.min(10, Number(v))) : ruleMult; }
 
 // The calendar month before today's: { from, to, month: 'yyyy-MM' }.
 function lastMonthWindow_(today) {
@@ -283,7 +287,7 @@ function mapZones_(events, write) {
     return { row: r._row, zone: String(r['Zone']).trim(), wing: String(r['Wing'] || '').trim(), summit: ticked_(r['Summit']),
       rule: rule.rule, ruleText: rule.text, method: rule.method, claimedBy: rule.counts, days: rule.days || claimDays,
       border: rule.border, defense: rule.defense, far: rule.border ? rule.far : null, weekly: Number(r['Weekly Points']) || 0,
-      lastMonth: !!rule.lastMonth, thisMonth: !!rule.thisMonth, least: !!rule.least, per100: !!rule.per100, captured: rule.captured || '', mult: rule.mult || 1,
+      lastMonth: !!rule.lastMonth, thisMonth: !!rule.thisMonth, least: !!rule.least, per100: !!rule.per100, captured: rule.captured || '', mult: zoneMult_(r['Multiplier'], rule.mult || 1), ownMult: zoneMultSet_(r['Multiplier']),
       x: Math.max(0, Number(r['X']) || 0), y: Math.max(0, Number(r['Y']) || 0), w: Math.max(1, Number(r['W']) || 1), h: Math.max(1, Number(r['H']) || 1),
       borders: String(r['Borders'] || ''), holder: holder, since: String(r['Since'] || '') };
   });
@@ -366,7 +370,8 @@ function clashMapLoad(token) {
     return { show: ticked_(r['Show']), zone: String(r['Zone']).trim(), wing: String(r['Wing'] || ''), summit: ticked_(r['Summit']),
       conquerBy: String(r['Conquer By'] || ''), claimedBy: String(r['Claimed By'] || ''), weekly: Number(r['Weekly Points']) || 0,
       x: Number(r['X']) || 0, y: Number(r['Y']) || 0, w: Math.max(1, Number(r['W']) || 1), h: Math.max(1, Number(r['H']) || 1),
-      borders: String(r['Borders'] || ''), holder: squadOf_(r['Holder']), since: String(r['Since'] || '') };
+      borders: String(r['Borders'] || ''), holder: squadOf_(r['Holder']), since: String(r['Since'] || ''),
+      mult: zoneMultSet_(r['Multiplier']) ? Number(r['Multiplier']) : '' };
   });
   const rules = sheetRows_('Conquest Rules').filter(function (r) { return String(r['Rule'] || '').trim(); }).map(function (r) {
     return { show: ticked_(r['Show']), rule: String(r['Rule']).trim(), text: String(r['How It Works'] || ''), method: String(r['Method'] || 'most points').toLowerCase(),
@@ -424,7 +429,8 @@ function clashMapSave(token, json) {
       const since = holder === squadOf_(before['Holder']) ? String(before['Since'] || '') : holder ? today : '';
       return { 'Show': z.show !== false, 'Zone': name, 'Wing': clip(z.wing, 40), 'Summit': !!z.summit, 'Claimed By': clip(z.claimedBy, 200),
         'Weekly Points': num(z.weekly, 0, 100), 'X': num(z.x, 0, 60), 'Y': num(z.y, 0, 40), 'W': num(z.w, 1, 60), 'H': num(z.h, 1, 40),
-        'Holder': holder, 'Since': since, 'Conquer By': clip(z.conquerBy, 60), 'Borders': clip(z.borders, 300) };
+        'Holder': holder, 'Since': since, 'Conquer By': clip(z.conquerBy, 60), 'Borders': clip(z.borders, 300),
+        'Multiplier': zoneMultSet_(z.mult) ? Math.max(0, Math.min(10, Number(z.mult))) : '' };
     });
     writeRowsByHeader_(getSheetSafe_('Conquest Rules'), rules);
     writeRowsByHeader_(getSheetSafe_('Map Zones'), zones);
@@ -518,6 +524,8 @@ function setupMapGuideTab_() {
     '     Conquer By    -- the name of a rule on the Conquest Rules tab. Blank = the old way (Claimed By).',
     '     Claimed By    -- only used when Conquer By is blank: event types or words; * = every point.',
     '     Weekly Points -- what the holder earns each week.',
+    '     Multiplier    -- this area\'s pay multiplier. Type any number any time (2, 1.5, 3, 0.5). Blank = its',
+    '                      rule\'s Multiplier. It applies from the next weekly pay; points already paid stay.',
     '     X, Y, W, H    -- where the zone sits on the grid and how big it is (the Map editor sets these).',
     '     Borders       -- zones it connects to that do not touch on the map, comma-separated (a hallway).',
     '     Holder, Since -- filled in automatically. Only type a Holder on a Staff Pick zone.',
@@ -582,6 +590,8 @@ function setupMapGuideTab_() {
     '     70s Hall         -- Passing Grades: fewest failing grades (most students with no core F) x1.5',
     '     80s Hall         -- Trait Dough: most Trait Dough earned per 100 students              x1',
     '     90s Hall         -- Fewest Interventions: teacher + admin combined, per 100            x1.5',
+    'The Cafeteria count comes from the same LRR sheet and Master Log that EMS Follow-Up reads, once a day',
+    '(menu: Count LRRs + LDs for the Cafeteria now). Each area\'s pay: Map Zones › Multiplier, any time.',
     'Pride Day and the Wheel need a check-in poll on Daily Polls that day (Kind "Pride Day Check-in" or',
     '"Wheel Check-in"; the Poll Ideas tab has both, ready to schedule).',
     '',

@@ -135,6 +135,7 @@ function backgroundTick() {
   try { maybeGameTick_(); } catch (e) { noteError_('map claims', e); }
   try { flushUsage_(); snapshotStages_(); } catch (e) { noteError_('usage + creature snapshot', e); }
   try { maybeImportHomerooms_(); } catch (e) { noteError_('homeroom forms', e); } // 25_Homerooms.gs, every 30 minutes
+  try { maybeFollowUpStats_(); } catch (e) { noteError_('Follow-Up LRR count', e); } // 27_FollowUpStats.gs, once a day
   try { cachedPublicLoad_(true); cachedGame_(true); } catch (e) { noteError_('warm cache', e); }
 }
 
@@ -347,6 +348,7 @@ function onOpen() {
     .addItem('Turn off game awards', 'menuTurnOffGame_')
     .addItem('Use the building map (replaces Map Zones)', 'menuBuildingMap_')
     .addItem('Give each area its own data (keeps zones + holders)', 'menuLocationRules_')
+    .addItem('Count LRRs + LDs for the Cafeteria now (from Follow-Up sheets)', 'menuFollowUpStats_')
     .addItem('Today\'s morning announcement', 'menuAnnouncement_')
     .addItem('Turn on the weekly digest email', 'menuTurnOnDigest_')
     .addItem('Turn off the weekly digest email', 'menuTurnOffDigest_')
