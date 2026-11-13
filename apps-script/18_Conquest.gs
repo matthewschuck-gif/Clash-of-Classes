@@ -4,8 +4,13 @@
  *
  * CONQUEST RULES tab: one row per way to win a zone. Map Zones › Conquer By names the rule.
  *   Method:      most points | most entries (times a squad earned) | staff pick (staff type Holder)
- *   Counts:      event types or words in the event name, comma-separated (* = every point)
- *   Window Days: how far back it looks (blank = CLAIM_DAYS)
+ *                | highest number | lowest number (a monthly number per squad: see SQUAD MONTHLY below)
+ *   Counts:      event types or words in the event name, comma-separated (* = every point).
+ *                For highest/lowest number: the measures to add up (attendance, lrr_ld, poll_votes...)
+ *   Window Days: how far back it looks (blank = CLAIM_DAYS), or "last month" = the last calendar month.
+ *                Highest/lowest number always use the last calendar month.
+ *   Per 100:     divide by the squad's students (x 100), so a bigger squad has no edge. For counts
+ *                like LRR/LDs, failing grades and interventions.
  *   Must Border: Risk rule. A squad that holds a zone next door attacks with the normal bar. A squad
  *                with no zones at all counts as next door everywhere, so nobody gets shut out.
  *   Defense %:   the holder's edge. A challenger needs this much more than the holder to take it.
@@ -17,47 +22,71 @@
  * THE MAP: zones are boxes on a grid (X, Y, W, H); the grid grows to fit them. Neighbors are
  *   zones whose boxes touch, plus anything listed in Borders (a hallway that connects two areas).
  *   The building layout is areas only (gyms, cafeteria, halls): never room numbers, doors or exits.
+ * SQUAD MONTHLY tab: one row per squad per month (Month yyyy-MM | Squad | Students | a column per
+ *   measure). Define a Climb-er's squad sync fills it from PowerSchool; staff can type in it too.
+ *   A measure is read from (1) its column here, (2) poll_votes = Poll Votes rows, (3) attendance from a
+ *   finalized month, or (4) for highest number only, how many events rows match its name.
+ *   A highest/lowest zone changes hands only when all four squads have a number for the month.
+ * MULTIPLIER (Map Zones): the zone's weekly pay x this. 2 = the data comes from students doing
+ *   something (Pride Day, votes, shout-outs, Trait Dough), so holding it also grows that habit.
  * MAP BATTLES tab: every capture, shown under the map on the site, HQ and the TV.
  * The admin panel's Map tab (MapEditor.html) edits zones and rules by dragging and picking.
  * HOW THE MAP WORKS tab: the staff guide to all of this, rewritten on every Run setup.
  */
 
-const RULE_HEADERS_ = ['Show', 'Rule', 'How It Works', 'Method', 'Counts', 'Window Days', 'Must Border', 'Defense %', 'Far Attack %'];
+const RULE_HEADERS_ = ['Show', 'Rule', 'How It Works', 'Method', 'Counts', 'Window Days', 'Must Border', 'Defense %', 'Far Attack %', 'Per 100'];
 const BATTLE_HEADERS_ = ['Date', 'Zone', 'Taken By', 'From', 'Rule'];
-const RULE_METHODS_ = ['most points', 'most entries', 'staff pick'];
+const RULE_METHODS_ = ['most points', 'most entries', 'staff pick', 'highest number', 'lowest number'];
+const MEASURE_METHODS_ = ['highest number', 'lowest number'];
+const MONTHLY_TAB_ = 'Squad Monthly';
+// What Define a Climb-er (or staff) fills in each month, per squad. Counts, not percents, except
+// attendance and pride_day (percent of the squad).
+const MONTHLY_HEADERS_ = ['Month', 'Squad', 'Students', 'attendance', 'pride_day', 'top_learners', 'lrr_ld', 'failing',
+  'interventions_teacher', 'interventions_admin', 'shout_outs'];
 
 const BUILDING_RULES_ = [
-  [true, 'Full Climb', 'Every point your squad earns, anywhere, counts.', 'most points', '*', 14, false, 0, ''],
-  [true, 'Game Day', 'Win Mayhem events, gaming and field days, and Squad Duels.', 'most points', 'mayhem, gaming, field, duel_bonus', 21, false, 0, ''],
-  [true, 'Poll Turnout', 'Get your squad voting in the Daily Poll.', 'most points', 'daily_poll', 14, false, 0, ''],
-  [true, 'Trait Dough Drive', 'Turn in the most Trait Dough.', 'most points', 'trait_dough', 14, false, 0, ''],
-  [true, 'Growth Grind', 'STAR growth and Mountaineer Mindset summits.', 'most points', 'star_growth, mountaineer_mindset', 30, false, 0, ''],
-  [true, 'Shout-out Storm', 'Recognize each other: the most shout-outs and Trait Dough turn-ins.', 'most entries', 'shout, trait_dough', 14, false, 0, ''],
-  [true, 'Lunch Battles', 'Win the lunch challenges.', 'most points', 'lunch, mayhem_week', 21, false, 0, ''],
-  [true, 'Siege', 'Risk rules: a squad next door needs 25% more points than the holder. A squad from farther away can still take it with 75% more.', 'most points', '*', 14, true, 25, 75],
-  [true, 'Staff Pick', 'Staff decide who holds it.', 'staff pick', '', '', false, 0, ''],
+  // [Show, Rule, How It Works, Method, Counts, Window Days, Must Border, Defense %, Far Attack %, Per 100]
+  // The monthly set (Menu › Use the monthly zone rules). Every one looks at the last calendar month.
+  [true, 'Pride Day', 'The biggest share of your squad showing Mountaineer pride on Pride Days last month.', 'highest number', 'pride_day', 'last month', false, 0, '', false],
+  [true, 'Full Climb', 'Every point your squad earned last month counts.', 'most points', '*', 'last month', false, 0, '', false],
+  [true, 'Top Learners', 'The most monthly event winners (top learners) last month.', 'highest number', 'top_learners', 'last month', false, 0, '', false],
+  [true, 'Clean Cafeteria', 'The fewest LRRs and lunch detentions per 100 students last month.', 'lowest number', 'lrr_ld', 'last month', false, 0, '', true],
+  [true, 'Wheel & Poll Turnout', 'The most Daily Poll and Pulse votes plus wheel spins last month.', 'highest number', 'poll_votes, wheel', 'last month', false, 0, '', false],
+  [true, 'Attendance', 'The highest attendance rate last month.', 'highest number', 'attendance', 'last month', false, 0, '', false],
+  [true, 'Shout-out Storm', 'The most shout-outs last month.', 'highest number', 'shout_outs', 'last month', false, 0, '', false],
+  [true, 'Growth Grind', 'The most STAR growth and Mountaineer Mindset summit points last month.', 'most points', 'star_growth, mountaineer_mindset', 'last month', false, 0, '', false],
+  [true, 'Staff Challenge', 'Your squad\'s staff won last month\'s staff squad challenge.', 'most entries', 'staff_challenge', 'last month', false, 0, '', false],
+  [true, 'Passing Grades', 'The fewest failing grades per 100 students last month.', 'lowest number', 'failing', 'last month', false, 0, '', true],
+  [true, 'Trait Dough Drive', 'The most Trait Dough earned last month.', 'most points', 'trait_dough', 'last month', false, 0, '', false],
+  [true, 'Fewest Interventions', 'The fewest teacher and admin interventions combined, per 100 students, last month.', 'lowest number', 'interventions_teacher, interventions_admin', 'last month', false, 0, '', true],
+  // Still here for anyone who wants them.
+  [true, 'Siege', 'Risk rules: a squad next door needs 25% more points than the holder. A squad from farther away can still take it with 75% more.', 'most points', '*', 14, true, 25, 75, false],
+  [true, 'Staff Pick', 'Staff decide who holds it.', 'staff pick', '', '', false, 0, '', false],
 ];
 
 // Areas of the building on a 24 x 16 grid, roughly where they sit on the school map.
-// [Zone, Wing, Summit, Conquer By, Weekly Points, X, Y, W, H]
+// [Zone, Wing, Summit, Conquer By, Weekly Points, X, Y, W, H, Multiplier]
+// Multiplier 2 = students make the data by doing something (Pride Day, votes and spins, shout-outs,
+// Trait Dough): holding the zone pays double, so squads push the habits that tell the school the most.
+// 1 = school systems record it (attendance, grades, LRR/LDs, interventions, STAR, staff results).
 const BUILDING_ZONES_ = [
-  ['Gym 2', 'Athletics', false, 'Game Day', 3, 0, 0, 4, 10],
-  ['Gym 1', 'Athletics', false, 'Game Day', 3, 4, 0, 5, 8],
-  ['Cafeteria', 'Heart of the School', true, 'Full Climb', 5, 4, 8, 5, 4],
-  ['Music Wing', 'The Arts', false, 'Poll Turnout', 3, 0, 10, 4, 6],
-  ['Auditorium', 'The Arts', false, 'Shout-out Storm', 3, 4, 12, 5, 4],
-  ['50s Hall', 'North Halls', false, 'Trait Dough Drive', 3, 9, 0, 6, 5],
-  ['60s Hall', 'North Halls', false, 'Siege', 3, 9, 5, 6, 4],
-  ['Media Center', 'Heart of the School', false, 'Growth Grind', 3, 9, 9, 6, 3],
-  ['Front Office', 'Heart of the School', false, 'Staff Pick', 2, 9, 12, 6, 3],
-  ['70s Hall', 'East Halls', false, 'Lunch Battles', 3, 15, 6, 6, 4],
-  ['80s Hall', 'East Halls', false, 'Siege', 3, 15, 10, 6, 5],
-  ['90s Hall', 'East Halls', false, 'Trait Dough Drive', 3, 21, 6, 3, 9],
+  ['Gym 2', 'Athletics', false, 'Pride Day', 3, 0, 0, 4, 10, 2],
+  ['Gym 1', 'Athletics', false, 'Top Learners', 3, 4, 0, 5, 8, 1],
+  ['Cafeteria', 'Heart of the School', true, 'Clean Cafeteria', 5, 4, 8, 5, 4, 1],
+  ['Music Wing', 'The Arts', false, 'Full Climb', 3, 0, 10, 4, 6, 1],
+  ['Auditorium', 'The Arts', false, 'Wheel & Poll Turnout', 3, 4, 12, 5, 4, 2],
+  ['50s Hall', 'North Halls', false, 'Attendance', 3, 9, 0, 6, 5, 1],
+  ['60s Hall', 'North Halls', false, 'Shout-out Storm', 3, 9, 5, 6, 4, 2],
+  ['Media Center', 'Heart of the School', false, 'Growth Grind', 3, 9, 9, 6, 3, 1],
+  ['Front Office', 'Heart of the School', false, 'Staff Challenge', 2, 9, 12, 6, 3, 1],
+  ['70s Hall', 'East Halls', false, 'Passing Grades', 3, 15, 6, 6, 4, 1],
+  ['80s Hall', 'East Halls', false, 'Trait Dough Drive', 3, 15, 10, 6, 5, 2],
+  ['90s Hall', 'East Halls', false, 'Fewest Interventions', 3, 21, 6, 3, 9, 1],
 ];
 
 function buildingZoneRows_() {
   return BUILDING_ZONES_.map(function (z) {
-    return { 'Show': true, 'Zone': z[0], 'Wing': z[1], 'Summit': z[2], 'Conquer By': z[3], 'Weekly Points': z[4], 'X': z[5], 'Y': z[6], 'W': z[7], 'H': z[8] };
+    return { 'Show': true, 'Zone': z[0], 'Wing': z[1], 'Summit': z[2], 'Conquer By': z[3], 'Weekly Points': z[4], 'X': z[5], 'Y': z[6], 'W': z[7], 'H': z[8], 'Multiplier': z[9] };
   });
 }
 
@@ -80,7 +109,7 @@ function headerCol_(sheet, name) {
 // Conquest Rules + Map Battles, and the newer columns on an older Map Zones tab.
 function ensureConquestTabs_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  [['Conquest Rules', RULE_HEADERS_, BUILDING_RULES_], ['Map Battles', BATTLE_HEADERS_, null]].forEach(function (t) {
+  [['Conquest Rules', RULE_HEADERS_, BUILDING_RULES_], ['Map Battles', BATTLE_HEADERS_, null], [MONTHLY_TAB_, MONTHLY_HEADERS_, null]].forEach(function (t) {
     if (ss.getSheetByName(t[0])) return;
     const sh = ss.insertSheet(t[0]);
     sh.getRange(1, 1, 1, t[1].length).setValues([t[1]]).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
@@ -96,12 +125,16 @@ function ensureConquestTabs_() {
   const cr = ss.getSheetByName('Conquest Rules');
   if (cr && cr.getLastColumn()) {
     const head = cr.getRange(1, 1, 1, cr.getLastColumn()).getValues()[0].map(function (h) { return String(h).trim(); });
-    if (head.indexOf('Far Attack %') === -1) cr.getRange(1, head.length + 1).setValue('Far Attack %').setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
+    ['Far Attack %', 'Per 100'].forEach(function (h) {
+      if (head.indexOf(h) > -1) return;
+      head.push(h);
+      cr.getRange(1, head.length).setValue(h).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
+    });
   }
   const mz = ss.getSheetByName('Map Zones');
   if (mz && mz.getLastColumn()) {
     const head = mz.getRange(1, 1, 1, mz.getLastColumn()).getValues()[0].map(function (h) { return String(h).trim(); });
-    ['Conquer By', 'Borders'].forEach(function (h) {
+    ['Conquer By', 'Borders', 'Multiplier'].forEach(function (h) {
       if (head.indexOf(h) > -1) return;
       head.push(h);
       mz.getRange(1, head.length).setValue(h).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
@@ -115,8 +148,10 @@ function conquestRules_() {
     const name = String(r['Rule'] || '').trim();
     if (!name || !ticked_(r['Show'])) return;
     const method = String(r['Method'] || '').trim().toLowerCase();
-    out[name.toLowerCase()] = { rule: name, text: String(r['How It Works'] || ''), method: RULE_METHODS_.indexOf(method) > -1 ? method : 'most points',
+    const m = RULE_METHODS_.indexOf(method) > -1 ? method : 'most points';
+    out[name.toLowerCase()] = { rule: name, text: String(r['How It Works'] || ''), method: m,
       counts: String(r['Counts'] || ''), days: Number(r['Window Days']) || 0, border: ticked_(r['Must Border']), defense: Math.max(0, Number(r['Defense %']) || 0),
+      month: /month/i.test(String(r['Window Days'] || '')) || MEASURE_METHODS_.indexOf(m) > -1, per100: ticked_(r['Per 100']),
       far: String(r['Far Attack %'] == null ? '' : r['Far Attack %']).trim() === '' ? null : Math.max(0, Number(r['Far Attack %']) || 0) };
   });
   return out;
@@ -156,12 +191,14 @@ function mapZones_(events, write) {
   const zones = sheetRows_('Map Zones').filter(function (r) { return ticked_(r['Show']) && String(r['Zone'] || '').trim(); }).map(function (r) {
     const named = String(r['Conquer By'] || '').trim();
     const rule = rules[named.toLowerCase()] ||
-      { rule: '', text: '', method: 'most points', counts: String(r['Claimed By'] || ''), days: 0, border: false, defense: 0, far: null };
+      { rule: '', text: '', method: 'most points', counts: String(r['Claimed By'] || ''), days: 0, border: false, defense: 0, far: null, month: false, per100: false };
     let holder = squadOf_(r['Holder']);
     if (SQUAD_KEYS_.indexOf(holder) === -1) holder = '';
     return { row: r._row, zone: String(r['Zone']).trim(), wing: String(r['Wing'] || '').trim(), summit: ticked_(r['Summit']),
       rule: rule.rule, ruleText: rule.text, method: rule.method, claimedBy: rule.counts, days: rule.days || claimDays,
       border: rule.border, defense: rule.defense, far: rule.border ? rule.far : null, weekly: Number(r['Weekly Points']) || 0,
+      month: !!rule.month, per100: !!rule.per100, low: rule.method === 'lowest number',
+      mult: r['Multiplier'] === '' || r['Multiplier'] == null ? 1 : Math.max(0, Number(r['Multiplier']) || 0),
       x: Math.max(0, Number(r['X']) || 0), y: Math.max(0, Number(r['Y']) || 0), w: Math.max(1, Number(r['W']) || 1), h: Math.max(1, Number(r['H']) || 1),
       borders: String(r['Borders'] || ''), holder: holder, since: String(r['Since'] || '') };
   });
@@ -171,25 +208,39 @@ function mapZones_(events, write) {
   zones.forEach(function (z) { held[z.zone] = z.holder; if (z.holder) count[z.holder]++; });
   const battles = [];
   const hCol = sheet ? headerCol_(sheet, 'Holder') : 0, sCol = sheet ? headerCol_(sheet, 'Since') : 0;
+  const lastMonth = monthBounds_(-1);
   zones.forEach(function (z) {
-    const tally = pointsBy_(events, ymdShift_(today, -z.days + 1), today, eventMatcher_(z.claimedBy));
-    z.score = z.method === 'most entries' ? tally.rows : tally.points;
+    const from = z.month ? lastMonth[0] : ymdShift_(today, -z.days + 1), to = z.month ? lastMonth[1] : today;
+    z.window = z.month ? lastMonth[0].slice(0, 7) : '';
+    if (MEASURE_METHODS_.indexOf(z.method) > -1) z.score = measureScores_(z.claimedBy, from, to, events, z.per100, z.low);
+    else {
+      const tally = pointsBy_(events, from, to, eventMatcher_(z.claimedBy));
+      z.score = z.method === 'most entries' ? tally.rows : tally.points;
+      if (z.per100) z.score = per100_(z.score, from.slice(0, 7));
+    }
     z.neighbors = nb[z.zone];
     if (z.method === 'staff pick') return;
+    // Highest/lowest number: nothing changes until every squad has a number for the month.
+    if (SQUAD_KEYS_.some(function (s) { return z.score[s] === null || z.score[s] === undefined; })) return;
+    const low = z.low;
     // Next door (or no border rule, or no zones yet): the normal bar. From farther away: the Far
     // Attack bar, the same for every squad (blank = only next door can attack).
     const nextDoor = function (s) { return !z.border || s === z.holder || !count[s] || z.neighbors.some(function (n) { return held[n] === s; }); };
     const qualifies = SQUAD_KEYS_.filter(function (s) {
-      if (s === z.holder || !(z.score[s] > 0)) return false;
+      // Most: a squad needs something to show. Lowest: zero is the best there is.
+      if (s === z.holder || (!low && !(z.score[s] > 0))) return false;
       const near = nextDoor(s);
       if (!near && z.far === null) return false;
       // The bar is the holder's score; on an open zone, the best squad that could walk in.
+      const others = SQUAD_KEYS_.filter(function (o) { return o !== s && nextDoor(o); }).map(function (o) { return z.score[o]; });
       const ref = z.holder ? (z.score[z.holder] || 0)
-        : Math.max.apply(null, SQUAD_KEYS_.filter(function (o) { return o !== s && nextDoor(o); }).map(function (o) { return z.score[o]; }).concat([0]));
+        : low ? Math.min.apply(null, others.concat([Infinity])) : Math.max.apply(null, others.concat([0]));
       const edge = near ? (z.holder ? z.defense : 0) : z.far;
-      return z.score[s] > ref * (1 + edge / 100);
+      // Lowest: beat the bar by being that much lower (a 25% edge = 25% fewer than the holder).
+      return low ? z.score[s] < (ref === Infinity ? Infinity : ref * (1 - edge / 100)) : z.score[s] > ref * (1 + edge / 100);
     });
-    const best = Math.max.apply(null, qualifies.map(function (s) { return z.score[s]; }).concat([0]));
+    const vals = qualifies.map(function (s) { return z.score[s]; });
+    const best = low ? Math.min.apply(null, vals.concat([Infinity])) : Math.max.apply(null, vals.concat([0]));
     const leaders = qualifies.filter(function (s) { return z.score[s] === best; });
     // King of the hill: the holder keeps it on a tie, a quiet stretch, or when nobody clears the bar.
     if (leaders.length !== 1) return;
@@ -201,6 +252,93 @@ function mapZones_(events, write) {
   const log = battles.length && write ? getSheetSafe_('Map Battles') : null;
   if (log) battles.forEach(function (b) { log.appendRow(b); });
   return zones;
+}
+
+// ── SQUAD MONTHLY: the numbers Define a Climb-er sends each month ───
+// "2026-12", a Date cell (Sheets turns 2026-12 into 2026-12-01) or "December 2026" -> "2026-12".
+function ymOf_(v) {
+  const s = String(v == null ? '' : v).trim();
+  let m = s.match(/^(\d{4})-(\d{1,2})/);
+  if (m) return m[1] + '-' + ('0' + m[2]).slice(-2);
+  const names = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  m = s.toLowerCase().match(/([a-z]{3})[a-z]*\.?\s+(\d{4})/);
+  if (m && names.indexOf(m[1]) > -1) return m[2] + '-' + ('0' + (names.indexOf(m[1]) + 1)).slice(-2);
+  return '';
+}
+
+// { SQUAD: { column: number } } for one month. Columns are matched without case, spaces or dashes.
+function squadMonthly_(ym) {
+  const out = {};
+  sheetRows_(MONTHLY_TAB_).forEach(function (r) {
+    const s = squadOf_(r['Squad']);
+    if (SQUAD_KEYS_.indexOf(s) === -1 || ymOf_(r['Month']) !== ym) return;
+    out[s] = out[s] || {};
+    Object.keys(r).forEach(function (k) {
+      if (k === '_row' || k === 'Month' || k === 'Squad' || r[k] === '' || r[k] == null) return;
+      const n = Number(String(r[k]).replace(/[%,\s]/g, ''));
+      if (!isNaN(n)) out[s][measureKey_(k)] = n;
+    });
+  });
+  return out;
+}
+
+function measureKey_(k) { return String(k || '').trim().toLowerCase().replace(/[\s\-]+/g, '_'); }
+
+// Students per squad: Squad Monthly's Students, else how many are on the Student Board.
+function squadSizes_(ym, monthly) {
+  monthly = monthly || squadMonthly_(ym);
+  const board = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
+  sheetRows_(getSetting_('STUDENT_BOARD_TAB') || 'Student Board').forEach(function (r) { const s = squadOf_(r['Squad']); if (board[s] !== undefined) board[s]++; });
+  const out = {};
+  SQUAD_KEYS_.forEach(function (s) { const n = monthly[s] && monthly[s].students; out[s] = n > 0 ? n : board[s]; });
+  return out;
+}
+
+function per100_(score, ym, monthly) {
+  const size = squadSizes_(ym, monthly), out = {};
+  SQUAD_KEYS_.forEach(function (s) {
+    out[s] = score[s] === null || score[s] === undefined || !(size[s] > 0) ? null : Math.round(1000 * score[s] / size[s] * 100) / 1000;
+  });
+  return out;
+}
+
+// A squad's number for the month from a list of measures (added together). null = no number yet.
+// Each measure: its Squad Monthly column; poll_votes = Poll Votes rows; attendance = a finalized
+// month (Admin › Metrics); for highest-number rules only, how many events rows match its name.
+function measureScores_(spec, from, to, events, per100, low) {
+  const ym = from.slice(0, 7), monthly = squadMonthly_(ym);
+  const out = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
+  const add = function (s, v) { if (out[s] !== null) out[s] = v === null || v === undefined ? null : out[s] + v; };
+  const names = listOf_(spec).map(measureKey_);
+  if (!names.length) return { BLACK: null, GOLD: null, GREY: null, PURPLE: null };
+  names.forEach(function (n) {
+    if (SQUAD_KEYS_.some(function (s) { return monthly[s] && monthly[s][n] !== undefined; })) {
+      SQUAD_KEYS_.forEach(function (s) { add(s, monthly[s] ? monthly[s][n] : null); });
+      return;
+    }
+    if (n === 'poll_votes') {
+      const c = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
+      sheetRows_('Poll Votes').forEach(function (v) { const d = String(v['Date'] || v['At'] || '').slice(0, 10), s = squadOf_(v['Squad']); if (d >= from && d <= to && c[s] !== undefined) c[s]++; });
+      SQUAD_KEYS_.forEach(function (s) { add(s, c[s]); });
+      return;
+    }
+    if (n === 'attendance' || n === 'referral' || n === 'grades') {
+      let months = [];
+      try { months = (loadAppData_('coc').value || {}).monthlyMetrics || []; } catch (e) { months = []; }
+      const m = months.filter(function (x) { return ymOf_(x.month) === ym; }).pop();
+      SQUAD_KEYS_.forEach(function (s) { add(s, m && m[n] && m[n][s] !== undefined && m[n][s] !== '' ? Number(m[n][s]) : null); });
+      return;
+    }
+    if (low) { SQUAD_KEYS_.forEach(function (s) { add(s, null); }); return; } // a missing count is never "zero problems"
+    const forms = [n, n.replace(/_/g, ' '), n.replace(/s$/, ''), n.replace(/s$/, '').replace(/_/g, ' ')];
+    const tally = pointsBy_(events, from, to, function (e) {
+      // Name or note (wheel spins are noted "Wheel spin").
+      const type = measureKey_(e.type), name = (String(e.name || '') + ' ' + String(e.note || '')).toLowerCase().replace(/[\-_]+/g, ' ');
+      return forms.some(function (f) { return type === f || type === f.replace(/ /g, '_') || name.indexOf(f.replace(/_/g, ' ')) > -1; });
+    });
+    SQUAD_KEYS_.forEach(function (s) { add(s, tally.rows[s]); });
+  });
+  return per100 ? per100_(out, ym, monthly) : out;
 }
 
 function recentBattles_(n) {
@@ -219,7 +357,7 @@ function mapPayload_(events, zones) {
   zones.forEach(function (z) {
     const k = z.rule || 'Most points';
     rules[k] = rules[k] || { rule: k, text: z.ruleText || 'Most points from ' + (z.claimedBy || 'anything') + ' in the last ' + z.days + ' days.',
-      border: z.border, defense: z.defense, far: z.far, days: z.days, method: z.method, zones: [] };
+      border: z.border, defense: z.defense, far: z.far, days: z.days, method: z.method, month: z.month, window: z.window, per100: z.per100, low: z.low, zones: [] };
     rules[k].zones.push(z.zone);
   });
   return {
@@ -238,16 +376,18 @@ function clashMapLoad(token) {
     return { show: ticked_(r['Show']), zone: String(r['Zone']).trim(), wing: String(r['Wing'] || ''), summit: ticked_(r['Summit']),
       conquerBy: String(r['Conquer By'] || ''), claimedBy: String(r['Claimed By'] || ''), weekly: Number(r['Weekly Points']) || 0,
       x: Number(r['X']) || 0, y: Number(r['Y']) || 0, w: Math.max(1, Number(r['W']) || 1), h: Math.max(1, Number(r['H']) || 1),
-      borders: String(r['Borders'] || ''), holder: squadOf_(r['Holder']), since: String(r['Since'] || '') };
+      borders: String(r['Borders'] || ''), holder: squadOf_(r['Holder']), since: String(r['Since'] || ''),
+      mult: r['Multiplier'] === '' || r['Multiplier'] == null ? 1 : Number(r['Multiplier']) || 0 };
   });
   const rules = sheetRows_('Conquest Rules').filter(function (r) { return String(r['Rule'] || '').trim(); }).map(function (r) {
     return { show: ticked_(r['Show']), rule: String(r['Rule']).trim(), text: String(r['How It Works'] || ''), method: String(r['Method'] || 'most points').toLowerCase(),
-      counts: String(r['Counts'] || ''), days: r['Window Days'] === '' ? '' : Number(r['Window Days']) || '', border: ticked_(r['Must Border']), defense: Number(r['Defense %']) || 0,
-      far: r['Far Attack %'] === '' || r['Far Attack %'] == null ? '' : Number(r['Far Attack %']) || 0 };
+      counts: String(r['Counts'] || ''), days: r['Window Days'] === '' ? '' : /month/i.test(String(r['Window Days'])) ? 'last month' : Number(r['Window Days']) || '',
+      border: ticked_(r['Must Border']), defense: Number(r['Defense %']) || 0,
+      far: r['Far Attack %'] === '' || r['Far Attack %'] == null ? '' : Number(r['Far Attack %']) || 0, per100: ticked_(r['Per 100']) };
   });
   return JSON.stringify({ zones: zones, rules: rules, methods: RULE_METHODS_, claimDays: Number(getSetting_('CLAIM_DAYS')) || 14,
     building: { zones: buildingZoneRows_(), rules: BUILDING_RULES_.map(function (r) {
-      return { show: r[0], rule: r[1], text: r[2], method: r[3], counts: r[4], days: r[5], border: r[6], defense: r[7], far: r[8] }; }) } });
+      return { show: r[0], rule: r[1], text: r[2], method: r[3], counts: r[4], days: r[5], border: r[6], defense: r[7], far: r[8], per100: r[9] }; }) } });
 }
 
 function clashMapSave(token, json) {
@@ -266,8 +406,9 @@ function clashMapSave(token, json) {
       names[name.toLowerCase()] = 1;
       const method = String(r.method || '').toLowerCase();
       return { 'Show': r.show !== false, 'Rule': name, 'How It Works': clip(r.text, 300), 'Method': RULE_METHODS_.indexOf(method) > -1 ? method : 'most points',
-        'Counts': clip(r.counts, 200), 'Window Days': r.days === '' || r.days == null ? '' : num(r.days, 1, 365), 'Must Border': !!r.border, 'Defense %': num(r.defense, 0, 500),
-        'Far Attack %': r.far === '' || r.far == null ? '' : num(r.far, 0, 1000) };
+        'Counts': clip(r.counts, 200), 'Window Days': r.days === '' || r.days == null ? '' : /month/i.test(String(r.days)) ? 'last month' : num(r.days, 1, 365),
+        'Must Border': !!r.border, 'Defense %': num(r.defense, 0, 500),
+        'Far Attack %': r.far === '' || r.far == null ? '' : num(r.far, 0, 1000), 'Per 100': !!r.per100 };
     });
     const old = {};
     sheetRows_('Map Zones').forEach(function (r) { old[String(r['Zone'] || '').trim().toLowerCase()] = r; });
@@ -282,7 +423,8 @@ function clashMapSave(token, json) {
       const since = holder === squadOf_(before['Holder']) ? String(before['Since'] || '') : holder ? today : '';
       return { 'Show': z.show !== false, 'Zone': name, 'Wing': clip(z.wing, 40), 'Summit': !!z.summit, 'Claimed By': clip(z.claimedBy, 200),
         'Weekly Points': num(z.weekly, 0, 100), 'X': num(z.x, 0, 60), 'Y': num(z.y, 0, 40), 'W': num(z.w, 1, 60), 'H': num(z.h, 1, 40),
-        'Holder': holder, 'Since': since, 'Conquer By': clip(z.conquerBy, 60), 'Borders': clip(z.borders, 300) };
+        'Holder': holder, 'Since': since, 'Conquer By': clip(z.conquerBy, 60), 'Borders': clip(z.borders, 300),
+        'Multiplier': z.mult === '' || z.mult == null ? 1 : Math.max(0, Math.min(5, Number(z.mult) || 0)) };
     });
     writeRowsByHeader_(getSheetSafe_('Conquest Rules'), rules);
     writeRowsByHeader_(getSheetSafe_('Map Zones'), zones);
@@ -308,6 +450,44 @@ function applyBuildingMap_() {
   BUILDING_RULES_.forEach(function (r) { if (!have[r[1].toLowerCase()]) sh.appendRow(r); });
   writeRowsByHeader_(getSheetSafe_('Map Zones'), buildingZoneRows_());
   setupMapGuideTab_();
+}
+
+// Menu: the monthly zone rules on the map you already have (zone spots and names stay). Each zone in
+// BUILDING_ZONES_ gets its rule and Multiplier; same-named rules are rewritten, others are kept.
+// fresh = every zone starts unclaimed (a clean January start).
+function menuMonthlyRules_() {
+  const ui = SpreadsheetApp.getUi();
+  const a = ui.alert('Use the monthly zone rules?', 'Every zone is won on last month\'s numbers (Pride Day, attendance, LRR/LDs, failing grades, interventions, shout-outs...), and ' +
+    'zones students make the data for pay 2x. Zones keep their spots.\n\nStart every zone unclaimed too? (Yes = clean start, No = keep holders)', ui.ButtonSet.YES_NO_CANCEL);
+  if (a === ui.Button.CANCEL || a === ui.Button.CLOSE) return;
+  const r = applyMonthlyRules_(a === ui.Button.YES);
+  ui.alert('Done: ' + r.zones + ' zones set, ' + r.rules + ' rules written.' + (r.missing.length ? '\nNot on your map (add them in the Map editor): ' + r.missing.join(', ') : '') +
+    '\n\nDefine a Climb-er fills the Squad Monthly tab; until it does, the highest/lowest zones wait (nobody loses a zone over missing numbers).');
+}
+
+function applyMonthlyRules_(fresh) {
+  ensureGameTabs_();
+  const crSheet = getSheetSafe_('Conquest Rules');
+  const byName = {};
+  BUILDING_RULES_.forEach(function (r) { byName[r[1].toLowerCase()] = r; });
+  const kept = sheetRows_('Conquest Rules').filter(function (r) { return String(r['Rule'] || '').trim() && !byName[String(r['Rule']).trim().toLowerCase()]; });
+  const rules = BUILDING_RULES_.map(function (r) { const o = {}; RULE_HEADERS_.forEach(function (h, i) { o[h] = r[i]; }); return o; })
+    .concat(kept.map(function (r) { const o = Object.assign({}, r); delete o._row; return o; }));
+  writeRowsByHeader_(crSheet, rules);
+  const plan = {};
+  BUILDING_ZONES_.forEach(function (z) { plan[z[0].toLowerCase()] = z; });
+  const found = {};
+  const zones = sheetRows_('Map Zones').map(function (r) {
+    const o = Object.assign({}, r); delete o._row;
+    const z = plan[String(r['Zone'] || '').trim().toLowerCase()];
+    if (z) { found[z[0]] = 1; o['Conquer By'] = z[3]; o['Multiplier'] = z[9]; }
+    if (fresh) { o['Holder'] = ''; o['Since'] = ''; }
+    return o;
+  });
+  writeRowsByHeader_(getSheetSafe_('Map Zones'), zones);
+  CacheService.getScriptCache().remove('game-tick');
+  setupMapGuideTab_();
+  return { zones: Object.keys(found).length, rules: rules.length, missing: BUILDING_ZONES_.map(function (z) { return z[0]; }).filter(function (n) { return !found[n]; }) };
 }
 
 // ── THE "HOW THE MAP WORKS" TAB ─────────────────────────────────────
@@ -346,6 +526,7 @@ function setupMapGuideTab_() {
     '     Conquer By    -- the name of a rule on the Conquest Rules tab. Blank = the old way (Claimed By).',
     '     Claimed By    -- only used when Conquer By is blank: event types or words; * = every point.',
     '     Weekly Points -- what the holder earns each week.',
+    '     Multiplier    -- Weekly Points x this (blank = 1). 2 = students make the data by doing something.',
     '     X, Y, W, H    -- where the zone sits on the grid and how big it is (the Map editor sets these).',
     '     Borders       -- zones it connects to that do not touch on the map, comma-separated (a hallway).',
     '     Holder, Since -- filled in automatically. Only type a Holder on a Staff Pick zone.',
@@ -364,16 +545,55 @@ function setupMapGuideTab_() {
     '                                     not one big score).',
     '                      staff pick   = never changes on its own. Type the squad in Holder on Map Zones',
     '                                     (or pick "Held by" in the Map editor).',
+    '                      highest number = the biggest monthly number (attendance %, Pride Day %, shout-outs).',
+    '                      lowest number  = the smallest monthly number (LRR/LDs, failing grades, interventions).',
+    '                                     Both read last calendar month from the Squad Monthly tab (below).',
     '     Counts        -- which points count: event types or words in the event name, comma-separated.',
     '                      * = every point. Common types: trait_dough, daily_poll, star_growth,',
     '                      mountaineer_mindset, duel_bonus, mayhem_week, mayhem, shout, lunch.',
     '                      Game bonuses (territory, chance cards, etc.) and private behavior rows never count.',
     '     Window Days   -- how many days back it looks. Blank = CLAIM_DAYS on the Settings tab (14).',
+    '                      "last month" = the last full calendar month (all the monthly rules use this).',
     '     Must Border   -- the Risk rule. Tick it to make the zone a Siege zone (see below).',
     '     Defense %     -- the holder\'s edge: a challenger needs this much MORE than the holder. 0 = just more.',
     '     Far Attack %  -- Siege zones only: how much more a squad from farther away needs. Blank = only',
     '                      squads next door can attack.',
+    '     Per 100       -- divide by the squad\'s students and x 100, so a bigger squad has no edge.',
     'The holder always keeps a zone on a tie or when nobody scored (king of the hill).',
+    '',
+    H + 'THE MONTHLY ZONES (Menu -> Use the monthly zone rules)',
+    'Every zone is won on LAST calendar month, so a zone holds steady all month and changes on the 1st.',
+    '     Gym 2 (old gym)  Pride Day             highest Pride Day participation %        pays 2x',
+    '     Gym 1 (new gym)  Top Learners          most monthly event winners               pays 1x',
+    '     Cafeteria        Clean Cafeteria       fewest LRRs + lunch detentions per 100   Summit, pays 2x',
+    '     Music Wing       Full Climb            most total points                        pays 1x',
+    '     Auditorium       Wheel & Poll Turnout  most poll/Pulse votes + wheel spins      pays 2x',
+    '     50s Hall         Attendance            highest attendance rate                  pays 1x',
+    '     60s Hall         Shout-out Storm       most shout-outs                          pays 2x',
+    '     Media Center     Growth Grind          most STAR growth + Mindset summit points pays 1x',
+    '     Front Office     Staff Challenge       won last month\'s staff squad challenge   pays 1x',
+    '     70s Hall         Passing Grades        fewest failing grades per 100            pays 1x',
+    '     80s Hall         Trait Dough Drive     most Trait Dough earned                  pays 2x',
+    '     90s Hall         Fewest Interventions  fewest teacher + admin interventions/100 pays 1x',
+    'Why 2x: those zones are won by students DOING something that also tells the school something (who',
+    'shows pride, who votes and answers Pulse questions, who recognizes others). Paying double grows those',
+    'habits, and with them the data. Zones that school systems record anyway (attendance, grades, LRR/LDs,',
+    'interventions, STAR) pay 1x so squads never feel pushed to game a record.',
+    'Staff Challenge: each month, add one events row for the winning squad with type staff_challenge',
+    '     (1 point is plenty). The squad with the most staff_challenge rows last month takes the Front Office.',
+    'Top Learners: Climb-er\'s top_learners column, or events rows with type top_learner.',
+    '',
+    H + 'SQUAD MONTHLY (filled by Define a Climb-er)',
+    'One row per squad per month. Month = 2026-12 (any date in the month works). Columns:',
+    '     Students            -- squad size that month (for Per 100). Blank = count on the Student Board.',
+    '     attendance          -- attendance rate, 0-100.        pride_day     -- Pride Day participation %.',
+    '     top_learners        -- monthly event winners.         shout_outs    -- shout-outs received.',
+    '     lrr_ld              -- LRRs + lunch detentions.       failing       -- failing grades (count).',
+    '     interventions_teacher, interventions_admin -- counts; the 90s Hall adds the two.',
+    'Add any other column and name it in a rule\'s Counts (several, comma-separated, are added together).',
+    'Also built in: poll_votes (Daily Poll + Pulse votes), attendance from a finalized month (Admin -> Metrics).',
+    'A highest/lowest zone waits until ALL FOUR squads have a number that month: missing data never costs',
+    'anyone a zone, and a blank count is never read as zero problems.',
     'Claims are checked about every 10 minutes (and on the hourly game check).',
     '',
     H + 'SIEGE ZONES (MUST BORDER) -- RISK RULES',
@@ -393,6 +613,7 @@ function setupMapGuideTab_() {
     'Once a week, each squad gets one "Territory" row on the events tab for the week that just ended:',
     '     Weekly Points     -- every zone held pays its Weekly Points (Map Zones column). Change per zone.',
     '     The Summit        -- the zone with Summit ticked pays 2x its Weekly Points. (2x is fixed.)',
+    '     Multiplier        -- each zone\'s own Multiplier on top (Map Zones column; 2 on the student-made zones).',
     '     Wing bonus        -- hold EVERY zone in a wing and that wing\'s weekly points pay again.',
     '                          Settings -> WING_MULTIPLIER (2 = the wing pays double in total, 3 = triple).',
     '     Engine powers     -- Engine Powers rows with Effect "rent" add Value points per zone held, once',

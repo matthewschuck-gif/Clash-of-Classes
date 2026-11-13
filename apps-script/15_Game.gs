@@ -31,7 +31,7 @@
  */
 
 const GAME_TYPES_ = ['territory', 'chance', 'streak_bank', 'round_goal', 'engine', 'monster', 'destination_ticket', 'freeze_thaw', 'evolution_boost', 'mp_bonus'];
-const MAP_HEADERS_ = ['Show', 'Zone', 'Wing', 'Summit', 'Claimed By', 'Weekly Points', 'X', 'Y', 'W', 'H', 'Holder', 'Since', 'Conquer By', 'Borders'];
+const MAP_HEADERS_ = ['Show', 'Zone', 'Wing', 'Summit', 'Claimed By', 'Weekly Points', 'X', 'Y', 'W', 'H', 'Holder', 'Since', 'Conquer By', 'Borders', 'Multiplier'];
 const CARD_HEADERS_ = ['Show', 'Card', 'Text', 'Effect', 'Value', 'Copies'];
 const HAND_HEADERS_ = ['Squad', 'Card', 'Effect', 'Value', 'Drawn', 'Status', 'Note'];
 const BANK_HEADERS_ = ['Squad', 'Through', 'Length', 'Points', 'At', 'By'];
@@ -490,7 +490,8 @@ function gameTick() {
       const hand = sheetRows_('Squad Hand');
       SQUAD_KEYS_.forEach(function (s) {
         const mine = zones.filter(function (z) { return z.holder === s; });
-        let pts = mine.reduce(function (n, z) { return n + z.weekly * (z.summit ? 2 : 1); }, 0);
+        // Weekly Points x Summit (2) x the zone's Multiplier (2 when students make its data).
+        let pts = mine.reduce(function (n, z) { return n + z.weekly * (z.summit ? 2 : 1) * (z.mult === undefined ? 1 : z.mult); }, 0);
         pts += mine.length * engineBonus_(engine, s, 'rent');
         Object.keys(wings).forEach(function (w) { if (wings[w] === s) pts += zones.filter(function (z) { return z.wing === w; }).reduce(function (n, z) { return n + z.weekly; }, 0) * (mult - 1); });
         const armed = hand.filter(function (h) { return squadOf_(h['Squad']) === s && String(h['Effect']).toLowerCase() === 'double_rent' && String(h['Status']) === 'Armed'; })[0];

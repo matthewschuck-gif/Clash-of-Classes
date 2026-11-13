@@ -38,13 +38,20 @@ function ensureFreezeTab_() {
 
 // [{ squad, start, end, kind, goals, thawBy, signoff, thawed, secondChance, row }] with
 // yyyy-MM-dd strings; end '' = no end yet; kind 'PEAKS' (blank counts as Peaks) or 'FUN'.
-function freezeWindows_() {
+// Settings › FRESH_START (14_Thaw.gs): a freeze that began before it stops the day before, even
+// before the Sheet row is updated, so the fresh-start day's points always count. raw = the rows as typed.
+function freezeWindows_(raw) {
+  const fresh = raw ? '' : String(getSetting_('FRESH_START') || '').trim().slice(0, 10);
+  const cut = /^\d{4}-\d{2}-\d{2}$/.test(fresh) && todayYmd_() >= fresh ? fresh : '';
   return sheetRows_('Point Freezes').map(function (r) {
     return { squad: squadOf_(r['Squad']), start: String(r['Start'] || '').trim(), end: String(r['End'] || '').trim(),
       kind: /^fun/i.test(String(r['Kind'] || '').trim()) ? 'FUN' : 'PEAKS', goals: String(r['Thaw Goals'] || ''),
       thawBy: String(r['Thaw By'] || '').trim(), signoff: ticked_(r['Staff Sign-off']), thawed: String(r['Thawed'] || '').trim(),
       secondChance: String(r['Second Chance'] || '').trim(), row: r._row };
-  }).filter(function (f) { return SQUAD_KEYS_.indexOf(f.squad) > -1 && f.start; });
+  }).filter(function (f) { return SQUAD_KEYS_.indexOf(f.squad) > -1 && f.start; }).map(function (f) {
+    if (cut && f.start < cut && (!f.end || f.end >= cut)) f.end = ymdShift_(cut, -1);
+    return f;
+  });
 }
 
 function isFrozenOn_(windows, squad, ymd) {

@@ -14,10 +14,17 @@
  * Thaw Goals, separated by ; or new lines:
  *   points: 150      the squad earns 150 points while frozen (they still don't count)
  *   everyone: 70%    70% of the squad (Student Board) contributed something since the freeze began
+ *   votes: 60        the squad casts 60 Daily Poll / Pulse votes since the freeze began (answers
+ *                    the school learns from, so a freeze also grows the data)
  *   anything else    a goal staff check (a squad reflection, a service act); Staff Sign-off covers it
  *
  * The goals are checked every few minutes when the site loads (checkThaws_), and by
  * Clash of Classes › Check thaw goals now.
+ *
+ * FRESH START (Settings › FRESH_START, a date; Menu › Fresh start: end every freeze on a date):
+ *   on that day every freeze that began before it ends. A Peaks Freeze simply ends (nothing comes
+ *   back); a Fun Freeze cashes out whatever tier it reached. Use it for the January restart so every
+ *   squad walks into its first meeting of the year unfrozen. Freezes set on or after it are untouched.
  */
 
 function thawGoals_(text) {
@@ -26,6 +33,8 @@ function thawGoals_(text) {
     if (m) return { type: 'points', need: Number(m[1]), text: 'Earn ' + m[1] + ' points together' };
     m = g.match(/^everyone\s*:\s*(\d+)\s*%?/i);
     if (m) return { type: 'everyone', need: Number(m[1]), text: m[1] + '% of the squad pitches in' };
+    m = g.match(/^votes?\s*:\s*(\d+)/i);
+    if (m) return { type: 'votes', need: Number(m[1]), text: 'Cast ' + m[1] + ' poll and Pulse votes' };
     return { type: 'staff', need: 1, text: g };
   });
 }
@@ -44,6 +53,11 @@ function icedPoints_(squad, start, events) {
   return total;
 }
 
+// Daily Poll / Pulse votes the squad cast on or after Start.
+function squadVotesSince_(squad, start) {
+  return sheetRows_('Poll Votes').filter(function (v) { return squadOf_(v['Squad']) === squad && String(v['Date'] || '').slice(0, 10) >= start; }).length;
+}
+
 // Share of the squad (Student Board rows) with a contribution on or after Start: { pct, n, of }.
 function pitchedIn_(squad, start) {
   const rows = sheetRows_(getSetting_('STUDENT_BOARD_TAB') || 'Student Board').filter(function (r) { return squadOf_(r['Squad']) === squad; });
@@ -58,16 +72,17 @@ function funTiers_() {
   return t.length ? t : [{ mult: 1, pct: 25 }, { mult: 2, pct: 50 }, { mult: 3, pct: 100 }];
 }
 
-// The freeze in force today for a squad, with its thaw progress (null when not frozen).
+// The freeze in force today (or on asOf) for a squad, with its thaw progress (null when not frozen).
 // What a page gets; the Reason never leaves the Sheet.
-function freezeDetail_(squad, events) {
-  const today = todayYmd_();
+function freezeDetail_(squad, events, asOf) {
+  const today = asOf || todayYmd_();
   const f = freezeWindows_().filter(function (w) { return w.squad === squad && today >= w.start && (!w.end || today <= w.end); })[0];
   if (!f) return null;
   const goals = thawGoals_(f.goals);
-  let iced = null, pitched = null;
+  let iced = null, pitched = null, votes = null;
   const measure = function (g) {
     if (g.type === 'points') { if (iced === null) iced = icedPoints_(squad, f.start, events); return iced; }
+    if (g.type === 'votes') { if (votes === null) votes = squadVotesSince_(squad, f.start); return votes; }
     if (g.type === 'everyone') { if (!pitched) pitched = pitchedIn_(squad, f.start); return pitched.pct; }
     return f.signoff ? 1 : 0;
   };
@@ -116,6 +131,53 @@ function cashOut_(f, d, by) {
 
 function titleSquad_(s) { return s.charAt(0) + s.slice(1).toLowerCase(); }
 
+// FRESH_START reached: end every freeze that began before it (a Fun Freeze cashes out its tier).
+// Ends them the day before, so the fresh-start day itself counts. Returns lines. Idempotent.
+function applyFreshStart_(events) {
+  const day = String(getSetting_('FRESH_START') || '').trim().slice(0, 10), today = todayYmd_(), lines = [];
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || today < day) return lines;
+  const eve = ymdShift_(day, -1);
+  freezeWindows_(true).forEach(function (f) {
+    if (f.thawed || f.start >= day || (f.end && f.end < day)) return;
+    const sh = getSheet_('Point Freezes');
+    const h = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function (x) { return String(x).trim(); });
+    let note = 'Fresh start ' + day;
+    if (f.kind === 'FUN') {
+      // Measured as of the fresh start: what it earned while frozen, and the tier that reached.
+      const d = freezeDetailOn_(f, eve, events);
+      if (d && d.cash > 0) {
+        const pts = { BLACK: '', GOLD: '', GREY: '', PURPLE: '' }; pts[f.squad] = d.cash;
+        getSheet_(TABS.EVENTS).appendRow(['', 'Fun Freeze thaw: ' + titleSquad_(f.squad) + ' cashed out ' + d.pct + '% (fresh start)', 'freeze_thaw', day,
+          'Got back ' + d.pct + '% of ' + d.iced + ' frozen points at the fresh start', '', pts.BLACK, pts.GOLD, pts.GREY, pts.PURPLE]);
+        note += ': cashed out ' + d.pct + '% (+' + d.cash + ')';
+      }
+    }
+    sh.getRange(f.row, h.indexOf('End') + 1).setValue(eve < f.start ? f.start : eve);
+    sh.getRange(f.row, h.indexOf('Thawed') + 1).setValue(note);
+    lines.push(f.squad + ': ' + note);
+  });
+  return lines;
+}
+
+// A freeze's thaw detail as of a given day (for the fresh start, which may run after that day).
+function freezeDetailOn_(f, ymd, events) { return freezeDetail_(f.squad, events, ymd); }
+
+function menuFreshStart_() {
+  const ui = SpreadsheetApp.getUi();
+  // Suggest the first school day of January after today.
+  const now = todayYmd_(), y = Number(now.slice(0, 4)) + (now.slice(5, 7) === '01' ? 0 : 1);
+  const suggest = schoolDayAfter_(ymdShift_(y + '-01-01', -1), 1);
+  const r = ui.prompt('Fresh start', 'On this day every freeze that began before it ends (a Fun Freeze cashes out the tier it reached). Type a date (yyyy-mm-dd), or "off" to clear it.\n\nSuggested: ' + suggest,
+    ui.ButtonSet.OK_CANCEL);
+  if (r.getSelectedButton() !== ui.Button.OK) return;
+  const v = String(r.getResponseText() || '').trim() || suggest;
+  if (/^off$/i.test(v)) { setSettingValue_('FRESH_START', ''); ui.alert('Fresh start cleared.'); return; }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) { ui.alert('Type the date as yyyy-mm-dd, e.g. ' + suggest + '.'); return; }
+  setSettingValue_('FRESH_START', v);
+  const lines = checkThaws_();
+  ui.alert('Fresh start set for ' + v + '. ' + (v > todayYmd_() ? 'Freezes end by themselves that morning.' : 'Done:\n' + (lines.join('\n') || 'No freezes were open.')));
+}
+
 // Thaws what's ready, cashes out a Fun Freeze at the top tier, melts one past its Thaw By.
 // Returns lines describing what happened.
 function checkThaws_() {
@@ -124,6 +186,7 @@ function checkThaws_() {
   try {
     const today = todayYmd_(), lines = [];
     const events = readEventsTab_();
+    applyFreshStart_(events).forEach(function (l) { lines.push(l); });
     freezeWindows_().forEach(function (f) {
       if (f.thawed || today < f.start || (f.end && today > f.end)) return;
       const d = freezeDetail_(f.squad, events);
@@ -191,3 +254,25 @@ function clashGeneralsSecondChance(token) {
   sh.getRange(f.row, h.indexOf('Second Chance') + 1).setValue('Used ' + today + ' by ' + me.name + ': Thaw By moved to ' + next);
   return clashGeneralsHq(token);
 }
+
+// ── STUDENT RELEASE: how freezes work, in student words ─────────────
+// Read aloud (menu) and shown on My Squad (Pop.html freezeExplainer) and in January squad meetings.
+function freezeRelease_() {
+  const fresh = String(getSetting_('FRESH_START') || '').trim().slice(0, 10);
+  const when = /^\d{4}-\d{2}-\d{2}$/.test(fresh) && fresh >= todayYmd_() ? 'On ' + Number(fresh.slice(5, 7)) + '/' + Number(fresh.slice(8, 10)) + ', ' : 'In January, ';
+  const tiers = funTiers_();
+  return [
+    'Clash of Classes news: here is how freezes work for the new year.',
+    when + 'every squad starts fresh. Any freeze ends, and every squad walks into its first squad meeting of the year unfrozen.',
+    'First, the big one: no squad ever loses points. A freeze only means new points stop counting for a little while.',
+    'A Peaks Freeze happens when a squad as a whole is not meeting Mountaineer Peaks expectations. You thaw it together: ' +
+      'your squad\'s goals are on your My Squad page, like getting most of the squad to pitch in or casting poll and Pulse votes, and then your advisor signs off.',
+    'A Fun Freeze is a game. Hit your squad\'s goal once and you get back ' + tiers[0].pct + ' percent of your frozen points' +
+      (tiers.length > 2 ? ', ' + tiers[1].mult + ' times the goal gets ' + tiers[1].pct + ' percent, and ' + tiers[tiers.length - 1].mult + ' times the goal gets them all back' : '') +
+      '. Your Generals decide when to cash out, but if the Thaw By date passes first, the ice melts and nothing comes back.',
+    'New this year: every poll and Pulse vote counts toward thawing a freeze, so your answers help your squad and help EMS learn what you think.',
+    'Check My Squad on clashofclasses.org with your 800 number to see how your squad is doing. Let\'s climb!',
+  ].join(' ');
+}
+
+function menuFreezeRelease_() { SpreadsheetApp.getUi().alert('Freeze & thaw: read this in the morning announcements', freezeRelease_(), SpreadsheetApp.getUi().ButtonSet.OK); }

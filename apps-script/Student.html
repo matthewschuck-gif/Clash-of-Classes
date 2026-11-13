@@ -31,6 +31,25 @@
 .tv-feed { display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; width: min(1200px, 94vw); margin: 0 auto; }
 .tv-feed-item { display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; font-size: clamp(13px, 1.4vw, 20px); color: var(--text); font-weight: 600; }
 @media (max-width: 760px) { .tv-feed { grid-template-columns: 1fr; } }
+/* ── Pulse: Menti-style live results (06_Polls.gs clashPulseLive) ── */
+.pulse-q { font-family: 'Fraunces', serif; font-weight: 900; font-size: clamp(22px, 3.4vw, 40px); line-height: 1.15; margin: 4px 0 18px; }
+.pulse-tag { display: inline-block; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #12081f; background: #38bdf8; padding: 3px 10px; border-radius: 999px; }
+.pulse-bars { display: grid; gap: 12px; }
+.pulse-row { display: grid; grid-template-columns: minmax(110px, 30%) 1fr 92px; gap: 12px; align-items: center; }
+.pulse-lbl { font-weight: 700; font-size: clamp(14px, 1.6vw, 20px); overflow-wrap: anywhere; }
+.pulse-track { height: clamp(26px, 3.6vw, 46px); background: var(--surface2); border-radius: 10px; overflow: hidden; position: relative; }
+.pulse-fill { height: 100%; width: 0; border-radius: 10px; transition: width .9s cubic-bezier(.2, .8, .2, 1); }
+.pulse-row.top .pulse-fill { box-shadow: 0 0 22px currentColor; }
+.pulse-num { font-family: 'Fraunces', serif; font-weight: 900; font-size: clamp(18px, 2.4vw, 32px); text-align: right; font-variant-numeric: tabular-nums; }
+.pulse-num small { display: block; font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400; color: var(--text3); }
+.pulse-race { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 18px; }
+.pulse-race div { background: var(--surface2); border-radius: 10px; padding: 8px 10px; font-size: 12px; }
+.pulse-race i { display: block; height: 8px; border-radius: 999px; margin-top: 6px; transition: width .9s; }
+.pulse-total { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text3); margin-top: 12px; }
+.pulse-vote { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+#tvPulse .pulse-q { font-size: clamp(28px, 4vw, 54px); }
+@media (max-width: 600px) { .pulse-row { grid-template-columns: 1fr 64px; } .pulse-lbl { grid-column: 1 / -1; } .pulse-race { grid-template-columns: repeat(2, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .pulse-fill, .pulse-race i { transition: none; } }
 </style>
 <script>
 /* My Squad page, automatic challenges and two TV slides. Data comes from 04_Students.gs. */
@@ -315,7 +334,8 @@
         (r.theme && r.theme.theme ? '<div class="ms-standing">Squad theme: <b>' + esc(r.theme.theme) + '</b>' + (r.theme.meaning ? ' · ' + esc(r.theme.meaning) : '') +
           (r.theme.project ? '<br>Service project: ' + esc(r.theme.project) + (r.theme.goal ? ' (' + r.theme.progress + ' of ' + r.theme.goal + ')' : '') : '') + '</div>' : '') +
         (r.theme && r.theme.trait ? '<div class="ms-standing">Squad trait: <b>' + esc(r.theme.trait) + '</b></div>' : '') +
-        '<div class="ms-standing">' + standing + '</div>' + (st && st.frozen && window.thawHtml ? window.thawHtml(st.frozen) : '') + '</div>' +
+        '<div class="ms-standing">' + standing + '</div>' + (st && st.frozen && window.thawHtml ? window.thawHtml(st.frozen) : '') +
+        (window.freezeExplainer ? window.freezeExplainer(st && st.freshStart, false) : '') + '</div>' +
       loreCard(r.theme, me.squad) + chaptersCard(r.lore, me.squad) +
       (r.duels || []).map(function (d) { return duelCard(d, me.squad); }).join('') +
       '<div class="ms-card"><div class="ms-h">What you\'ve added</div><div class="ms-tiles">' +
@@ -346,6 +366,7 @@
     if (ch) {
       var active = challenges.filter(function (c) { return c.active; });
       var pollTv = polls.today.map(function (p) {
+        if (p.kind === 'Pulse') return ''; // the Pulse gets its own live slide
         return '<div class="ch-card"><div class="ch-title">🗳️ Today\'s ' + (p.kind === 'Trivia' ? 'trivia' : 'This or That') + ': ' + esc(p.question) + '</div>' +
           '<div class="ch-desc">' + p.choices.map(esc).join(' or ') + '? Vote on clashofclasses.org with your 800#. Every vote = a squad point!</div></div>';
       }).join('');
@@ -379,7 +400,18 @@
   function pollCard(p) {
     var showCounts = p.counts && (p.voted || p.closed);
     var total = Math.max(1, Object.keys(p.counts || {}).reduce(function (n, k) { return n + p.counts[k]; }, 0));
-    var head = '<div class="ch-title">🗳️ ' + (p.kind === 'Trivia' ? 'Trivia' : 'This or That') + (p.closed ? ' · results' : '') + '</div><div class="ch-desc">' + esc(p.question) + '</div>';
+    var head = '<div class="ch-title">' + (p.kind === 'Pulse' ? '📊 Pulse' : '🗳️ ' + (p.kind === 'Trivia' ? 'Trivia' : 'This or That')) + (p.closed ? ' · results' : '') + '</div><div class="ch-desc">' + esc(p.question) + '</div>';
+    if (p.kind === 'Pulse') {
+      if (!showCounts && !p.closed) {
+        return '<div class="ch-card" style="border-color:#38bdf8">' + head + '<div class="ms-form">' + p.choices.map(function (c) {
+          return '<button class="btn btn-purple poll-choice" data-poll="' + esc(p.id) + '" data-choice="' + esc(c) + '">' + esc(c) + '</button>';
+        }).join(' ') + '</div><div class="ms-small" style="margin-top:8px">No right answer: EMS wants to know what you think. Every answer earns your squad a point' +
+          (p.through && p.through > p.date ? ' (open through ' + esc(p.through.slice(5).replace('-', '/')) + ')' : '') + '.</div><div class="ms-err poll-err"></div></div>';
+      }
+      return '<div class="ch-card" style="border-color:#38bdf8">' + head + pulseBars(p.choices, p.counts || {}, p.total) +
+        '<div class="ms-small" style="margin-top:8px">' + (p.voted ? 'You said <b>' + esc(p.voted) + '</b>. ' : '') + p.total + (p.total === 1 ? ' answer' : ' answers') +
+        ' · <a href="#" class="pulse-open" style="color:#38bdf8">Watch it live</a></div></div>';
+    }
     if (!showCounts && !p.closed) {
       return '<div class="ch-card">' + head + '<div class="ms-form">' + p.choices.map(function (c) {
         return '<button class="btn btn-purple poll-choice" data-poll="' + esc(p.id) + '" data-choice="' + esc(c) + '">' + esc(c) + '</button>';
@@ -393,6 +425,78 @@
     }).join('') + '<div class="ms-small" style="margin-top:8px">' + (p.voted ? 'You picked <b>' + esc(p.voted) + '</b>. ' : '') +
       (p.kind === 'Trivia' ? (p.closed ? 'Answer: <b>' + esc(p.answer) + '</b>' : 'The answer is revealed tomorrow!') : (p.closed ? '' : 'Final results tomorrow.')) + ' · ' + p.total + (p.total === 1 ? ' vote' : ' votes') + '</div></div>';
   }
+  // ── Pulse: big Menti-style bars, a squad turnout race, the Pulse page and a TV slide ──
+  var PULSE_COLORS = ['#ffe100', '#bb8ef5', '#38bdf8', '#4ade80', '#fb7185', '#f59e0b', '#a3e635', '#f472b6'];
+  function pulseBars(choices, counts, total) {
+    var max = Math.max.apply(null, choices.map(function (c) { return counts[c] || 0; }).concat([0]));
+    return '<div class="pulse-bars">' + choices.map(function (c, i) {
+      var v = counts[c] || 0, pct = total ? Math.round(100 * v / total) : 0, col = PULSE_COLORS[i % PULSE_COLORS.length];
+      return '<div class="pulse-row' + (v && v === max ? ' top' : '') + '"><div class="pulse-lbl">' + esc(c) + '</div>' +
+        '<div class="pulse-track"><div class="pulse-fill" data-w="' + pct + '" style="background:' + col + ';color:' + col + '"></div></div>' +
+        '<div class="pulse-num">' + pct + '%<small>' + v + '</small></div></div>';
+    }).join('') + '</div>';
+  }
+  // Bars start at 0 and grow (and grow again from where they were on a refresh).
+  function growBars(root) {
+    requestAnimationFrame(function () { requestAnimationFrame(function () {
+      (root || document).querySelectorAll('.pulse-fill[data-w], .pulse-race i[data-w]').forEach(function (b) { b.style.width = b.getAttribute('data-w') + '%'; });
+    }); });
+  }
+  function pulseRace(t) {
+    return '<div class="pulse-race">' + SQ.map(function (s) {
+      var x = (t || {})[s] || { n: 0, pct: 0 };
+      return '<div><b style="color:' + COLOR[s] + '">' + title(s) + '</b> · ' + x.pct + '% answered<i data-w="' + Math.min(100, x.pct) + '" style="width:0;background:' + COLOR[s] + '"></i></div>';
+    }).join('') + '</div>';
+  }
+  function pulseScreen(p, opts) {
+    opts = opts || {};
+    var mine = (polls.today || []).filter(function (x) { return x.id === p.id; })[0];
+    var vote = !opts.tv && !p.closed && mine && !mine.voted
+      ? '<div class="pulse-vote">' + p.choices.map(function (c) { return '<button class="btn btn-purple poll-choice" data-poll="' + esc(p.id) + '" data-choice="' + esc(c) + '">' + esc(c) + '</button>'; }).join('') + '</div><div class="ms-err poll-err"></div>'
+      : mine && mine.voted ? '<div class="ms-small" style="margin-bottom:10px">You said <b>' + esc(mine.voted) + '</b>. Thanks!</div>' : '';
+    return '<div class="' + (opts.tv ? '' : 'ch-card') + '" data-pulse="' + esc(p.id) + '"><span class="pulse-tag">' + (p.closed ? 'Pulse · results' : 'Pulse · live') + '</span>' +
+      '<div class="pulse-q">' + esc(p.question) + '</div>' + vote + pulseBars(p.choices, p.counts, p.total) + pulseRace(p.turnout) +
+      '<div class="pulse-total">' + p.total + (p.total === 1 ? ' answer' : ' answers') + (p.closed ? '' : ' so far · ' + (opts.tv ? 'answer at clashofclasses.org with your 800#' : 'open through ' + esc(String(p.through).slice(5).replace('-', '/'))) + ' · every answer = a squad point') + '</div></div>';
+  }
+  var pulseData = null, pulseTimer = null;
+  function drawPulsePage() {
+    var box = document.getElementById('pulseBody');
+    if (!box || !pulseData) return;
+    var live = pulseData.live || [], recent = pulseData.recent || [];
+    box.innerHTML = (live.length ? live.map(function (p) { return pulseScreen(p); }).join('')
+      : '<div class="ch-card"><div class="ch-title">No Pulse question open right now</div><div class="ch-desc">A new one comes out every week or so. Here\'s what EMS said last time.</div></div>') +
+      (recent.length ? '<div class="ms-h" style="margin-top:18px">What EMS said</div>' + recent.map(function (p) { return pulseScreen(p); }).join('') : '');
+    growBars(box);
+  }
+  window.renderPulsePage = function () {
+    var box = document.getElementById('pulseBody');
+    if (!box || !window.gasRun_) return;
+    if (!pulseData) box.innerHTML = '<p style="color:var(--text3)">Loading the Pulse…</p>';
+    var load = function () {
+      var page = document.getElementById('page-pulse');
+      if (pulseData && page && !page.classList.contains('active')) { clearInterval(pulseTimer); pulseTimer = null; return; }
+      window.gasRun_('clashPulseLive').then(function (d) { pulseData = d; drawPulsePage(); }).catch(function () {});
+    };
+    load(); loadPolls();
+    if (!pulseTimer) pulseTimer = setInterval(load, 15000); // live, like a Menti screen
+  };
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('.pulse-open');
+    if (!a) return;
+    e.preventDefault();
+    if (typeof window.goTo === 'function') window.goTo('pulse');
+  });
+  window.clashPulseTV_ = function () {
+    var box = document.getElementById('tvPulse');
+    if (!box || !window.gasRun_) return;
+    window.gasRun_('clashPulseLive').then(function (d) {
+      var p = (d.live || [])[0];
+      window._tvPulse = !!p;
+      box.innerHTML = p ? pulseScreen(p, { tv: true }) : '';
+      growBars(box);
+    }).catch(function () { window._tvPulse = false; });
+  };
+
   function renderPolls() {
     var html = polls.today.map(pollCard).join('') + (polls.last ? pollCard(polls.last) : '');
     ['dailyPollSection', 'myPollSection'].forEach(function (id) {
@@ -400,6 +504,7 @@
       if (!el) return;
       el.style.display = html ? 'block' : 'none';
       el.innerHTML = html;
+      growBars(el);
     });
   }
   function loadPolls() {
@@ -416,6 +521,7 @@
     window.gasRun_('clashPollVote', b.getAttribute('data-poll'), id, b.getAttribute('data-choice')).then(function (d) {
       store(KEY, String(id).replace(/\D/g, ''));
       polls = d; renderPolls();
+      if (document.getElementById('page-pulse') && document.getElementById('page-pulse').classList.contains('active')) window.renderPulsePage();
       // Your vote earned your squad a point: celebrate it.
       if (window.craftCelebrate) window.craftCelebrate({ getBoundingClientRect: function () { return from; } });
     }).catch(function (x) { if (err) err.textContent = (x && x.message || '').replace(/^Exception:\s*/, ''); });

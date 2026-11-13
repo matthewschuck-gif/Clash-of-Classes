@@ -240,6 +240,18 @@
   function meetingSlides(d, sq) {
     var m = d.meeting, out = [];
     if (!m) return out;
+    var fz = d.standing && d.standing.frozen;
+    // January: a clean start, then freeze and thaw in two minutes.
+    if (m.fresh) {
+      var fd = m.fresh.date ? Number(m.fresh.date.slice(5, 7)) + '/' + Number(m.fresh.date.slice(8, 10)) : 'January';
+      out.push(['🌅 Fresh start', 'New year, clean ice. ' + (fz ? 'On <b>' + fd + '</b> every squad starts unfrozen, ours included.' : 'Every squad, <b>' + sq + '</b> included, starts ' + fd + ' unfrozen.') +
+        '<br><br>Every point we have is still ours. Let\'s keep it that way.']);
+      out.push(['❄️ Freeze & thaw in 60 seconds', '<b>We never lose points.</b> A freeze just stops new points for a while.<br><br>' +
+        '<b>Peaks Freeze</b>: the whole squad slipped on Mountaineer Peaks. We thaw it <i>together</i>: hit the goals on My Squad, then our advisor signs off.<br>' +
+        '<b>Fun Freeze</b>: a game. Hit the goal once, twice or three times to win back more. Generals cash out before Thaw By or it melts.<br>' +
+        '<b>New</b>: poll and Pulse votes count toward thawing.<br><br><span style="opacity:.85">How do we stay unfrozen? <b>Turn and talk: one thing our squad will do this month.</b></span>']);
+    }
+    if (fz && window.thawHtml) out.push(['❄️ Our freeze', '<div style="text-align:left;max-width:900px;margin:0 auto">' + window.thawHtml(fz) + '</div>']);
     if (m.mp) {
       var mp = m.mp, beat = mp.prevPoints != null && mp.points > mp.prevPoints;
       out.push(['Our ' + esc(mp.name), '<b>' + mp.points.toLocaleString() + '</b> points so far this marking period' +
@@ -251,12 +263,18 @@
       out.push(['School counts too', 'Attendance <b>' + n(m.metrics.attendance) + '</b> (' + pl('attendance') + ')<br>No office referral <b>' + n(m.metrics.referral) + '</b> (' + pl('referral') + ')<br>No F <b>' + n(m.metrics.grades) + '</b> (' + pl('grades') + ')<br><span style="opacity:.8">The top squad in each earns 250 every month.</span>']);
     }
     out.push(['Our territory', m.zones.length ? 'We hold <b>' + m.zones.length + '</b>: ' + m.zones.map(esc).join(', ') + (m.wings.length ? '<br>Whole wing: ' + m.wings.map(esc).join(', ') : '') : 'No zones yet. Pick one and go take it!']);
+    if (m.doubles && m.doubles.length) {
+      out.push(['Zones that pay 2x', 'These zones are won by what students <b>do</b>, so they pay double every week:<br>' + m.doubles.map(function (z) {
+        return '<b>' + esc(z.zone) + '</b> · ' + esc(z.rule || '') + ' · ' + (z.holder === d.squad ? '<span style="color:#4ade80">ours</span>' : z.holder ? esc(title(z.holder)) : 'open');
+      }).join('<br>') + '<br><span style="opacity:.8">Each is judged on last month. Start now, and it\'s ours next month.</span>']);
+    }
+    if (m.pulse) out.push(['📊 This week\'s Pulse', '<b>' + esc(m.pulse) + '</b><br><br>Answer on clashofclasses.org with your 800#. Every answer = a point for ' + sq + ', and it helps thaw a freeze.']);
     out.push(['Our climbers', '<b>' + m.evolved + '</b> of ' + m.students + ' creatures have evolved' + (m.summit ? ', ' + m.summit + ' at Summit' : '') + '.<br>Open My Climb and earn LRG points to evolve yours.']);
     if (m.firsts.length) out.push(['Where we lead', m.firsts.map(esc).join('<br>')]);
     return out;
   }
   function meetingView() {
-    return '<div class="ms-card"><div class="ms-h">Monthly squad meeting</div><p class="ms-small">Opening · Clash update · Our marking period · School counts · Territory · Climbers · Wins · Coming up · Trait · Delegate voice · Service · Exit ticket</p>' +
+    return '<div class="ms-card"><div class="ms-h">Monthly squad meeting</div><p class="ms-small">Opening · Clash update · (January: Fresh start · Freeze &amp; thaw) · Our freeze, if any · Our marking period · School counts · Territory · 2x zones · Pulse · Climbers · Wins · Coming up · Trait · Delegate voice · Service · Exit ticket</p>' +
       '<button class="btn btn-purple" id="hqMeet">▶ Start full screen</button></div>';
   }
   function showSlide() {

@@ -19,7 +19,7 @@
 
 const USAGE_HEADERS_ = ['Date', 'Page', 'Opens'];
 const DIGEST_LOG_HEADERS_ = ['Sent', 'Week Of', 'Recipients', 'Subject'];
-const USAGE_PAGES_ = ['homerooms', 'year', 'home', 'mysquad', 'trait', 'squads', 'tracker', 'mindset', 'wheel', 'traitdough', 'sotm', 'kickoff', 'mayhem', 'champs', 'gallery',
+const USAGE_PAGES_ = ['pulse', 'homerooms', 'year', 'home', 'mysquad', 'trait', 'squads', 'tracker', 'mindset', 'wheel', 'traitdough', 'sotm', 'kickoff', 'mayhem', 'champs', 'gallery',
   'staff', 'spin', 'growth', 'leaders', 'week', 'generals', 'hq', 'me-me', 'me-tickets', 'me-squad', 'me-map', 'me-game'];
 
 function ensureWeekTabs_() {
@@ -78,7 +78,10 @@ function payBeatMp_(events) {
 // What the squad meeting slides add for one squad.
 function meetingData_(squad) {
   const events = readEventsTab_(), today = todayYmd_(), mp = mpFor_(today);
-  const out = { mp: null, zones: [], wings: [], evolved: 0, summit: 0, students: 0, metrics: null, firsts: [] };
+  const out = { mp: null, zones: [], wings: [], evolved: 0, summit: 0, students: 0, metrics: null, firsts: [], fresh: null, doubles: [], pulse: '' };
+  // January (or the 3 weeks after Settings › FRESH_START): the fresh-start and freeze-and-thaw slides.
+  const fs = String(getSetting_('FRESH_START') || '').trim().slice(0, 10), hasFs = /^\d{4}-\d{2}-\d{2}$/.test(fs);
+  if ((hasFs && today >= ymdShift_(fs, -14) && today <= ymdShift_(fs, 21)) || today.slice(5, 7) === '01') out.fresh = { date: hasFs ? fs : '' };
   if (mp.now) {
     const end = mp.now.end < today ? mp.now.end : today;
     const now = squadPointsBetween_(events, mp.now.start, end);
@@ -89,6 +92,7 @@ function meetingData_(squad) {
   try {
     const zones = mapZones_(events);
     out.zones = zones.filter(function (z) { return z.holder === squad; }).map(function (z) { return z.zone; });
+    out.doubles = zones.filter(function (z) { return z.mult > 1; }).map(function (z) { return { zone: z.zone, rule: z.rule, holder: z.holder, mult: z.mult }; });
     const w = heldWings_(zones); out.wings = Object.keys(w).filter(function (k) { return w[k] === squad; });
   } catch (e) { /* the map is optional */ }
   boardRows_().filter(function (r) { return squadOf_(r['Squad']) === squad; }).forEach(function (r) {
@@ -103,6 +107,7 @@ function meetingData_(squad) {
     if (m) out.metrics = { attendance: m.attendance[squad], referral: m.referral[squad], grades: m.grades[squad],
       rank: ['attendance', 'referral', 'grades'].reduce(function (o, k) { o[k] = 1 + SQUAD_KEYS_.filter(function (s) { return (m[k][s] || 0) > (m[k][squad] || 0); }).length; return o; }, {}) };
   } catch (e) { /* no metrics yet */ }
+  try { const p = JSON.parse(clashPulseLive()).live[0]; out.pulse = p ? p.question : ''; } catch (e) { /* no Pulse open */ }
   try { out.firsts = leadersData_().boards.filter(function (b) { return SQUAD_KEYS_.every(function (s) { return b.scores[squad] >= b.scores[s]; }) && b.scores[squad] > 0; }).map(function (b) { return b.icon + ' ' + b.label; }); } catch (e) { /* ignore */ }
   return out;
 }
