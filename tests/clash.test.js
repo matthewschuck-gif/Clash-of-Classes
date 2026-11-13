@@ -833,7 +833,7 @@ test('freeze update: votes thaw goal, January fresh start (Peaks ends, Fun cashe
   w.ensureGameTabs_();
   const m = J(w.meetingData_('GOLD'));
   assert.ok(m.fresh && m.fresh.date === w.ymdShift_(today, 7));
-  assert.ok(m.doubles.some(z => z.zone === 'Gym 2' && z.mult === 2) && !m.doubles.some(z => z.zone === '70s Hall'));
+  assert.ok(m.doubles.some(z => z.zone === 'Gym 2' && z.mult === 2) && m.doubles.some(z => z.zone === 'Media Center') && !m.doubles.some(z => z.zone === '70s Hall'));
 });
 
 test('game layer: map claims, wing bonus, chance cards + Flip Three, Hot Streak, round goals, monster, tickets, My Climb sign-in', () => {
@@ -1093,6 +1093,8 @@ test('monthly zones: last calendar month, highest/lowest numbers from Squad Mont
   assert.strictEqual(seeded.find(r => r.Zone === 'Front Office')['Conquer By'], 'Staff Challenge');
   assert.strictEqual(seeded.find(r => r.Zone === 'Gym 2').Multiplier, 2, 'Pride Day: students make the data, 2x');
   assert.strictEqual(seeded.find(r => r.Zone === '70s Hall').Multiplier, 1);
+  assert.strictEqual(seeded.find(r => r.Zone === 'Media Center').Multiplier, 2, 'Mindset summits are student reflections: 2x');
+  assert.strictEqual(seeded.find(r => r.Zone === 'Gym 1')['Conquer By'], 'Move · Make · Talk');
   // Students on the board: GOLD 2, the rest 1 each (Students on Squad Monthly wins when filled in).
   w.book.insertSheet('Student Board').rows = [['800#', 'Squad'], ['8000001', 'Gold'], ['8000002', 'Gold'], ['8000003', 'Grey'], ['8000004', 'Black'], ['8000005', 'Purple']];
   const sm = w.book.getSheetByName('Squad Monthly');
@@ -1122,8 +1124,9 @@ test('monthly zones: last calendar month, highest/lowest numbers from Squad Mont
   assert.strictEqual(z('60s Hall').holder, 'GREY', 'most shout-outs');
   assert.strictEqual(z('Cafeteria').window, ym);
   // Events in last month count; this month's do not.
-  ev.rows.push([501, 'Top learner: science fair', 'top_learners', mid, '', '', 0, 0, 0, 1], [502, 'Top learner: spelling', 'top_learner', mid, '', '', 0, 0, 0, 1],
-    [503, 'Top learner', 'top_learner', thisMonth, '', '', 9, 0, 0, 0],
+  // Clash squad events: Move / Make / Talk types (Gym 1). A plain "event" row never counts there.
+  ev.rows.push([501, 'Relay race', 'squad_move', mid, '', '', 0, 3, 0, 5], [502, 'Poster build', 'squad_make', mid, '', '', 0, 0, 0, 4],
+    [503, 'Debate', 'squad_talk', thisMonth, '', '', 90, 0, 0, 0], [508, 'Squad trivia', 'squad_talk', mid, '', '', 0, 4, 0, 0],
     [504, 'Staff squad challenge winner', 'staff_challenge', mid, '', '', 0, 0, 1, 0],
     [505, 'Big day', 'event', mid, '', '', 0, 40, 0, 0], [506, 'Huge day this month', 'event', thisMonth, '', '', 900, 0, 0, 0],
     [507, 'Trait Dough', 'trait_dough', mid, '', '', 0, 0, 0, 8]);
@@ -1131,7 +1134,7 @@ test('monthly zones: last calendar month, highest/lowest numbers from Squad Mont
   const votes = w.book.getSheetByName('Poll Votes');
   votes.rows.push([2, mid, '8000003', 'GREY', 'A', ''], [2, mid, '8000001', 'GOLD', 'A', ''], [3, mid, '8000003', 'GREY', 'B', ''], [3, thisMonth, '8000004', 'BLACK', 'B', ''], [3, thisMonth, '8000005', 'BLACK', 'B', ''], [3, thisMonth, '8000004', 'BLACK', 'B', '']);
   zones = J(w.mapZones_(null, true));
-  assert.strictEqual(z('Gym 1').holder, 'PURPLE', 'top learners from events rows when Climb-er has no column (this month\'s 9 do not count)');
+  assert.strictEqual(z('Gym 1').holder, 'PURPLE', 'Move · Make · Talk: PURPLE 9 beats GOLD 7 last month (BLACK\'s 90 is this month; GOLD\'s 40 "event" is not a squad event)');
   assert.strictEqual(z('Front Office').holder, 'GREY', 'the staff squad challenge winner takes the Front Office');
   assert.strictEqual(z('Music Wing').holder, 'GOLD', 'Full Climb = last calendar month only (BLACK\'s 900 is this month)');
   assert.strictEqual(z('Auditorium').holder, 'GREY', 'poll votes last month: GREY 2, GOLD 1 (BLACK voted this month)');
@@ -1157,6 +1160,10 @@ test('monthly zones: last calendar month, highest/lowest numbers from Squad Mont
   const again = JSON.parse(w.clashMapLoad('T'));
   assert.strictEqual(again.zones.find(x => x.zone === 'Gym 1').mult, 3);
   assert.ok(again.rules.find(r => r.rule === 'Passing Grades' && r.per100 && r.days === 'last month' && r.method === 'lowest number'));
+  // Pride Day before Climb-er sends pride_day: Pride Day rows (Admin › Add Event, Type Pride Day) decide it.
+  const w3 = world(); w3.ensureSettings_(); w3.ensureGameTabs_();
+  w3.book.getSheetByName('events').rows.push([701, 'Pride Day', 'pride_day', mid, '', '', 0, 1, 0, 0], [702, 'Pride Day 2', 'pride_day', mid, '', '', 0, 1, 1, 0]);
+  assert.strictEqual(J(w3.mapZones_(null, false)).find(x => x.zone === 'Gym 2').holder, 'GOLD', 'GOLD 2 Pride Day rows, GREY 1');
   // The menu on an older map: rules move over, a custom rule stays, January can start everyone fresh.
   const w2 = world(); w2.ensureSettings_(); w2.ensureGameTabs_();
   const cr2 = w2.book.getSheetByName('Conquest Rules');
@@ -1176,6 +1183,59 @@ test('monthly zones: last calendar month, highest/lowest numbers from Squad Mont
   assert.ok(w2.book.getSheetByName('How The Map Works').rows.some(r => /SQUAD MONTHLY/.test(r[0])));
   assert.strictEqual(w.ymOf_('December 2026'), '2026-12');
   assert.strictEqual(w.ymOf_('2026-1'), '2026-01');
+});
+
+test('squad event check-ins: students check in, Generals confirm / remove / add, only confirmed count; Gym 1 = participants + Move/Make/Talk points', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGeneralsTabs_(); w.ensureMayhemWeekTabs_(); w.ensureCheckinTabs_(); w.ensureGameTabs_();
+  const today = w.todayYmd_(), lm = w.monthBounds_(-1), mid = lm[0].slice(0, 8) + '15';
+  const evs = w.book.getSheetByName('Sign-up Events');
+  assert.ok(evs.rows[0].includes('Kind'), 'Sign-up Events gains Kind');
+  w.writeRowsByHeader_(evs, [
+    { Event: 'Dodgeball', Date: today, Open: true, Kind: 'Move' }, { Event: 'Poster Lab', Date: w.ymdShift_(today, -5), Open: true, Kind: 'make' },
+    { Event: 'No kind', Date: today, Open: true }, { Event: 'Debate', Date: mid, Kind: 'Talk' }]);
+  w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade'], ['8001111', 'Ann L.', 'Gold', '7'], ['8002222', 'Ed P.', 'Gold', '8'], ['8003333', 'Cy R.', 'Grey', '7']];
+  let d = JSON.parse(w.clashCheckins(''));
+  assert.deepStrictEqual(d.events.map(e => e.event), ['Dodgeball'], 'only a Kind event on its day (CHECKIN_DAYS 1: Poster Lab 5 days ago is closed)');
+  assert.throws(() => w.clashEventCheckIn('Poster Lab', '8001111'), /isn't open/);
+  assert.throws(() => w.clashEventCheckIn('Dodgeball', '8009999'), /isn't on the list/);
+  d = JSON.parse(w.clashEventCheckIn('Dodgeball', '800-1111'));
+  assert.strictEqual(d.events[0].status, 'waiting');
+  w.clashEventCheckIn('Dodgeball', '8001111'); // twice = once
+  w.clashEventCheckIn('Dodgeball', '8002222'); w.clashEventCheckIn('Dodgeball', '8003333');
+  const ci = w.book.getSheetByName('Event Check-ins');
+  assert.strictEqual(ci.rows.length, 4);
+  assert.deepStrictEqual(J(w.eventParticipants_(today, today)), { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 }, 'nothing counts until a General confirms');
+  // GOLD's General: sees only GOLD's check-ins, confirms Ann, removes Ed, can't touch GREY's.
+  const cache = w.CacheService.getScriptCache();
+  cache.put('hq-g', JSON.stringify({ id: '8001111', name: 'Ann L.', squad: 'GOLD' }));
+  w.clashGeneralsHq = () => '{}';
+  const hq = J(w.hqCheckins_('GOLD'));
+  assert.strictEqual(hq.rows.length, 2); assert.strictEqual(hq.waiting, 2);
+  assert.deepStrictEqual(hq.events.map(e => e.event).sort(), ['Debate', 'Dodgeball', 'Poster Lab'].filter(e => e !== 'Debate' || mid >= w.ymdShift_(today, -45)).sort());
+  const row = n => hq.rows.find(r => r.name === n).row;
+  const greyRow = J(w.hqCheckins_('GREY')).rows[0].row;
+  assert.throws(() => w.clashGeneralsConfirmCheckin('g', greyRow, true), /isn't on your squad/);
+  w.clashGeneralsConfirmCheckin('g', row('Ed P.'), false); // removed: row deleted, so look Ann up again
+  w.clashGeneralsConfirmCheckin('g', J(w.hqCheckins_('GOLD')).rows.find(r => r.name === 'Ann L.').row, true);
+  assert.strictEqual(J(w.hqCheckins_('GOLD')).rows.length, 1);
+  assert.deepStrictEqual(J(w.eventParticipants_(today, today)), { BLACK: 0, GOLD: 1, GREY: 0, PURPLE: 0 });
+  assert.strictEqual(JSON.parse(w.clashCheckins('8001111')).events[0].status, 'confirmed');
+  // A General adds a member who forgot, confirmed straight away; not someone from another squad.
+  assert.throws(() => w.clashGeneralsAddCheckin('g', 'Poster Lab', '8003333'), /isn't on your squad/);
+  assert.throws(() => w.clashGeneralsAddCheckin('g', 'No kind', '8002222'), /Move, Make or Talk/);
+  w.clashGeneralsAddCheckin('g', 'Poster Lab', '8002222');
+  assert.strictEqual(J(w.hqCheckins_('GOLD')).rows.filter(r => r.confirmed).length, 2);
+  // Gym 1 last month: GOLD 2 confirmed at Debate + 3 Talk points = 5; PURPLE 4 Move points; GREY 1 unconfirmed = 0.
+  ci.rows.push(['Debate', mid, 'Talk', '8001111', 'Ann L.', 'GOLD', '', true, 'Ann L.'], ['Debate', mid, 'Talk', '8002222', 'Ed P.', 'GOLD', '', true, 'Ann L.'],
+    ['Debate', mid, 'Talk', '8003333', 'Cy R.', 'GREY', '', false, '']);
+  const ev = w.book.getSheetByName('events');
+  ev.rows.push([801, 'Debate', 'squad_talk', mid, '', '', 0, 3, 0, 0], [802, 'Relay', 'squad_move', mid, '', '', 0, 0, 0, 4], [803, 'Kickball', 'event', mid, '', '', 0, 0, 50, 0]);
+  const gym1 = J(w.mapZones_(null, false)).find(z => z.zone === 'Gym 1');
+  assert.deepStrictEqual(gym1.score, { BLACK: 0, GOLD: 5, GREY: 0, PURPLE: 4 }, 'a plain "event" row is not a squad event');
+  assert.strictEqual(gym1.holder, 'GOLD');
+  // The HQ payload carries the check-ins for the Generals tab.
+  assert.ok(/hqCheckins_/.test(fs.readFileSync(path.join(dir, '05_Generals.gs'), 'utf8')));
 });
 
 test('evolution: LRG point stages (4), three versions, a boost per evolution (different columns), weekly boost points, perks, gear overlays', () => {

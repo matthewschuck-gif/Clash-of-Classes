@@ -1141,8 +1141,11 @@ function addBulkRow(){
   var rows=document.getElementById('bulkRows');
   var i=Date.now()+Math.random();
   var row=document.createElement('div');
-  row.style.cssText='display:grid;grid-template-columns:1fr 80px 70px 70px 70px 70px 32px;gap:6px;margin-bottom:8px;align-items:center';
+  row.style.cssText='display:grid;grid-template-columns:1fr 130px 70px 70px 70px 70px 32px;gap:6px;margin-bottom:8px;align-items:center';
+  // Type: the same list as Add Event (Move / Make / Talk count toward the Gym 1 map zone).
+  var types=document.getElementById('evtType');
   row.innerHTML='<input type="text" placeholder="Event name" style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px;color:var(--text)">'
+    +'<select class="bulk-type" aria-label="Type" style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px;color:var(--text);min-width:0">'+(types?types.innerHTML:'<option value="event">Event</option>')+'</select>'
     +SQUADS.map(function(sq){ return '<input type="number" min="0" placeholder="'+sq[0]+sq.slice(1).toLowerCase()+'" style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px;color:'+SQ_HEX[sq]+';text-align:center">'; }).join('')
     +'<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0">×</button>';
   rows.appendChild(row);
@@ -1156,7 +1159,8 @@ async function saveBulkEvents(){
     var pts={};
     SQUADS.forEach(function(sq,j){ pts[sq]=parseFloat(inputs[j+1].value)||0; });
     if(!Array.isArray(D.events)) D.events=[];
-    D.events.push({id:D.nextId++,name:name,type:'event',date:new Date().toISOString().split('T')[0],note:'',pts:pts});
+    var sel=rows[i].querySelector('select.bulk-type');
+    D.events.push({id:D.nextId++,name:name,type:(sel&&sel.value)||'event',date:new Date().toISOString().split('T')[0],note:'',pts:pts});
     D.history.unshift({type:'event',name:name,pts:pts,time:new Date().toISOString()});
     logActivity('Bulk: added event '+name); added++;
   }

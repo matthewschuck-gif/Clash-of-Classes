@@ -349,11 +349,13 @@
       signupsCard(r.signups) +
       passportCard(r.passport) +
       '<div id="myPollSection" style="display:none"></div>' +
+      '<div id="myCheckinSection" style="display:none"></div>' +
       (mine ? '<div class="ms-h" style="margin-top:6px">Your squad\'s challenges</div>' + mine : '') +
       '<div class="ms-small">Updated every hour' + (me.updated ? ' · last update ' + esc(me.updated) : '') +
       ' · <a href="#" id="msNotMe" style="color:var(--purple-lt)">Not you? Switch</a></div>';
     document.getElementById('msNotMe').onclick = function (e) { e.preventDefault(); store(KEY, null); if (window.popSkin) window.popSkin(''); renderForm(); };
     if (typeof loadPolls === 'function') loadPolls(); // shows what this student voted
+    loadCheckins(); // squad event check-in (26_CheckIns.gs)
     startShirts(); // Mayhem shirt designs, live
     if (window.popCountUp) window.popCountUp(app); // stat tiles count up (Pop.html)
     var card = app.querySelector('.ms-card');
@@ -497,6 +499,42 @@
     }).catch(function () { window._tvPulse = false; });
   };
 
+  // ── Squad event check-in (Move · Make · Talk, 26_CheckIns.gs): a General confirms each one ──
+  var checkins = { events: [] };
+  var KIND_ICON = { Move: '🏃', Make: '🎨', Talk: '🎤' };
+  function renderCheckins() {
+    var list = checkins.events || [];
+    var html = list.length ? '<div class="ch-card" style="border-color:#4ade80"><div class="ch-title">✅ Squad event check-in</div>' +
+      '<div class="ch-desc">Took part today? Check in with your 800#. A General confirms it, and every confirmed member counts toward the Gym 1 zone.</div>' +
+      list.map(function (e) {
+        var st = e.status === 'confirmed' ? '<span class="ch-done">✓ Confirmed</span>' : e.status === 'waiting' ? '<span class="ms-small">Checked in · waiting for a General</span>'
+          : '<button class="btn btn-purple checkin-btn" data-event="' + esc(e.event) + '">Check in</button>';
+        return '<div class="ch-row" style="grid-template-columns:1fr auto"><b>' + (KIND_ICON[e.kind] || '') + ' ' + esc(e.event) + ' <span class="ms-small">' + esc(e.kind) + '</span></b>' + st + '</div>';
+      }).join('') + '<div class="ms-err checkin-err"></div></div>' : '';
+    ['checkinSection', 'myCheckinSection'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.style.display = html ? 'block' : 'none';
+      el.innerHTML = html;
+    });
+  }
+  function loadCheckins() {
+    if (!window.gasRun_) return;
+    window.gasRun_('clashCheckins', stored(KEY)).then(function (d) { checkins = d; renderCheckins(); }).catch(function () {});
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.checkin-btn');
+    if (!b) return;
+    var id = stored(KEY) || window.prompt('Type your 800 number to check in:') || '';
+    var err = b.closest('.ch-card').querySelector('.checkin-err');
+    if (!String(id).replace(/\D/g, '')) return;
+    if (err) err.textContent = 'Checking in…';
+    window.gasRun_('clashEventCheckIn', b.getAttribute('data-event'), id).then(function (d) {
+      store(KEY, String(id).replace(/\D/g, ''));
+      checkins = d; renderCheckins();
+    }).catch(function (x) { if (err) err.textContent = (x && x.message || '').replace(/^Exception:\s*/, ''); });
+  });
+
   function renderPolls() {
     var html = polls.today.map(pollCard).join('') + (polls.last ? pollCard(polls.last) : '');
     ['dailyPollSection', 'myPollSection'].forEach(function (id) {
@@ -533,6 +571,7 @@
     if (saved) lookup(saved);
     loadChallenges();
     loadPolls();
+    loadCheckins();
     loadDuels();
     setInterval(loadDuels, 120000);
     setInterval(loadChallenges, 120000);

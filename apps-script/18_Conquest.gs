@@ -28,7 +28,7 @@
  *   finalized month, or (4) for highest number only, how many events rows match its name.
  *   A highest/lowest zone changes hands only when all four squads have a number for the month.
  * MULTIPLIER (Map Zones): the zone's weekly pay x this. 2 = the data comes from students doing
- *   something (Pride Day, votes, shout-outs, Trait Dough), so holding it also grows that habit.
+ *   something (Pride Day, votes, shout-outs, Trait Dough, Mindset summits), so holding it also grows that habit.
  * MAP BATTLES tab: every capture, shown under the map on the site, HQ and the TV.
  * The admin panel's Map tab (MapEditor.html) edits zones and rules by dragging and picking.
  * HOW THE MAP WORKS tab: the staff guide to all of this, rewritten on every Run setup.
@@ -41,7 +41,7 @@ const MEASURE_METHODS_ = ['highest number', 'lowest number'];
 const MONTHLY_TAB_ = 'Squad Monthly';
 // What Define a Climb-er (or staff) fills in each month, per squad. Counts, not percents, except
 // attendance and pride_day (percent of the squad).
-const MONTHLY_HEADERS_ = ['Month', 'Squad', 'Students', 'attendance', 'pride_day', 'top_learners', 'lrr_ld', 'failing',
+const MONTHLY_HEADERS_ = ['Month', 'Squad', 'Students', 'attendance', 'pride_day', 'lrr_ld', 'failing',
   'interventions_teacher', 'interventions_admin', 'shout_outs'];
 
 const BUILDING_RULES_ = [
@@ -49,7 +49,7 @@ const BUILDING_RULES_ = [
   // The monthly set (Menu › Use the monthly zone rules). Every one looks at the last calendar month.
   [true, 'Pride Day', 'The biggest share of your squad showing Mountaineer pride on Pride Days last month.', 'highest number', 'pride_day', 'last month', false, 0, '', false],
   [true, 'Full Climb', 'Every point your squad earned last month counts.', 'most points', '*', 'last month', false, 0, '', false],
-  [true, 'Top Learners', 'The most monthly event winners (top learners) last month.', 'highest number', 'top_learners', 'last month', false, 0, '', false],
+  [true, 'Move · Make · Talk', 'Clash squad events last month: every member a General confirmed took part, plus the points the squad earned in Move, Make and Talk events.', 'highest number', 'event_participants, squad_event_points', 'last month', false, 0, '', false],
   [true, 'Clean Cafeteria', 'The fewest LRRs and lunch detentions per 100 students last month.', 'lowest number', 'lrr_ld', 'last month', false, 0, '', true],
   [true, 'Wheel & Poll Turnout', 'The most Daily Poll and Pulse votes plus wheel spins last month.', 'highest number', 'poll_votes, wheel', 'last month', false, 0, '', false],
   [true, 'Attendance', 'The highest attendance rate last month.', 'highest number', 'attendance', 'last month', false, 0, '', false],
@@ -67,17 +67,18 @@ const BUILDING_RULES_ = [
 // Areas of the building on a 24 x 16 grid, roughly where they sit on the school map.
 // [Zone, Wing, Summit, Conquer By, Weekly Points, X, Y, W, H, Multiplier]
 // Multiplier 2 = students make the data by doing something (Pride Day, votes and spins, shout-outs,
-// Trait Dough): holding the zone pays double, so squads push the habits that tell the school the most.
-// 1 = school systems record it (attendance, grades, LRR/LDs, interventions, STAR, staff results).
+// Trait Dough, Mindset summit reflections): holding the zone pays double, so squads push the habits
+// that tell the school the most. 1 = school systems or staff record it (attendance, grades, LRR/LDs,
+// interventions, squad event results, staff results).
 const BUILDING_ZONES_ = [
   ['Gym 2', 'Athletics', false, 'Pride Day', 3, 0, 0, 4, 10, 2],
-  ['Gym 1', 'Athletics', false, 'Top Learners', 3, 4, 0, 5, 8, 1],
+  ['Gym 1', 'Athletics', false, 'Move · Make · Talk', 3, 4, 0, 5, 8, 1],
   ['Cafeteria', 'Heart of the School', true, 'Clean Cafeteria', 5, 4, 8, 5, 4, 1],
   ['Music Wing', 'The Arts', false, 'Full Climb', 3, 0, 10, 4, 6, 1],
   ['Auditorium', 'The Arts', false, 'Wheel & Poll Turnout', 3, 4, 12, 5, 4, 2],
   ['50s Hall', 'North Halls', false, 'Attendance', 3, 9, 0, 6, 5, 1],
   ['60s Hall', 'North Halls', false, 'Shout-out Storm', 3, 9, 5, 6, 4, 2],
-  ['Media Center', 'Heart of the School', false, 'Growth Grind', 3, 9, 9, 6, 3, 1],
+  ['Media Center', 'Heart of the School', false, 'Growth Grind', 3, 9, 9, 6, 3, 2],
   ['Front Office', 'Heart of the School', false, 'Staff Challenge', 2, 9, 12, 6, 3, 1],
   ['70s Hall', 'East Halls', false, 'Passing Grades', 3, 15, 6, 6, 4, 1],
   ['80s Hall', 'East Halls', false, 'Trait Dough Drive', 3, 15, 10, 6, 5, 2],
@@ -316,6 +317,9 @@ function measureScores_(spec, from, to, events, per100, low) {
       SQUAD_KEYS_.forEach(function (s) { add(s, monthly[s] ? monthly[s][n] : null); });
       return;
     }
+    // Squad events (26_CheckIns.gs): confirmed participants, and points from Move / Make / Talk events.
+    if (n === 'event_participants') { const c = eventParticipants_(from, to); SQUAD_KEYS_.forEach(function (s) { add(s, c[s]); }); return; }
+    if (n === 'squad_event_points') { const p = pointsBy_(events, from, to, eventMatcher_(SQUAD_EVENT_TYPES_)).points; SQUAD_KEYS_.forEach(function (s) { add(s, p[s]); }); return; }
     if (n === 'poll_votes') {
       const c = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
       sheetRows_('Poll Votes').forEach(function (v) { const d = String(v['Date'] || v['At'] || '').slice(0, 10), s = squadOf_(v['Squad']); if (d >= from && d <= to && c[s] !== undefined) c[s]++; });
@@ -564,34 +568,44 @@ function setupMapGuideTab_() {
     H + 'THE MONTHLY ZONES (Menu -> Use the monthly zone rules)',
     'Every zone is won on LAST calendar month, so a zone holds steady all month and changes on the 1st.',
     '     Gym 2 (old gym)  Pride Day             highest Pride Day participation %        pays 2x',
-    '     Gym 1 (new gym)  Top Learners          most monthly event winners               pays 1x',
+    '     Gym 1 (new gym)  Move · Make · Talk    confirmed participants + event points    pays 1x',
     '     Cafeteria        Clean Cafeteria       fewest LRRs + lunch detentions per 100   Summit, pays 2x',
     '     Music Wing       Full Climb            most total points                        pays 1x',
     '     Auditorium       Wheel & Poll Turnout  most poll/Pulse votes + wheel spins      pays 2x',
     '     50s Hall         Attendance            highest attendance rate                  pays 1x',
     '     60s Hall         Shout-out Storm       most shout-outs                          pays 2x',
-    '     Media Center     Growth Grind          most STAR growth + Mindset summit points pays 1x',
+    '     Media Center     Growth Grind          most STAR growth + Mindset summit points pays 2x',
     '     Front Office     Staff Challenge       won last month\'s staff squad challenge   pays 1x',
     '     70s Hall         Passing Grades        fewest failing grades per 100            pays 1x',
     '     80s Hall         Trait Dough Drive     most Trait Dough earned                  pays 2x',
     '     90s Hall         Fewest Interventions  fewest teacher + admin interventions/100 pays 1x',
     'Why 2x: those zones are won by students DOING something that also tells the school something (who',
-    'shows pride, who votes and answers Pulse questions, who recognizes others). Paying double grows those',
-    'habits, and with them the data. Zones that school systems record anyway (attendance, grades, LRR/LDs,',
-    'interventions, STAR) pay 1x so squads never feel pushed to game a record.',
+    'shows pride, who votes and answers Pulse questions, who recognizes others, who reflects on Mindset).',
+    'Paying double grows those habits, and with them the data. Zones that school systems or staff record',
+    '(attendance, grades, LRR/LDs, interventions, squad event results) pay 1x so no one games a record.',
+    'Growth Grind pays 2x for its Mindset summits (student reflections); its STAR points ride along.',
     'Staff Challenge: each month, add one events row for the winning squad with type staff_challenge',
     '     (1 point is plenty). The squad with the most staff_challenge rows last month takes the Front Office.',
-    'Top Learners: Climb-er\'s top_learners column, or events rows with type top_learner.',
+    'Move · Make · Talk (Gym 1) = confirmed participants + squad event points, last month:',
+    '     1. On Sign-up Events, give each Clash squad event a Date and a Kind (Move, Make or Talk).',
+    '     2. On that day (and CHECKIN_DAYS after), students check in on the site with their 800#.',
+    '     3. Generals confirm or remove each check-in in Generals HQ -> Check-ins (and add anyone who forgot).',
+    '        Only confirmed check-ins count (Event Check-ins tab).',
+    '     4. When you give the squads points for the event (Admin -> Add Event or Bulk Entry), pick its Type:',
+    '        Squad event: Move, Make or Talk. Those points add to the participants.',
+    'Pride Day: Climb-er\'s pride_day column (% of the squad). Until Climb-er sends it, add a Pride Day row',
+    '     per squad (Type: Pride Day) with how many took part; the most Pride Day rows wins.',
     '',
     H + 'SQUAD MONTHLY (filled by Define a Climb-er)',
     'One row per squad per month. Month = 2026-12 (any date in the month works). Columns:',
     '     Students            -- squad size that month (for Per 100). Blank = count on the Student Board.',
     '     attendance          -- attendance rate, 0-100.        pride_day     -- Pride Day participation %.',
-    '     top_learners        -- monthly event winners.         shout_outs    -- shout-outs received.',
+    '     shout_outs          -- shout-outs received.',
     '     lrr_ld              -- LRRs + lunch detentions.       failing       -- failing grades (count).',
     '     interventions_teacher, interventions_admin -- counts; the 90s Hall adds the two.',
     'Add any other column and name it in a rule\'s Counts (several, comma-separated, are added together).',
-    'Also built in: poll_votes (Daily Poll + Pulse votes), attendance from a finalized month (Admin -> Metrics).',
+    'Also built in: poll_votes (Daily Poll + Pulse votes), attendance from a finalized month (Admin -> Metrics),',
+    'event_participants (confirmed squad event check-ins), squad_event_points (Move / Make / Talk event points).',
     'A highest/lowest zone waits until ALL FOUR squads have a number that month: missing data never costs',
     'anyone a zone, and a blank count is never read as zero problems.',
     'Claims are checked about every 10 minutes (and on the hourly game check).',

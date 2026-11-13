@@ -98,6 +98,7 @@ function setupSpreadsheet() {
   ensureShirtDesignTabs_();
   ensureSchoolCalendarTab_();
   ensureGameTabs_();
+  ensureCheckinTabs_(); // 26_CheckIns.gs
   ensureMeTabs_();
   ensureRosterTab_();
   ensureTourTab_(); // 20_Tour.gs
@@ -130,8 +131,9 @@ const DEFAULT_SETTINGS = [
   ['DAILY_POLL_POINTS', 'OFF', 'ON = after each Daily Poll day, squads get points for every student who voted (plus more for the winning side or right trivia answer). Turn on with Clash of Classes › Turn on daily poll points.'],
   ['POLL_VOTES_PER_10MIN', '1500', 'Most Daily Poll votes the site takes in 10 minutes (stops someone flooding it).'],
   ['FRESH_START', '', 'A date (yyyy-mm-dd). That morning every freeze that began before it ends; a Fun Freeze cashes out the tier it reached. For the January restart. Set it with Clash of Classes › Fresh start: end every freeze on a date.'],
+  ['CHECKIN_DAYS', '1', 'Squad event check-in stays open this many days after the event (for students who forgot). Generals can add anyone later in Generals HQ.'],
   ['PULSE_DAYS', '3', 'How many school days a Pulse question stays open when Clash of Classes › Add the next Pulse question schedules it from the Poll Ideas tab.'],
-  ['EVENT_LABELS', 'trait_dough=💵 Trait Dough, mountaineer_mindset=⛰️ Mindset, trail_journal=🏔️ Trail Journal, trailback_panel=🧭 Trailback Panel, star_growth=📈 STAR Growth, camp_mountaineer=⛺ Camp Mountaineer, daily_poll=🗳️ Daily Poll, challenge_bonus=🏁 Challenge, duel_bonus=⚔️ Squad Duel, mayhem_week=🏔️ Mayhem Week, shirt_sales=👕 Shirt Sales, squad_night=🌙 Squad Night, community_bonus=🎯 Bonus', 'Event type = how it is labelled on the TV feed and My Squad.'],
+  ['EVENT_LABELS', 'trait_dough=💵 Trait Dough, mountaineer_mindset=⛰️ Mindset, trail_journal=🏔️ Trail Journal, trailback_panel=🧭 Trailback Panel, star_growth=📈 STAR Growth, camp_mountaineer=⛺ Camp Mountaineer, daily_poll=🗳️ Daily Poll, challenge_bonus=🏁 Challenge, duel_bonus=⚔️ Squad Duel, mayhem_week=🏔️ Mayhem Week, shirt_sales=👕 Shirt Sales, squad_night=🌙 Squad Night, community_bonus=🎯 Bonus, squad_move=🏃 Move, squad_make=🎨 Make, squad_talk=🎤 Talk, staff_challenge=🧑‍🏫 Staff Challenge, pride_day=🦁 Pride Day', 'Event type = how it is labelled on the TV feed and My Squad.'],
   ['PRIVATE_EVENT_TYPES', 'trail_journal, trailback_panel, camp_mountaineer', 'Event types that are about behavior or support: the public site and TV show only their label, never a student name or note. Staff signed in as admin still see the full rows.'],
   ['DUEL_BONUSES', 'OFF', 'ON = the day after each Squad Duel ends, the winning squad(s) get its Bonus Points (checked hourly). Turn on with Clash of Classes › Turn on Squad Duel bonuses.'],
   ['PASSPORT_STAMPS', 'bills=🍞 Turn in Trait Dough; mindset=⛰️ Reach a Mindset summit; star=📈 Grow on STAR; shoutouts=🙌 Get a shout-out; ambassador=🤝 Be a Camp buddy; polls=🗳️ Vote in Daily Polls; events=🎟️ Sign up for a squad event', 'Trail Passport stamps on My Squad: key=label; … Keys: bills, mindset, star, shoutouts, ambassador, polls, events. Remove one to drop that stamp. All stamps = 🧭 Trail Passport complete.'],

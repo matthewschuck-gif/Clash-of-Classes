@@ -84,6 +84,10 @@ getSheet_('Lore Chapters').appendRow([true, 'ALL', 1, 'The Lantern at the Base',
 getSheet_('Lore Chapters').appendRow([true, 'ALL', 2, 'The Ridge Path', 'The second chapter.', '', 'points: 300', '']);
 getSheet_('Lore Chapters').appendRow([true, 'ALL', 3, 'Above the Clouds', 'The third chapter.', '', 'points: 5000', '']);
 ensureEventPageTabs_(); ensureMayhemWeekTabs_(); setSettingValue_('SELF_SIGNUPS', 'ON');
+// A Move squad event today, open for check-in (26_CheckIns.gs), and one GREY check-in waiting.
+ensureCheckinTabs_(); (function () { var sh = getSheet_('Sign-up Events'), h = sh.rows[0], o = { 'Event': 'Hallway Relay', 'Date': todayYmd_(), 'Open': true, 'Kind': 'Move', 'Spots Per Squad': 10 };
+  sh.appendRow(h.map(function (k) { return o[k] === undefined ? '' : o[k]; }));
+  getSheet_('Event Check-ins').appendRow(['Hallway Relay', todayYmd_(), 'Move', '8009999', 'Gus T.', 'GOLD', todayYmd_() + ' 08:10', false, '']); })();
 getSheet_('Sign-up Events').appendRow(['Mario Kart', '2027-03-15', 4, true, 'Lunch', 'Gaming', true]);
 getSheet_('Sign-up Events').appendRow(['Squad Bowl (trivia)', '2027-03-16', 4, true, 'Core Extension', 'Brain', true]);
 getSheet_('Sign-up Events').appendRow(['Tug-o-war', '2027-03-19', 15, true, 'Squad Night', 'Active', false]);
