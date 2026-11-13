@@ -29,6 +29,12 @@
  *   A highest/lowest zone changes hands only when all four squads have a number for the month.
  * MULTIPLIER (Map Zones): the zone's weekly pay x this. 2 = the data comes from students doing
  *   something (Pride Day, votes, shout-outs, Trait Dough, Mindset summits), so holding it also grows that habit.
+ * STAFF OVERRIDES (Admin › Map, or the tabs):
+ *   Locked (Map Zones): ticked = the holder never changes on its own. Staff set Holder themselves.
+ *   ZONE OVERRIDES tab: Month | Zone | Squad | Score | Note | Set By | Set At. A Score here replaces that
+ *     squad's computed number for that zone that month (whatever it came from: Climb-er, check-ins,
+ *     points). Month = the month the zone is judged on (last month for the monthly rules). The newest
+ *     row for a Month + Zone + Squad wins; a row with a blank Score clears the override.
  * MAP BATTLES tab: every capture, shown under the map on the site, HQ and the TV.
  * The admin panel's Map tab (MapEditor.html) edits zones and rules by dragging and picking.
  * HOW THE MAP WORKS tab: the staff guide to all of this, rewritten on every Run setup.
@@ -36,6 +42,7 @@
 
 const RULE_HEADERS_ = ['Show', 'Rule', 'How It Works', 'Method', 'Counts', 'Window Days', 'Must Border', 'Defense %', 'Far Attack %', 'Per 100'];
 const BATTLE_HEADERS_ = ['Date', 'Zone', 'Taken By', 'From', 'Rule'];
+const OVERRIDE_HEADERS_ = ['Month', 'Zone', 'Squad', 'Score', 'Note', 'Set By', 'Set At'];
 const RULE_METHODS_ = ['most points', 'most entries', 'staff pick', 'highest number', 'lowest number'];
 const MEASURE_METHODS_ = ['highest number', 'lowest number'];
 const MONTHLY_TAB_ = 'Squad Monthly';
@@ -110,7 +117,7 @@ function headerCol_(sheet, name) {
 // Conquest Rules + Map Battles, and the newer columns on an older Map Zones tab.
 function ensureConquestTabs_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  [['Conquest Rules', RULE_HEADERS_, BUILDING_RULES_], ['Map Battles', BATTLE_HEADERS_, null], [MONTHLY_TAB_, MONTHLY_HEADERS_, null]].forEach(function (t) {
+  [['Conquest Rules', RULE_HEADERS_, BUILDING_RULES_], ['Map Battles', BATTLE_HEADERS_, null], [MONTHLY_TAB_, MONTHLY_HEADERS_, null], ['Zone Overrides', OVERRIDE_HEADERS_, null]].forEach(function (t) {
     if (ss.getSheetByName(t[0])) return;
     const sh = ss.insertSheet(t[0]);
     sh.getRange(1, 1, 1, t[1].length).setValues([t[1]]).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
@@ -135,7 +142,7 @@ function ensureConquestTabs_() {
   const mz = ss.getSheetByName('Map Zones');
   if (mz && mz.getLastColumn()) {
     const head = mz.getRange(1, 1, 1, mz.getLastColumn()).getValues()[0].map(function (h) { return String(h).trim(); });
-    ['Conquer By', 'Borders', 'Multiplier'].forEach(function (h) {
+    ['Conquer By', 'Borders', 'Multiplier', 'Locked'].forEach(function (h) {
       if (head.indexOf(h) > -1) return;
       head.push(h);
       mz.getRange(1, head.length).setValue(h).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
@@ -201,9 +208,10 @@ function mapZones_(events, write) {
       month: !!rule.month, per100: !!rule.per100, low: rule.method === 'lowest number',
       mult: r['Multiplier'] === '' || r['Multiplier'] == null ? 1 : Math.max(0, Number(r['Multiplier']) || 0),
       x: Math.max(0, Number(r['X']) || 0), y: Math.max(0, Number(r['Y']) || 0), w: Math.max(1, Number(r['W']) || 1), h: Math.max(1, Number(r['H']) || 1),
-      borders: String(r['Borders'] || ''), holder: holder, since: String(r['Since'] || '') };
+      borders: String(r['Borders'] || ''), holder: holder, since: String(r['Since'] || ''), locked: ticked_(r['Locked']) };
   });
   const nb = zoneNeighbors_(zones);
+  const overrides = zoneOverrides_();
   // Borders are judged on who held what before this check, so the order of rows doesn't matter.
   const held = {}, count = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
   zones.forEach(function (z) { held[z.zone] = z.holder; if (z.holder) count[z.holder]++; });
@@ -219,8 +227,14 @@ function mapZones_(events, write) {
       z.score = z.method === 'most entries' ? tally.rows : tally.points;
       if (z.per100) z.score = per100_(z.score, from.slice(0, 7));
     }
+    // Staff overrides for the month this zone is judged on (Zone Overrides tab / Admin › Map).
+    z.judged = z.month ? z.window : today.slice(0, 7);
+    z.computed = Object.assign({}, z.score);
+    z.overridden = [];
+    const ov = overrides[z.judged + '|' + z.zone.toLowerCase()] || {};
+    Object.keys(ov).forEach(function (s) { z.score[s] = ov[s]; z.overridden.push(s); });
     z.neighbors = nb[z.zone];
-    if (z.method === 'staff pick') return;
+    if (z.method === 'staff pick' || z.locked) return; // staff decide; nothing moves on its own
     // Highest/lowest number: nothing changes until every squad has a number for the month.
     if (SQUAD_KEYS_.some(function (s) { return z.score[s] === null || z.score[s] === undefined; })) return;
     const low = z.low;
@@ -253,6 +267,20 @@ function mapZones_(events, write) {
   const log = battles.length && write ? getSheetSafe_('Map Battles') : null;
   if (log) battles.forEach(function (b) { log.appendRow(b); });
   return zones;
+}
+
+// { 'yyyy-MM|zone': { SQUAD: score } } from the Zone Overrides tab (newest row wins; blank Score clears).
+function zoneOverrides_() {
+  const out = {};
+  sheetRows_('Zone Overrides').forEach(function (r) {
+    const ym = ymOf_(r['Month']), zone = String(r['Zone'] || '').trim().toLowerCase(), s = squadOf_(r['Squad']);
+    if (!ym || !zone || SQUAD_KEYS_.indexOf(s) === -1) return;
+    const k = ym + '|' + zone, raw = String(r['Score'] == null ? '' : r['Score']).trim();
+    out[k] = out[k] || {};
+    if (raw === '') delete out[k][s];
+    else if (!isNaN(Number(raw.replace(/[%,]/g, '')))) out[k][s] = Number(raw.replace(/[%,]/g, ''));
+  });
+  return out;
 }
 
 // ── SQUAD MONTHLY: the numbers Define a Climb-er sends each month ───
@@ -381,15 +409,24 @@ function clashMapLoad(token) {
       conquerBy: String(r['Conquer By'] || ''), claimedBy: String(r['Claimed By'] || ''), weekly: Number(r['Weekly Points']) || 0,
       x: Number(r['X']) || 0, y: Number(r['Y']) || 0, w: Math.max(1, Number(r['W']) || 1), h: Math.max(1, Number(r['H']) || 1),
       borders: String(r['Borders'] || ''), holder: squadOf_(r['Holder']), since: String(r['Since'] || ''),
-      mult: r['Multiplier'] === '' || r['Multiplier'] == null ? 1 : Number(r['Multiplier']) || 0 };
+      mult: r['Multiplier'] === '' || r['Multiplier'] == null ? 1 : Number(r['Multiplier']) || 0, locked: ticked_(r['Locked']) };
   });
+  // Each zone's numbers right now (computed, and any staff override), for the editor's override boxes.
+  const scores = {};
+  try {
+    mapZones_(null, false).forEach(function (z) {
+      const ov = {};
+      z.overridden.forEach(function (s) { ov[s] = z.score[s]; });
+      scores[z.zone] = { month: z.judged, computed: z.computed, overrides: ov, low: z.low, method: z.method };
+    });
+  } catch (e) { console.warn('Map scores: ' + e.message); }
   const rules = sheetRows_('Conquest Rules').filter(function (r) { return String(r['Rule'] || '').trim(); }).map(function (r) {
     return { show: ticked_(r['Show']), rule: String(r['Rule']).trim(), text: String(r['How It Works'] || ''), method: String(r['Method'] || 'most points').toLowerCase(),
       counts: String(r['Counts'] || ''), days: r['Window Days'] === '' ? '' : /month/i.test(String(r['Window Days'])) ? 'last month' : Number(r['Window Days']) || '',
       border: ticked_(r['Must Border']), defense: Number(r['Defense %']) || 0,
       far: r['Far Attack %'] === '' || r['Far Attack %'] == null ? '' : Number(r['Far Attack %']) || 0, per100: ticked_(r['Per 100']) };
   });
-  return JSON.stringify({ zones: zones, rules: rules, methods: RULE_METHODS_, claimDays: Number(getSetting_('CLAIM_DAYS')) || 14,
+  return JSON.stringify({ zones: zones, rules: rules, scores: scores, methods: RULE_METHODS_, claimDays: Number(getSetting_('CLAIM_DAYS')) || 14,
     building: { zones: buildingZoneRows_(), rules: BUILDING_RULES_.map(function (r) {
       return { show: r[0], rule: r[1], text: r[2], method: r[3], counts: r[4], days: r[5], border: r[6], defense: r[7], far: r[8], per100: r[9] }; }) } });
 }
@@ -428,12 +465,24 @@ function clashMapSave(token, json) {
       return { 'Show': z.show !== false, 'Zone': name, 'Wing': clip(z.wing, 40), 'Summit': !!z.summit, 'Claimed By': clip(z.claimedBy, 200),
         'Weekly Points': num(z.weekly, 0, 100), 'X': num(z.x, 0, 60), 'Y': num(z.y, 0, 40), 'W': num(z.w, 1, 60), 'H': num(z.h, 1, 40),
         'Holder': holder, 'Since': since, 'Conquer By': clip(z.conquerBy, 60), 'Borders': clip(z.borders, 300),
-        'Multiplier': z.mult === '' || z.mult == null ? 1 : Math.max(0, Math.min(5, Number(z.mult) || 0)) };
+        'Multiplier': z.mult === '' || z.mult == null ? 1 : Math.max(0, Math.min(5, Number(z.mult) || 0)), 'Locked': !!z.locked };
     });
     writeRowsByHeader_(getSheetSafe_('Conquest Rules'), rules);
     writeRowsByHeader_(getSheetSafe_('Map Zones'), zones);
+    // Score overrides: [{ zone, month, squad, value }] ('' clears). Appended, so the tab keeps the history.
+    const ovs = Array.isArray(d.overrides) ? d.overrides : [];
+    const osh = ovs.length ? getSheetSafe_('Zone Overrides') : null;
+    ovs.forEach(function (o) {
+      const s = squadOf_(o.squad), month = ymOf_(o.month), zone = clip(o.zone, 40);
+      if (!osh || !zone || !month || SQUAD_KEYS_.indexOf(s) === -1) return;
+      const raw = String(o.value == null ? '' : o.value).trim();
+      if (raw !== '' && isNaN(Number(raw))) throw new Error('Override for ' + zone + ' (' + s + ') must be a number.');
+      osh.appendRow([month, zone, s, raw === '' ? '' : Number(raw), clip(o.note, 200), 'Admin', Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm')]);
+    });
     CacheService.getScriptCache().remove('game-tick');
-    return JSON.stringify({ ok: true, zones: zones.length, rules: rules.length });
+    // Re-judge now so overrides and unlocked zones show the right holder straight away.
+    try { mapZones_(null, true); } catch (e) { console.warn('Map re-check: ' + e.message); }
+    return JSON.stringify({ ok: true, zones: zones.length, rules: rules.length, overrides: ovs.length });
   } finally { lock.releaseLock(); }
 }
 
@@ -533,7 +582,8 @@ function setupMapGuideTab_() {
     '     Multiplier    -- Weekly Points x this (blank = 1). 2 = students make the data by doing something.',
     '     X, Y, W, H    -- where the zone sits on the grid and how big it is (the Map editor sets these).',
     '     Borders       -- zones it connects to that do not touch on the map, comma-separated (a hallway).',
-    '     Holder, Since -- filled in automatically. Only type a Holder on a Staff Pick zone.',
+    '     Holder, Since -- filled in automatically. Only type a Holder on a Staff Pick or Locked zone.',
+    '     Locked        -- tick to freeze the holder: nothing changes it automatically until you untick it.',
     'Conquest Rules -- one row per way to win a zone (see HOW A ZONE CHANGES HANDS).',
     'Map Battles -- every capture, written automatically. Shown under the map. Do not type here.',
     'Engine Powers -- lasting powers a squad unlocks; the "rent" ones pay extra for every zone held.',
@@ -638,6 +688,16 @@ function setupMapGuideTab_() {
     'Example: GOLD holds the Cafeteria (Summit, 5), Music Wing (3) and Auditorium (3) = The Arts wing.',
     '     5 x 2 + 3 + 3 = 16, plus The Arts again (3 + 3) at WING_MULTIPLIER 2 = 22,',
     '     plus a +1-per-zone engine power x 3 zones = 25 points that week.',
+    '',
+    H + 'STAFF OVERRIDES: YOU ALWAYS HAVE THE LAST WORD',
+    'Admin -> Map -> click a zone:',
+    '- "Lock holder": the zone keeps whoever you pick in "Held by" until you unlock it.',
+    '- "Override this month\'s numbers": type a squad\'s number to replace what was computed (a wrong',
+    '  Climb-er count, a missed check-in, a tie you want to break). Clear the box to go back to the data.',
+    '  Saved on the Zone Overrides tab (Month, Zone, Squad, Score, Note) with the date; the newest row wins.',
+    'Everything else is editable too: rules and Multiplier (Map editor), Squad Monthly numbers, Event',
+    'Check-ins (tick or untick Confirmed), Point Freezes, Daily Polls and Poll Ideas. Change a row, and the',
+    'site uses it at the next check (about 10 minutes, or right away when you save in the Map editor).',
     '',
     H + 'SETTINGS TAB KEYS FOR THE MAP',
     '     GAME_MAP          -- OFF hides the map everywhere.',

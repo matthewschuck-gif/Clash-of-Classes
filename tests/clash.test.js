@@ -1068,7 +1068,7 @@ test('conquest: rules from the Sheet, Risk borders + defense edge, staff pick, e
   const old = w2.book.insertSheet('Map Zones');
   old.rows = [['Show', 'Zone', 'Wing', 'Summit', 'Claimed By', 'Weekly Points', 'X', 'Y', 'W', 'H', 'Holder', 'Since'], [true, 'The Summit', 'Summit', true, '*', 5, 5, 0, 2, 2, 'GOLD', '2026-11-03']];
   w2.ensureGameTabs_();
-  assert.deepStrictEqual(old.rows[0].slice(-3), ['Conquer By', 'Borders', 'Multiplier']);
+  assert.deepStrictEqual(old.rows[0].slice(-4), ['Conquer By', 'Borders', 'Multiplier', 'Locked']);
   assert.strictEqual(J(w2.mapZones_(null, false))[0].holder, 'GOLD', 'old zones keep working with no Conquer By');
   w2.book.getSheetByName('Conquest Rules').rows.push([true, 'My Rule', '', 'most points', '*', 7, false, 0]);
   w2.applyBuildingMap_();
@@ -1236,6 +1236,46 @@ test('squad event check-ins: students check in, Generals confirm / remove / add,
   assert.strictEqual(gym1.holder, 'GOLD');
   // The HQ payload carries the check-ins for the Generals tab.
   assert.ok(/hqCheckins_/.test(fs.readFileSync(path.join(dir, '05_Generals.gs'), 'utf8')));
+});
+
+test('staff overrides: Lock holder keeps a zone; Zone Overrides replace a squad\'s number (newest wins, blank clears); Map editor round-trip', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_();
+  const lm = w.monthBounds_(-1), ym = lm[0].slice(0, 7), mid = lm[0].slice(0, 8) + '15';
+  const ev = w.book.getSheetByName('events');
+  ev.rows.push([901, 'Big day', 'event', mid, '', '', 0, 50, 10, 0]); // Music Wing (Full Climb): GOLD leads
+  let z = n => J(w.mapZones_(null, true)).find(x => x.zone === n);
+  assert.strictEqual(z('Music Wing').holder, 'GOLD');
+  // Override: GREY's number for last month becomes 80, so GREY takes it.
+  const ov = w.book.getSheetByName('Zone Overrides');
+  assert.deepStrictEqual(ov.rows[0], ['Month', 'Zone', 'Squad', 'Score', 'Note', 'Set By', 'Set At']);
+  ov.rows.push([ym, 'Music Wing', 'GREY', 80, 'missed spirit points', 'Mr. S', '']);
+  let mw = z('Music Wing');
+  assert.strictEqual(mw.holder, 'GREY');
+  assert.deepStrictEqual([mw.score.GREY, mw.computed.GREY, J(mw.overridden)], [80, 10, ['GREY']]);
+  // A newer blank row clears it; an override for another month does nothing.
+  ov.rows.push([ym, 'music wing', 'Grey', '', '', 'Mr. S', ''], ['2020-01', 'Music Wing', 'GOLD', 999, '', '', '']);
+  mw = z('Music Wing');
+  assert.strictEqual(mw.score.GREY, 10);
+  assert.strictEqual(mw.holder, 'GOLD', 'override cleared: the data decides again (GOLD 55 beats GREY 10)');
+  // Lock: staff hand Music Wing to PURPLE and lock it; the data can't move it.
+  const mz = w.book.getSheetByName('Map Zones');
+  w.writeRowsByHeader_(mz, J(w.sheetRows_('Map Zones')).map(r => Object.assign(r, r.Zone === 'Music Wing' ? { Holder: 'PURPLE', Locked: true } : {})));
+  assert.strictEqual(z('Music Wing').holder, 'PURPLE', 'locked');
+  // Map editor: shows each zone's numbers, saves Lock and overrides, re-judges right away.
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  const loaded = JSON.parse(w.clashMapLoad('T'));
+  const mwz = loaded.zones.find(x => x.zone === 'Music Wing');
+  assert.strictEqual(mwz.locked, true);
+  assert.deepStrictEqual([loaded.scores['Music Wing'].month, loaded.scores['Music Wing'].computed.GOLD], [ym, 55]);
+  mwz.locked = false;
+  loaded.overrides = [{ zone: 'Music Wing', month: ym, squad: 'BLACK', value: '200' }];
+  const r = JSON.parse(w.clashMapSave('T', JSON.stringify(loaded)));
+  assert.strictEqual(r.overrides, 1);
+  assert.strictEqual(J(w.sheetRows_('Map Zones')).find(x => x.Zone === 'Music Wing').Holder, 'BLACK', 'unlocked + BLACK override 200: re-judged on save');
+  assert.strictEqual(JSON.parse(w.clashMapLoad('T')).scores['Music Wing'].overrides.BLACK, 200);
+  loaded.overrides = [{ zone: 'Music Wing', month: ym, squad: 'BLACK', value: 'lots' }];
+  assert.throws(() => w.clashMapSave('T', JSON.stringify(loaded)), /must be a number/);
 });
 
 test('evolution: LRG point stages (4), three versions, a boost per evolution (different columns), weekly boost points, perks, gear overlays', () => {

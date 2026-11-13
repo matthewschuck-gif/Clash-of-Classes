@@ -28,7 +28,8 @@
 <script>
 (function () {
   var SQ = { BLACK: '#c5c9d1', GOLD: '#ffe100', GREY: '#99a8bb', PURPLE: '#bb8ef5' };
-  var st = { zones: [], rules: [], methods: [], building: null, sel: -1, dirty: false, loaded: false };
+  var st = { zones: [], rules: [], methods: [], building: null, sel: -1, dirty: false, loaded: false, scores: {}, ov: {} };
+  // ov: staff score overrides typed since the last save: { zone: { SQUAD: value or '' } }
   var drag = null;
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function box() { return document.getElementById('mapEditor'); }
@@ -93,11 +94,27 @@
       '<div><label>&nbsp;</label><label style="text-transform:none;font-size:13px;color:var(--text)"><input type="checkbox" data-f="summit"' + (z.summit ? ' checked' : '') + '> 👑 Summit (King of the Mountain, pays x2)</label>' +
       '<label style="text-transform:none;font-size:13px;color:var(--text)"><input type="checkbox" data-f="show"' + (z.show ? ' checked' : '') + '> Show on the map</label></div>' +
       (z.conquerBy ? '' : '<div class="wide"><label>Claimed By (old way: event types or words, * = everything)</label><input type="text" data-f="claimedBy" value="' + esc(z.claimedBy) + '"></div>') +
+      '<div class="wide"><label style="text-transform:none;font-size:13px;color:var(--text)"><input type="checkbox" data-f="locked"' + (z.locked ? ' checked' : '') + '> 🔒 Lock holder: keep whoever is in "Held by" until I unlock it (no automatic changes)</label></div>' +
+      overrideBox(z) +
       '<div class="wide"><label>Extra borders (zones it connects to that don\'t touch, comma-separated)</label><input type="text" data-f="borders" value="' + esc(z.borders) + '">' +
       '<div class="me-hint">Next to: ' + esc(nb.join(', ') || 'nothing yet') + (rule ? ' · ' + esc(rule.text) : '') + '</div></div>' +
       '<div class="wide" style="display:flex;gap:8px"><button class="me-btn warn" data-do="delZone">Delete this zone</button></div>';
     var wings = {}; st.zones.forEach(function (o) { if (o.wing) wings[o.wing] = 1; });
     f.innerHTML += '<datalist id="meWings">' + Object.keys(wings).map(function (w) { return '<option value="' + esc(w) + '">'; }).join('') + '</datalist>';
+  }
+  // Override this zone's numbers for the month it's judged on. Blank = use the data.
+  function overrideBox(z) {
+    var sc = st.scores[z.zone];
+    if (!sc || !sc.month) return '';
+    var typed = st.ov[z.zone] || {};
+    var mn = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][Number(sc.month.slice(5, 7)) - 1] || sc.month;
+    var fmt = function (v) { return v === null || v === undefined ? 'no data' : String(Math.round(v * 100) / 100); };
+    return '<div class="wide"><label>Override ' + esc(mn) + '\'s numbers' + (sc.low ? ' (lowest wins)' : '') + ': type to replace, clear to use the data</label>' +
+      '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">' + ['BLACK', 'GOLD', 'GREY', 'PURPLE'].map(function (s) {
+        var cur = typed[s] !== undefined ? typed[s] : sc.overrides[s] !== undefined ? sc.overrides[s] : '';
+        return '<div><span class="me-hint">' + s.charAt(0) + s.slice(1).toLowerCase() + ' · data ' + esc(fmt(sc.computed[s])) + '</span>' +
+          '<input type="number" step="any" data-ov="' + s + '" value="' + esc(cur) + '" placeholder="' + esc(fmt(sc.computed[s])) + '"' + (cur !== '' ? ' style="border-color:var(--gold,#ffe100)"' : '') + '></div>';
+      }).join('') + '</div></div>';
   }
   function drawRules() {
     var t = document.getElementById('meRules');
@@ -161,7 +178,13 @@
   }
 
   function onInput(e) {
-    var t = e.target, f = t.getAttribute('data-f'), rf = t.getAttribute('data-rf');
+    var t = e.target, f = t.getAttribute('data-f'), rf = t.getAttribute('data-rf'), ovs = t.getAttribute('data-ov');
+    if (ovs && st.zones[st.sel]) {
+      var zn = st.zones[st.sel].zone;
+      (st.ov[zn] = st.ov[zn] || {})[ovs] = t.value.trim();
+      t.style.borderColor = t.value.trim() !== '' ? 'var(--gold,#ffe100)' : '';
+      changed(); return;
+    }
     if (f && st.zones[st.sel]) {
       var z = st.zones[st.sel];
       z[f] = t.type === 'checkbox' ? t.checked : t.type === 'number' || f === 'mult' ? Number(t.value) || 0 : t.value;
@@ -212,15 +235,25 @@
     b.innerHTML = '<p style="color:var(--text3)">Loading the map…</p>';
     window.gasRun_('clashMapLoad', window.ADMIN_SESSION || '').then(function (d) {
       d = typeof d === 'string' ? JSON.parse(d) : d;
-      st.zones = d.zones; st.rules = d.rules; st.methods = d.methods; st.building = d.building; st.claimDays = d.claimDays;
-      st.sel = -1; st.dirty = false; st.loaded = true; render();
+      st.zones = d.zones; st.rules = d.rules; st.methods = d.methods; st.building = d.building; st.claimDays = d.claimDays; st.scores = d.scores || {}; st.ov = {};
+      var keep = st.afterMsg ? st.sel : -1;
+      st.sel = keep < st.zones.length ? keep : -1; st.dirty = false; st.loaded = true; render();
+      if (st.afterMsg) { msg(st.afterMsg); st.afterMsg = ''; }
     }).catch(function (e) { b.innerHTML = '<p style="color:#fca5a5">Couldn\'t load the map: ' + esc(e && e.message || e) + '</p>'; });
   }
   function save() {
     msg('Saving…');
-    window.gasRun_('clashMapSave', window.ADMIN_SESSION || '', JSON.stringify({ zones: st.zones, rules: st.rules })).then(function (r) {
+    var overrides = [];
+    Object.keys(st.ov).forEach(function (zn) {
+      var sc = st.scores[zn];
+      if (!sc) return;
+      Object.keys(st.ov[zn]).forEach(function (s) { overrides.push({ zone: zn, month: sc.month, squad: s, value: st.ov[zn][s] }); });
+    });
+    window.gasRun_('clashMapSave', window.ADMIN_SESSION || '', JSON.stringify({ zones: st.zones, rules: st.rules, overrides: overrides })).then(function (r) {
       r = typeof r === 'string' ? JSON.parse(r) : r;
-      st.dirty = false; msg('✓ Saved ' + r.zones + ' zones and ' + r.rules + ' ways to conquer. The map updates within about 10 minutes (or right away on the next page load).');
+      st.dirty = false; st.ov = {};
+      st.afterMsg = '✓ Saved ' + r.zones + ' zones and ' + r.rules + ' ways to conquer' + (r.overrides ? ' and ' + r.overrides + ' number override' + (r.overrides === 1 ? '' : 's') : '') + '. Holders were re-checked just now.';
+      load();
     }).catch(function (e) { msg('✕ ' + (e && e.message || e)); });
   }
 
