@@ -1,11 +1,17 @@
 /**
  * Clash of Classes -- Apps Script backend
- * File 6: Daily Polls for the morning announcements (This or That, Trivia).
+ * File 6: Daily Polls for the morning announcements (This or That, Trivia, School Pulse, Check-in).
  *
  * Daily Polls tab (one row per poll, filled in by staff):
  *   Show | Date | Kind | Question | Choices | Answer | Participation Points | Win Points | Status | Results
  *   Kind: This or That (the choice with the most votes wins; a tie means every tied choice
  *         wins) or Trivia (Answer is the right choice). Choices separated by | (Coke | Pepsi).
+ *         School Pulse: a question the school wants answered (how students get to school, sleep,
+ *         homework help...). No winner; every answer earns the participation point. Staff see the
+ *         answers by squad and grade on the Poll Insights tab.
+ *         Check-in: one button (Choices may be blank). Pride Day Check-in, Wheel Check-in ... A
+ *         Kind with "pride" or "wheel" in it counts for that map zone (18_Conquest.gs check-ins).
+ *   Ideas for all of these are on the Poll Ideas tab (26_PollIdeas.gs).
  *   Date: the school day it runs (open all that day). Status and Results are filled in.
  * Poll Votes tab: one row per vote (Poll | 800# | Squad | Choice | At). One vote per student
  * per poll; the squad comes from the Student Board.
@@ -34,6 +40,15 @@ function ensurePollTabs_() {
 }
 
 function pollChoices_(v) { return String(v || '').split('|').map(function (s) { return s.trim(); }).filter(String); }
+const CHECK_IN_CHOICE_ = 'I\'m in! ✋';
+// The four kinds the site knows. The Kind cell can say more ("Pride Day Check-in").
+function pollKind_(v) {
+  const k = String(v || '');
+  if (/trivia/i.test(k)) return 'Trivia';
+  if (/check|pride|wheel/i.test(k)) return 'Check-in';
+  if (/pulse|survey|school/i.test(k)) return 'School Pulse';
+  return 'This or That';
+}
 function todayYmd_() { return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'); }
 
 // Every poll row, with its votes tallied.
@@ -43,7 +58,10 @@ function pollsWithVotes_() {
     const id = String(r._row);
     const mine = votes.filter(function (v) { return String(v['Poll']) === id; });
     const counts = {}, bySquad = {};
-    pollChoices_(r['Choices']).forEach(function (c) { counts[c] = 0; });
+    const kind = pollKind_(r['Kind']);
+    let choices = pollChoices_(r['Choices']);
+    if (kind === 'Check-in' && !choices.length) choices = [CHECK_IN_CHOICE_];
+    choices.forEach(function (c) { counts[c] = 0; });
     mine.forEach(function (v) {
       const c = String(v['Choice']);
       counts[c] = (counts[c] || 0) + 1;
@@ -52,8 +70,8 @@ function pollsWithVotes_() {
       bySquad[s][c] = (bySquad[s][c] || 0) + 1;
     });
     return {
-      id: id, row: r._row, show: ticked_(r['Show']), date: String(r['Date'] || ''), kind: /trivia/i.test(String(r['Kind'])) ? 'Trivia' : 'This or That',
-      question: String(r['Question'] || ''), choices: pollChoices_(r['Choices']), answer: String(r['Answer'] || '').trim(),
+      id: id, row: r._row, show: ticked_(r['Show']), date: String(r['Date'] || ''), kind: kind, kindLabel: String(r['Kind'] || '').trim() || kind,
+      question: String(r['Question'] || ''), choices: choices, answer: String(r['Answer'] || '').trim(),
       partPts: Number(r['Participation Points']) || 0, winPts: Number(r['Win Points']) || 0,
       status: String(r['Status'] || ''), counts: counts, bySquad: bySquad, total: mine.length, votes: mine,
     };
@@ -62,6 +80,7 @@ function pollsWithVotes_() {
 
 function pollWinners_(p) {
   if (p.kind === 'Trivia') return p.answer ? [p.answer] : [];
+  if (p.kind === 'School Pulse' || p.kind === 'Check-in') return []; // nobody wins: every answer counts the same
   const max = Math.max.apply(null, p.choices.map(function (c) { return p.counts[c] || 0; }).concat([0]));
   return max ? p.choices.filter(function (c) { return (p.counts[c] || 0) === max; }) : [];
 }
@@ -70,7 +89,7 @@ function pollWinners_(p) {
 function publicPoll_(p, votedChoice) {
   const closed = p.date < todayYmd_();
   return {
-    id: p.id, kind: p.kind, question: p.question, choices: p.choices, date: p.date,
+    id: p.id, kind: p.kind, kindLabel: p.kindLabel, question: p.question, choices: p.choices, date: p.date,
     voted: votedChoice || '', closed: closed,
     counts: votedChoice || closed ? p.counts : null, total: p.total,
     answer: closed && p.kind === 'Trivia' ? p.answer : '', // trivia answer only after the day
@@ -82,7 +101,7 @@ function publicPoll_(p, votedChoice) {
 function clashDailyPolls(id) {
   const sid = id800_(id);
   const today = todayYmd_();
-  const polls = pollsWithVotes_().filter(function (p) { return p.show && p.question && p.choices.length >= 2; });
+  const polls = pollsWithVotes_().filter(function (p) { return p.show && p.question && p.choices.length >= (p.kind === 'Check-in' ? 1 : 2); });
   const voteOf = function (p) {
     const v = sid ? p.votes.filter(function (x) { return id800_(x['800#']) === sid; })[0] : null;
     return v ? String(v['Choice']) : '';
@@ -144,6 +163,7 @@ function awardDailyPolls() {
       sheet.getRange(p.row, statusCol, 1, 2).setValues([['Awarded ' + todayYmd_(), results + ' · ' + SQUAD_KEYS_.map(function (s) { return s + ' +' + pts[s]; }).join(' ')]]);
       lines.push(p.question + ': ' + SQUAD_KEYS_.map(function (s) { return s + ' +' + pts[s]; }).join(', '));
     });
+    if (lines.length) try { writePollInsights_(); } catch (e) { console.warn('Poll Insights: ' + e.message); }
     return lines;
   } finally {
     lock.releaseLock();
@@ -162,9 +182,15 @@ function pollAnnouncement_() {
     text += 'Every squad earned points for each student who voted. ';
   }
   d.today.forEach(function (p) {
-    text += (p.kind === 'Trivia' ? 'Today\'s trivia: ' + p.question + ' Is it ' + p.choices.join(', ') + '?' : 'Today\'s This or That: ' + p.question) +
+    if (p.kind === 'Check-in') {
+      text += p.question + ' Check in on clashofclasses.org with your 800 number. Every check-in earns your squad a point, and it counts toward the map! ';
+      return;
+    }
+    text += (p.kind === 'Trivia' ? 'Today\'s trivia: ' + p.question + ' Is it ' + p.choices.join(', ') + '?'
+      : p.kind === 'School Pulse' ? 'Today\'s School Pulse question: ' + p.question + ' Help us make Ephrata Middle better.'
+      : 'Today\'s This or That: ' + p.question) +
       ' Vote on clashofclasses.org with your 800 number. Every vote earns your squad a point' +
-      (p.kind === 'Trivia' ? ', and every right answer earns one more!' : ', and voting with the winning side earns one more!') + ' ';
+      (p.kind === 'Trivia' ? ', and every right answer earns one more!' : p.kind === 'School Pulse' ? '!' : ', and voting with the winning side earns one more!') + ' ';
   });
   return text.trim() || 'No daily poll today.';
 }

@@ -490,7 +490,8 @@ function gameTick() {
       const hand = sheetRows_('Squad Hand');
       SQUAD_KEYS_.forEach(function (s) {
         const mine = zones.filter(function (z) { return z.holder === s; });
-        let pts = mine.reduce(function (n, z) { return n + z.weekly * (z.summit ? 2 : 1); }, 0);
+        // Each zone pays its Weekly Points x its rule's Multiplier (how the data is captured) x 2 on the Summit.
+        let pts = Math.round(mine.reduce(function (n, z) { return n + z.weekly * (z.mult || 1) * (z.summit ? 2 : 1); }, 0));
         pts += mine.length * engineBonus_(engine, s, 'rent');
         Object.keys(wings).forEach(function (w) { if (wings[w] === s) pts += zones.filter(function (z) { return z.wing === w; }).reduce(function (n, z) { return n + z.weekly; }, 0) * (mult - 1); });
         const armed = hand.filter(function (h) { return squadOf_(h['Squad']) === s && String(h['Effect']).toLowerCase() === 'double_rent' && String(h['Status']) === 'Armed'; })[0];

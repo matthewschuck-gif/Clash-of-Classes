@@ -90,6 +90,7 @@ function setupSpreadsheet() {
   ensureChallenges_();
   ensureGeneralsTabs_();
   ensurePollTabs_();
+  ensurePollIdeaTabs_(); // Poll Ideas + Poll Insights (26_PollIdeas.gs)
   ensureFreezeTab_();
   ensureDuelTab_();
   ensureLoreTab_();

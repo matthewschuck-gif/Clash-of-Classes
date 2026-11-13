@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=DM+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#170b29; --panel:#22123b; --ink:#f6f0ff; --mute:#b9a6d8; --gold:#ffd23f; --purple:#8b5cf6;
+    --BLACK:#e9e3f5; --GOLD:#ffd23f; --GREY:#9aa5b8; --PURPLE:#b583ff; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:'DM Sans',system-ui,sans-serif; overflow:hidden; }
+  body { background: radial-gradient(1200px 700px at 15% -10%, #3b1a66 0%, transparent 60%), radial-gradient(900px 600px at 110% 110%, #2a1350 0%, transparent 60%), var(--bg); }
+  .wrap { height:100%; display:flex; flex-direction:column; padding:3.5vh 4vw; gap:2.5vh; }
+  .top { display:flex; justify-content:space-between; align-items:center; gap:2vw; }
+  .tag { font-weight:800; letter-spacing:.14em; text-transform:uppercase; font-size:clamp(12px,1.4vw,22px); color:var(--gold); }
+  .live { display:inline-flex; align-items:center; gap:.5em; }
+  .live i { width:.7em; height:.7em; border-radius:50%; background:#ff4d6d; box-shadow:0 0 0 0 #ff4d6d88; animation:ping 1.6s infinite; }
+  @keyframes ping { 0% { box-shadow:0 0 0 0 #ff4d6d88; } 80%,100% { box-shadow:0 0 0 .9em #ff4d6d00; } }
+  .join { font-size:clamp(14px,1.6vw,26px); color:var(--mute); text-align:right; }
+  .join b { color:var(--ink); }
+  h1 { font-family:'Fraunces',serif; font-weight:900; font-size:clamp(28px,4.6vw,84px); line-height:1.05; margin:0; text-wrap:balance; }
+  .bars { flex:1; display:flex; flex-direction:column; justify-content:center; gap:2.2vh; min-height:0; }
+  .bar { display:grid; grid-template-columns:minmax(0,26%) 1fr 7ch; align-items:center; gap:1.5vw; font-size:clamp(16px,2.3vw,40px); font-weight:800; }
+  .bar .lbl { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .track { height:clamp(22px,5.5vh,70px); background:#ffffff12; border-radius:999px; overflow:hidden; position:relative; }
+  .fill { height:100%; width:0; border-radius:999px; background:linear-gradient(90deg,#7c3aed,#c084fc); transition:width .9s cubic-bezier(.2,.8,.2,1); position:relative; overflow:hidden; }
+  .fill.win { background:linear-gradient(90deg,#f59e0b,var(--gold)); }
+  .fill::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent,#ffffff33,transparent); transform:translateX(-100%); animation:shine 3s infinite; }
+  @keyframes shine { to { transform:translateX(100%); } }
+  .pct { text-align:right; font-variant-numeric:tabular-nums; }
+  .big { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1vh; }
+  .count { font-family:'Fraunces',serif; font-weight:900; font-size:clamp(80px,18vw,320px); line-height:1; color:var(--gold); font-variant-numeric:tabular-nums; text-shadow:0 .05em .3em #ffd23f44; }
+  .count.bump { animation:bump .45s; }
+  @keyframes bump { 40% { transform:scale(1.08); } }
+  .sub { font-size:clamp(16px,2.2vw,36px); color:var(--mute); }
+  .foot { display:grid; grid-template-columns:auto 1fr; gap:2vw; align-items:end; }
+  .total { font-size:clamp(14px,1.8vw,30px); color:var(--mute); white-space:nowrap; }
+  .total b { color:var(--ink); font-size:1.4em; font-variant-numeric:tabular-nums; }
+  .race { display:grid; grid-template-columns:repeat(4,1fr); gap:1.2vw; }
+  .sq { background:var(--panel); border-radius:14px; padding:1vh 1vw; }
+  .sq .nm { font-weight:800; font-size:clamp(12px,1.3vw,22px); letter-spacing:.06em; }
+  .sq .mini { height:8px; background:#ffffff14; border-radius:99px; margin-top:.6vh; overflow:hidden; }
+  .sq .mini i { display:block; height:100%; width:0; border-radius:99px; transition:width .9s; }
+  .sq .v { font-size:clamp(11px,1.1vw,18px); color:var(--mute); margin-top:.4vh; font-variant-numeric:tabular-nums; }
+  .pop { position:fixed; font-weight:900; color:var(--gold); font-size:clamp(18px,2.4vw,40px); pointer-events:none; animation:rise 1.4s ease-out forwards; }
+  @keyframes rise { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-14vh); } }
+  .empty { flex:1; display:flex; align-items:center; justify-content:center; font-size:clamp(20px,3vw,48px); color:var(--mute); text-align:center; }
+  .dots { display:flex; gap:.6em; justify-content:center; }
+  .dots i { width:.6em; height:.6em; border-radius:50%; background:#ffffff33; }
+  .dots i.on { background:var(--gold); }
+  @media (prefers-reduced-motion: reduce) { .fill, .sq .mini i { transition:none; } .fill::after, .live i, .count.bump, .pop { animation:none; } }
+</style>
+</head>
+<body>
+<div class="wrap" id="board"><div class="empty">Loading the poll…</div></div>
+<script>
+(function () {
+  var SQ = ['BLACK', 'GOLD', 'GREY', 'PURPLE'];
+  var data = null, shown = 0, lastTotal = {}, rotateAt = Date.now() + 15000;
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function title(s) { return s.charAt(0) + s.slice(1).toLowerCase(); }
+  function kindTag(p) {
+    if (p.kind === 'Check-in') return '✋ ' + esc(p.kindLabel || 'Check-in');
+    if (p.kind === 'School Pulse') return '📊 School Pulse';
+    if (p.kind === 'Trivia') return '🧠 Trivia';
+    return '🗳️ This or That';
+  }
+  function popAt(n) {
+    var el = document.createElement('div');
+    el.className = 'pop'; el.textContent = '+' + n;
+    el.style.left = (20 + Math.random() * 60) + 'vw'; el.style.top = (55 + Math.random() * 20) + 'vh';
+    document.body.appendChild(el);
+    setTimeout(function () { el.remove(); }, 1500);
+  }
+  function render() {
+    var box = document.getElementById('board');
+    if (!data || !data.polls.length) { box.innerHTML = '<div class="empty">No poll today.<br>Check back tomorrow morning!</div>'; return; }
+    if (shown >= data.polls.length) shown = 0;
+    var p = data.polls[shown];
+    var head = '<div class="top"><div class="tag">' + (data.live ? '<span class="live"><i></i>Live</span> · ' : 'Results · ') + kindTag(p) + '</div>' +
+      '<div class="join">Vote at <b>' + esc(data.url) + '</b><br>with your 800 number</div></div><h1>' + esc(p.question) + '</h1>';
+    var body;
+    if (p.kind === 'Check-in') {
+      body = '<div class="big"><div class="count" id="pbCount">' + p.total + '</div><div class="sub">' + (p.total === 1 ? 'student has' : 'students have') + ' checked in</div></div>';
+    } else if (!p.counts) {
+      body = '<div class="big"><div class="count" id="pbCount">' + p.total + '</div><div class="sub">' + (p.total === 1 ? 'answer' : 'answers') + ' in. The right answer is revealed tomorrow!</div></div>';
+    } else {
+      var tot = Math.max(1, p.total), max = Math.max.apply(null, p.choices.map(function (c) { return p.counts[c] || 0; }).concat([0]));
+      body = '<div class="bars">' + p.choices.map(function (c, i) {
+        var v = p.counts[c] || 0, pct = Math.round(100 * v / tot);
+        var win = (p.answer && c === p.answer) || (!p.answer && p.kind === 'This or That' && v === max && v > 0);
+        return '<div class="bar"><div class="lbl">' + esc(c) + (p.answer && c === p.answer ? ' ✅' : '') + '</div><div class="track"><div class="fill' + (win ? ' win' : '') + '" data-w="' + pct + '"></div></div><div class="pct">' + pct + '%</div></div>';
+      }).join('') + '</div>';
+    }
+    var tmax = Math.max.apply(null, SQ.map(function (s) { return p.turnout[s] || 0; }).concat([1]));
+    var foot = '<div class="foot"><div class="total"><b>' + p.total + '</b> ' + (p.kind === 'Check-in' ? 'check-ins' : 'votes') + '</div><div class="race">' + SQ.map(function (s) {
+      return '<div class="sq"><div class="nm" style="color:var(--' + s + ')">' + title(s) + '</div><div class="mini"><i style="background:var(--' + s + ')" data-w="' + Math.round(100 * (p.turnout[s] || 0) / tmax) + '"></i></div>' +
+        '<div class="v">' + (p.turnout[s] || 0) + (p.per100 ? ' per 100 students' : ' votes') + '</div></div>';
+    }).join('') + '</div></div>';
+    var dots = data.polls.length > 1 ? '<div class="dots">' + data.polls.map(function (_, i) { return '<i' + (i === shown ? ' class="on"' : '') + '></i>'; }).join('') + '</div>' : '';
+    box.innerHTML = head + body + foot + dots;
+    requestAnimationFrame(function () { requestAnimationFrame(function () {
+      Array.prototype.forEach.call(box.querySelectorAll('[data-w]'), function (el) { el.style.width = el.getAttribute('data-w') + '%'; });
+    }); });
+    var before = lastTotal[p.id];
+    if (before != null && p.total > before) {
+      popAt(p.total - before);
+      var c = document.getElementById('pbCount'); if (c) c.classList.add('bump');
+    }
+    lastTotal[p.id] = p.total;
+  }
+  function load() {
+    google.script.run.withSuccessHandler(function (json) {
+      data = JSON.parse(json);
+      if (data.polls.length > 1 && Date.now() > rotateAt) { shown = (shown + 1) % data.polls.length; rotateAt = Date.now() + 15000; }
+      render();
+    }).withFailureHandler(function () {}).clashPollBoard();
+  }
+  load();
+  setInterval(load, 5000);
+})();
+</script>
+</body>
+</html>

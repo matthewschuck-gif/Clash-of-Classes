@@ -346,7 +346,7 @@
     if (ch) {
       var active = challenges.filter(function (c) { return c.active; });
       var pollTv = polls.today.map(function (p) {
-        return '<div class="ch-card"><div class="ch-title">🗳️ Today\'s ' + (p.kind === 'Trivia' ? 'trivia' : 'This or That') + ': ' + esc(p.question) + '</div>' +
+        return '<div class="ch-card"><div class="ch-title">🗳️ Today\'s ' + pollLabel(p) + ': ' + esc(p.question) + '</div>' +
           '<div class="ch-desc">' + p.choices.map(esc).join(' or ') + '? Vote on clashofclasses.org with your 800#. Every vote = a squad point!</div></div>';
       }).join('');
       ch.innerHTML = pollTv + (active.length ? active.slice(0, 3).map(function (c) { return challengeCard(c); }).join('')
@@ -376,15 +376,22 @@
 
   // ── Daily Polls (06_Polls.gs): vote with your 800#, results after you vote ──
   var polls = { today: [], last: null };
+  function pollLabel(p) { return p.kind === 'Trivia' ? 'trivia' : p.kind === 'School Pulse' ? 'School Pulse' : p.kind === 'Check-in' ? (p.kindLabel || 'Check-in') : 'This or That'; }
   function pollCard(p) {
     var showCounts = p.counts && (p.voted || p.closed);
     var total = Math.max(1, Object.keys(p.counts || {}).reduce(function (n, k) { return n + p.counts[k]; }, 0));
-    var head = '<div class="ch-title">🗳️ ' + (p.kind === 'Trivia' ? 'Trivia' : 'This or That') + (p.closed ? ' · results' : '') + '</div><div class="ch-desc">' + esc(p.question) + '</div>';
+    var icon = p.kind === 'Check-in' ? '✋ ' : p.kind === 'School Pulse' ? '📊 ' : '🗳️ ';
+    var head = '<div class="ch-title">' + icon + (p.kind === 'Trivia' ? 'Trivia' : pollLabel(p)) + (p.closed ? ' · results' : '') + '</div><div class="ch-desc">' + esc(p.question) + '</div>';
+    if (p.kind === 'Check-in') {
+      if (!p.voted && !p.closed) return '<div class="ch-card">' + head + '<div class="ms-form"><button class="btn btn-purple poll-choice" data-poll="' + esc(p.id) + '" data-choice="' + esc(p.choices[0]) + '">' + esc(p.choices[0]) + '</button></div>' +
+        '<div class="ms-small" style="margin-top:8px">Check in with your 800#: every check-in earns your squad a point and counts toward the map.</div><div class="ms-err poll-err"></div></div>';
+      return '<div class="ch-card">' + head + '<div class="ms-small">' + (p.voted ? '✅ You\'re checked in! ' : '') + p.total + (p.total === 1 ? ' student' : ' students') + ' checked in.</div></div>';
+    }
     if (!showCounts && !p.closed) {
       return '<div class="ch-card">' + head + '<div class="ms-form">' + p.choices.map(function (c) {
         return '<button class="btn btn-purple poll-choice" data-poll="' + esc(p.id) + '" data-choice="' + esc(c) + '">' + esc(c) + '</button>';
       }).join(' ') + '</div><div class="ms-small" style="margin-top:8px">Vote with your 800#: every vote earns your squad a point' +
-        (p.kind === 'Trivia' ? ', and a right answer earns one more.' : ', and picking the winning side earns one more.') + '</div><div class="ms-err poll-err"></div></div>';
+        (p.kind === 'Trivia' ? ', and a right answer earns one more.' : p.kind === 'School Pulse' ? '. Your answer helps the school plan.' : ', and picking the winning side earns one more.') + '</div><div class="ms-err poll-err"></div></div>';
     }
     return '<div class="ch-card">' + head + p.choices.map(function (c) {
       var v = (p.counts || {})[c] || 0, pct = Math.round(100 * v / total);

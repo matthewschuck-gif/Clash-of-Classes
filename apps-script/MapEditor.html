@@ -101,19 +101,24 @@
   function drawRules() {
     var t = document.getElementById('meRules');
     if (!t) return;
-    t.innerHTML = '<thead><tr><th>Show</th><th>Rule</th><th>What students see</th><th>Method</th><th>Counts (event types or words; * = all)</th><th>Days</th><th>⚔ Must border</th><th>Defense %</th><th>Far attack %</th><th></th></tr></thead><tbody>' +
+    t.innerHTML = '<thead><tr><th>Show</th><th>Rule</th><th>What students see</th><th>Method</th><th>Counts (event types or words; * = all; stat name)</th><th>Days</th><th>Best is</th><th>Per 100</th><th>Captured by</th><th>× Pay</th><th>⚔ Must border</th><th>Defense %</th><th>Far attack %</th><th></th></tr></thead><tbody>' +
       st.rules.map(function (r, i) {
         return '<tr data-r="' + i + '"><td><input type="checkbox" data-rf="show"' + (r.show ? ' checked' : '') + '></td>' +
           '<td style="min-width:120px"><input type="text" data-rf="rule" value="' + esc(r.rule) + '"></td>' +
           '<td style="min-width:220px"><input type="text" data-rf="text" value="' + esc(r.text) + '"></td>' +
           '<td style="min-width:120px"><select data-rf="method">' + st.methods.map(function (m) { return '<option' + (m === r.method ? ' selected' : '') + '>' + m + '</option>'; }).join('') + '</select></td>' +
           '<td style="min-width:160px"><input type="text" data-rf="counts" value="' + esc(r.counts) + '"' + (r.method === 'staff pick' ? ' disabled' : '') + '></td>' +
-          '<td style="width:64px"><input type="number" min="1" max="365" data-rf="days" value="' + esc(r.days) + '" placeholder="' + st.claimDays + '"></td>' +
+          '<td style="width:96px"><input type="text" list="meWindows" data-rf="days" value="' + esc(r.days) + '" placeholder="' + st.claimDays + '"></td>' +
+          '<td><select data-rf="best">' + ['Most', 'Least'].map(function (m) { return '<option' + (m === (r.best || 'Most') ? ' selected' : '') + '>' + m + '</option>'; }).join('') + '</select></td>' +
+          '<td style="text-align:center"><input type="checkbox" data-rf="per100"' + (r.per100 ? ' checked' : '') + '></td>' +
+          '<td><select data-rf="captured">' + ['', '800# check-in', 'School records', 'Clash points', 'Staff pick'].map(function (m) { return '<option value="' + m + '"' + (m === (r.captured || '') ? ' selected' : '') + '>' + (m || '—') + '</option>'; }).join('') + '</select></td>' +
+          '<td style="width:56px"><input type="number" min="0" max="10" step="0.25" data-rf="mult" value="' + esc(r.mult) + '" placeholder="1"></td>' +
           '<td style="text-align:center"><input type="checkbox" data-rf="border"' + (r.border ? ' checked' : '') + '></td>' +
           '<td style="width:64px"><input type="number" min="0" max="500" data-rf="defense" value="' + esc(r.defense) + '"></td>' +
           '<td style="width:64px"><input type="number" min="0" max="1000" data-rf="far" value="' + esc(r.far) + '" placeholder="none"' + (r.border ? '' : ' disabled') + '></td>' +
           '<td><button class="me-btn warn" data-do="delRule" data-r="' + i + '">✕</button></td></tr>';
       }).join('') + '</tbody>';
+    if (!document.getElementById('meWindows')) t.insertAdjacentHTML('afterend', '<datalist id="meWindows"><option value="last month"><option value="7"><option value="14"><option value="30"></datalist>');
   }
   function render() {
     var b = box();
@@ -122,6 +127,8 @@
       '<button class="me-btn" data-do="building">🏫 Start from the building layout</button><button class="me-btn" data-do="reload">↺ Reload</button><span class="me-msg" id="meMsg"></span></div>' +
       '<div class="me-board" id="meBoard"></div><div class="me-cols"><div class="me-form" id="meForm"></div></div>' +
       '<h3 class="me-h">Ways to conquer</h3><div class="me-hint" style="font-size:12px;color:var(--text3);margin-bottom:6px">Each zone picks one. most points = most points from Counts in the last Days · most entries = most times a squad earned · staff pick = you set Held by. ' +
+      'check-ins = most students who checked in with their 800# on polls whose kind or question has a Counts word (Pride Day, the Wheel; * = every poll) · school data = one number per squad: attendance, grades or referral, or a Stat on the Squad Stats tab (LRR + LD Students, Interventions, Top Learners). ' +
+      'Days "last month" = judged on the last calendar month and held all of this month. Best is Least = fewest wins. Per 100 = divided by squad size. × Pay = what the zone\'s weekly points are multiplied by (starts from Captured by: 800# check-in 2, School records 1.5, the rest 1). ' +
       '⚔ Must border = Risk rule: only a squad holding a zone next door can take it (a squad with no zones can land anywhere). Defense % = how much more than the holder a challenger needs. Far attack % = with Must border, a squad from farther away can still take it with this much more (blank = next door only). Claims update about every 10 minutes.</div>' +
       '<div class="me-rules-wrap"><table class="me-rules" id="meRules"></table></div><button class="me-btn" style="margin-top:8px" data-do="addRule">+ Way to conquer</button>';
     drawBoard(); drawForm(); drawRules();
@@ -186,7 +193,7 @@
       st.sel = st.zones.length - 1; changed(); render(); return;
     }
     if (d === 'delZone') { if (confirm('Delete ' + st.zones[st.sel].zone + '?')) { st.zones.splice(st.sel, 1); st.sel = -1; changed(); render(); } return; }
-    if (d === 'addRule') { st.rules.push({ show: true, rule: 'New Rule ' + (st.rules.length + 1), text: '', method: 'most points', counts: '*', days: '', border: false, defense: 0, far: '' }); changed(); drawRules(); drawForm(); return; }
+    if (d === 'addRule') { st.rules.push({ show: true, rule: 'New Rule ' + (st.rules.length + 1), text: '', method: 'most points', counts: '*', days: 'last month', border: false, defense: 0, far: '', best: 'Most', per100: false, captured: '', mult: '' }); changed(); drawRules(); drawForm(); return; }
     if (d === 'delRule') {
       var r = st.rules[Number(b.getAttribute('data-r'))], used = st.zones.filter(function (z) { return z.conquerBy === r.rule; }).map(function (z) { return z.zone; });
       if (used.length && !confirm(r.rule + ' is used by ' + used.join(', ') + '. Delete it anyway? Those zones go back to the old way.')) return;

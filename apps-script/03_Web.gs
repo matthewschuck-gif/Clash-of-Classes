@@ -25,6 +25,7 @@ const LEGACY_DEFAULT_PW_ = 'ephrata2026'; // the site's built-in password before
 // ── PAGE ────────────────────────────────────────────────────────────
 function serveSite_(e) {
   if (e && e.parameter && e.parameter.page === 'me') return serveMe_(); // My Climb, the student dashboard (16_Me.gs)
+  if (e && e.parameter && e.parameter.page === 'pollboard') return servePollBoard_(); // the live poll screen (26_PollIdeas.gs)
   const t = HtmlService.createTemplateFromFile('Index');
   t.config = JSON.stringify({ pollMs: Math.max(3, Number(getSetting_('POLL_SECONDS')) || 5) * 1000 });
   // The first load rides inside the page, so it shows without a second trip to the server.
@@ -327,6 +328,9 @@ function onOpen() {
     .addItem('Today\'s poll announcement', 'menuPollAnnouncement_')
     .addItem('Turn on daily poll points', 'menuTurnOnPolls_')
     .addItem('Turn off daily poll points', 'menuTurnOffPolls_')
+    .addItem('Schedule poll ideas (next 5 school days)', 'menuSchedulePollIdeas_')
+    .addItem('Update Poll Insights (answers by squad and grade)', 'menuPollInsights_')
+    .addItem('Open the live Poll Board (projector)', 'menuOpenPollBoard_')
     .addSeparator()
     .addItem('Turn on Squad Duel bonuses', 'menuTurnOnDuels_')
     .addItem('Turn off Squad Duel bonuses', 'menuTurnOffDuels_')
@@ -342,6 +346,7 @@ function onOpen() {
     .addItem('Turn on game awards', 'menuTurnOnGame_')
     .addItem('Turn off game awards', 'menuTurnOffGame_')
     .addItem('Use the building map (replaces Map Zones)', 'menuBuildingMap_')
+    .addItem('Give each area its own data (keeps zones + holders)', 'menuLocationRules_')
     .addItem('Today\'s morning announcement', 'menuAnnouncement_')
     .addItem('Turn on the weekly digest email', 'menuTurnOnDigest_')
     .addItem('Turn off the weekly digest email', 'menuTurnOffDigest_')

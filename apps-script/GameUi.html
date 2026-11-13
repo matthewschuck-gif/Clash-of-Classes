@@ -300,7 +300,7 @@
     }).join('') + '</div>' : '';
     var rules = map.rules && map.rules.length && opts.rules !== false ? '<details class="gb-rules"><summary>How to win each zone</summary>' + map.rules.map(function (r) {
       return '<div><b>' + (r.border ? '⚔ ' : r.method === 'staff pick' ? '★ ' : '') + esc(r.rule) + '</b>: ' + esc(r.text) +
-        (r.method !== 'staff pick' ? ' <span>(last ' + r.days + ' days' + (r.defense ? ', the holder has a ' + r.defense + '% edge' : '') + (r.border ? (r.far != null ? ', ' + r.far + '% from farther away' : ', next door only') : '') + ')</span>' : '') +
+        (r.method !== 'staff pick' ? ' <span>(' + (r.lastMonth ? 'judged on last month, held all this month' : 'last ' + r.days + ' days') + (r.per100 ? ', per 100 students' : '') + (r.mult && r.mult !== 1 ? ', pays ×' + r.mult : '') + (r.defense ? ', the holder has a ' + r.defense + '% edge' : '') + (r.border ? (r.far != null ? ', ' + r.far + '% from farther away' : ', next door only') : '') + ')</span>' : '') +
         '<em>' + esc(r.zones.join(' · ')) + '</em></div>';
     }).join('') + '</details>' : '';
     return '<div class="gb' + (building ? ' gb-building' : '') + '"><svg viewBox="' + (-cell / 4) + ' ' + (-cell / 4) + ' ' + (W + cell / 2) + ' ' + (H + cell / 2) + '" role="img" aria-label="Clash territory map">' +
