@@ -13,7 +13,8 @@
  *   Counts:      event types or words in the event name, comma-separated (* = every point); the poll
  *                words for check-ins; the stat name for school data
  *   Window Days: how far back it looks (blank = CLAIM_DAYS). "last month" = the last calendar month,
- *                so a zone is won on last month's numbers and held all of this month.
+ *                so a zone is won on last month's numbers and held all of this month. "this month" =
+ *                the month so far (the Office: First Friday Coffee winners take it the day they win).
  *   Best Is:     Most (blank) or Least (fewest LRRs, fewest interventions)
  *   Per 100 Students: divide by squad size, so a bigger squad has no edge on counts
  *   Captured By, Multiplier: how the data is collected, and what that does to the zone's weekly pay
@@ -41,7 +42,7 @@ const RULE_METHODS_ = ['most points', 'most entries', 'check-ins', 'school data'
 const STATS_HEADERS_ = ['Month', 'Stat', 'BLACK', 'GOLD', 'GREY', 'PURPLE', 'Source', 'Updated'];
 // How the data is captured sets the weekly pay. 800# check-ins are data the school never had
 // before, so they pay double; school records are the hardest to move.
-const CAPTURE_MULTIPLIERS_ = { '800# check-in': 2, 'school records': 1.5, 'clash points': 1, 'staff pick': 1 };
+const CAPTURE_MULTIPLIERS_ = { '800# check-in': 2, 'school records': 1.5, 'clash points': 1, 'staff challenge': 1, 'staff pick': 1 };
 
 // One rule per area of the building. Every one looks at the last calendar month.
 // [Show, Rule, How It Works, Method, Counts, Window Days, Must Border, Defense %, Far Attack %, Best Is, Per 100 Students, Captured By, Multiplier]
@@ -54,6 +55,7 @@ const BUILDING_RULES_ = [
   [true, 'Attendance', 'Best attendance rate last month.', 'school data', 'attendance', 'last month', false, 0, '', 'Most', false, 'School records', 1.5],
   [true, 'Shout-outs', 'Most shout-outs last month (per 100 students).', 'most entries', 'shout', 'last month', false, 0, '', 'Most', true, 'Clash points', 1],
   [true, 'Growth Grind', 'Most Mindset summit and STAR growth points last month (per 100 students).', 'most points', 'star_growth, mountaineer_mindset', 'last month', false, 0, '', 'Most', true, 'School records', 1.5],
+  [true, 'First Friday Coffee', 'The squad whose teachers and staff won this month\'s First Friday Coffee challenges.', 'school data', 'Staff Challenge Wins', 'this month', false, 0, '', 'Most', false, 'Staff challenge', 1],
   [true, 'Staff Pick', 'Staff decide who holds it.', 'staff pick', '', '', false, 0, '', 'Most', false, 'Staff pick', 1],
   [true, 'Passing Grades', 'Fewest failing grades: the most students with no core F.', 'school data', 'grades', 'last month', false, 0, '', 'Most', false, 'School records', 1.5],
   [true, 'Trait Dough', 'Most Trait Dough earned last month (per 100 students).', 'most points', 'trait_dough', 'last month', false, 0, '', 'Most', true, 'Clash points', 1],
@@ -71,7 +73,7 @@ const BUILDING_ZONES_ = [
   ['50s Hall', 'North Halls', false, 'Attendance', 3, 9, 0, 6, 5],
   ['60s Hall', 'North Halls', false, 'Shout-outs', 3, 9, 5, 6, 4],
   ['Media Center', 'Heart of the School', false, 'Growth Grind', 3, 9, 9, 6, 3],
-  ['Front Office', 'Heart of the School', false, 'Staff Pick', 2, 9, 12, 6, 3],
+  ['Front Office', 'Heart of the School', false, 'First Friday Coffee', 2, 9, 12, 6, 3],
   ['70s Hall', 'East Halls', false, 'Passing Grades', 3, 15, 6, 6, 4],
   ['80s Hall', 'East Halls', false, 'Trait Dough', 3, 15, 10, 6, 5],
   ['90s Hall', 'East Halls', false, 'Fewest Interventions', 3, 21, 6, 3, 9],
@@ -152,7 +154,8 @@ function conquestRules_() {
     if (!name || !ticked_(r['Show'])) return;
     const method = String(r['Method'] || '').trim().toLowerCase();
     out[name.toLowerCase()] = { rule: name, text: String(r['How It Works'] || ''), method: RULE_METHODS_.indexOf(method) > -1 ? method : 'most points',
-      counts: String(r['Counts'] || ''), days: Number(r['Window Days']) || 0, lastMonth: /month/i.test(String(r['Window Days'] || '')),
+      counts: String(r['Counts'] || ''), days: Number(r['Window Days']) || 0, lastMonth: /month/i.test(String(r['Window Days'] || '')) && !/this/i.test(String(r['Window Days'] || '')),
+      thisMonth: /this\s*month/i.test(String(r['Window Days'] || '')),
       border: ticked_(r['Must Border']), defense: Math.max(0, Number(r['Defense %']) || 0),
       far: String(r['Far Attack %'] == null ? '' : r['Far Attack %']).trim() === '' ? null : Math.max(0, Number(r['Far Attack %']) || 0),
       least: /^least|^fewest|^lowest/i.test(String(r['Best Is'] || '').trim()), per100: ticked_(r['Per 100 Students']),
@@ -224,7 +227,8 @@ function schoolStat_(name, month) {
 
 // What each squad scored on a zone's rule. Counts may be divided by squad size (per 100 students).
 function zoneScore_(z, events, today) {
-  const win = z.lastMonth ? lastMonthWindow_(today) : { from: ymdShift_(today, -z.days + 1), to: today, month: '' };
+  const win = z.lastMonth ? lastMonthWindow_(today) : z.thisMonth ? { from: today.slice(0, 8) + '01', to: today, month: today.slice(0, 7) }
+    : { from: ymdShift_(today, -z.days + 1), to: today, month: '' };
   let score;
   if (z.method === 'school data') score = schoolStat_(z.claimedBy, win.month || today.slice(0, 7));
   else if (z.method === 'check-ins') score = checkInsBy_(win.from, win.to, z.claimedBy);
@@ -279,7 +283,7 @@ function mapZones_(events, write) {
     return { row: r._row, zone: String(r['Zone']).trim(), wing: String(r['Wing'] || '').trim(), summit: ticked_(r['Summit']),
       rule: rule.rule, ruleText: rule.text, method: rule.method, claimedBy: rule.counts, days: rule.days || claimDays,
       border: rule.border, defense: rule.defense, far: rule.border ? rule.far : null, weekly: Number(r['Weekly Points']) || 0,
-      lastMonth: !!rule.lastMonth, least: !!rule.least, per100: !!rule.per100, captured: rule.captured || '', mult: rule.mult || 1,
+      lastMonth: !!rule.lastMonth, thisMonth: !!rule.thisMonth, least: !!rule.least, per100: !!rule.per100, captured: rule.captured || '', mult: rule.mult || 1,
       x: Math.max(0, Number(r['X']) || 0), y: Math.max(0, Number(r['Y']) || 0), w: Math.max(1, Number(r['W']) || 1), h: Math.max(1, Number(r['H']) || 1),
       borders: String(r['Borders'] || ''), holder: holder, since: String(r['Since'] || '') };
   });
@@ -342,7 +346,7 @@ function mapPayload_(events, zones) {
   zones.forEach(function (z) {
     const k = z.rule || 'Most points';
     rules[k] = rules[k] || { rule: k, text: z.ruleText || 'Most points from ' + (z.claimedBy || 'anything') + ' in the last ' + z.days + ' days.',
-      border: z.border, defense: z.defense, far: z.far, days: z.days, method: z.method, lastMonth: z.lastMonth, least: z.least,
+      border: z.border, defense: z.defense, far: z.far, days: z.days, method: z.method, lastMonth: z.lastMonth, thisMonth: z.thisMonth, least: z.least,
       per100: z.per100, captured: z.captured, mult: z.mult, zones: [] };
     rules[k].zones.push(z.zone);
   });
@@ -380,6 +384,7 @@ function clashMapLoad(token) {
 // Window Days as typed: '' | a number of days | 'last month'.
 function windowCell_(v) {
   if (v === '' || v == null) return '';
+  if (/this\s*month/i.test(String(v))) return 'this month';
   if (/month/i.test(String(v))) return 'last month';
   return Number(v) || '';
 }
@@ -400,7 +405,7 @@ function clashMapSave(token, json) {
       names[name.toLowerCase()] = 1;
       const method = String(r.method || '').toLowerCase();
       return { 'Show': r.show !== false, 'Rule': name, 'How It Works': clip(r.text, 300), 'Method': RULE_METHODS_.indexOf(method) > -1 ? method : 'most points',
-        'Counts': clip(r.counts, 200), 'Window Days': r.days === '' || r.days == null ? '' : /month/i.test(String(r.days)) ? 'last month' : num(r.days, 1, 365),
+        'Counts': clip(r.counts, 200), 'Window Days': r.days === '' || r.days == null ? '' : /month/i.test(String(r.days)) ? windowCell_(r.days) : num(r.days, 1, 365),
         'Must Border': !!r.border, 'Defense %': num(r.defense, 0, 500),
         'Far Attack %': r.far === '' || r.far == null ? '' : num(r.far, 0, 1000),
         'Best Is': /^least/i.test(String(r.best || '')) ? 'Least' : 'Most', 'Per 100 Students': !!r.per100, 'Captured By': clip(r.captured, 40),
@@ -471,7 +476,7 @@ function applyLocationRules_() {
 function menuLocationRules_() {
   const ui = SpreadsheetApp.getUi();
   if (ui.alert('Give every area its own data?', 'Gym 2 = Pride Day check-ins, Gym 1 = top learners, Cafeteria = fewest LRR/LD students, Music = Full Climb, ' +
-    'Auditorium = Wheel + poll check-ins, 50s = attendance, 60s = shout-outs, Media Center = Growth Grind, Office = staff pick, 70s = fewest failing grades, ' +
+    'Auditorium = Wheel + poll check-ins, 50s = attendance, 60s = shout-outs, Media Center = Growth Grind, Office = First Friday Coffee staff challenge winners, 70s = fewest failing grades, ' +
     '80s = Trait Dough, 90s = fewest interventions. All judged on last calendar month. Zones keep their spot and holder; your other rules stay.', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
   const n = applyLocationRules_();
   ui.alert('Done: ' + n + ' areas now have their own rule. See "How The Map Works" for the list and the multipliers.');
@@ -544,7 +549,9 @@ function setupMapGuideTab_() {
     '                      Game bonuses (territory, chance cards, etc.) and private behavior rows never count.',
     '     Window Days   -- how many days back it looks. Blank = CLAIM_DAYS on the Settings tab (14).',
     '                      "last month" = the last calendar month: on the 1st the zone goes to last',
-    '                      month\'s winner and stays with them all month. Every building rule uses this.',
+    '                      month\'s winner and stays with them all month. The building rules use this,',
+    '                      except the Office: "this month" = the month so far, so it changes hands the',
+    '                      day the First Friday Coffee result goes in.',
     '     Best Is       -- Most, or Least (fewest LRR + LD students, fewest interventions). With Least, 0 is',
     '                      the best score and a squad with no number sits out.',
     '     Per 100 Students -- divide by squad size, so a bigger squad has no edge on counts.',
@@ -568,7 +575,10 @@ function setupMapGuideTab_() {
     '     50s Hall         -- Attendance: best attendance rate                                  x1.5',
     '     60s Hall         -- Shout-outs: most shout-outs per 100 students                      x1',
     '     Media Center     -- Growth Grind: most Mindset summit + STAR growth points per 100     x1.5',
-    '     Front Office     -- Staff Pick                                                        x1',
+    '     Front Office     -- First Friday Coffee: the squad whose adults won this month\'s staff  x1',
+    '                         challenges. Type it on Squad Stats right after coffee: Month (yyyy-MM),',
+    '                         Stat "Staff Challenge Wins", a number under each squad (wins or points).',
+    '                         The winner takes the Office that day and keeps it until a squad beats it.',
     '     70s Hall         -- Passing Grades: fewest failing grades (most students with no core F) x1.5',
     '     80s Hall         -- Trait Dough: most Trait Dough earned per 100 students              x1',
     '     90s Hall         -- Fewest Interventions: teacher + admin combined, per 100            x1.5',

@@ -1408,7 +1408,7 @@ test('location data: Pride Day check-ins, fewest LRRs (Least, per 100), capture 
   const zoneRule = {};
   w.sheetRows_('Map Zones').forEach(r => { zoneRule[r.Zone] = r['Conquer By']; });
   assert.deepStrictEqual(zoneRule, { 'Gym 2': 'Pride Day', 'Gym 1': 'Top Learners', 'Cafeteria': 'Clean Lunch', 'Music Wing': 'Full Climb', 'Auditorium': 'Wheel & Polls',
-    '50s Hall': 'Attendance', '60s Hall': 'Shout-outs', 'Media Center': 'Growth Grind', 'Front Office': 'Staff Pick', '70s Hall': 'Passing Grades',
+    '50s Hall': 'Attendance', '60s Hall': 'Shout-outs', 'Media Center': 'Growth Grind', 'Front Office': 'First Friday Coffee', '70s Hall': 'Passing Grades',
     '80s Hall': 'Trait Dough', '90s Hall': 'Fewest Interventions' });
   assert.strictEqual(w.ruleMultiplier_('', 'School records'), 1.5);
   assert.strictEqual(w.ruleMultiplier_(3, 'School records'), 3, 'the Multiplier column wins');
@@ -1436,6 +1436,15 @@ test('location data: Pride Day check-ins, fewest LRRs (Least, per 100), capture 
   assert.strictEqual(z('Cafeteria').holder, 'GOLD', 'Least: GOLD\'s 0 LRR students wins; other months are ignored');
   assert.strictEqual(z('90s Hall').holder, 'GREY', 'Least interventions');
   assert.strictEqual(z('Cafeteria').mult, 1.5);
+  // The Office: First Friday Coffee staff challenge winners, THIS month, typed on Squad Stats.
+  assert.strictEqual(z('Front Office').holder, '', 'no coffee result yet this month');
+  stats.rows.push([today.slice(0, 7), 'Staff Challenge Wins', 0, 0, 0, 3, 'typed after coffee', '']);
+  zones = JSON.parse(JSON.stringify(w.mapZones_(null, true)));
+  assert.strictEqual(z('Front Office').holder, 'PURPLE', 'the coffee winner takes the Office the day it is typed in');
+  stats.rows.forEach(r => { if (r[1] === 'Staff Challenge Wins') r[0] = '2020-01'; }); // a new month with no result yet
+  zones = JSON.parse(JSON.stringify(w.mapZones_(null, true)));
+  assert.strictEqual(z('Front Office').holder, 'PURPLE', 'they keep it until the next coffee');
+  assert.strictEqual(w.windowCell_('This Month'), 'this month');
   // Least with a defense edge: the holder keeps it unless a challenger is that much lower.
   const cr = w.book.getSheetByName('Conquest Rules'), defCol = cr.rows[0].indexOf('Defense %');
   cr.rows.forEach(r => { if (r[1] === 'Fewest Interventions') r[defCol] = 50; });
