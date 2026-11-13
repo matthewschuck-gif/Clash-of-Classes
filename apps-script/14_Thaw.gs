@@ -14,6 +14,8 @@
  * Thaw Goals, separated by ; or new lines:
  *   points: 150      the squad earns 150 points while frozen (they still don't count)
  *   everyone: 70%    70% of the squad (Student Board) contributed something since the freeze began
+ *   marker: Interventions   that Freeze Lines marker is back on the safe side for a whole month
+ *                    (checked on the 1st; 28_Frost.gs writes these for frost-check freezes)
  *   anything else    a goal staff check (a squad reflection, a service act); Staff Sign-off covers it
  *
  * The goals are checked every few minutes when the site loads (checkThaws_), and by
@@ -24,6 +26,8 @@ function thawGoals_(text) {
   return String(text || '').split(/[;\n]+/).map(function (g) { return g.trim(); }).filter(String).map(function (g) {
     let m = g.match(/^points?\s*:\s*(\d+)/i);
     if (m) return { type: 'points', need: Number(m[1]), text: 'Earn ' + m[1] + ' points together' };
+    m = g.match(/^marker\s*:\s*(.+)$/i);
+    if (m) return { type: 'marker', need: 1, marker: m[1].trim(), text: 'Get ' + m[1].trim() + ' back on the safe side for a whole month' };
     m = g.match(/^everyone\s*:\s*(\d+)\s*%?/i);
     if (m) return { type: 'everyone', need: Number(m[1]), text: m[1] + '% of the squad pitches in' };
     return { type: 'staff', need: 1, text: g };
@@ -69,6 +73,7 @@ function freezeDetail_(squad, events) {
   const measure = function (g) {
     if (g.type === 'points') { if (iced === null) iced = icedPoints_(squad, f.start, events); return iced; }
     if (g.type === 'everyone') { if (!pitched) pitched = pitchedIn_(squad, f.start); return pitched.pct; }
+    if (g.type === 'marker') return markerSafe_(squad, g.marker, f.start);
     return f.signoff ? 1 : 0;
   };
   if (f.kind === 'FUN') {

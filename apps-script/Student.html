@@ -315,7 +315,7 @@
         (r.theme && r.theme.theme ? '<div class="ms-standing">Squad theme: <b>' + esc(r.theme.theme) + '</b>' + (r.theme.meaning ? ' · ' + esc(r.theme.meaning) : '') +
           (r.theme.project ? '<br>Service project: ' + esc(r.theme.project) + (r.theme.goal ? ' (' + r.theme.progress + ' of ' + r.theme.goal + ')' : '') : '') + '</div>' : '') +
         (r.theme && r.theme.trait ? '<div class="ms-standing">Squad trait: <b>' + esc(r.theme.trait) + '</b></div>' : '') +
-        '<div class="ms-standing">' + standing + '</div>' + (st && st.frozen && window.thawHtml ? window.thawHtml(st.frozen) : '') + '</div>' +
+        '<div class="ms-standing">' + standing + '</div>' + (st && st.frozen && window.thawHtml ? window.thawHtml(st.frozen) : '') + (st && st.frost && window.frostHtml ? window.frostHtml(st.frost) : '') + '</div>' +
       loreCard(r.theme, me.squad) + chaptersCard(r.lore, me.squad) +
       (r.duels || []).map(function (d) { return duelCard(d, me.squad); }).join('') +
       '<div class="ms-card"><div class="ms-h">What you\'ve added</div><div class="ms-tiles">' +
@@ -360,6 +360,11 @@
           return '<div class="ch-card"><div class="ch-title" style="color:' + COLOR[u.squad] + '">📜 ' + title(u.squad) + ' unlocked Chapter ' + u.chapter + ': ' + esc(u.title) + '</div>' +
             '<div class="ch-desc">Read it on My Squad at clashofclasses.org</div></div>';
         }).join('');
+      var fm = f.frost ? SQ.filter(function (s) { return f.frost[s]; }).map(function (s) {
+        var fr = f.frost[s], over = fr.markers.filter(function (m) { return m.over; }).length;
+        return '<span style="color:' + COLOR[s] + ';margin-right:14px">' + title(s) + ' ' + (over ? (over === 1 ? '⚠️' : '🧊') : '✅') + '</span>';
+      }).join('') : '';
+      if (fm) extra = '<div class="ch-card"><div class="ch-title">❄️ Frost meter: this month so far</div><div class="ch-desc">' + fm + ' ✅ safe · ⚠️ frost warning pace · 🧊 freeze pace</div></div>' + extra;
       if (ch && extra) ch.innerHTML = extra + ch.innerHTML.replace(/<div class="ch-card"><div class="ch-title">🏁 No challenge running right now<\/div><\/div>/, '');
       var left = '<div><div class="tv-cat-title">⚡ Latest points</div>' + (f.latest || []).map(function (e) {
         var pts = SQ.filter(function (s) { return e.pts[s]; }).map(function (s) {

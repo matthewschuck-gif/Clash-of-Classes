@@ -1586,4 +1586,71 @@ test('Cafeteria counts LRRs + LDs from the Follow-Up sheets; every area\'s multi
   assert.strictEqual(zones.find(z => z.zone === 'Music Wing').mult, 1, 'blank = back to the rule');
 });
 
+test('frost check: same lines for every squad, a warning first, a repeat or two lines = freeze proposed, staff approve, thaw together, meter + explainer', () => {
+  const w = world();
+  const today = w.todayYmd_(), lm = w.lastMonthWindow_(today).month, prev = w.prevMonth_(lm), inLm = lm + '-05';
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureFrostTabs_();
+  assert.strictEqual(w.book.getSheetByName('Freeze Lines').rows.length, 6, 'five starting lines');
+  w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade', 'Last Contribution'],
+    ['8001111', 'Ann L.', 'Gold', '7', today], ['8002222', 'Ed P.', 'Gold', '8', ''], ['8003333', 'Cy R.', 'Grey', '7', ''], ['8004444', 'Bo K.', 'Black', '8', '']];
+  // Lines for the test (metrics tab: attendance BLACK 90, GOLD 91, GREY 92, PURPLE 93).
+  w.writeRowsByHeader_(w.book.getSheetByName('Freeze Lines'), [
+    { Show: true, Marker: 'LRR + LD students', Measures: 'stat: LRR + LD Students', 'Freezes If': 'Above', Line: 50, 'Per 100 Students': true, Kind: 'Peaks', 'What Students See': 'Students with an LRR or LD' },
+    { Show: true, Marker: 'Attendance', Measures: 'attendance', 'Freezes If': 'Below', Line: 92, 'Per 100 Students': false, Kind: 'Peaks', 'What Students See': 'Attendance rate' },
+    { Show: true, Marker: 'Points floor', Measures: 'points', 'Freezes If': 'Below', Line: 1, 'Per 100 Students': true, Kind: 'Fun', 'What Students See': 'Points earned' }]);
+  w.book.getSheetByName('Squad Stats').rows.push([lm, 'LRR + LD Students', 1, 0, 0, '', 'Follow-Up', '']);
+  w.book.getSheetByName('events').rows.splice(1); // only this test's points
+  w.book.getSheetByName('events').rows.push([501, 'Spirit', 'event', inLm, '', '', 0, 10, 10, 0], [502, 'Spirit', 'event', prev + '-05', '', '', 0, 10, 10, 0]);
+  // Before FROST_START nothing is checked.
+  w.setSettingValue_('FROST_START', '2099-01');
+  assert.ok(/before FROST_START/.test(w.runFrostCheck_(lm)[0]));
+  w.setSettingValue_('FROST_START', prev);
+  // Month 1: GOLD crosses attendance only = a frost warning. BLACK crosses attendance + points = freeze proposed.
+  w.runFrostCheck_(prev);
+  let log = w.sheetRows_('Frost Log');
+  const st = (m, s) => (log.find(r => String(r.Month).slice(0, 7) === m && r.Squad === s) || {}).Status;
+  assert.strictEqual(st(prev, 'GOLD'), 'Frost warning');
+  assert.strictEqual(st(prev, 'GREY'), 'Safe');
+  assert.strictEqual(st(prev, 'BLACK'), 'Freeze proposed');
+  assert.strictEqual(st(prev, 'PURPLE'), 'Safe', 'no students on the roster: per-100 lines have nothing to measure');
+  // Month 2: GOLD crosses attendance again = freeze proposed (the same line two months running).
+  w.runFrostCheck_(lm);
+  log = w.sheetRows_('Frost Log');
+  assert.strictEqual(st(lm, 'GOLD'), 'Freeze proposed');
+  assert.strictEqual(log.find(r => String(r.Month).slice(0, 7) === lm && r.Squad === 'GOLD').Kind, 'Peaks');
+  assert.strictEqual(w.runFrostCheck_(lm).length, 0, 'each month is checked once');
+  // Nothing freezes until staff approve.
+  assert.strictEqual(w.freezeDetail_('GOLD'), null);
+  assert.strictEqual(w.applyApprovedFrost_().length, 0);
+  const fl = w.book.getSheetByName('Frost Log'), ap = fl.rows[0].indexOf('Approve');
+  fl.rows.forEach(r => { if (String(r[0]).slice(0, 7) === lm && r[1] === 'GOLD') r[ap] = true; });
+  assert.ok(/GOLD: Peaks Freeze started/.test(w.applyApprovedFrost_()[0]));
+  assert.strictEqual(w.applyApprovedFrost_().length, 0, 'applied once');
+  const fz = J(w.freezeDetail_('GOLD'));
+  assert.strictEqual(fz.kind, 'Peaks');
+  assert.deepStrictEqual(fz.goals.map(g => g.type), ['marker', 'everyone', 'points', 'staff'], 'fix the line, everyone pitches in, earn points, a reflection');
+  assert.strictEqual(fz.goals[0].met, false, 'the line is checked on the 1st after a whole month');
+  assert.strictEqual(fz.ready, false);
+  assert.strictEqual(w.freezeDetail_('BLACK'), null, 'a proposal nobody approved never freezes');
+  // Fix the line: a whole month on the safe side after the freeze began.
+  assert.strictEqual(w.markerSafe_('GREY', 'Attendance', '2020-01-01'), 1);
+  assert.strictEqual(w.markerSafe_('GOLD', 'Attendance', '2020-01-01'), 0);
+  // A squad already frozen is logged Still frozen, not proposed again.
+  const next = w.runFrostCheck_(lm, true).find(l => /^GOLD/.test(l));
+  assert.ok(/Still frozen/.test(next));
+  // What students see: squad totals vs each line, no names, no 800#s.
+  const meter = J(w.frostMeter_());
+  assert.strictEqual(meter.GOLD.markers.length, 3);
+  assert.strictEqual(meter.GOLD.live, true);
+  assert.ok(meter.GOLD.markers.find(m => m.label === 'Attendance rate').over);
+  const feed = w.clashTvFeed();
+  assert.ok(JSON.parse(feed).frost.BLACK, 'the TV gets the meter');
+  const ex = JSON.parse(w.clashFrostExplainer());
+  assert.strictEqual(ex.lines.length, 3);
+  assert.ok(ex.lines.find(l => l.marker === 'Attendance').pct);
+  assert.ok(/together/.test(ex.script) && /No one thaws alone/.test(ex.script));
+  assert.ok(!/8001111|Ann L/.test(JSON.stringify(ex) + feed), 'no names or 800#s');
+  assert.ok(w.thawGoals_('marker: Interventions')[0].type === 'marker');
+});
+
 console.log('\n' + passed + ' tests passed');

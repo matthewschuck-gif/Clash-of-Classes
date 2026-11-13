@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=DM+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0d1b2e; --panel:#13263f; --ink:#eef7ff; --mute:#a9c3dc; --ice:#7dd3fc; --warn:#fbbf24; --hot:#f87171; --gold:#ffd23f;
+    --BLACK:#e9e3f5; --GOLD:#ffd23f; --GREY:#9aa5b8; --PURPLE:#b583ff; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:'DM Sans',system-ui,sans-serif; overflow:hidden; }
+  body { background: radial-gradient(1100px 700px at 10% -10%, #1e3a5f 0%, transparent 60%), radial-gradient(900px 600px at 110% 110%, #241a4d 0%, transparent 60%), var(--bg); }
+  .deck { height:100%; position:relative; }
+  .slide { position:absolute; inset:0; padding:6vh 6vw; display:flex; flex-direction:column; justify-content:center; gap:3vh; opacity:0; transform:translateY(14px); transition:opacity .5s, transform .5s; pointer-events:none; }
+  .slide.on { opacity:1; transform:none; pointer-events:auto; }
+  .kicker { font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--ice); font-size:clamp(12px,1.5vw,22px); }
+  h1 { font-family:'Fraunces',serif; font-weight:900; font-size:clamp(34px,6vw,104px); line-height:1.02; margin:0; text-wrap:balance; }
+  h2 { font-family:'Fraunces',serif; font-weight:900; font-size:clamp(28px,4.2vw,72px); line-height:1.05; margin:0; text-wrap:balance; }
+  p, li { font-size:clamp(16px,2.2vw,36px); line-height:1.35; color:var(--mute); margin:0; }
+  p b, li b { color:var(--ink); }
+  ul { margin:0; padding-left:1.1em; display:grid; gap:1.4vh; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,22vw),1fr)); gap:2vw; }
+  .card { background:var(--panel); border-radius:18px; padding:2.4vh 1.8vw; border:1px solid #ffffff14; }
+  .card .t { font-weight:800; font-size:clamp(15px,1.9vw,32px); color:var(--ink); }
+  .card .v { font-size:clamp(14px,1.6vw,26px); color:var(--mute); margin-top:.6vh; }
+  .card.peaks { border-color:#7dd3fc55; } .card.fun { border-color:#fbbf2455; }
+  .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:2vw; }
+  .step { background:var(--panel); border-radius:18px; padding:3vh 1.6vw; text-align:center; }
+  .step .ic { font-size:clamp(36px,6vw,96px); }
+  .step .t { font-weight:800; font-size:clamp(16px,2.2vw,36px); margin-top:1vh; }
+  .step .v { font-size:clamp(13px,1.6vw,26px); color:var(--mute); margin-top:.8vh; }
+  .meter { display:grid; grid-template-columns:repeat(4,1fr); gap:1.4vw; }
+  .sq { background:var(--panel); border-radius:16px; padding:2vh 1.2vw; }
+  .sq .nm { font-weight:900; font-size:clamp(16px,2vw,34px); display:flex; justify-content:space-between; }
+  .mrow { margin-top:1.4vh; font-size:clamp(11px,1.15vw,19px); color:var(--mute); }
+  .mrow .bar { position:relative; height:10px; border-radius:99px; background:#ffffff14; margin-top:.5vh; }
+  .mrow .bar i { position:absolute; inset:0 auto 0 0; border-radius:99px; background:var(--ice); transition:width 1s; }
+  .mrow .bar b { position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--ink); }
+  .mrow.over { color:#fecaca; } .mrow.over .bar i { background:var(--hot); }
+  .nav { position:fixed; bottom:2.4vh; left:0; right:0; display:flex; justify-content:center; gap:.7em; z-index:2; }
+  .nav i { width:.65em; height:.65em; border-radius:50%; background:#ffffff33; cursor:pointer; }
+  .nav i.on { background:var(--ice); }
+  .hint { position:fixed; bottom:2vh; right:2vw; font-size:13px; color:#ffffff55; }
+  .flake { position:fixed; top:-5vh; color:#ffffff22; pointer-events:none; animation:fall linear infinite; }
+  @keyframes fall { to { transform:translateY(115vh) rotate(200deg); } }
+  @media (prefers-reduced-motion: reduce) { .slide { transition:none; } .flake { display:none; } .mrow .bar i { transition:none; } }
+  @media (max-width: 700px) { .meter, .steps { grid-template-columns:1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="deck" id="deck"><div class="slide on"><p>Loading…</p></div></div>
+<div class="nav" id="nav"></div>
+<div class="hint" id="hint">← → to move · F for full screen</div>
+<script>
+(function () {
+  var SQ = ['BLACK', 'GOLD', 'GREY', 'PURPLE'];
+  var D = null, at = 0, tv = false;
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function title(s) { return s.charAt(0) + s.slice(1).toLowerCase(); }
+  function month(m) { var n = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; return n[Number(String(m).slice(5, 7)) - 1] || m; }
+  function day(d) { return month(d) + ' ' + Number(String(d).slice(8, 10)); }
+  function lineText(L) { return (L.below ? 'at or above ' : 'at or below ') + '<b>' + esc(L.line) + (L.per100 ? ' per 100 students' : L.pct ? '%' : '') + '</b>'; }
+  function meterHtml() {
+    return '<div class="meter">' + SQ.map(function (s) {
+      var fr = D.meter && D.meter[s];
+      if (!fr) return '<div class="sq"><div class="nm" style="color:var(--' + s + ')">' + title(s) + '</div><div class="mrow">No data yet</div></div>';
+      var over = fr.markers.filter(function (m) { return m.over; }).length;
+      return '<div class="sq"><div class="nm" style="color:var(--' + s + ')"><span>' + title(s) + '</span><span>' + (over ? (over === 1 ? '⚠️' : '🧊') : '✅') + '</span></div>' +
+        fr.markers.map(function (m) {
+          var v = m.value, max = Math.max(m.line * 1.5, v || 0, 1), pct = v == null ? 0 : Math.round(100 * Math.min(v, max) / max), line = Math.round(100 * m.line / max);
+          return '<div class="mrow' + (m.over ? ' over' : '') + '">' + esc(m.label) + ': <b>' + (v == null ? '—' : esc(v)) + '</b> / ' + esc(m.line) +
+            '<div class="bar"><i style="width:' + pct + '%"></i><b style="left:' + line + '%"></b></div></div>';
+        }).join('') + '</div>';
+    }).join('') + '</div>';
+  }
+  function slides() {
+    var peaks = D.lines.filter(function (L) { return L.kind === 'Peaks'; }), fun = D.lines.filter(function (L) { return L.kind === 'Fun'; });
+    var s = [];
+    s.push('<div class="kicker">Clash of Classes · Squad Meeting</div><h1>❄️ Freeze &amp; Thaw</h1><p>Every squad is checked on the <b>same lines</b> every month. Stay on the safe side and you keep climbing. ' +
+      'Cross the lines and your squad can freeze. <b>You thaw together, or not at all.</b></p>');
+    s.push('<div class="kicker">The lines</div><h2>What every squad is checked on</h2><div class="grid">' + D.lines.map(function (L) {
+      return '<div class="card ' + (L.kind === 'Fun' ? 'fun' : 'peaks') + '"><div class="t">' + esc(L.label) + '</div><div class="v">Stay ' + lineText(L) + '</div></div>';
+    }).join('') + '</div><p>Squad totals only. <b>No one\'s name is ever on the meter.</b></p>');
+    s.push('<div class="kicker">How a squad freezes</div><h2>Warning first, then the freeze</h2><div class="steps">' +
+      '<div class="step"><div class="ic">✅</div><div class="t">Safe</div><div class="v">On the safe side of every line.</div></div>' +
+      '<div class="step"><div class="ic">⚠️</div><div class="t">Frost warning</div><div class="v">One line crossed in a month.</div></div>' +
+      '<div class="step"><div class="ic">🧊</div><div class="t">Freeze</div><div class="v">Two lines crossed, or the same line two months in a row. Staff confirm it.</div></div></div>' +
+      '<p>A frozen squad <b>keeps every point it has</b>. New points just stop counting until it thaws.</p>');
+    s.push('<div class="kicker">Two kinds of freeze</div><h2>Peaks and Fun</h2><div class="grid">' +
+      '<div class="card peaks"><div class="t">❄️ Peaks freeze</div><div class="v">From ' + esc(peaks.map(function (L) { return L.label.toLowerCase(); }).join(', ') || 'behavior lines') +
+      '. The serious one: thaw together, and frozen points never come back.</div></div>' +
+      '<div class="card fun"><div class="t">🧊 Fun freeze</div><div class="v">From ' + esc(fun.map(function (L) { return L.label.toLowerCase(); }).join(', ') || 'the points floor') +
+      '. Push your luck: beat a goal of ' + esc(D.thaw.fun) + ' points to win back some frozen points, more if you go further. Before the month ends!</div></div></div>');
+    s.push('<div class="kicker">How a squad thaws</div><h2>Together. Only together.</h2><ul>' +
+      '<li><b>Fix the line</b>: get back on the safe side for a whole month.</li>' +
+      '<li><b>Everyone pitches in</b>: ' + esc(D.thaw.everyone) + '% of the squad does something for Clash.</li>' +
+      '<li><b>Earn it together</b>: ' + esc(D.thaw.points) + ' points while frozen (they don\'t count yet, they prove it).</li>' +
+      '<li><b>Make it right</b>: a squad reflection or service act, led by your Generals.</li></ul>' +
+      '<p>No student can thaw alone. Not thawed by the next check? The squad stays frozen another month.</p>');
+    s.push('<div class="kicker">Frost meter · this month so far</div><h2>Where every squad stands</h2>' + meterHtml() +
+      '<p>✅ safe · ⚠️ on pace for a warning · 🧊 on pace to freeze. Counts are projected to the end of the month.</p>');
+    s.push('<div class="kicker">Starting now</div><h2>' + esc(month(D.start)) + ' is a clean slate</h2><p>Every squad starts safe. ' + esc(month(D.start)) +
+      ' is the first month that counts, and the first check is <b>' + esc(day(D.firstCheck)) + '</b>.</p><p>Watch your squad\'s frost meter on <b>My Squad</b> and <b>My Climb</b> at clashofclasses.org. Generals: you lead the rally.</p>');
+    return s;
+  }
+  function render() {
+    var deck = document.getElementById('deck'), nav = document.getElementById('nav');
+    if (tv) {
+      deck.innerHTML = '<div class="slide on"><div class="kicker">❄️ Frost meter · this month so far</div><h2>Every squad vs. the lines</h2>' + meterHtml() + '<p>✅ safe · ⚠️ frost warning pace · 🧊 freeze pace · No names, squad totals only.</p></div>';
+      nav.innerHTML = ''; document.getElementById('hint').style.display = 'none';
+      return;
+    }
+    var s = slides();
+    if (at >= s.length) at = s.length - 1;
+    deck.innerHTML = s.map(function (h, i) { return '<div class="slide' + (i === at ? ' on' : '') + '">' + h + '</div>'; }).join('');
+    nav.innerHTML = s.map(function (_, i) { return '<i data-i="' + i + '"' + (i === at ? ' class="on"' : '') + '></i>'; }).join('');
+  }
+  function go(n) {
+    var all = document.querySelectorAll('.slide'); if (!all.length) return;
+    at = Math.max(0, Math.min(all.length - 1, n));
+    Array.prototype.forEach.call(all, function (el, i) { el.classList.toggle('on', i === at); });
+    Array.prototype.forEach.call(document.querySelectorAll('.nav i'), function (el, i) { el.classList.toggle('on', i === at); });
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') go(at + 1);
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(at - 1);
+    else if (e.key === 'f' || e.key === 'F') { if (document.fullscreenElement) document.exitFullscreen(); else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); }
+  });
+  document.addEventListener('click', function (e) {
+    var dot = e.target.closest && e.target.closest('.nav i');
+    if (dot) return go(Number(dot.getAttribute('data-i')));
+    if (!tv && !(e.target.closest && e.target.closest('a'))) go(e.clientX < window.innerWidth / 3 ? at - 1 : at + 1);
+  });
+  for (var i = 0; i < 14; i++) {
+    var f = document.createElement('div'); f.className = 'flake'; f.textContent = '❄';
+    f.style.left = Math.random() * 100 + 'vw'; f.style.fontSize = (12 + Math.random() * 26) + 'px';
+    f.style.animationDuration = (14 + Math.random() * 18) + 's'; f.style.animationDelay = (-Math.random() * 30) + 's';
+    document.body.appendChild(f);
+  }
+  function load() { google.script.run.withSuccessHandler(function (j) { D = JSON.parse(j); render(); }).withFailureHandler(function () {}).clashFrostExplainer(); }
+  try {
+    google.script.url.getLocation(function (loc) { tv = loc && loc.parameter && loc.parameter.view === 'tv'; load(); if (tv) setInterval(load, 60000); });
+  } catch (e) { load(); }
+})();
+</script>
+</body>
+</html>

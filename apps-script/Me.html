@@ -403,7 +403,7 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
     var ch = (D.challenges || []).map(function (c) { var p = c.progress[me.squad] || 0; return '<div class="me-sub"><b>' + esc(c.title) + '</b>: ' + p + (c.goal ? ' / ' + c.goal : '') + '</div>'; }).join('');
     return '<section class="me-card" style="display:grid;grid-template-columns:minmax(120px,200px) 1fr;gap:18px;align-items:center"><div class="gc-hop" tabindex="0">' + GameUi.mascot(me.squad, m) + '</div><div>' +
       '<h2>' + esc(m.name || m.animal || title(me.squad)) + '</h2><p class="me-sub">' + (m.name && m.animal ? esc(m.animal) + ', ' : '') + 'the ' + esc(title(me.squad)) + ' Squad mascot.' +
-      (D.theme && D.theme.theme ? ' Theme: <b>' + esc(D.theme.theme) + '</b>. ' + esc(D.theme.meaning || '') : '') + '</p>' + (st.frozen && window.thawHtml ? thawHtml(st.frozen) : '') + '</div></section>' +
+      (D.theme && D.theme.theme ? ' Theme: <b>' + esc(D.theme.theme) + '</b>. ' + esc(D.theme.meaning || '') : '') + '</p>' + (st.frozen && window.thawHtml ? thawHtml(st.frozen) : '') + (st.frost && window.frostHtml ? frostHtml(st.frost) : '') + '</div></section>' +
       '<section class="me-card"><h2>Our story</h2>' + lore + '</section>' +
       (duels || ch ? '<section class="me-card"><h2>What we\'re working on</h2>' + duels + ch + '</section>' : '');
   }

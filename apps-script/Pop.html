@@ -147,6 +147,15 @@ html[data-squad="BLACK"] .hero-sq-card[data-sq="BLACK"], html[data-squad="GOLD"]
 /* Thawing a freeze (14_Thaw.gs), on My Squad and in Generals HQ. A sheet of ice whose cracks
    grow as the squad gets closer to thawing it. Peaks Freeze: cold blue, every goal plus the
    advisor's sign-off. Fun Freeze: the same ice, with push-your-luck tiers. */
+.frost { margin-top: 14px; padding: 14px 16px; border-radius: 16px; background: rgba(125, 211, 252, .08); border: 1px solid rgba(125, 211, 252, .25); }
+.frost-h { font-weight: 800; margin-bottom: 8px; } .frost-h span { font-weight: 500; font-size: 13px; opacity: .85; margin-left: 6px; }
+.frost-row { display: grid; grid-template-columns: minmax(110px, 34%) 1fr auto; gap: 10px; align-items: center; font-size: 13px; margin: 6px 0; }
+.frost-bar { position: relative; height: 9px; border-radius: 99px; background: rgba(255, 255, 255, .1); }
+.frost-bar i { position: absolute; inset: 0 auto 0 0; border-radius: 99px; background: #7dd3fc; transition: width .9s; }
+.frost-row.over .frost-bar i { background: #f87171; } .frost-row.over .frost-v { color: #fca5a5; font-weight: 700; }
+.frost-bar b { position: absolute; top: -4px; bottom: -4px; width: 2px; background: #e0f2fe; }
+.frost-v { font-variant-numeric: tabular-nums; white-space: nowrap; } .frost-last { font-size: 12px; opacity: .8; margin-top: 6px; }
+.frost-how { display: inline-block; margin-top: 8px; font-size: 13px; color: #7dd3fc; }
 .thaw { position: relative; overflow: hidden; margin-top: 14px; padding: 16px 16px 14px; border-radius: 16px; color: #e0f2fe;
   background: linear-gradient(160deg, rgba(147, 197, 253, .2), rgba(14, 40, 72, .55)); border: 1px solid rgba(147, 197, 253, .4); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25); }
 .thaw-ice { position: absolute; inset: 0; pointer-events: none; opacity: .55; }
@@ -267,9 +276,9 @@ html[data-squad="BLACK"] .hero-sq-card[data-sq="BLACK"], html[data-squad="GOLD"]
       body = '<div class="thaw-h">❄️ Peaks Freeze</div>' +
         '<p>Your squad wasn\'t meeting Mountaineer Peaks expectations together. You keep every point you have, but new points won\'t count until your squad thaws this, together:</p>' +
         (goals.length ? '<ul class="thaw-goals">' + goals.map(function (x) {
-          var staff = x.type === 'staff';
+          var staff = x.type === 'staff' || x.type === 'marker';
           return '<li class="' + (x.met ? 'met' : '') + '"><span class="ck">' + (x.met ? '✓' : '') + '</span><span>' + e(x.text) + '</span>' +
-            '<span class="n">' + (staff ? (x.met ? 'done' : 'advisor checks') : e(x.have) + (x.type === 'everyone' ? '%' : '') + ' / ' + e(x.need) + (x.type === 'everyone' ? '%' : '')) + '</span>' +
+            '<span class="n">' + (staff ? (x.met ? 'done' : x.type === 'marker' ? 'checked on the 1st' : 'advisor checks') : e(x.have) + (x.type === 'everyone' ? '%' : '') + ' / ' + e(x.need) + (x.type === 'everyone' ? '%' : '')) + '</span>' +
             (staff ? '' : '<span class="bar"><i style="width:' + Math.round(100 * frac(x.have, x.need)) + '%"></i></span>') + '</li>';
         }).join('') + '</ul>' : '') +
         '<div class="thaw-sign ' + (fz.signoff ? 'ok' : '') + '">' + (fz.signoff ? '✓ Your advisor signed off.' : goals.length ? 'Then your advisor signs off.' : 'Your advisor will share what your squad needs to do together.') + (fz.until ? ' (Ends ' + e(fz.until) + ' at the latest.)' : '') + '</div>';
@@ -281,6 +290,21 @@ html[data-squad="BLACK"] .hero-sq-card[data-sq="BLACK"], html[data-squad="GOLD"]
       '<path pathLength="1" style="stroke-dashoffset:' + off + '" d="M112 44 L120 72 L104 96 L118 120"/>' +
       '<path pathLength="1" style="stroke-dashoffset:' + off + '" d="M196 58 L212 84 L250 92 L270 120"/></svg>';
     return '<div class="thaw ' + (fz.kind === 'Fun' ? 'fun' : 'peaks') + '" role="status">' + ice + body + '</div>';
+  };
+  // Frost meter (28_Frost.gs frostFor_): this squad's totals against each freeze line, this month so far.
+  window.frostHtml = function (fr) {
+    if (!fr || !fr.markers || !fr.markers.length) return '';
+    var e = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var rows = fr.markers.map(function (m) {
+      var v = m.value == null ? null : m.value, max = Math.max(m.line * 1.5, v || 0, 1), pct = v == null ? 0 : Math.round(100 * Math.min(v, max) / max), at = Math.round(100 * m.line / max);
+      var unit = m.per100 ? ' per 100' : '';
+      return '<div class="frost-row' + (m.over ? ' over' : '') + '"><span class="frost-l">' + e(m.label) + '</span><span class="frost-bar"><i style="width:' + pct + '%"></i><b style="left:' + at + '%" title="the line"></b></span>' +
+        '<span class="frost-v">' + (v == null ? 'no data yet' : e(v) + unit + (m.below ? ' (need ' + e(m.line) + '+)' : ' (line ' + e(m.line) + ')')) + '</span></div>';
+    }).join('');
+    var head = !fr.live ? 'Practice month: nothing freezes yet. The first real check is ' + e(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][Number(String(fr.firstCheck).slice(5, 7)) - 1] + ' ' + Number(String(fr.firstCheck).slice(8, 10))) + '.' : fr.over ? (fr.over === 1 ? '⚠️ On pace for a frost warning.' : '🧊 On pace to freeze. Rally your squad!') : '✅ Safe on every line so far.';
+    var last = fr.last ? '<div class="frost-last">Last check (' + e(fr.last.month) + '): <b>' + e(fr.last.status) + '</b></div>' : '';
+    return '<div class="frost"><div class="frost-h">❄️ Frost meter <span>' + head + '</span></div>' + rows + last +
+      (fr.url ? '<a class="frost-how" href="' + e(fr.url) + '" target="_blank" rel="noopener">How freezes work</a>' : '') + '</div>';
   };
   window.popSkin = function (squad) {
     var sq = String(squad || '').toUpperCase().replace('GRAY', 'GREY');

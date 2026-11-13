@@ -41,6 +41,7 @@ function standingFor_(squad, totals) {
     ahead: ahead, behindBy: ahead ? totals[ahead] - totals[squad] : 0,
     leadBy: place === 0 ? totals[squad] - totals[order[1]] : 0,
     frozen: freezeDetail_(squad), // the freeze and its thaw progress while the squad can't earn points (14_Thaw.gs)
+    frost: frostFor_(squad), // the frost meter: squad totals against each freeze line this month (28_Frost.gs)
   };
 }
 
@@ -244,6 +245,7 @@ function clashTvFeed() {
     return { name: publicEvent_(e).name, label: labels[e.type] || ({ duel_bonus: '⚔️ Squad Duel', mayhem_week: '🏔️ Mayhem Week', shirt_sales: '👕 Shirt Sales', squad_night: '🌙 Squad Night' })[e.type] || '', date: e.date, pts: e.pts };
   });
   const out = { latest: latest, stars: [], lore: recentLoreUnlocks_(), duels: JSON.parse(clashDuels()) };
+  try { out.frost = frostMeter_(); } catch (e) { out.frost = null; }
   if (String(getSetting_('TV_SHOW_NAMES')).toUpperCase() === 'ON') {
     const sheet = getSheetSafe_(getSetting_('STUDENT_BOARD_TAB') || 'Student Board');
     if (sheet && sheet.getLastRow() > 1) {

@@ -91,6 +91,7 @@ function setupSpreadsheet() {
   ensureGeneralsTabs_();
   ensurePollTabs_();
   ensurePollIdeaTabs_(); // Poll Ideas + Poll Insights (26_PollIdeas.gs)
+  ensureFrostTabs_(); // Freeze Lines + Frost Log (28_Frost.gs)
   ensureFreezeTab_();
   ensureDuelTab_();
   ensureLoreTab_();
@@ -184,6 +185,11 @@ const DEFAULT_SETTINGS = [
   ['MINDSET_APP', 'https://script.google.com/a/macros/easdpa.org/s/AKfycbwuQCzZfVvgX-k3czsKI74DKnt2qF2XJslElr3HHcwnJTyCcHI4e7NxegIPDpElcowL7w/exec', 'The Grade 8 Mountaineer Mindset web app (bit.ly/ems8-mindset). Shows inside the site\'s Mindset page.'],
   ['GENERALS_DOC', 'https://docs.google.com/document/d/1OeKBx8SOrfkG4zaHuj66LllR1nS6EINA8Dk4KYmM6Zo/edit', 'The Squad Leadership doc (shared Clash drive) that lists the Generals for each squad. Menu › Load Squad Generals copies them onto MLC Roster.'],
   ['GENERALS_HANDBOOK', 'https://docs.google.com/document/d/1DL1VXqEK9OhvJRBPztQvOwadA-UcWpDCg_ZUabP7304/edit', 'The Squad General one-pager / handbook. Generals HQ › My job links to it.'],
+  ['FROST_CHECK', 'ON', 'Freeze & Thaw: ON = on the 1st, check every squad on the Freeze Lines tab for the month before (Frost Log tab). Nothing freezes until staff tick Approve. Also shows the frost meter.'],
+  ['FROST_START', '2027-01', 'Freeze & Thaw: the first month that counts (yyyy-MM). Its check runs on the 1st of the next month. Earlier months are practice: the meter shows, nothing freezes.'],
+  ['FROST_THAW_EVERYONE', '70', 'Freeze & Thaw: share of the squad (%) that must pitch in to thaw a Peaks freeze.'],
+  ['FROST_THAW_POINTS', '150', 'Freeze & Thaw: points a frozen squad earns together (they still do not count) to thaw a Peaks freeze.'],
+  ['FROST_FUN_POINTS', '100', 'Freeze & Thaw: the goal for a Fun freeze (points floor). Twice and three times it win back more (FUN_THAW_TIERS).'],
   ['FOLLOWUP_STATS', 'ON', 'Map (Cafeteria): ON = once a day, count last month: students per squad with an LRR or a Lunch Detention, from the same sheets EMS Follow-Up reads, onto Squad Stats.'],
   ['LRR_SHEET', '1g8VpAeyE8md-1us58uHZxtRAKKFCTCKHhuwC8ZOpzyc', 'The Lunchtime Redirection Reflection responses sheet (link or ID), the same one EMS Follow-Up reads.'],
   ['CONSEQUENCE_SHEET', '1IVFnkQQvSvNSY_OZPMutPzkTqmJ1j5XYRoT9YvNy-v4', 'The Accountability & Intervention Log (link or ID), for Lunch Detentions.'],

@@ -26,6 +26,7 @@ const LEGACY_DEFAULT_PW_ = 'ephrata2026'; // the site's built-in password before
 function serveSite_(e) {
   if (e && e.parameter && e.parameter.page === 'me') return serveMe_(); // My Climb, the student dashboard (16_Me.gs)
   if (e && e.parameter && e.parameter.page === 'pollboard') return servePollBoard_(); // the live poll screen (26_PollIdeas.gs)
+  if (e && e.parameter && e.parameter.page === 'frost') return serveFrostPage_(); // Freeze & Thaw slides + frost meter (28_Frost.gs)
   const t = HtmlService.createTemplateFromFile('Index');
   t.config = JSON.stringify({ pollMs: Math.max(3, Number(getSetting_('POLL_SECONDS')) || 5) * 1000 });
   // The first load rides inside the page, so it shows without a second trip to the server.
@@ -136,6 +137,7 @@ function backgroundTick() {
   try { flushUsage_(); snapshotStages_(); } catch (e) { noteError_('usage + creature snapshot', e); }
   try { maybeImportHomerooms_(); } catch (e) { noteError_('homeroom forms', e); } // 25_Homerooms.gs, every 30 minutes
   try { maybeFollowUpStats_(); } catch (e) { noteError_('Follow-Up LRR count', e); } // 27_FollowUpStats.gs, once a day
+  try { maybeFrostCheck_(); } catch (e) { noteError_('frost check', e); } // 28_Frost.gs: monthly check + approvals
   try { cachedPublicLoad_(true); cachedGame_(true); } catch (e) { noteError_('warm cache', e); }
 }
 
@@ -349,6 +351,10 @@ function onOpen() {
     .addItem('Use the building map (replaces Map Zones)', 'menuBuildingMap_')
     .addItem('Give each area its own data (keeps zones + holders)', 'menuLocationRules_')
     .addItem('Count LRRs + LDs for the Cafeteria now (from Follow-Up sheets)', 'menuFollowUpStats_')
+    .addSeparator()
+    .addItem('Run the frost check now (last month)', 'menuFrostCheck_')
+    .addItem('Freeze & Thaw: read-aloud script', 'menuFrostAnnouncement_')
+    .addItem('Freeze & Thaw: open the squad meeting slides', 'menuOpenFrostPage_')
     .addItem('Today\'s morning announcement', 'menuAnnouncement_')
     .addItem('Turn on the weekly digest email', 'menuTurnOnDigest_')
     .addItem('Turn off the weekly digest email', 'menuTurnOffDigest_')

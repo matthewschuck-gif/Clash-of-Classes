@@ -10,7 +10,7 @@ const read = f => fs.readFileSync(path.join(dir, f), 'utf8');
 function build(page) {
   // ?page=me → My Climb (Me.html), signed in as the sample student Ann L.
   // ?page=pollboard → the live Poll Board with a sample School Pulse poll running today.
-  let html = (page === 'pollboard' ? read('PollBoard.html') : page === 'me' ? read('Me.html').replace(/<? if (shield) { ?>|<? } ?>/g, '').replace('<?= shield ?>', '/shield.png') : read('Index.html'))
+  let html = (page === 'frost' ? read('FrostPage.html') : page === 'pollboard' ? read('PollBoard.html') : page === 'me' ? read('Me.html').replace(/<? if (shield) { ?>|<? } ?>/g, '').replace('<?= shield ?>', '/shield.png') : read('Index.html'))
     .replace(/<\?!= include\('([A-Za-z]+)'\); \?>/g, (m, f) => read(f + '.html'))
     .replace('<?!= config ?>', JSON.stringify({ pollMs: 5000 })).replace('<?!= boot ?>', 'null');
   const gs = fs.readdirSync(dir).filter(f => f.endsWith('.gs')).sort().map(read).join('\n');
@@ -91,6 +91,7 @@ setSettingValue_('MY_CLIMB_HOURS', '00:00-23:59'); setSettingValue_('MY_CLIMB_SC
 getSheet_('Opponents').rows.forEach(function (r, i) { if (i && r[3] === 'Shady') r[0] = true; });
 (function () { var t = todayYmd_(); getSheet_('events').appendRow([106, 'Daily Poll', 'daily_poll', t, '', '', 2, 6, 3, 1]); getSheet_('events').appendRow([107, 'Mindset summits', 'mountaineer_mindset', t, '', '', 4, 1, 2, 6]); getSheet_('events').appendRow([108, 'Trait Dough: Ann L.', 'trait_dough', t, '', '', 0, 9, 3, 2]); })();
 getSheet_('Squad Hand').appendRow(['GOLD', 'Flip Three', 'flip_three', 0, todayYmd_(), 'Held', '']);
+(function () { ensureConquestTabs_(); ensureFrostTabs_(); var m = todayYmd_().slice(0, 7); getSheet_('Squad Stats').appendRow([m, 'LRR + LD Students', 1, 3, 0, 1, 'sample', '']); getSheet_('Squad Stats').appendRow([m, 'Interventions', 2, 1, 6, 0, 'sample', '']); })();
 (function () { ensurePollTabs_(); var t = todayYmd_(), p = getSheet_('Daily Polls'); p.appendRow([true, t, 'School Pulse', 'How do you usually get to school?', 'Bus | Car | Walk or bike | Other', '', 1, 0, '', '']);
   var id = p.getLastRow(), v = getSheet_('Poll Votes'), sq = ['BLACK', 'GOLD', 'GREY', 'PURPLE'], ch = ['Bus', 'Bus', 'Car', 'Car', 'Car', 'Walk or bike', 'Other'];
   for (var i = 0; i < 46; i++) v.appendRow([id, t, '800' + (1000 + i), sq[(i * 7) % 4], ch[(i * 3) % 7], '']);
@@ -116,7 +117,7 @@ const out = path.join(__dirname, 'preview.html');
 fs.writeFileSync(out, build());
 http.createServer((req, res) => {
   if (req.url === '/shield.png') { res.writeHead(200, { 'Content-Type': 'image/png' }); return res.end(fs.readFileSync(path.join(__dirname, '..', 'assets', 'shield-2026-27.png'))); }
-  fs.writeFileSync(out, build(/page=pollboard/.test(req.url) ? 'pollboard' : /page=me/.test(req.url) ? 'me' : ''));
+  fs.writeFileSync(out, build(/page=frost/.test(req.url) ? 'frost' : /page=pollboard/.test(req.url) ? 'pollboard' : /page=me/.test(req.url) ? 'me' : ''));
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
   res.end(fs.readFileSync(out));
 }).listen(Number(process.env.PORT) || 3041, () => console.log('Preview on http://localhost:' + (Number(process.env.PORT) || 3041)));
