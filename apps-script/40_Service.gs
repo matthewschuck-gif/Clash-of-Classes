@@ -15,12 +15,17 @@
  *   Student Reply | Decided By | Decided At.
  */
 
-const SERVICE_HEADERS_ = ['ID', 'Submitted', '800#', 'Student', 'Squad', 'What', 'When / Where', 'Reflection', 'Link', 'File', 'Status', 'Points', 'Staff Note', 'Student Reply', 'Decided By', 'Decided At'];
+const SERVICE_HEADERS_ = ['ID', 'Submitted', '800#', 'Student', 'Squad', 'What', 'When / Where', 'Reflection', 'Link', 'File', 'Status', 'Points', 'Staff Note', 'Student Reply', 'Decided By', 'Decided At', 'Kind'];
 const MAX_SERVICE_BYTES_ = 6 * 1024 * 1024;
 
 function ensureServiceTab_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (ss.getSheetByName('Service Submissions')) return;
+  const old = ss.getSheetByName('Service Submissions');
+  if (old) { // an older tab gets the Kind column
+    const head = old.getRange(1, 1, 1, Math.max(1, old.getLastColumn())).getValues()[0].map(function (h) { return String(h).trim(); });
+    if (head.indexOf('Kind') === -1) old.getRange(1, head.length + 1).setValue('Kind').setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
+    return;
+  }
   const sh = ss.insertSheet('Service Submissions');
   sh.getRange(1, 1, 1, SERVICE_HEADERS_.length).setValues([SERVICE_HEADERS_]).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
   sh.setFrozenRows(1);
@@ -81,9 +86,13 @@ function clashServiceSubmit(id, json) {
   if (!st) throw new Error('We couldn\'t find that 800 number. Check it and try again.');
   if (SQUAD_KEYS_.indexOf(st.squad) === -1) throw new Error('You don\'t have a squad yet. Ask your homeroom teacher.');
   const p = JSON.parse(json || '{}');
-  const what = String(p.what || '').trim().slice(0, 400), when = String(p.when || '').trim().slice(0, 200), refl = String(p.reflection || '').trim().slice(0, 1500);
+  const family = p.kind === 'family';
+  let challenge = null;
+  if (family) { challenge = familyChallenge_(); if (!challenge) throw new Error('There is no family challenge this week.'); }
+  const what = family ? 'Family Challenge: ' + challenge.text.slice(0, 300) : String(p.what || '').trim().slice(0, 400), when = String(p.when || '').trim().slice(0, 200), refl = String(p.reflection || '').trim().slice(0, 1500);
   if (what.length < 10) throw new Error('Tell us what you did (a sentence or two).');
-  if (refl.length < 40) throw new Error('Add a reflection: why it mattered or what you learned (a few sentences).');
+  if (refl.length < (family ? 15 : 40)) throw new Error(family ? 'Tell us how your family did it (a sentence or two).' : 'Add a reflection: why it mattered or what you learned (a few sentences).');
+  if (family && sheetRows_('Service Submissions').some(function (r) { return id800_(r['800#']) === st.id && String(r['Kind']) === 'Family' && String(r['What']) === what; })) throw new Error('You already told us about this week\'s family challenge.');
   const link = cleanLink_(p.link);
   ensureServiceTab_();
   const open = sheetRows_('Service Submissions').filter(function (r) { return id800_(r['800#']) === st.id && /^(waiting|more info)/i.test(String(r['Status'] || 'Waiting')); }).length;
@@ -94,7 +103,7 @@ function clashServiceSubmit(id, json) {
     const sub = 'S' + Date.now().toString(36);
     const file = p.file ? saveServiceFile_(p.file, sub + ' ' + st.squad + ' ' + st.first) : '';
     getSheet_('Service Submissions').appendRow([sub, Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'), st.id,
-      st.first + ' ' + st.last, st.squad, what, when, refl, link, file, 'Waiting', '', '', '', '', '']);
+      st.first + ' ' + st.last, st.squad, what, when, refl, link, file, 'Waiting', '', '', '', '', '', family ? 'Family' : 'Service']);
   } finally { lock.releaseLock(); }
   return clashServiceMine(st.id);
 }
@@ -125,9 +134,12 @@ function clashServiceList(token) {
     return { id: String(r['ID']), submitted: String(r['Submitted']), student: String(r['Student'] || ''), squad: squadOf_(r['Squad']), what: String(r['What'] || ''),
       when: String(r['When / Where'] || ''), reflection: String(r['Reflection'] || ''), link: String(r['Link'] || ''), file: String(r['File'] || ''),
       status: String(r['Status'] || 'Waiting'), points: Number(r['Points']) || 0, note: String(r['Staff Note'] || ''), reply: String(r['Student Reply'] || ''),
-      by: String(r['Decided By'] || ''), at: String(r['Decided At'] || '') };
+      by: String(r['Decided By'] || ''), at: String(r['Decided At'] || ''), kind: String(r['Kind'] || 'Service') };
   };
+  let shouts = [];
+  try { shouts = familyShoutList_(); } catch (e) { shouts = []; }
   return JSON.stringify({
+    shouts: shouts.filter(function (x) { return x.status === 'Waiting'; }), shoutsOn: familyOn_('FAMILY_SHOUTOUTS'),
     points: servicePoints_(),
     open: rows.filter(function (r) { return /^(waiting|more info|)$/i.test(String(r['Status'] || '')); }).map(view)
       .sort(function (a, b) { return (a.status === 'Waiting' ? 0 : 1) - (b.status === 'Waiting' ? 0 : 1) || a.submitted.localeCompare(b.submitted); }),
@@ -171,7 +183,8 @@ function clashServiceDecide(token, subId, decision, points, note) {
       if (SQUAD_KEYS_.indexOf(squad) === -1) throw new Error('That student has no squad.');
       const parts = String(r['Student'] || '').trim().split(/\s+/), short = parts[0] + (parts.length > 1 ? ' ' + parts[parts.length - 1].charAt(0) + '.' : '');
       const pts = { BLACK: '', GOLD: '', GREY: '', PURPLE: '' }; pts[squad] = points;
-      getSheet_('events').appendRow(['', 'Service: ' + short, 'service', todayYmd_(), '', '', pts.BLACK, pts.GOLD, pts.GREY, pts.PURPLE]);
+      const fam = String(r['Kind']) === 'Family';
+      getSheet_('events').appendRow(['', (fam ? 'Family Challenge: ' : 'Service: ') + short, fam ? 'family' : 'service', todayYmd_(), '', '', pts.BLACK, pts.GOLD, pts.GREY, pts.PURPLE]);
       set('Status', 'Approved'); set('Points', points); if (note) set('Staff Note', note); set('Decided By', 'Admin'); set('Decided At', stamp);
     } else throw new Error('Unknown decision.');
   } finally { lock.releaseLock(); }
@@ -179,4 +192,4 @@ function clashServiceDecide(token, subId, decision, points, note) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_40_Service = '24a25fc269';
+var FILE_STAMP_40_Service = 'ac09fee33c';

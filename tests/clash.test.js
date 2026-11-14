@@ -2379,6 +2379,57 @@ test('Plinko: editable slots (rows + 1), staff give and drop squad drops, the se
   assert.ok([5, 10].includes(J(w.plinkoPrize_({ kind: 'mystery', value: '5|10' })).points));
 });
 
+test('families: every piece is hidden until switched on; challenge via My Squad, shout-outs with Spotlight, Family Pulse once per family, Family Night check-in; points paid once a day', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureServiceTab_(); w.ensureSpotlightTab_(); w.ensureFamilyTabs_(); w.ensureSiteContentTabs_(); w.ensureDoughTabs_();
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  w.book.insertSheet('Students').rows = [['800#', 'First Name', 'Last Name', 'Grade', 'Email', 'Squad'], ['8001111', 'Ann', 'Lee', '7', '', 'Grey'], ['8002222', 'Ed', 'Park', '8', '', 'Gold']];
+  // Off: nothing shows, nothing can be sent.
+  let x = J(w.familyExtras_());
+  assert.deepStrictEqual([x.challenge, x.shoutouts, x.pulse], [null, false, null]);
+  assert.throws(() => w.clashFamilyShoutout('{}'), /not open/);
+  assert.throws(() => w.clashFamilyDoorCheckIn('T', 'Squad Night', '8001111', 2), /FAMILY_CHECKIN/);
+  ['FAMILY_CHALLENGE', 'FAMILY_SHOUTOUTS', 'FAMILY_PULSE', 'FAMILY_CHECKIN'].forEach(k => w.setSettingValue_(k, 'ON'));
+  // 1. The challenge: the newest shown row; the student says they did it; staff approve as Family.
+  const today = w.todayYmd_();
+  w.book.getSheetByName('Family Challenges').rows.push([true, today, 'Cook dinner together']);
+  assert.strictEqual(J(w.familyChallenge_()).text, 'Cook dinner together');
+  w.clashServiceSubmit('8001111', JSON.stringify({ kind: 'family', reflection: 'We made tacos with my grandma.' }));
+  assert.throws(() => w.clashServiceSubmit('8001111', JSON.stringify({ kind: 'family', reflection: 'We made tacos again.' })), /already told us/);
+  const list = JSON.parse(w.clashServiceList('T'));
+  assert.strictEqual(list.open[0].kind, 'Family');
+  w.clashServiceDecide('T', list.open[0].id, 'approve', 5, '');
+  assert.ok(events(w).some(r => r[2] === 'family' && r[1] === 'Family Challenge: Ann L.' && r[8] === 5));
+  // 2. Shout-outs: matched by name + grade; approve with points and the Spotlight.
+  assert.throws(() => w.clashFamilyShoutout(JSON.stringify({ first: 'Ann', last: 'Lee', what: 'short' })), /what they did/);
+  w.clashFamilyShoutout(JSON.stringify({ first: 'ann', last: 'LEE', grade: '7', what: 'Helped her little brother with his reading every night.', from: 'Mom' }));
+  const sh = JSON.parse(w.clashServiceList('T')).shouts;
+  assert.ok(sh.length === 1 && sh[0].squad === 'GREY');
+  w.clashFamilyShoutDecide('T', sh[0].id, 'approve', 3, true);
+  assert.ok(events(w).some(r => r[1] === 'Family shout-out: Ann L.' && r[8] === 3));
+  assert.strictEqual(J(w.sheetRows_('Squad Spotlight')).pop().Who, 'Ann L.');
+  // 3. Family Pulse: once per family, counts back, paid once a day per squad.
+  w.book.getSheetByName('Family Pulse').rows.push([true, 'How do you hear about school events?', 'Email | Text | Flyer', '', '']);
+  assert.throws(() => w.clashFamilyPulseAnswer(JSON.stringify({ first: 'Zed', last: 'Q', choice: 'Email' })), /couldn't find/);
+  const r1 = JSON.parse(w.clashFamilyPulseAnswer(JSON.stringify({ first: 'Ed', last: 'Park', grade: '8', choice: 'Text' })));
+  assert.deepStrictEqual([r1.total, r1.counts.Text], [1, 1]);
+  assert.throws(() => w.clashFamilyPulseAnswer(JSON.stringify({ first: 'Ed', last: 'Park', grade: '8', choice: 'Email' })), /already answered/);
+  // 4. Family Night: one check-in per student per event.
+  const door = JSON.parse(w.clashFamilyDoorCheckIn('T', 'Squad Night', '8001111', 2));
+  assert.deepStrictEqual([door.total, door.bySquad.GREY], [1, 1]);
+  assert.throws(() => w.clashFamilyDoorCheckIn('T', 'Squad Night', '8001111', 1), /already checked in/);
+  // Paid once: Pulse 1 for Gold, check-in 2 for Grey.
+  w.payFamilyPoints_();
+  const fam = events(w).filter(r => r[2] === 'family' && /^Family (Pulse|Night)/.test(r[1]));
+  assert.ok(fam.find(r => /Pulse/.test(r[1]))[7] === 1 && fam.find(r => /Night/.test(r[1]))[8] === 2);
+  w.payFamilyPoints_();
+  assert.strictEqual(events(w).filter(r => r[2] === 'family' && /^Family (Pulse|Night)/.test(r[1])).length, 2, 'paid once');
+  // The family page gets the pieces, never another student's name.
+  const page = JSON.parse(w.clashFamily('', ''));
+  assert.ok(page.extras.challenge && page.extras.shoutouts && page.extras.pulse.total === 1);
+  assert.ok(!/Ann Lee|Ed Park|8001111/.test(JSON.stringify(page)));
+});
+
 test('Redemption: a Trailback Summit on the private Redemptions tab gives the student a Summit Climber badge and 25 LRG points; the feed labels it', () => {
   const w = world();
   w.ensureSettings_();

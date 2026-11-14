@@ -17,13 +17,13 @@
 </style>
 <script>
 (function () {
-  var st = { open: [], done: [], points: [5, 10, 20] };
+  var st = { open: [], done: [], points: [5, 10, 20], shouts: [] };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function title(s) { return s ? s.charAt(0) + s.slice(1).toLowerCase() : ''; }
   function box() { return document.getElementById('serviceAdmin'); }
   function token() { return window.ADMIN_SESSION || ''; }
   function item(s, done) {
-    return '<div class="sv-item' + (s.status === 'More info' ? ' info' : '') + '" data-id="' + esc(s.id) + '"><div class="sv-head"><b>' + esc(s.student) + ' · ' + title(s.squad) + '</b>' +
+    return '<div class="sv-item' + (s.status === 'More info' ? ' info' : '') + '" data-id="' + esc(s.id) + '"><div class="sv-head"><b>' + (s.kind === 'Family' ? '🏠 ' : '') + esc(s.student) + ' · ' + title(s.squad) + '</b>' +
       '<span class="sv-meta">' + esc(s.submitted) + ' · ' + esc(s.status) + (s.points ? ' · ' + s.points + ' pts' : '') + '</span></div>' +
       '<div class="sv-body"><div class="lbl">What</div>' + esc(s.what) + (s.when ? '<div class="lbl">When / where</div>' + esc(s.when) : '') +
       '<div class="lbl">Reflection</div>' + esc(s.reflection) +
@@ -36,9 +36,15 @@
   function draw(msg) {
     box().innerHTML = '<div class="sv-msg">' + esc(msg || (st.open.length ? st.open.length + ' to look at. Approve with points, ask the student a question (they answer on My Squad), or deny with a reason.' : 'Nothing waiting. Students send these from My Squad.')) + '</div>' +
       st.open.map(function (s) { return item(s, false); }).join('') +
+      (st.shouts.length ? '<div class="sv-msg" style="margin-top:14px"><b>🏠 Family shout-outs (' + st.shouts.length + ')</b>: approve with points, and tick Spotlight to put it on the Squad Spotlight tab.</div>' + st.shouts.map(function (s) {
+        return '<div class="sv-item" data-shout="' + esc(s.id) + '"><div class="sv-head"><b>' + esc(s.student) + (s.grade ? ' · gr ' + esc(s.grade) : '') + ' · ' + (s.squad ? title(s.squad) : '<span style="color:#fbbf24">no squad matched</span>') + '</b><span class="sv-meta">' + esc(s.sent) + (s.from ? ' · from ' + esc(s.from) : '') + '</span></div>' +
+          '<div class="sv-body">' + esc(s.what) + (s.trait ? '<div class="sv-meta">Trait: ' + esc(s.trait) + '</div>' : '') + '</div>' +
+          '<div class="sv-acts">' + [1, 3, 5].map(function (p) { return '<button class="ok" data-fs="approve" data-p="' + p + '">Approve ' + p + '</button>'; }).join('') +
+          '<button data-fs="approve" data-p="0">Approve, no points</button><label class="sv-meta" style="display:flex;gap:4px;align-items:center"><input type="checkbox" class="fs-spot"> Spotlight</label><button class="no" data-fs="deny">Deny</button></div></div>';
+      }).join('') : '') +
       (st.done.length ? '<details style="margin-top:12px"><summary style="cursor:pointer;color:var(--text3)">Recently decided (' + st.done.length + ')</summary>' + st.done.map(function (s) { return item(s, true); }).join('') + '</details>' : '');
   }
-  function load(res) { st.open = res.open || []; st.done = res.done || []; st.points = res.points || st.points; }
+  function load(res) { st.open = res.open || []; st.done = res.done || []; st.points = res.points || st.points; st.shouts = res.shouts || []; }
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('#serviceAdmin button');
     if (!b) return;
@@ -50,6 +56,17 @@
         out.innerHTML = String(f.type).indexOf('image') === 0 ?'<img alt="Student upload" src="' + f.data + '">' : '<a download="' + esc(f.name) + '" href="' + f.data + '" style="color:var(--purple-lt)">Download ' + esc(f.name) + '</a>';
         b.remove();
       }).catch(function (x) { b.disabled = false; b.textContent = 'Show the upload'; alert(x && x.message); });
+      return;
+    }
+    var fs = b.getAttribute('data-fs');
+    if (fs) {
+      var sc = b.closest('[data-shout]'), sid = sc.getAttribute('data-shout');
+      if (fs === 'deny' && !confirm('Deny this family shout-out?')) return;
+      Array.prototype.forEach.call(sc.querySelectorAll('button'), function (x) { x.disabled = true; });
+      window.gasRun_('clashFamilyShoutDecide', token(), sid, fs, Number(b.getAttribute('data-p')) || 0, !!(sc.querySelector('.fs-spot') || {}).checked).then(function () {
+        return window.gasRun_('clashServiceList', token());
+      }).then(function (res) { load(res); draw(fs === 'deny' ? 'Denied.' : '✅ Approved.'); })
+        .catch(function (x) { Array.prototype.forEach.call(sc.querySelectorAll('button'), function (y) { y.disabled = false; }); alert((x && x.message || '').replace(/^Exception:\s{0,}/, '')); });
       return;
     }
     var how = b.getAttribute('data-do');
@@ -71,4 +88,4 @@
   };
 })();
 </script>
-<!-- file-stamp: 60c1fdcf9d -->
+<!-- file-stamp: 3eb5060ffb -->

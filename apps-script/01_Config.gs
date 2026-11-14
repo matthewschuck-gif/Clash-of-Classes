@@ -96,6 +96,7 @@ function setupSpreadsheet() {
   ensureSiteContentTabs_(); // LRG Traits + Wheel Slices (35_SiteContent.gs)
   ensureAvalancheTab_(); ensureDoughTabs_(); ensureServiceTab_(); ensureSpotlightTab_(); // 38, 39, 40, 41
   ensurePlinkoTabs_(); // Plinko Slots + Plinko Drops (46_Plinko.gs)
+  ensureFamilyTabs_(); // the family pieces (47_Families.gs), each OFF until turned on
   ensureFreezeTab_();
   ensureDuelTab_();
   ensureLoreTab_();
@@ -214,6 +215,12 @@ const DEFAULT_SETTINGS = [
   ['SERVICE_POINTS', '5, 10, 20', 'Service submissions: the point choices staff approve with.'],
   ['SERVICE_OPEN', '3', 'Service submissions: how many a student can have waiting at once.'],
   ['SERVICE_FOLDER_ID', '', 'Service evidence uploads go to this private Drive folder (made for you the first time; staff see files in Admin › Service).'],
+  ['FAMILY_CHALLENGE', 'OFF', 'Families: ON = the weekly family challenge (Family Challenges tab) shows on the family update and My Squad; students tell us they did it and staff approve it (Admin › Service).'],
+  ['FAMILY_SHOUTOUTS', 'OFF', 'Families: ON = families can send a shout-out about their student from the family update page; staff approve it (Admin › Service) for points and the Spotlight.'],
+  ['FAMILY_PULSE', 'OFF', 'Families: ON = the open question on the Family Pulse tab shows on the family update page; each family that answers adds FAMILY_PULSE_POINTS to its student\'s squad.'],
+  ['FAMILY_CHECKIN', 'OFF', 'Families: ON = staff check families in at Family Night / Squad Night (clashofclasses.org/?page=familydoor); each family adds FAMILY_CHECKIN_POINTS.'],
+  ['FAMILY_PULSE_POINTS', '1', 'Families: squad points for each family that answers the Family Pulse (paid once a day).'],
+  ['FAMILY_CHECKIN_POINTS', '2', 'Families: squad points for each family checked in at an event (paid once a day).'],
   ['PLINKO_ROWS', '8', 'Plinko: rows of pegs (4 to 12). The Plinko Slots tab needs one more slot than rows.'],
   ['TV_SECONDS', '9', 'TV (clashofclasses.org/?tv=1): seconds each slide stays up.'],
   ['TV_SLIDES', 'all', 'TV: which slides run. all, or a list of: standings, podium, categories, metrics, challenges, feed, summit, map, opponent, pulse, polls.'],
@@ -451,4 +458,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = 'ad4e6f6f44';
+var FILE_STAMP_01_Config = '1a74bfe01c';

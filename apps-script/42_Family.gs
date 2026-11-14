@@ -48,6 +48,7 @@ function clashFamily(month, squad, lang) {
     month: month, lang: lang, label: lang === 'es' ? ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'][Number(month.slice(5, 7)) - 1] + ' de ' + month.slice(0, 4) : monthLabel_(month), squad: SQUAD_KEYS_.indexOf(squad) > -1 ? squad : '', site: siteUrl_().replace(/^https?:\W+/i, ''),
     squads: SQUAD_KEYS_.map(function (s) { return { squad: s, month: pts[s] || 0, total: totals[s], place: place.indexOf(s) + 1, zones: zones.filter(function (z) { return z.holder === s; }).map(function (z) { return z.zone; }) }; }),
     pulses: pulses, youSaid: youSaid, spotlight: spotlight, coming: coming, season: seasonInfo_(totals),
+    extras: (function () { try { const x = familyExtras_(); if (x.challenge) x.challenge.text = tr(x.challenge.text); if (x.pulse) { x.pulse.questionShown = tr(x.pulse.question); } return x; } catch (e) { return {}; } })(),
   });
 }
 
@@ -57,4 +58,4 @@ function serveFamily_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_42_Family = '87ad1c9fe5';
+var FILE_STAMP_42_Family = 'c4699a0638';

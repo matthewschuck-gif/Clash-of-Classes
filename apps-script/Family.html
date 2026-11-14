@@ -26,7 +26,14 @@
   .foot { margin-top:22px; color:var(--mute); font:13px system-ui,sans-serif; }
   .bar { display:flex; gap:8px; justify-content:flex-end; margin-bottom:10px; font-family:system-ui,sans-serif; }
   .bar select, .bar button { padding:7px 10px; border-radius:8px; border:1px solid var(--line); background:#fff; font:inherit; font-size:14px; }
-  @media print { body { background:#fff; } .bar { display:none; } main { padding:0; } .paper { border:0; padding:0; } }
+  .fam { margin-top:22px; padding:16px 18px; border-radius:14px; background:#faf5ff; border:1px solid var(--line); font-family:system-ui,sans-serif; }
+  .fam h2 { border:0; margin-top:0; }
+  .fam input, .fam textarea, .fam select { width:100%; box-sizing:border-box; padding:9px 10px; border:1px solid var(--line); border-radius:8px; font:inherit; margin-top:6px; background:#fff; }
+  .fam .two { display:grid; grid-template-columns:1fr 1fr 90px; gap:8px; }
+  .fam button { margin-top:10px; padding:10px 16px; border-radius:999px; border:0; background:var(--accent); color:#fff; font-weight:700; cursor:pointer; }
+  .fam .opt { display:block; margin-top:6px; }
+  .fam .ok { color:#166534; font-weight:700; margin-top:8px; } .fam .bad { color:#b91c1c; margin-top:8px; }
+  @media print { .fam form, .fam .formy { display:none; } body { background:#fff; } .bar { display:none; } main { padding:0; } .paper { border:0; padding:0; } }
 </style>
 </head>
 <body>
@@ -38,10 +45,12 @@
   var W = {
     en: { kicker: 'Clash of Classes · Ephrata Middle School', squadOf: ' Squad: ', intro: 'A note for families: what your student\'s squad did last month. Every student belongs to one of four squads; squads earn points together for showing up, taking part and showing our traits.',
       squads: 'The squads', squad: 'Squad', pointsIn: 'Points in', total: 'Total', place: 'Place', areas: 'Areas of the school held', won: ' won the Clash Bash this year.', soon: 'The season is over; the Clash Bash winner is revealed soon.', through: 'Points count toward the end-of-year Clash Bash through ',
-      told: 'What students told the school', youSaid: 'You said: ', weDid: 'What we did: ', spot: 'Squad Spotlight', coming: 'Coming up', ask: 'Ask your student about their squad tonight. Live standings: ', all: 'All squads', print: 'Print' },
+      told: 'What students told the school', youSaid: 'You said: ', weDid: 'What we did: ', spot: 'Squad Spotlight', coming: 'Coming up', ask: 'Ask your student about their squad tonight. Live standings: ', all: 'All squads', print: 'Print',
+      fc: 'This week\'s family challenge', fcHow: 'Did it together? Your student can tell us on My Squad at clashofclasses.org for squad points.', so: 'Send a shout-out about your student', soHelp: 'Tell us something good your student did. Staff read every one; it may earn squad points or the Squad Spotlight.', first: 'Student\'s first name', last: 'Last name', grade: 'Grade', what: 'What did they do?', trait: 'Trait (optional)', from: 'From (optional, e.g. Mom)', send: 'Send', sent: 'Thank you! Staff will read it soon.', fp: 'A question for families', fpHelp: 'Answer once per family with your student\'s name. Every family that answers earns a point for their student\'s squad.', answer: 'Answer', results: 'What families said', answers: 'answers' },
     es: { kicker: 'Clash of Classes · Escuela Intermedia de Ephrata', squadOf: ': escuadrón ', intro: 'Una nota para las familias: lo que hizo el escuadrón de su estudiante el mes pasado. Cada estudiante pertenece a uno de cuatro escuadrones; los escuadrones ganan puntos juntos por asistir, participar y mostrar nuestros valores.',
       squads: 'Los escuadrones', squad: 'Escuadrón', pointsIn: 'Puntos en', total: 'Total', place: 'Lugar', areas: 'Áreas de la escuela que tienen', won: ' ganó el Clash Bash este año.', soon: 'La temporada terminó; pronto se anuncia el ganador del Clash Bash.', through: 'Los puntos cuentan para el Clash Bash de fin de año hasta el ',
-      told: 'Lo que los estudiantes le dijeron a la escuela', youSaid: 'Ustedes dijeron: ', weDid: 'Lo que hicimos: ', spot: 'Estudiantes destacados', coming: 'Próximamente', ask: 'Pregúntele hoy a su estudiante sobre su escuadrón. Posiciones en vivo: ', all: 'Todos los escuadrones', print: 'Imprimir' },
+      told: 'Lo que los estudiantes le dijeron a la escuela', youSaid: 'Ustedes dijeron: ', weDid: 'Lo que hicimos: ', spot: 'Estudiantes destacados', coming: 'Próximamente', ask: 'Pregúntele hoy a su estudiante sobre su escuadrón. Posiciones en vivo: ', all: 'Todos los escuadrones', print: 'Imprimir',
+      fc: 'El reto familiar de esta semana', fcHow: '¿Lo hicieron juntos? Su estudiante nos lo puede contar en My Squad en clashofclasses.org para ganar puntos para su escuadrón.', so: 'Envíe un reconocimiento sobre su estudiante', soHelp: 'Cuéntenos algo bueno que hizo su estudiante. El personal lee cada uno; puede ganar puntos para su escuadrón o aparecer entre los estudiantes destacados.', first: 'Nombre del estudiante', last: 'Apellido', grade: 'Grado', what: '¿Qué hizo?', trait: 'Valor (opcional)', from: 'De parte de (opcional, p. ej. mamá)', send: 'Enviar', sent: '¡Gracias! El personal lo leerá pronto.', fp: 'Una pregunta para las familias', fpHelp: 'Una respuesta por familia, con el nombre de su estudiante. Cada familia que responde gana un punto para el escuadrón de su estudiante.', answer: 'Responder', results: 'Lo que dijeron las familias', answers: 'respuestas' },
   };
   var SQN = { es: { BLACK: 'Negro', GOLD: 'Dorado', GREY: 'Gris', PURPLE: 'Morado' } };
   function sqName(s) { return (SQN[lang] && SQN[lang][s]) || title(s); }
@@ -65,11 +74,37 @@
     var spot = D.spotlight.filter(function (s) { return !pick || s.squad === pick; });
     if (spot.length) html += '<h2>' + w.spot + '</h2><ul>' + spot.map(function (s) { return '<li><b>' + esc(s.who) + '</b> (' + sqName(s.squad) + '): ' + esc(s.story) + '</li>'; }).join('') + '</ul>';
     if (D.coming.length) html += '<h2>' + w.coming + '</h2><ul>' + D.coming.map(function (c) { return '<li>' + day(c.date) + ': ' + esc(c.title) + (c.kind ? ' <span class="said">(' + esc(c.kind) + ')</span>' : '') + '</li>'; }).join('') + '</ul>';
+    var x = D.extras || {};
+    if (x.challenge) html += '<div class="fam"><h2>🏠 ' + w.fc + '</h2><p style="font-size:17px;margin:4px 0">' + esc(x.challenge.text) + '</p><p class="said">' + w.fcHow + '</p></div>';
+    if (x.pulse) {
+      var p = x.pulse, res = '<div style="margin-top:8px">' + p.choices.map(function (c) { var n = p.counts[c] || 0, pc = p.total ? Math.round(100 * n / p.total) : 0; return '<div class="said">' + esc(c) + ': ' + pc + '%</div>'; }).join('') + '<div class="said">' + p.total + ' ' + w.answers + '</div></div>';
+      html += '<div class="fam"><h2>🗳 ' + w.fp + '</h2><p style="font-size:17px;margin:4px 0">' + esc(p.questionShown || p.question) + '</p><div class="formy" id="fpForm"><p class="said">' + w.fpHelp + '</p>' +
+        p.choices.map(function (c) { return '<label class="opt"><input type="radio" name="fpc" value="' + esc(c) + '" style="width:auto"> ' + esc(c) + '</label>'; }).join('') +
+        '<div class="two"><input id="fpF" placeholder="' + w.first + '"><input id="fpL" placeholder="' + w.last + '"><input id="fpG" placeholder="' + w.grade + '"></div><button id="fpGo">' + w.answer + '</button><div id="fpMsg"></div></div>' +
+        (window._fpDone ? '<div><b>' + w.results + '</b>' + res + '</div>' : '') + '</div>';
+    }
+    if (x.shoutouts) html += '<div class="fam"><h2>⭐ ' + w.so + '</h2><div class="formy"><p class="said">' + w.soHelp + '</p><div class="two"><input id="soF" placeholder="' + w.first + '"><input id="soL" placeholder="' + w.last + '"><input id="soG" placeholder="' + w.grade + '"></div>' +
+      '<textarea id="soW" rows="3" maxlength="600" placeholder="' + w.what + '"></textarea><div class="two" style="grid-template-columns:1fr 1fr"><select id="soT"><option value="">' + w.trait + '</option>' + (x.traits || []).map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('') + '</select><input id="soFrom" placeholder="' + w.from + '"></div>' +
+      '<button id="soGo">' + w.send + '</button><div id="soMsg"></div></div></div>';
     html += '<p class="foot">' + w.ask + esc(D.site) + '</p>';
     document.getElementById('sq').options[0].text = w.all; document.querySelector('.bar button').textContent = w.print;
     document.getElementById('paper').innerHTML = html;
   }
   document.getElementById('sq').onchange = function () { pick = this.value; draw(); };
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('#soGo, #fpGo');
+    if (!b) return;
+    var v = function (id) { var el = document.getElementById(id); return el ? el.value : ''; }, w = W[lang];
+    var out = document.getElementById(b.id === 'soGo' ? 'soMsg' : 'fpMsg');
+    b.disabled = true; out.className = ''; out.textContent = '…';
+    var call = b.id === 'soGo'
+      ? ['clashFamilyShoutout', JSON.stringify({ first: v('soF'), last: v('soL'), grade: v('soG'), what: v('soW'), trait: v('soT'), from: v('soFrom') })]
+      : ['clashFamilyPulseAnswer', JSON.stringify({ first: v('fpF'), last: v('fpL'), grade: v('fpG'), choice: (document.querySelector('input[name=fpc]:checked') || {}).value })];
+    google.script.run.withSuccessHandler(function (t) {
+      if (b.id === 'fpGo') { window._fpDone = true; try { D.extras.pulse = Object.assign(JSON.parse(t), { questionShown: D.extras.pulse.questionShown }); } catch (x) {} draw(); return; }
+      out.className = 'ok'; out.textContent = w.sent; ['soF', 'soL', 'soG', 'soW', 'soFrom'].forEach(function (id) { document.getElementById(id).value = ''; }); b.disabled = false;
+    }).withFailureHandler(function (x) { b.disabled = false; out.className = 'bad'; out.textContent = String(x && x.message || x).replace(/^Exception:\s{0,}/, ''); })[call[0]](call[1]);
+  });
   document.getElementById('lg').onchange = function () { lang = this.value; load(D ? D.month : ''); };
   function load(month) {
     document.getElementById('paper').textContent = lang === 'es' ? 'Cargando…' : 'Loading…';
@@ -87,4 +122,4 @@
 </script>
 </body>
 </html>
-<!-- file-stamp: f53fbe5da6 -->
+<!-- file-stamp: f7ec50a17c -->

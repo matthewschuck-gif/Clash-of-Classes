@@ -121,7 +121,7 @@
   };
 
   // ── Service (40_Service.gs): tell us about service or a kind act, with a reflection; staff approve it. ──
-  var svc = { list: [], file: '' };
+  var svc = { list: [], file: '', challenge: null };
   function serviceStatus(s) { return s === 'Approved' ? '✅ Approved' : s === 'Denied' ? 'Not approved' : s === 'More info' ? '❓ Staff have a question' : '⏳ Waiting for staff'; }
   function renderService() {
     var el = document.getElementById('serviceCard');
@@ -132,7 +132,9 @@
         (s.status === 'More info' ? '<div class="ms-form" style="margin-top:6px"><textarea class="sv-reply" data-id="' + esc(s.id) + '" rows="2" placeholder="Your answer" style="width:100%"></textarea>' +
           '<input class="sv-rlink" data-id="' + esc(s.id) + '" placeholder="Link (optional)" style="width:100%;margin-top:4px"><button class="btn btn-purple sv-send" data-id="' + esc(s.id) + '" style="margin-top:6px">Send answer</button></div>' : '') + '</div>';
     }).join('');
-    el.innerHTML = '<div class="ms-h">🤝 Service & kindness</div><div class="ms-small">Did service, volunteered, or helped someone? Tell us what you did and what it meant. Staff approve it for squad points.</div>' +
+    var fc = svc.challenge ? '<div style="margin-bottom:14px;padding:12px;border-radius:12px;border:2px solid #4ade80"><div class="ms-h" style="margin:0">🏠 This week\'s family challenge</div><div style="margin:6px 0">' + esc(svc.challenge.text) + '</div>' +
+      '<div class="ms-small">Did it with your family? Tell us how it went. Staff approve it for squad points.</div><div class="ms-form" style="display:grid;gap:8px;margin-top:8px"><textarea id="fcText" rows="2" maxlength="600" placeholder="How did your family do it?"></textarea><button class="btn btn-purple" id="fcSend">We did it!</button><div class="ms-err" id="fcErr"></div></div></div>' : '';
+    el.innerHTML = fc + '<div class="ms-h">🤝 Service & kindness</div><div class="ms-small">Did service, volunteered, or helped someone? Tell us what you did and what it meant. Staff approve it for squad points.</div>' +
       '<div class="ms-form" style="display:grid;gap:8px;margin-top:10px">' +
         '<input id="svWhat" maxlength="400" placeholder="What did you do?">' +
         '<input id="svWhen" maxlength="200" placeholder="When and where?">' +
@@ -146,6 +148,7 @@
     var id = stored(KEY);
     if (!id || !window.gasRun_) return;
     window.gasRun_('clashServiceMine', id).then(function (l) { svc.list = l || []; renderService(); }).catch(function () { renderService(); });
+    window.gasRun_('clashFamilyChallenge').then(function (c) { svc.challenge = c || null; renderService(); }).catch(function () {});
   }
   function readFile(input) {
     return new Promise(function (ok, no) {
@@ -156,6 +159,14 @@
     });
   }
   document.addEventListener('click', function (e) {
+    var fcb = e.target.closest && e.target.closest('#fcSend');
+    if (fcb) {
+      var fe = document.getElementById('fcErr'); fcb.disabled = true; if (fe) fe.textContent = 'Sending…';
+      window.gasRun_('clashServiceSubmit', stored(KEY), JSON.stringify({ kind: 'family', reflection: document.getElementById('fcText').value }))
+        .then(function (l) { svc.list = l || []; renderService(); var e3 = document.getElementById('fcErr'); if (e3) e3.textContent = '✅ Sent! Staff will look at it soon.'; })
+        .catch(function (x) { fcb.disabled = false; if (fe) fe.textContent = (x && x.message || '').replace(/^Exception:\s{0,}/, ''); });
+      return;
+    }
     var b = e.target.closest && e.target.closest('#svSend, .sv-send');
     if (!b) return;
     var id = stored(KEY), err = document.getElementById('svErr');
@@ -749,4 +760,4 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script>
-<!-- file-stamp: 134939c3e6 -->
+<!-- file-stamp: 4227d7b9da -->

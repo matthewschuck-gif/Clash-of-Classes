@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root { --bg:#f6f2ea; --ink:#22123b; --mute:#6b5a85; --line:#e7dcc8; --green:#1f7a4d; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif; }
+  header { background:#2a0f45; color:#fff; padding:16px; }
+  header .in { max-width:640px; margin:0 auto; } header h1 { margin:0; font-size:22px; } header p { margin:2px 0 0; font-size:13px; opacity:.85; }
+  main { max-width:640px; margin:0 auto; padding:16px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px; margin-bottom:14px; }
+  label { display:block; font-weight:700; font-size:14px; margin:12px 0 6px; }
+  input, select { width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px; font:inherit; background:#fffdf8; }
+  button { font:inherit; cursor:pointer; border:0; border-radius:12px; padding:12px; font-weight:800; }
+  .go { width:100%; margin-top:14px; background:var(--green); color:#fff; font-size:17px; }
+  .stu { display:flex; justify-content:space-between; width:100%; text-align:left; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:#fffdf8; margin-top:6px; }
+  .stu.on { border-color:var(--green); background:#e7f5ec; }
+  .err { color:#b91c1c; min-height:1em; margin-top:8px; font-size:14px; }
+  .ok { color:var(--green); font-weight:800; margin-top:8px; }
+  .tally { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; text-align:center; }
+  .tally b { display:block; font-size:28px; }
+</style>
+</head>
+<body>
+<header><div class="in"><h1>🏠 Family Night check-in</h1><p>Find the student, check their family in. Every family earns points for the squad.</p></div></header>
+<main id="main"><div class="card"><label for="pw">Admin password</label><input id="pw" type="password"><button class="go" id="in">Start</button><div class="err" id="e"></div></div></main>
+<script>
+(function () {
+  var token = '', picked = null, ev = '';
+  try { token = sessionStorage.getItem('door-admin') || ''; ev = sessionStorage.getItem('door-event') || ''; } catch (e) {}
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function title(s) { return s ? s.charAt(0) + s.slice(1).toLowerCase() : ''; }
+  function run(fn) { var a = Array.prototype.slice.call(arguments, 1); return new Promise(function (ok, no) { var r = google.script.run.withSuccessHandler(function (t) { ok(JSON.parse(t)); }).withFailureHandler(no); r[fn].apply(r, a); }); }
+  function clean(x) { return String(x && x.message || x).replace(/^Exception:\s{0,}/, ''); }
+  function door(tally) {
+    document.getElementById('main').innerHTML = '<div class="card"><label for="ev">Event</label><input id="ev" value="' + esc(ev || 'Squad Night') + '">' +
+      '<label for="q">Student</label><input id="q" type="search" placeholder="Name or 800 number" autocomplete="off"><div id="res"></div>' +
+      '<label for="ad">Adults with them</label><select id="ad"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>' +
+      '<button class="go" id="ci" disabled>Check this family in</button><div class="err" id="e"></div><div class="ok" id="ok"></div></div>' +
+      (tally ? '<div class="card"><b>Families tonight: ' + tally.total + '</b><div class="tally" style="margin-top:8px">' + ['BLACK', 'GOLD', 'GREY', 'PURPLE'].map(function (s) { return '<div><b>' + (tally.bySquad[s] || 0) + '</b>' + title(s) + '</div>'; }).join('') + '</div></div>' : '');
+    var t;
+    document.getElementById('q').oninput = function () {
+      var q = this.value; picked = null; document.getElementById('ci').disabled = true; clearTimeout(t);
+      t = setTimeout(function () {
+        if (q.trim().length < 2) { document.getElementById('res').innerHTML = ''; return; }
+        run('clashFamilyDoorFind', token, q).then(function (list) {
+          document.getElementById('res').innerHTML = list.map(function (s) { return '<button class="stu" data-id="' + esc(s.id) + '"><span>' + esc(s.name) + ' · gr ' + esc(s.grade) + '</span><span>' + title(s.squad) + '</span></button>'; }).join('') || '<div class="err">No match.</div>';
+        }).catch(function (x) { document.getElementById('e').textContent = clean(x); });
+      }, 250);
+    };
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('button');
+    if (!b) return;
+    if (b.id === 'in') {
+      run('clashLogin', document.getElementById('pw').value).then(function (r) { token = r.token; try { sessionStorage.setItem('door-admin', token); } catch (x) {} door(null); })
+        .catch(function (x) { document.getElementById('e').textContent = clean(x); });
+      return;
+    }
+    if (b.classList.contains('stu')) {
+      Array.prototype.forEach.call(document.querySelectorAll('.stu'), function (x) { x.classList.toggle('on', x === b); });
+      picked = b.getAttribute('data-id'); document.getElementById('ci').disabled = false; return;
+    }
+    if (b.id === 'ci') {
+      ev = document.getElementById('ev').value; try { sessionStorage.setItem('door-event', ev); } catch (x) {}
+      b.disabled = true;
+      run('clashFamilyDoorCheckIn', token, ev, picked, document.getElementById('ad').value).then(function (tally) {
+        door(tally); document.getElementById('ok').textContent = '✅ Checked in. Welcome!'; document.getElementById('q').focus();
+      }).catch(function (x) { b.disabled = false; document.getElementById('e').textContent = clean(x); });
+    }
+  });
+  if (token) door(null);
+})();
+</script>
+</body>
+</html>
+<!-- file-stamp: 143e16e279 -->

@@ -62,13 +62,15 @@ const SHEET_TABS_ = [
   ['Points Balance', 'Polls & Pulse', 'Rebuilt by the points balance check.', {}],
   ['Squad Spotlight', 'Pages', 'Suggested every Monday (one story per squad). Tick Show to put it on the Morning Clash, the TV and the home page; edit the story if you like.', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
   ['Avalanche', 'Game', 'Every Avalanche set off: squad, marking period, the week it ran, the bonus paid.', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
+  ['Family Challenges', 'Families', 'The weekly family challenge (FAMILY_CHALLENGE ON): the newest shown row whose Week Of has started.', {}],
+  ['Family Pulse', 'Families', 'A question for families (FAMILY_PULSE ON): Choices like Yes | No; From / Through dates (blank = open).', {}],
   ['Plinko Slots', 'Game', 'The Plinko prizes, left to right (one more slot than PLINKO_ROWS). Kind: points, mystery (Value like 5|10|25|50) or nothing. The middle slots come up most; the edges are rare.', { 'Kind': ['points', 'mystery', 'nothing'] }],
   ['Plinko Drops', 'Game', 'Drops squads have earned (a row each). Add one here or with + Give a drop on the board; Used fills in when it drops.', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
   ['Dough Teachers', 'Points', 'Teachers who can give Virtual Trait Dough: tick Active, their squad, and their password (e.g. their room number).', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
 ];
 const SHEET_HIDDEN_ = ['app_data', 'How To Use This Sheet', 'How The Map Works', 'How My Climb Works'];
 const SHEET_PRIVATE_ = ['Students', 'Student Board', 'Poll Votes', 'Event Check-ins', 'Redemptions', 'Shirt Votes', 'Shirt Orders', 'Squad Night', 'Sign-ups',
-  'Nominations', 'General Letters', 'Virtual Dough', 'Service Submissions', 'MLC Roster', 'Boost Ledger', 'Student Tickets', 'Avatars', 'Color Squads', 'Homeroom Points', 'Frost Log', 'Admin Edits', 'Usage', 'Weekly Digest Log', 'Squad Hand', 'Streak Banks'];
+  'Nominations', 'General Letters', 'Virtual Dough', 'Service Submissions', 'Family Shout-outs', 'Family Pulse Answers', 'Family Check-ins', 'MLC Roster', 'Boost Ledger', 'Student Tickets', 'Avatars', 'Color Squads', 'Homeroom Points', 'Frost Log', 'Admin Edits', 'Usage', 'Weekly Digest Log', 'Squad Hand', 'Streak Banks'];
 const SHEET_EDIT_LOG_ = 'Admin Edits';
 
 function sheetTabInfo_(name) {
@@ -101,7 +103,7 @@ function sheetSame_(a, b) { return String(a == null ? '' : a) === String(b == nu
 function clashSheetTabs(token) {
   requireAdmin_(token);
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const order = ['Polls & Pulse', 'Map', 'Freeze & Thaw', 'Points', 'Events', 'Pages', 'Game', 'Settings', 'Other', 'Student data (private)'];
+  const order = ['Polls & Pulse', 'Map', 'Freeze & Thaw', 'Points', 'Events', 'Families', 'Pages', 'Game', 'Settings', 'Other', 'Student data (private)'];
   const known = SHEET_TABS_.map(function (t) { return t[0]; });
   const names = known.filter(function (n) { return ss.getSheetByName(n); })
     .concat(ss.getSheets().map(function (s) { return s.getName(); }).filter(function (n) { return known.indexOf(n) === -1 && SHEET_HIDDEN_.indexOf(n) === -1; }));
@@ -217,4 +219,4 @@ function clashSheetAction(token, name) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_34_SheetEditor = '8e1fc9ccb2';
+var FILE_STAMP_34_SheetEditor = 'e8163343b7';
