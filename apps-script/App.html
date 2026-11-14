@@ -535,6 +535,9 @@ async function sbLoad(){
       if(!D.eventMultipliers) D.eventMultipliers={};
       if(!D.seasonTheme) D.seasonTheme={primary:'#6d2b9f',accent:'#ffe100',name:'Default'};
       if(!Array.isArray(D.traitsDone)) D.traitsDone=[];
+      // The LRG Traits and Wheel Slices tabs (35_SiteContent.gs) replace the built-in lists when filled in.
+      if(Array.isArray(D.siteTraits)&&D.siteTraits.length) TRAITS.splice.apply(TRAITS,[0,TRAITS.length].concat(D.siteTraits));
+      if(Array.isArray(D.siteWheel)&&D.siteWheel.length>=4&&typeof W_SEGS!=='undefined'){ W_SEGS.splice.apply(W_SEGS,[0,W_SEGS.length].concat(D.siteWheel)); W_N=W_SEGS.length; }
       Object.keys(D.squadColors).forEach(sq=>{ SQ_HEX[sq]=D.squadColors[sq]; });
       applySeasonTheme(D.seasonTheme);
       if(!D.weekChallenge) D.weekChallenge={title:'',body:'',active:false};
@@ -3889,7 +3892,7 @@ function openAdmin(){ document.getElementById('adminModal').classList.add('open'
 function close1(id){ const m=document.getElementById(id); if(!m) return; m.classList.remove('open'); m.style.display=''; }
 
 function aTab(name){
-  const names=['points','metrics','pages','navorder','mayhem','champs','kickoff','links','gallery','scores','history','settings','map','system'];
+  const names=['points','metrics','pages','navorder','mayhem','champs','kickoff','links','gallery','scores','history','settings','map','sheet','system'];
   document.querySelectorAll('#adminModal .a-tab').forEach((b,i)=>b.classList.toggle('on',names[i]===name));
   names.forEach(n=>{ const el=document.getElementById('ap-'+n); if(el) el.classList.toggle('on',n===name); });
   if(name==='scores') renderScoreSummary();
@@ -3898,6 +3901,7 @@ function aTab(name){
   if(name==='pages'){ pTab(window._currentPageTab||'home'); }
   if(name==='mayhem'){ loadMayhemEditor(); }
   if(name==='map'&&window.MapEditor){ MapEditor.open(); }
+  if(name==='sheet'&&window.SheetEditor){ SheetEditor.open(); }
   if(name==='system'){ renderSystem(); }
   if(name==='champs'){ loadChampsEditor(); }
   if(name==='kickoff'){ loadKickoffEditor(); }
@@ -4564,7 +4568,7 @@ const W_SPEC   = {
 let wCanvas, wCtx, wAngle=0, wSpinning=false, wRing=0, wBanked=0;
 let wSquad='BLACK', wRaf=null;
 
-const W_N = W_SEGS.length;
+var W_N = W_SEGS.length;
 const W_SA = (Math.PI*2)/W_N;
 const W_CX=150, W_CY=150, W_R=142;
 

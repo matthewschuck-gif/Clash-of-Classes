@@ -479,7 +479,8 @@
     if (!box || !pulseData) return;
     var live = pulseData.live || [], recent = pulseData.recent || [];
     box.innerHTML = (live.length ? live.map(function (p) { return pulseScreen(p); }).join('')
-      : '<div class="ch-card"><div class="ch-title">No Pulse question open right now</div><div class="ch-desc">A new one comes out every week or so. Here\'s what EMS said last time.</div></div>') +
+      : (pulseData.next && pulseData.next[0] ? '<div class="ch-card" style="border-color:#38bdf8"><div class="ch-title">📅 Next Pulse opens ' + esc(dayName(pulseData.next[0].date)) + '</div><div class="ch-desc">' + esc(pulseData.next[0].question) + '</div></div>'
+        : '<div class="ch-card"><div class="ch-title">No Pulse question open right now</div><div class="ch-desc">A new one comes out every week or so. Here\'s what EMS said last time.</div></div>')) +
       (recent.length ? '<div class="ms-h" style="margin-top:18px">What EMS said</div>' + recent.map(function (p) { return pulseScreen(p); }).join('') : '') +
       youSaidHtml(pulseData.youSaid || []);
     growBars(box);
@@ -558,8 +559,15 @@
     }).catch(function (x) { if (err) err.textContent = (x && x.message || '').replace(/^Exception:\s*/, ''); });
   });
 
+  // A poll that is not open yet: what it asks and the day it opens.
+  function dayName(ymd) { var d = new Date(String(ymd) + 'T12:00:00'); return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d.getDay()] + ' ' + (d.getMonth() + 1) + '/' + d.getDate(); }
+  function nextCard(p) {
+    return '<div class="ch-card" style="opacity:.85"><div class="ch-title">📅 ' + (p.kind === 'Pulse' ? 'Pulse' : esc(p.kindLabel || p.kind)) + ' · opens ' + esc(dayName(p.date)) + '</div>' +
+      '<div class="ch-desc">' + esc(p.question) + '</div>' + (p.choices && p.choices.length > 1 ? '<div class="ms-small" style="margin-top:6px">' + p.choices.map(esc).join(' · ') + '</div>' : '') +
+      '<div class="ms-small" style="margin-top:6px">Answer with your 800# on ' + esc(dayName(p.date)) + ': every answer is a squad point.</div></div>';
+  }
   function renderPolls() {
-    var html = polls.today.map(pollCard).join('') + (polls.last ? pollCard(polls.last) : '');
+    var html = polls.today.map(pollCard).join('') + (polls.next || []).map(nextCard).join('') + (polls.last ? pollCard(polls.last) : '');
     ['dailyPollSection', 'myPollSection'].forEach(function (id) {
       var el = document.getElementById(id);
       if (!el) return;

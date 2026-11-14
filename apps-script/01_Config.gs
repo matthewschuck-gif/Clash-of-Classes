@@ -93,6 +93,7 @@ function setupSpreadsheet() {
   ensurePollIdeaTabs_(); // Poll Ideas + Poll Insights (26_PollIdeas.gs)
   ensureFrostTabs_(); // Freeze Lines + Frost Log (28_Frost.gs)
   ensureYouSaidTab_(); // You Said We Did (30_YouSaid.gs)
+  ensureSiteContentTabs_(); // LRG Traits + Wheel Slices (35_SiteContent.gs)
   ensureFreezeTab_();
   ensureDuelTab_();
   ensureLoreTab_();

@@ -1,0 +1,217 @@
+<style>
+/* Admin panel › Sheet: the Sheet's setup tabs (polls, Pulse, map numbers, freezes, events, settings) edited here. */
+.se-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.se-top select, .se-top input { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg, #12081f); color: var(--text); font-size: 13px; }
+.se-top select { min-width: 220px; font-weight: 700; }
+.se-top input[type=search] { flex: 1; min-width: 140px; }
+.se-hint { font-size: 13px; color: var(--text3); margin: 0 0 10px; line-height: 1.45; }
+.se-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.se-btn { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-weight: 700; cursor: pointer; font-size: 13px; }
+.se-btn.go { background: var(--gold, #ffe100); color: #12081f; border-color: transparent; }
+.se-btn.del { padding: 4px 8px; color: #fca5a5; background: transparent; }
+.se-btn:disabled { opacity: .5; cursor: default; }
+.se-msg { font-size: 13px; color: var(--text3); white-space: pre-line; }
+.se-wrap { overflow: auto; max-height: 62vh; border: 1px solid var(--border); border-radius: 10px; }
+.se-table { border-collapse: collapse; font-size: 13px; min-width: 100%; }
+.se-table th { position: sticky; top: 0; z-index: 1; background: var(--surface2, #22123b); color: var(--text3); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; text-align: left; padding: 7px 6px; white-space: nowrap; }
+.se-table td { padding: 3px 4px; border-top: 1px solid var(--border); vertical-align: top; }
+.se-table tr.changed td { background: rgba(255, 225, 0, .07); }
+.se-table tr.added td { background: rgba(74, 222, 128, .08); }
+.se-table tr.gone td { opacity: .4; text-decoration: line-through; }
+.se-table input[type=text], .se-table select { width: 100%; min-width: 90px; box-sizing: border-box; padding: 5px 7px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--text); font-size: 13px; }
+.se-table input[type=text]:focus, .se-table select:focus { border-color: var(--border); background: var(--bg, #12081f); outline: none; }
+.se-table td.long input { min-width: 260px; }
+.se-n { color: var(--text3); font-size: 11px; padding-top: 9px !important; }
+</style>
+<script>
+(function () {
+  var st = { tabs: [], actions: [], tab: '', data: null, rows: [], filter: '' };
+  // rows: [{ row (sheet row or 0 when new), before, values, state: '' | 'changed' | 'added' | 'gone' }]
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function box() { return document.getElementById('sheetEditor'); }
+  function msg(t) { var m = document.getElementById('seMsg'); if (m) m.textContent = t || ''; }
+  function token() { return window.ADMIN_SESSION || ''; }
+  function dirty() { return st.rows.some(function (r) { return r.state; }); }
+  function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+
+  function drawTop() {
+    var groups = {};
+    st.tabs.forEach(function (t) { (groups[t.group] = groups[t.group] || []).push(t); });
+    var opts = Object.keys(groups).map(function (g) {
+      return '<optgroup label="' + esc(g) + '">' + groups[g].map(function (t) {
+        return '<option value="' + esc(t.tab) + '"' + (t.tab === st.tab ? ' selected' : '') + '>' + esc(t.tab) + ' (' + t.rows + ')</option>';
+      }).join('') + '</optgroup>';
+    }).join('');
+    box().innerHTML = '<div class="se-top"><select id="seTab">' + opts + '</select>' +
+      '<input type="search" id="seFind" placeholder="Find in this tab" value="' + esc(st.filter) + '">' +
+      '<button class="se-btn" id="seAdd">+ Add row</button><button class="se-btn go" id="seSave" disabled>Save changes</button></div>' +
+      '<p class="se-hint" id="seHint"></p><div class="se-acts" id="seActs"></div><div class="se-msg" id="seMsg"></div><div id="seBody"></div>';
+  }
+
+  function drawActs() {
+    var el = document.getElementById('seActs');
+    if (!el) return;
+    el.innerHTML = st.actions.filter(function (a) { return a.tab === st.tab; }).map(function (a) {
+      return '<button class="se-btn" data-act="' + esc(a.id) + '">▶ ' + esc(a.label) + '</button>';
+    }).join('');
+  }
+
+  function cell(r, c) {
+    var d = st.data, h = d.headers[c], v = r.values[c], ch = d.choices[h];
+    if (d.bools[c] || h === 'Show' || h === 'Use' || h === 'Approve' || h === 'Approved' || h === 'Locked') {
+      return '<td style="text-align:center"><input type="checkbox" data-c="' + c + '"' + (v === true || String(v).toUpperCase() === 'TRUE' ? ' checked' : '') + '></td>';
+    }
+    if (ch && ch.length) {
+      var list = ch.indexOf(String(v)) === -1 && String(v) !== '' ? [String(v)].concat(ch) : ch;
+      return '<td><select data-c="' + c + '">' + (list.indexOf('') === -1 ? '<option value=""></option>' : '') + list.map(function (o) {
+        return '<option value="' + esc(o) + '"' + (String(v) === o ? ' selected' : '') + '>' + esc(o || '(blank)') + '</option>';
+      }).join('') + '</select></td>';
+    }
+    var long = String(v).length > 40 || /question|notes|text|how|why|what|story|details|description|hint/i.test(h);
+    return '<td' + (long ? ' class="long"' : '') + '><input type="text" data-c="' + c + '" value="' + esc(v) + '"></td>';
+  }
+
+  function drawBody() {
+    var el = document.getElementById('seBody'), d = st.data;
+    if (!el || !d) return;
+    document.getElementById('seHint').textContent = d.hint || '';
+    var f = st.filter.toLowerCase();
+    var list = st.rows.map(function (r, i) { return { r: r, i: i }; }).filter(function (x) {
+      return !f || x.r.state === 'added' || x.r.values.join(' ').toLowerCase().indexOf(f) > -1;
+    });
+    var hasStatus = d.rows.some(function (r) { return r.status; });
+    el.innerHTML = d.headers.length ? '<div class="se-wrap"><table class="se-table"><thead><tr><th></th>' + (hasStatus ? '<th>On the site</th>' : '') + d.headers.map(function (h) { return '<th>' + esc(h) + '</th>'; }).join('') + '<th></th></tr></thead><tbody>' +
+      list.map(function (x) {
+        return '<tr data-i="' + x.i + '" class="' + x.r.state + '"><td class="se-n">' + (x.r.row || 'new') + '</td>' + (hasStatus ? '<td class="se-n" style="white-space:nowrap;color:' + (/LIVE/.test(x.r.status || '') ? '#4ade80' : /Opens/.test(x.r.status || '') ? '#7dd3fc' : '#fca5a5') + '">' + esc(x.r.status || (x.r.state === 'added' ? 'save to see' : '')) + '</td>' : '') + d.headers.map(function (h, c) { return cell(x.r, c); }).join('') +
+          '<td><button class="se-btn del" data-del="' + x.i + '" title="' + (x.r.state === 'gone' ? 'Keep this row' : 'Delete this row') + '">' + (x.r.state === 'gone' ? '↺' : '✕') + '</button></td></tr>';
+      }).join('') + '</tbody></table></div>' + (list.length ? '' : '<p class="se-hint" style="margin-top:8px">No rows' + (f ? ' match.' : ' yet. + Add row.') + '</p>')
+      : '<p class="se-hint">This tab has no columns yet.</p>';
+    var save = document.getElementById('seSave');
+    if (save) save.disabled = !dirty();
+  }
+
+  function load(tab) {
+    if (dirty() && !confirm('You have changes on ' + st.tab + ' that are not saved. Leave them?')) { document.getElementById('seTab').value = st.tab; return; }
+    st.tab = tab; st.data = null; st.rows = []; st.filter = '';
+    var find = document.getElementById('seFind'); if (find) find.value = '';
+    drawActs(); msg('Loading ' + tab + '…');
+    var b = document.getElementById('seBody'); if (b) b.innerHTML = '';
+    window.gasRun_('clashSheetLoad', token(), tab).then(function (d) {
+      st.data = d;
+      st.rows = d.rows.map(function (r) { return { row: r.row, before: r.values.slice(), values: r.values.slice(), state: '', status: r.status || '' }; });
+      msg(''); drawBody();
+    }).catch(function (e) { msg('Could not load: ' + (e && e.message || e)); });
+  }
+
+  function change(i, c, v) {
+    var r = st.rows[i];
+    if (!r || r.state === 'gone') return;
+    r.values[c] = v;
+    if (r.state !== 'added') r.state = r.values.some(function (x, k) { return String(x) !== String(r.before[k]); }) ? 'changed' : '';
+    var tr = box().querySelector('tr[data-i="' + i + '"]');
+    if (tr) tr.className = r.state;
+    document.getElementById('seSave').disabled = !dirty();
+  }
+
+  function addRow() {
+    var d = st.data;
+    if (!d) return;
+    var v = d.headers.map(function (h, c) {
+      if (d.bools[c] || h === 'Show' || h === 'Use') return h === 'Show' || h === 'Use';
+      if (h === 'Date' && /Polls|Calendar|Plan|Events/.test(st.tab)) return today();
+      if (h === 'Month' && st.tab === 'Squad Monthly') return today().slice(0, 7);
+      if (st.tab === 'Daily Polls' && h === 'Participation Points') return 1;
+      if (st.tab === 'Daily Polls' && h === 'Kind') return 'Pulse';
+      return '';
+    });
+    st.rows.unshift({ row: 0, before: null, values: v, state: 'added' });
+    st.filter = ''; var find = document.getElementById('seFind'); if (find) find.value = '';
+    drawBody();
+    var first = box().querySelector('tr.added input[type=text]');
+    if (first) first.focus();
+  }
+
+  function save() {
+    var p = { headers: st.data.headers, edits: [], adds: [], deletes: [] };
+    st.rows.forEach(function (r) {
+      if (r.state === 'changed') p.edits.push({ row: r.row, before: r.before, values: r.values });
+      else if (r.state === 'added') p.adds.push(r.values);
+      else if (r.state === 'gone' && r.row) p.deletes.push({ row: r.row, before: r.before });
+    });
+    var btn = document.getElementById('seSave'); btn.disabled = true; msg('Saving…');
+    window.gasRun_('clashSheetSave', token(), st.tab, JSON.stringify(p)).then(function (r) {
+      var parts = [];
+      if (r.edited) parts.push(r.edited + ' changed'); if (r.added) parts.push(r.added + ' added'); if (r.deleted) parts.push(r.deleted + ' deleted');
+      var keep = st.tab;
+      st.rows = []; load(keep);
+      setTimeout(function () {
+        msg('✓ Saved: ' + (parts.join(', ') || 'nothing to save') + '.' + (r.conflicts && r.conflicts.length ? '\n⚠ Not saved: row ' + r.conflicts.join(', ') + ' changed in the Sheet since you opened it. It is reloaded now; make your change again.' : '') + (keep === 'Settings' ? '\nSettings take effect within a minute.' : ''));
+      }, 900);
+      refreshTabs();
+    }).catch(function (e) { btn.disabled = false; msg('Not saved: ' + (e && e.message || e)); });
+  }
+
+  function refreshTabs() {
+    window.gasRun_('clashSheetTabs', token()).then(function (tabs) {
+      st.tabs = tabs;
+      var sel = document.getElementById('seTab');
+      if (sel) drawTopKeep();
+    }).catch(function () {});
+  }
+  function drawTopKeep() {
+    var body = document.getElementById('seBody'), html = body ? body.innerHTML : '', m = document.getElementById('seMsg'), mt = m ? m.textContent : '';
+    drawTop(); drawActs();
+    document.getElementById('seBody').innerHTML = html; msg(mt);
+    if (st.data) drawBody();
+  }
+
+  document.addEventListener('change', function (e) {
+    var t = e.target;
+    if (!t.closest || !t.closest('#sheetEditor')) return;
+    if (t.id === 'seTab') { load(t.value); return; }
+    var tr = t.closest('tr[data-i]');
+    if (tr && t.hasAttribute('data-c')) change(Number(tr.getAttribute('data-i')), Number(t.getAttribute('data-c')), t.type === 'checkbox' ? t.checked : t.value);
+  });
+  document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (!t.closest || !t.closest('#sheetEditor')) return;
+    if (t.id === 'seFind') { st.filter = t.value; drawBody(); return; }
+    var tr = t.closest('tr[data-i]');
+    if (tr && t.type === 'text') change(Number(tr.getAttribute('data-i')), Number(t.getAttribute('data-c')), t.value);
+  });
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('#sheetEditor button');
+    if (!t) return;
+    if (t.id === 'seAdd') { addRow(); return; }
+    if (t.id === 'seSave') { save(); return; }
+    if (t.hasAttribute('data-del')) {
+      var i = Number(t.getAttribute('data-del')), r = st.rows[i];
+      if (r.state === 'added') st.rows.splice(i, 1);
+      else r.state = r.state === 'gone' ? (r.values.some(function (x, k) { return String(x) !== String(r.before[k]); }) ? 'changed' : '') : 'gone';
+      drawBody(); return;
+    }
+    if (t.hasAttribute('data-act')) {
+      if (dirty()) { msg('Save your changes first, then run it.'); return; }
+      t.disabled = true; msg('Working…');
+      window.gasRun_('clashSheetAction', token(), t.getAttribute('data-act')).then(function (r) {
+        t.disabled = false; load(st.tab);
+        setTimeout(function () { msg(r.message); }, 900);
+      }).catch(function (err) { t.disabled = false; msg('Did not run: ' + (err && err.message || err)); });
+    }
+  });
+
+  window.SheetEditor = {
+    open: function () {
+      if (!box() || !window.gasRun_) return;
+      if (st.tabs.length) { if (!st.data && st.tab) load(st.tab); return; }
+      box().innerHTML = '<p class="se-hint">Loading the Sheet tabs…</p>';
+      Promise.all([window.gasRun_('clashSheetTabs', token()), window.gasRun_('clashSheetActions', token())]).then(function (res) {
+        st.tabs = res[0]; st.actions = res[1];
+        if (!st.tabs.length) { box().innerHTML = '<p class="se-hint">No editable tabs yet: run Clash of Classes › Run setup in the Sheet.</p>'; return; }
+        st.tab = st.tab || st.tabs[0].tab;
+        drawTop(); load(st.tab);
+      }).catch(function (e) { box().innerHTML = '<p class="se-hint">Could not open the Sheet tabs: ' + esc(e && e.message || e) + '</p>'; });
+    },
+  };
+})();
+</script>

@@ -179,6 +179,9 @@ function clashDailyPolls(id) {
   return JSON.stringify({
     today: polls.filter(function (p) { return pollOpenOn_(p, today); }).map(function (p) { return publicPoll_(p, voteOf(p)); }),
     last: past.length ? publicPoll_(past[0], voteOf(past[0])) : null,
+    // The next ones not open yet (a weekend, or scheduled ahead): shown as "Opens Monday", no voting.
+    next: polls.filter(function (p) { return p.date > today; }).sort(function (a, b) { return a.date.localeCompare(b.date); }).slice(0, 2)
+      .map(function (p) { return { id: p.id, kind: p.kind, kindLabel: p.kindLabel, question: p.question, choices: p.choices, date: p.date, through: p.through }; }),
   });
 }
 
@@ -204,6 +207,8 @@ function clashPulseLive() {
     live: pulses.filter(function (p) { return pollOpenOn_(p, today); }).map(shape),
     recent: pulses.filter(function (p) { return p.through < today; }).sort(function (a, b) { return b.through.localeCompare(a.through); }).slice(0, 3).map(shape),
     youSaid: youSaidPublic_(4), // 30_YouSaid.gs: what changed because of a Pulse
+    next: pulses.filter(function (p) { return p.date > today; }).sort(function (a, b) { return a.date.localeCompare(b.date); }).slice(0, 1)
+      .map(function (p) { return { question: p.question, choices: p.choices, date: p.date, through: p.through }; }),
   });
 }
 

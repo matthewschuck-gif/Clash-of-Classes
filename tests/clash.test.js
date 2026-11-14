@@ -2003,6 +2003,90 @@ test('insights: points balance flags, You said we did, State of the Squads email
   assert.ok(!/SECRET-CODE-42/.test(text) && !/8001111/.test(text) && !/1g8VpAeyE8md/.test(text), 'no code, 800# or sheet ID');
 });
 
+test('Admin › Sheet: every tab (student data grouped as private, app_data never), load, edit / add / delete, a row changed in the Sheet meanwhile is kept, menu jobs', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureFrostTabs_(); w.ensureYouSaidTab_();
+  assert.throws(() => w.clashSheetTabs('nope'), /sign in as admin/);
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  w.ensureSiteContentTabs_();
+  const list = JSON.parse(w.clashSheetTabs('T')), tabs = list.map(t => t.tab);
+  assert.ok(['Daily Polls', 'Poll Ideas', 'Settings', 'Squad Monthly', 'Freeze Lines', 'events', 'LRG Traits', 'Wheel Slices', 'Poll Votes'].every(t => tabs.includes(t)), tabs.join(', '));
+  const all = w.book.getSheets().map(x => x.getName());
+  assert.deepStrictEqual(all.filter(n => !tabs.includes(n)).sort(), all.filter(n => /^(app_data|How To Use This Sheet|How The Map Works|How My Climb Works)$/.test(n)).sort(), 'every tab but app_data and the guide tabs');
+  assert.strictEqual(list.find(t => t.tab === 'Poll Votes').group, 'Student data (private)');
+  assert.ok(!tabs.includes('app_data'));
+  assert.throws(() => w.clashSheetLoad('T', 'app_data'), /not editable/);
+  assert.throws(() => w.clashSheetLoad('T', 'No Such Tab'), /not editable/);
+  // Load Daily Polls.
+  const polls = w.book.getSheetByName('Daily Polls');
+  polls.rows.splice(1);
+  polls.rows.push([true, '2026-11-20', 'Trivia', '2+2?', '3 | 4', '4', 1, 1, '', '', ''], [false, '2026-11-21', 'This or That', 'Cats or dogs?', 'Cats | Dogs', '', 1, 1, '', '', '']);
+  let d = JSON.parse(w.clashSheetLoad('T', 'Daily Polls'));
+  assert.deepStrictEqual(d.headers.slice(0, 4), ['Show', 'Date', 'Kind', 'Question']);
+  assert.deepStrictEqual(d.rows.map(r => r.status.split(' ')[0]), [w.todayYmd_() < '2026-11-20' ? 'Opens' : 'Closed', 'Hidden'], 'each poll row says what it does on the site');
+  assert.strictEqual(d.rows.length, 2);
+  assert.strictEqual(d.bools[0], true, 'Show is a checkbox column');
+  assert.ok(d.choices.Kind.includes('Pulse'));
+  // Edit row 2, delete row 3, add a Pulse.
+  const r2 = d.rows[0], r3 = d.rows[1];
+  const v2 = r2.values.slice(); v2[3] = '3+3?'; v2[4] = '5 | 6'; v2[5] = '6';
+  const add = d.headers.map(h => ({ Show: true, Date: '2026-11-24', Kind: 'Pulse', Question: 'Best time for help?', Choices: 'Lunch | After school', 'Participation Points': '1', Through: '2026-11-26' })[h] ?? '');
+  let r = JSON.parse(w.clashSheetSave('T', 'Daily Polls', JSON.stringify({ headers: d.headers, edits: [{ row: r2.row, before: r2.values, values: v2 }], deletes: [{ row: r3.row, before: r3.values }], adds: [add] })));
+  assert.deepStrictEqual([r.edited, r.added, r.deleted, r.conflicts.length], [1, 1, 1, 0]);
+  assert.deepStrictEqual(polls.rows.slice(1).map(x => x[3]), ['3+3?', 'Best time for help?']);
+  assert.strictEqual(polls.rows[2][6], 1, 'a typed number goes in as a number');
+  assert.strictEqual(polls.rows[1][0], true, 'checkboxes stay true/false');
+  // Someone edits the Sheet after the page loaded: that row is not overwritten.
+  d = JSON.parse(w.clashSheetLoad('T', 'Daily Polls'));
+  polls.rows[1][3] = 'Changed in the Sheet';
+  const v = d.rows[0].values.slice(); v[3] = 'From the panel';
+  r = JSON.parse(w.clashSheetSave('T', 'Daily Polls', JSON.stringify({ headers: d.headers, edits: [{ row: d.rows[0].row, before: d.rows[0].values, values: v }] })));
+  assert.deepStrictEqual([r.edited, J(r.conflicts)], [0, [2]]);
+  assert.strictEqual(polls.rows[1][3], 'Changed in the Sheet');
+  assert.throws(() => w.clashSheetSave('T', 'Daily Polls', JSON.stringify({ headers: ['Different'], edits: [] })), /columns .* changed/);
+  // Settings: change a value from the panel and it takes effect.
+  d = JSON.parse(w.clashSheetLoad('T', 'Settings'));
+  const ki = d.headers.indexOf('Key'), vi = d.headers.indexOf('Value');
+  const row = d.rows.find(x => x.values[ki] === 'PULSE_DAYS');
+  const nv = row.values.slice(); nv[vi] = '5';
+  w.clashSheetSave('T', 'Settings', JSON.stringify({ headers: d.headers, edits: [{ row: row.row, before: row.values, values: nv }] }));
+  assert.strictEqual(String(w.getSetting_('PULSE_DAYS')), '5');
+  assert.ok(w.book.getSheetByName('Admin Edits').rows.length >= 3, 'each save is logged');
+  // Menu jobs from the panel.
+  const acts = JSON.parse(w.clashSheetActions('T')).map(a => a.id);
+  assert.ok(['nextPulse', 'schedule', 'youSaid', 'balance', 'privacy'].every(a => acts.includes(a)));
+  assert.ok(/Pulse/.test(JSON.parse(w.clashSheetAction('T', 'announce')).message) || JSON.parse(w.clashSheetAction('T', 'announce')).message.length > 0);
+  assert.throws(() => w.clashSheetAction('T', 'deleteEverything'), /Unknown action/);
+});
+
+test('the site shows polls and the Pulse before they open; LRG traits and wheel slices come from their tabs', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensurePollTabs_(); w.ensureSiteContentTabs_();
+  const today = w.todayYmd_(), ahead = n => w.ymdShift_(today, n);
+  const polls = w.book.getSheetByName('Daily Polls');
+  polls.rows.splice(1);
+  polls.rows.push([true, ahead(2), 'Pulse', 'Best time for help?', 'Lunch | After school', '', 1, '', '', '', ahead(4)], [true, ahead(3), 'Trivia', '2+2?', '3 | 4', '4', 1, 1, '', '', ''], [false, ahead(1), 'Trivia', 'Hidden?', 'A | B', '', 1, 1, '', '', '']);
+  const dp = JSON.parse(w.clashDailyPolls(''));
+  assert.deepStrictEqual([dp.today.length, dp.last], [0, null]);
+  assert.deepStrictEqual(dp.next.map(p => p.question), ['Best time for help?', '2+2?'], 'coming up, in date order; hidden rows never');
+  assert.ok(!('answer' in dp.next[1]), 'a trivia answer never goes out early');
+  assert.strictEqual(JSON.parse(w.clashPulseLive()).next[0].question, 'Best time for help?');
+  // Traits and wheel: seeded with what the page had, then edits show on the site.
+  const tr = w.siteTraits_();
+  assert.strictEqual(tr.length, 9);
+  assert.strictEqual(tr[0].month, 'September');
+  assert.ok(tr[0].skills.length >= 3 && tr[0].desc.length > 10);
+  const ts = w.book.getSheetByName('LRG Traits'); ts.rows[1][2] = 'Growth Mindset (edited)';
+  assert.strictEqual(w.siteTraits_()[0].trait, 'Growth Mindset (edited)');
+  const wheel = w.siteWheel_();
+  assert.strictEqual(wheel.length, 24);
+  assert.ok(wheel.some(x => x.loyalty && x.name === 'LOYALTY'));
+  const v = JSON.parse(JSON.stringify(w.publicLoad_(false))).value;
+  assert.ok(v.siteTraits.length === 9 && v.siteWheel.length === 24, 'the page gets both');
+  w.book.getSheetByName('Wheel Slices').rows.splice(1);
+  assert.strictEqual(w.siteWheel_(), null, 'an empty tab = the built-in wheel');
+});
+
 test('Redemption: a Trailback Summit on the private Redemptions tab gives the student a Summit Climber badge and 25 LRG points; the feed labels it', () => {
   const w = world();
   w.ensureSettings_();

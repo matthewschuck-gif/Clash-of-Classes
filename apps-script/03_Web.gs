@@ -58,6 +58,7 @@ function publicLoad_(raw) {
     mergeMindsetLinks_(res.value); // the Mindset Links tab fills any month the site has no link for (23_Drive.gs)
     res.value.freezes = activeFreezes_(); // read-only, from the Point Freezes tab
     try { res.value.schoolCalendar = schoolCalendar_(); } catch (e) { /* the page falls back to its built-in list */ }
+    try { res.value.siteTraits = siteTraits_(); res.value.siteWheel = siteWheel_(); } catch (e) { /* the page keeps its built-in traits and wheel */ }
     if (!raw && Array.isArray(res.value.events)) res.value.events = res.value.events.map(publicEvent_);
   }
   return res;
@@ -169,6 +170,7 @@ function clashSave(token, valueJson, syncJson) {
     delete value.freezes; // lives on the Point Freezes tab, not in the saved blob
     delete value.schoolCalendar; // lives on the School Calendar tab
     delete value.studentLink; // lives on Settings
+    delete value.siteTraits; delete value.siteWheel; // live on the LRG Traits / Wheel Slices tabs
     const key = function (e) { return e.id + '|' + e.name; };
     const seen = {};
     (sync.seen || []).forEach(function (k) { seen[k] = true; });
