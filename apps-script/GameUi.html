@@ -28,6 +28,16 @@
 .gb-rules summary { cursor: pointer; font-weight: 700; color: #ffe100; }
 .gb-rules div { margin-top: 6px; line-height: 1.45; }
 .gb-rules span { opacity: .7; }
+/* Light mode (the site's ☀️ toggle puts light-mode on body): CSS beats the SVG's own colors. */
+body.light-mode .gb { background: #f3edfb; box-shadow: inset 0 0 0 1px #e1d5f2; }
+body.light-mode .gb .gb-bg { fill: #f3edfb; }
+body.light-mode .gb .gb-slab { fill: #d9cceb; }
+body.light-mode .gb .gb-open { fill: #e6dcf4; fill-opacity: 1; }
+body.light-mode .gb .gb-open-t { fill: #4b2a6e; }
+body.light-mode .gb .gb-edge { stroke: #5b3f80; }
+body.light-mode .gb-legend span { background: rgba(73, 14, 111, .07); color: #3b2a55; }
+body.light-mode .gb-feed, body.light-mode .gb-rules { color: #3b2a55; }
+body.light-mode .gb-rules summary { color: #7a5c00; }
 .gb-rules em { display: block; font-style: normal; font-family: 'DM Mono', monospace; font-size: 11px; opacity: .7; }
 
 /* The Opponent */
@@ -267,7 +277,7 @@
     var style = map.style === 'mountain' || map.style === 'clean' ? map.style : 'puzzle', building = style !== 'mountain', clean = style === 'clean';
     var pad = clean ? Math.max(3, cell * .08) : style === 'puzzle' ? cell * .15 : 6;
     // Clean look: one dark slab under every zone (the footprint), then each area on top.
-    var slab = clean ? map.zones.map(function (z) { return '<rect x="' + (z.x * cell - 3) + '" y="' + (z.y * cell - 3) + '" width="' + (z.w * cell + 6) + '" height="' + (z.h * cell + 6) + '" fill="#2a1a40"/>'; }).join('') : '';
+    var slab = clean ? map.zones.map(function (z) { return '<rect x="' + (z.x * cell - 3) + '" y="' + (z.y * cell - 3) + '" width="' + (z.w * cell + 6) + '" height="' + (z.h * cell + 6) + '" fill="#2a1a40" class="gb-slab"/>'; }).join('') : '';
     // Wings held whole draw last so their gold outline isn't covered by a neighbor's cut.
     var order = map.zones.slice().sort(function (a, b) { return (map.wings && map.wings[a.wing] ? 1 : 0) - (map.wings && map.wings[b.wing] ? 1 : 0); });
     var zones = order.map(function (z) {
@@ -283,12 +293,12 @@
       var tag = z.border ? '⚔ ' : z.method === 'staff pick' ? '★ ' : '';
       var sub = (z.holder ? (z.summit ? 'KING OF THE MOUNTAIN' : z.holder) : 'unclaimed') + (z.mult > 1 ? ' · ' + z.mult + 'x' : '');
       var small = Math.max(9, Math.min(12, fs * .6)), line = Math.min(20, fs);
-      return '<g class="zone">' + shape + ' fill="' + fill + '" fill-opacity="' + (z.holder ? .92 : .6) + '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linejoin="round"><title>' +
+      return '<g class="zone">' + shape + ' class="' + (z.holder ? '' : 'gb-open') + (wingHeld ? '' : ' gb-edge') + '" fill="' + fill + '" fill-opacity="' + (z.holder ? .92 : .6) + '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linejoin="round"><title>' +
         esc(z.zone + (z.holder ? ', held by ' + z.holder : ', unclaimed') + (z.wing ? ' · ' + z.wing : '') + (z.rule ? ' · won by ' + z.rule : '') + (z.mult > 1 ? ' · pays ' + z.mult + 'x' : '') +
           (z.neighbors && z.neighbors.length ? ' · next to ' + z.neighbors.join(', ') : '')) + '</title>' + (clean ? '</rect>' : '</path>') +
-        crown + '<text x="' + cx + '" y="' + (cy + 2) + '" text-anchor="middle" font-family="Fraunces,serif" font-weight="900" font-size="' + fs.toFixed(1) + '" fill="' + (z.holder ? ink : '#d6c2ff') + '">' + esc(z.zone) + '</text>' +
-        '<text x="' + cx + '" y="' + (cy + 2 + line) + '" text-anchor="middle" font-family="DM Mono,monospace" font-size="' + small.toFixed(1) + '" fill="' + (z.holder ? ink : '#b09ec8') + '" opacity=".85">' + esc(sub) + '</text>' +
-        (z.rule && zh > fs * 3.2 && (tag + z.rule).length * (small - 1) * .62 < zw - 8 ? '<text x="' + cx + '" y="' + (cy + 2 + line * 1.9) + '" text-anchor="middle" font-family="DM Mono,monospace" font-size="' + Math.max(9, small - 1).toFixed(1) + '" fill="' + (z.holder ? ink : '#b09ec8') + '" opacity=".7">' + esc(tag + z.rule) + '</text>' : '') + '</g>';
+        crown + '<text x="' + cx + '" y="' + (cy + 2) + '" text-anchor="middle" font-family="Fraunces,serif" font-weight="900" font-size="' + fs.toFixed(1) + '" fill="' + (z.holder ? ink : '#d6c2ff') + '"' + (z.holder ? '' : ' class="gb-open-t"') + '>' + esc(z.zone) + '</text>' +
+        '<text x="' + cx + '" y="' + (cy + 2 + line) + '" text-anchor="middle" font-family="DM Mono,monospace" font-size="' + small.toFixed(1) + '" fill="' + (z.holder ? ink : '#b09ec8') + '"' + (z.holder ? '' : ' class="gb-open-t"') + ' opacity=".85">' + esc(sub) + '</text>' +
+        (z.rule && zh > fs * 3.2 && (tag + z.rule).length * (small - 1) * .62 < zw - 8 ? '<text x="' + cx + '" y="' + (cy + 2 + line * 1.9) + '" text-anchor="middle" font-family="DM Mono,monospace" font-size="' + Math.max(9, small - 1).toFixed(1) + '" fill="' + (z.holder ? ink : '#b09ec8') + '"' + (z.holder ? '' : ' class="gb-open-t"') + ' opacity=".7">' + esc(tag + z.rule) + '</text>' : '') + '</g>';
     }).join('');
     var held = map.wings ? Object.keys(map.wings) : [];
     var legend = '<div class="gb-legend">' + held.map(function (w) { return '<span><i style="background:' + SQ_LIGHT[map.wings[w]] + '"></i>' + esc(w) + ': all held by ' + esc(map.wings[w]) + '</span>'; }).join('') +
@@ -307,7 +317,7 @@
     return '<div class="gb' + (building ? ' gb-building' : '') + '"><svg viewBox="' + (-cell / 4) + ' ' + (-cell / 4) + ' ' + (W + cell / 2) + ' ' + (H + cell / 2) + '" role="img" aria-label="Clash territory map">' +
       '<defs><pattern id="gbTopo" width="160" height="80" patternUnits="userSpaceOnUse"><path d="M0 60 Q40 40 80 56 T160 50" fill="none" stroke="#bb8ef5" stroke-opacity=".12" stroke-width="1.5"/></pattern>' +
       '<pattern id="gbTiles" width="' + cell + '" height="' + cell + '" patternUnits="userSpaceOnUse"><path d="M' + cell + ' 0 V' + cell + ' H0" fill="none" stroke="#bb8ef5" stroke-opacity=".06"/></pattern></defs>' +
-      '<rect x="' + (-cell / 4) + '" y="' + (-cell / 4) + '" width="' + (W + cell / 2) + '" height="' + (H + cell / 2) + '" fill="#170b29"/><rect width="' + W + '" height="' + H + '" fill="url(#' + (building ? 'gbTiles' : 'gbTopo') + ')"/>' + slab + zones + '</svg></div>' +
+      '<rect x="' + (-cell / 4) + '" y="' + (-cell / 4) + '" width="' + (W + cell / 2) + '" height="' + (H + cell / 2) + '" fill="#170b29" class="gb-bg"/><rect width="' + W + '" height="' + H + '" fill="url(#' + (building ? 'gbTiles' : 'gbTopo') + ')"/>' + slab + zones + '</svg></div>' +
       (opts.legend === false ? '' : legend + feed + rules);
   }
 
