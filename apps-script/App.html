@@ -228,6 +228,7 @@ const PAGES_DEF = [
   { id:'growth',     icon:'🏔️', label:'Growth'         },
   { id:'leaders',    icon:'🏅', label:'Leaderboards'   },
   { id:'week',       icon:'🗞️', label:'This Week'      },
+  { id:'pulse',      icon:'📊', label:'Pulse'          },
   { id:'year',       icon:'📅', label:'Year Plan'      },
   { id:'homerooms',  icon:'🏠', label:'Homerooms'      },
   { id:'generals',   icon:'⚔️', label:'Generals'       },
@@ -743,6 +744,7 @@ function goTo(id){
   else if(id==='week')      renderWeek();
   else if(id==='year')      renderYearPlan();
   else if(id==='homerooms') renderHomerooms();
+  else if(id==='pulse')     { if(window.renderPulsePage) window.renderPulsePage(); }
   else if(id==='squads')      renderSquads();
   else if(id==='gallery')     renderGallery();
   else if(id==='tracker'){ renderStrip(); renderTable(); renderMetrics(); renderTimeline(); renderSnapshots(); renderPoll(); renderCatChart(); renderSeasonCal(); }
@@ -1139,8 +1141,11 @@ function addBulkRow(){
   var rows=document.getElementById('bulkRows');
   var i=Date.now()+Math.random();
   var row=document.createElement('div');
-  row.style.cssText='display:grid;grid-template-columns:1fr 80px 70px 70px 70px 70px 32px;gap:6px;margin-bottom:8px;align-items:center';
+  row.style.cssText='display:grid;grid-template-columns:1fr 130px 70px 70px 70px 70px 32px;gap:6px;margin-bottom:8px;align-items:center';
+  // Type: the same list as Add Event (Move / Make / Talk count toward the Gym 1 map zone).
+  var types=document.getElementById('evtType');
   row.innerHTML='<input type="text" placeholder="Event name" style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px;color:var(--text)">'
+    +'<select class="bulk-type" aria-label="Type" style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px;color:var(--text);min-width:0">'+(types?types.innerHTML:'<option value="event">Event</option>')+'</select>'
     +SQUADS.map(function(sq){ return '<input type="number" min="0" placeholder="'+sq[0]+sq.slice(1).toLowerCase()+'" style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px;color:'+SQ_HEX[sq]+';text-align:center">'; }).join('')
     +'<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0">×</button>';
   rows.appendChild(row);
@@ -1154,7 +1159,8 @@ async function saveBulkEvents(){
     var pts={};
     SQUADS.forEach(function(sq,j){ pts[sq]=parseFloat(inputs[j+1].value)||0; });
     if(!Array.isArray(D.events)) D.events=[];
-    D.events.push({id:D.nextId++,name:name,type:'event',date:new Date().toISOString().split('T')[0],note:'',pts:pts});
+    var sel=rows[i].querySelector('select.bulk-type');
+    D.events.push({id:D.nextId++,name:name,type:(sel&&sel.value)||'event',date:new Date().toISOString().split('T')[0],note:'',pts:pts});
     D.history.unshift({type:'event',name:name,pts:pts,time:new Date().toISOString()});
     logActivity('Bulk: added event '+name); added++;
   }
@@ -4045,6 +4051,7 @@ function buildTvGame(){
 }
 function buildTV(){
   buildTvGame();
+  if(window.clashPulseTV_) window.clashPulseTV_(); // the live Pulse slide (Student.html)
   const r=ranked(), mx=maxGrand();
   document.getElementById('tvRanks').innerHTML=r.map((sq,i)=>`
     <div class="tv-rank-card ${i===0?'rank-1':''}">
@@ -4098,7 +4105,7 @@ function buildTV(){
   document.getElementById('tvNav').innerHTML=Array.from({length:TV_SLIDE_COUNT},(_,i)=>i).map(i=>`<div class="tv-dot${i===tvSlide?' on':''}" onclick="showSlide(${i});startAuto()"></div>`).join('');
 }
 
-const TV_SLIDE_COUNT=9; // 7 = the map, 8 = the Opponent (skipped when none is showing)
+const TV_SLIDE_COUNT=10; // 7 = the map, 8 = the Opponent, 9 = the live Pulse (each skipped when there's nothing to show)
 
 // Summit Map slide, built for a hallway TV read in a few seconds from across the hall.
 // Left: a night mountain with a switchback trail; each squad is a pennant with its place on it.
@@ -4224,7 +4231,7 @@ function buildSummitMap(){
 function showSlide(n){ if(n===6) buildSummitMap(); /* replays the climb */ tvSlide=n; document.querySelectorAll('.tv-slide').forEach((s,i)=>s.classList.toggle('active',i===n)); document.querySelectorAll('.tv-dot').forEach((d,i)=>d.classList.toggle('on',i===n)); tvPct=0; tvProgRun(false); }
 // The slide timer bar fills with one GPU transform per slide instead of a width change every 80ms.
 function tvProgRun(go){ const p=document.getElementById('tvProg'); if(!p) return; p.style.transition='none'; p.style.transform='scaleX(0)'; if(!go) return; void p.offsetWidth; p.style.transition='transform '+TV_MS+'ms linear'; p.style.transform='scaleX(1)'; }
-function tvNext(step){ let n=tvSlide; for(let i=0;i<TV_SLIDE_COUNT;i++){ n=(n+step+TV_SLIDE_COUNT)%TV_SLIDE_COUNT; if(!(n===8&&!(window._tvGame&&window._tvGame.monster))&&!(n===7&&!(window._tvGame&&window._tvGame.map))) return n; } return 0; }
+function tvNext(step){ let n=tvSlide; for(let i=0;i<TV_SLIDE_COUNT;i++){ n=(n+step+TV_SLIDE_COUNT)%TV_SLIDE_COUNT; if(!(n===8&&!(window._tvGame&&window._tvGame.monster))&&!(n===7&&!(window._tvGame&&window._tvGame.map))&&!(n===9&&!window._tvPulse)) return n; } return 0; }
 function startAuto(){ clearInterval(tvTimer); clearInterval(tvPTimer); tvProgRun(true); tvTimer=setInterval(()=>{showSlide(tvNext(1));startAuto();},TV_MS); }
 
 document.addEventListener('keydown',e=>{

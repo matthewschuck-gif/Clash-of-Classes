@@ -73,6 +73,10 @@ getSheet_('Sign-up Events').appendRow(['Dodgeball', '2026-11-20', 8, true]);
 getSheet_('Sign-up Events').appendRow(['Lip Sync Battle', '2026-12-04', 4, true]);
 getSheet_('Student Board').appendRow(['8009999', 'Gus T.', 'Gold', '7', '1', '0', '0', '0', '', '0', '0', '0', '', '', '', '89', 'gus.t@example.org']);
 ensurePollTabs_(); getSheet_('Daily Polls').rows.slice(1).forEach(function (r) { r[0] = true; });
+// Preview-only Pulse votes (made-up 800#s) so the live bars have something to show.
+(function () { var t = todayYmd_(), pr = getSheet_('Daily Polls').rows, id = pr.length; pr[id - 1][10] = ymdShift_(t, 2);
+  var picks = ['Lunch', 'Lunch', 'After school', 'Homeroom / WIN', 'Lunch', 'Before school', 'Homeroom / WIN', 'Lunch', 'Online', 'After school', 'Lunch', 'Homeroom / WIN'];
+  picks.forEach(function (c, i) { getSheet_('Poll Votes').appendRow([id, t, '80070' + i, ['GOLD', 'GREY', 'PURPLE', 'BLACK'][i % 4], c, t, i % 2 ? '8' : '7']); }); })();
 ensureFreezeTab_(); getSheet_('Point Freezes').appendRow(['GREY', '2026-11-01', '2099-11-07', 'preview', '', 'Peaks', 'points: 30; everyone: 60%; Squad reflection with your advisor', '', false, '', '']);
 getSheet_('Point Freezes').appendRow(['GOLD', '2026-11-01', '', 'preview', '', 'Fun', 'points: 4', '2099-11-20', false, '', '']);
 ensureDuelTab_(); getSheet_('Squad Duels').appendRow([true, 'Gold vs Grey Dough Duel', '2026-10-26', '2099-12-31', 'Points', 'trait_dough', 'GOLD vs GREY', 25, '', '']);
@@ -81,6 +85,10 @@ getSheet_('Lore Chapters').appendRow([true, 'ALL', 1, 'The Lantern at the Base',
 getSheet_('Lore Chapters').appendRow([true, 'ALL', 2, 'The Ridge Path', 'The second chapter.', '', 'points: 300', '']);
 getSheet_('Lore Chapters').appendRow([true, 'ALL', 3, 'Above the Clouds', 'The third chapter.', '', 'points: 5000', '']);
 ensureEventPageTabs_(); ensureMayhemWeekTabs_(); setSettingValue_('SELF_SIGNUPS', 'ON');
+// A Move squad event today, open for check-in (26_CheckIns.gs), and one GREY check-in waiting.
+ensureCheckinTabs_(); (function () { var sh = getSheet_('Sign-up Events'), h = sh.rows[0], o = { 'Event': 'Hallway Relay', 'Date': todayYmd_(), 'Open': true, 'Kind': 'Move', 'Spots Per Squad': 10 };
+  sh.appendRow(h.map(function (k) { return o[k] === undefined ? '' : o[k]; }));
+  getSheet_('Event Check-ins').appendRow(['Hallway Relay', todayYmd_(), 'Move', '8009999', 'Gus T.', 'GOLD', todayYmd_() + ' 08:10', false, '']); })();
 getSheet_('Sign-up Events').appendRow(['Mario Kart', '2027-03-15', 4, true, 'Lunch', 'Gaming', true]);
 getSheet_('Sign-up Events').appendRow(['Squad Bowl (trivia)', '2027-03-16', 4, true, 'Core Extension', 'Brain', true]);
 getSheet_('Sign-up Events').appendRow(['Tug-o-war', '2027-03-19', 15, true, 'Squad Night', 'Active', false]);

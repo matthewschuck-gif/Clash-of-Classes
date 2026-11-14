@@ -4,9 +4,10 @@
  *
  * FREEZE LINES tab (staff edit any time): one row per marker, the same line for every squad.
  *   Show | Marker | Measures | Freezes If | Line | Per 100 Students | Kind | What Students See
- *   Measures: stat: <a Squad Stats stat> (LRR + LD Students, Interventions) | attendance |
- *             core f (% of students with a core F = 100 - the metrics tab's grades) |
- *             points (every point that month)
+ *   Measures: stat: <Squad Monthly columns, comma-separated, added> (lrr_ld | failing |
+ *             interventions_teacher, interventions_admin | shout_outs ...) | attendance (Squad Monthly,
+ *             else the metrics tab) | core f (% of students with a core F = 100 - the metrics tab's
+ *             grades) | points (every point that month)
  *   Freezes If: Above or Below the Line. Kind: Peaks (serious) or Fun (push your luck).
  * THE CHECK (on the 1st, for the month before, from FROST_START on; Settings FROST_CHECK):
  *   no marker crossed = Safe; one = Frost warning; two or more, or the same marker as the month
@@ -26,10 +27,10 @@
 
 const FREEZE_LINE_HEADERS_ = ['Show', 'Marker', 'Measures', 'Freezes If', 'Line', 'Per 100 Students', 'Kind', 'What Students See'];
 const FREEZE_LINES_SEED_ = [
-  [true, 'LRR + LD students', 'stat: LRR + LD Students', 'Above', 8, true, 'Peaks', 'Students with an LRR or a Lunch Detention'],
-  [true, 'Interventions', 'stat: Interventions', 'Above', 15, true, 'Peaks', 'Teacher and admin interventions'],
+  [true, 'LRR + LD students', 'stat: lrr_ld', 'Above', 8, true, 'Peaks', 'Students with an LRR or a Lunch Detention'],
+  [true, 'Interventions', 'stat: interventions_teacher, interventions_admin', 'Above', 15, true, 'Peaks', 'Teacher and admin interventions'],
   [true, 'Attendance', 'attendance', 'Below', 92, false, 'Peaks', 'Attendance rate'],
-  [true, 'Failing grades', 'core f', 'Above', 15, false, 'Peaks', 'Students with a core F (%)'],
+  [true, 'Failing grades', 'stat: failing', 'Above', 15, true, 'Peaks', 'Failing grades'],
   [true, 'Points floor', 'points', 'Below', 50, true, 'Fun', 'Points earned'],
 ];
 const FROST_LOG_HEADERS_ = ['Month', 'Squad', 'Status', 'Markers Crossed', 'Readings', 'Kind', 'Approve', 'Applied'];
@@ -67,13 +68,49 @@ function monthWindow_(month, today) {
 }
 function prevMonth_(month) { return lastMonthWindow_(month + '-15').month; }
 
+// The calendar month before today's: { from, to, month: 'yyyy-MM' }.
+function lastMonthWindow_(today) {
+  const y = Number(today.slice(0, 4)), m = Number(today.slice(5, 7));
+  const py = m === 1 ? y - 1 : y, pm = m === 1 ? 12 : m - 1;
+  const month = py + '-' + (pm < 10 ? '0' : '') + pm;
+  const days = new Date(Date.UTC(py, pm, 0)).getUTCDate();
+  return { from: month + '-01', to: month + '-' + days, month: month };
+}
+
+// Older names for the Squad Monthly columns.
+const STAT_ALIASES_ = { 'lrr_+_ld_students': 'lrr_ld', 'lrr_+_ld': 'lrr_ld', 'interventions': 'interventions_teacher, interventions_admin', 'failing_grades': 'failing' };
+
+// One number per squad for a month: Squad Monthly columns (added together), or attendance / grades /
+// referral from the metrics tab when Squad Monthly has no such column that month. null = no number.
+function schoolStat_(name, month) {
+  month = month || lastMonthWindow_(todayYmd_()).month;
+  const out = { BLACK: null, GOLD: null, GREY: null, PURPLE: null };
+  let keys = [];
+  listOf_(name).forEach(function (k) { k = measureKey_(k); keys = keys.concat(STAT_ALIASES_[k] ? listOf_(STAT_ALIASES_[k]) : [k]); });
+  if (!keys.length) return out;
+  const monthly = squadMonthly_(month);
+  const has = function (k) { return SQUAD_KEYS_.some(function (s) { return monthly[s] && monthly[s][k] !== undefined; }); };
+  if (keys.every(has)) {
+    SQUAD_KEYS_.forEach(function (s) {
+      const vals = keys.map(function (k) { return monthly[s] ? monthly[s][k] : undefined; });
+      out[s] = vals.some(function (v) { return v === undefined; }) ? null : vals.reduce(function (a, b) { return a + b; }, 0);
+    });
+    return out;
+  }
+  if (keys.length === 1 && ['attendance', 'grades', 'referral'].indexOf(keys[0]) > -1) {
+    const m = readMetricsTab_();
+    if (m && m[keys[0]]) SQUAD_KEYS_.forEach(function (s) { const v = Number(m[keys[0]][s]); if (v > 0) out[s] = v; });
+  }
+  return out;
+}
+
 // { SQUAD: number|null } for one line and month. pace = project a month still running to its end.
 function lineReading_(L, month, events, sizes, today, pace) {
   const out = { BLACK: null, GOLD: null, GREY: null, PURPLE: null };
   const win = monthWindow_(month, today);
   let raw = null, count = false;
   if (L.measures.indexOf('stat:') === 0) { raw = schoolStat_(L.measures.slice(5).trim(), month); count = true; }
-  else if (L.measures === 'attendance') raw = schoolStat_('attendance');
+  else if (L.measures === 'attendance') raw = schoolStat_('attendance', month);
   else if (L.measures === 'core f') {
     const g = schoolStat_('grades'); raw = {};
     SQUAD_KEYS_.forEach(function (s) { raw[s] = g[s] == null ? null : Math.round(10 * (100 - g[s])) / 10; });
@@ -101,7 +138,7 @@ function crossed_(L, v) { return v != null && (L.below ? v < L.line : v > L.line
 function frostReadings_(month, events, opts) {
   opts = opts || {};
   events = events || readEventsTab_();
-  const sizes = squadSizes_(), lines = freezeLines_(), out = {};
+  const sizes = squadSizes_(month), lines = freezeLines_(), out = {};
   SQUAD_KEYS_.forEach(function (s) { out[s] = []; });
   lines.forEach(function (L) {
     const r = lineReading_(L, month, events, sizes, opts.today, opts.pace);
@@ -179,7 +216,7 @@ function markerSafe_(squad, marker, start) {
   if (lm < String(start).slice(0, 7)) return 0;
   const L = freezeLines_().filter(function (x) { return x.marker.toLowerCase() === String(marker).trim().toLowerCase(); })[0];
   if (!L) return 1; // the line was removed: nothing left to fix
-  const v = lineReading_(L, lm, readEventsTab_(), squadSizes_())[squad];
+  const v = lineReading_(L, lm, readEventsTab_(), squadSizes_(lm))[squad];
   return v != null && !crossed_(L, v) ? 1 : 0;
 }
 

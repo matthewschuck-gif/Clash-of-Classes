@@ -114,6 +114,7 @@
   <div id="duelSection" style="display:none;margin-top:20px"></div>
   <div id="mayhemHomeBoard" style="display:none;margin-top:20px"></div>
   <div id="dailyPollSection" style="display:none;margin-top:20px"></div>
+  <div id="checkinSection" style="display:none;margin-top:12px"></div>
 
   <!-- TRAIT SPOTLIGHT -->
   <div id="traitSpotlightSection" style="display:none;margin-top:28px"></div>
@@ -1349,6 +1350,15 @@
   <div id="homeroomsBody"></div>
 </div>
 
+<!-- PULSE (06_Polls.gs): questions the school learns from, live results like a Menti screen -->
+<div class="page" id="page-pulse">
+  <div class="page-hero">
+    <h1 class="page-title">The <span>Pulse</span></h1>
+    <div class="page-subtitle">Quick questions EMS wants your answer to. No right answers. Answer with your 800#, watch the results move live, and every answer earns your squad a point.</div>
+  </div>
+  <div id="pulseBody"></div>
+</div>
+
 <!-- YEAR PLAN (24_YearPlan.gs) -->
 <div class="page" id="page-year">
   <div class="page-hero">
@@ -1546,6 +1556,7 @@
     <div class="tv-slide" id="tvS6" style="justify-content:center"><div id="tvSummit" style="width:min(1500px,96vw,calc(76vh * 1600 / 840));margin:0 auto"></div></div>
     <div class="tv-slide" id="tvS7" style="justify-content:center"><div class="tv-cat-title">The Mountain: who holds what</div><div id="tvMap" style="width:min(1300px,94vw,calc(70vh * 1.5));margin:0 auto"></div></div>
     <div class="tv-slide" id="tvS8" style="justify-content:center"><div id="tvMonster" style="width:min(1100px,92vw);margin:0 auto;transform:scale(1.35);transform-origin:top center"></div></div>
+    <div class="tv-slide" id="tvS9" style="justify-content:center"><div id="tvPulse" style="width:min(1300px,94vw);margin:0 auto"></div></div>
   </div>
   <div class="tv-nav" id="tvNav"></div>
   <!-- Remote spin overlay -->
@@ -1685,7 +1696,7 @@
     <div class="a-panel on" id="ap-points">
       <div class="fr"><label>Event / Category Name</label><input type="text" id="evtName" placeholder="e.g. April Trivia, Tug of War…"></div>
       <div class="g2">
-        <div class="fr"><label>Type</label><select id="evtType"><option value="event">🏆 Competition / Event</option><option value="other">📌 Other</option></select></div>
+        <div class="fr"><label>Type</label><select id="evtType"><option value="event">🏆 Competition / Event</option><optgroup label="Clash squad events (Gym 1 map zone)"><option value="squad_move">🏃 Squad event: Move</option><option value="squad_make">🎨 Squad event: Make</option><option value="squad_talk">🎤 Squad event: Talk</option></optgroup><optgroup label="Other map zones"><option value="staff_challenge">🧑‍🏫 Staff squad challenge winner (Front Office)</option><option value="pride_day">🦁 Pride Day (Gym 2, until Climb-er sends it)</option></optgroup><option value="other">📌 Other</option></select></div>
         <div class="fr"><label>Point Multiplier</label><select id="evtMultiplier"><option value="1">1× Normal</option><option value="2">2× Double Points</option><option value="3">3× Triple Points</option><option value="0.5">½× Half Points</option></select></div>
         <div class="fr"><label>Date</label><input type="date" id="evtDate"></div>
       </div>

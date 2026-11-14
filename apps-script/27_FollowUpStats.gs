@@ -8,14 +8,14 @@
  *   CONSEQUENCE_SHEET  the Accountability & Intervention Log, tab CONSEQUENCE_TAB (Master Log):
  *                      rows whose Consequence Type has an LD_TYPES word (Lunch Detention)
  * This reads the same two sheets, finds each student's squad (Students tab by 800# or name, then
- * the Student Board by 800#), and writes one Squad Stats row a month:
- *   Month | "LRR + LD Students" | BLACK | GOLD | GREY | PURPLE | Source "Follow-Up: ..." | Updated
+ * the Student Board by 800#), and writes the month's lrr_ld column on the Squad Monthly tab
+ * (18_Conquest.gs), one number per squad. The Cafeteria rule (Clean Cafeteria) reads it per 100.
  * Counts only; no names leave the source sheets. Each student counts once a month.
- * Runs once a day with the background tick (FOLLOWUP_STATS ON) and from the menu. A Squad Stats
- * row staff typed (any other Source) is never overwritten; Climb-er's row for this stat is.
+ * Runs once a day with the background tick (FOLLOWUP_STATS ON) and from the menu. A number staff
+ * typed in lrr_ld is never overwritten: this only fills a blank cell or one it wrote itself.
  */
 
-const FOLLOWUP_STAT_ = 'LRR + LD Students';
+const FOLLOWUP_STAT_ = 'lrr_ld';
 
 // 'yyyy-MM-dd' from a cell: a date, yyyy-mm-dd..., or m/d/yyyy ... ('' if none).
 function ymdOfCell_(v) {
@@ -102,21 +102,34 @@ function followUpLrrCounts_(month) {
   return out;
 }
 
-/** Writes the month's row onto Squad Stats. Returns one line saying what happened. */
+/** Sets one Squad Monthly cell (adds the squad's row for the month if needed). kept = staff typed it. */
+function setSquadMonthly_(month, squad, column, value, propKey) {
+  const sh = getSheet_(MONTHLY_TAB_);
+  let col = headerCol_(sh, column);
+  if (!col) { col = sh.getLastColumn() + 1; sh.getRange(1, col).setValue(column).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff'); }
+  const row = sheetRows_(MONTHLY_TAB_).filter(function (r) { return ymOf_(r['Month']) === month && squadOf_(r['Squad']) === squad; })[0];
+  const props = PropertiesService.getScriptProperties(), wrote = props.getProperty(propKey);
+  if (row) {
+    const now = String(row[column] == null ? '' : row[column]).trim();
+    if (now !== '' && now !== String(wrote == null ? '' : wrote)) return 'kept';
+    sh.getRange(row._row, col).setValue(value);
+  } else {
+    const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function (h) { return String(h).trim(); });
+    const o = { 'Month': month, 'Squad': squad }; o[column] = value;
+    sh.appendRow(head.map(function (h) { return o[h] === undefined ? '' : o[h]; }));
+  }
+  props.setProperty(propKey, String(value));
+  return 'set';
+}
+
+/** Writes the month's lrr_ld numbers onto Squad Monthly. Returns one line saying what happened. */
 function sendFollowUpStats_(month) {
   ensureConquestTabs_();
   const c = followUpLrrCounts_(month);
-  const sh = getSheet_('Squad Stats');
-  const rows = sheetRows_('Squad Stats');
-  const mine = rows.filter(function (r) { return String(r['Month'] || '').slice(0, 7) === c.month && String(r['Stat'] || '').trim() === FOLLOWUP_STAT_; })[0];
-  const source = 'Follow-Up: ' + c.lrr + ' LRRs + ' + c.ld + ' LDs' + (c.unmatched ? ', ' + c.unmatched + ' with no squad found' : '');
-  if (mine && !/^(follow-up|climb-er)/i.test(String(mine['Source'] || ''))) return FOLLOWUP_STAT_ + ' ' + c.month + ': kept the row staff typed.';
-  const obj = { 'Month': c.month, 'Stat': FOLLOWUP_STAT_, 'BLACK': c.counts.BLACK, 'GOLD': c.counts.GOLD, 'GREY': c.counts.GREY, 'PURPLE': c.counts.PURPLE,
-    'Source': source, 'Updated': Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm') };
-  const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function (h) { return String(h).trim(); });
-  const vals = head.map(function (h) { return obj[h] === undefined ? '' : obj[h]; });
-  if (mine) sh.getRange(mine._row, 1, 1, vals.length).setValues([vals]); else sh.appendRow(vals);
-  return FOLLOWUP_STAT_ + ' ' + c.month + ': ' + SQUAD_KEYS_.map(function (s) { return s + ' ' + c.counts[s]; }).join(', ') + ' (' + source + ').';
+  const source = c.lrr + ' LRRs + ' + c.ld + ' LDs' + (c.unmatched ? ', ' + c.unmatched + ' with no squad found' : '');
+  const kept = SQUAD_KEYS_.filter(function (s) { return setSquadMonthly_(c.month, s, FOLLOWUP_STAT_, c.counts[s], 'followup-lrr-' + c.month + '-' + s) === 'kept'; });
+  return 'Squad Monthly ' + c.month + ' lrr_ld: ' + SQUAD_KEYS_.map(function (s) { return s + ' ' + c.counts[s]; }).join(', ') + ' (' + source + ')' +
+    (kept.length ? '. Kept the number staff typed for ' + kept.join(', ') + '.' : '.');
 }
 
 // Once a day from the background tick.

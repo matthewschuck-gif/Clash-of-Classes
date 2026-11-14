@@ -151,6 +151,9 @@ const POLL_IDEAS_ = [
   ['Just for Fun', 'Trivia', 'How many squads are in Clash of Classes?', '3 | 4 | 5', 'Just for fun.', 'Type the Answer (4) on Daily Polls.', ''],
 ];
 
+// The Pulse bank from 06_Polls.gs, in this tab's columns (Kind Pulse; who uses it goes in How To Use It).
+const ALL_POLL_IDEAS_ = POLL_IDEAS_.concat(PULSE_BANK_.map(function (r) { return [r[1], 'Pulse', r[2], r[3], r[4], 'Who uses it: ' + r[5], '']; }));
+
 function ideaRow_(r) { return [true, r[0], r[1], r[2], r[3], r[4], r[5], r[6], '']; }
 
 // Makes the tabs, adds newer columns to an older Poll Ideas tab, and adds any idea in this file
@@ -180,7 +183,7 @@ function addNewPollIdeas_() {
   const have = {};
   sheetRows_('Poll Ideas').forEach(function (r) { have[String(r['Question'] || '').trim().toLowerCase()] = 1; });
   const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function (h) { return String(h).trim(); });
-  const add = POLL_IDEAS_.filter(function (r) { return !have[r[2].toLowerCase()]; }).map(function (r) {
+  const add = ALL_POLL_IDEAS_.filter(function (r) { const q = r[2].trim().toLowerCase(); if (have[q]) return false; have[q] = 1; return true; }).map(function (r) {
     const o = {}; IDEA_HEADERS_.forEach(function (h, i) { o[h] = ideaRow_(r)[i]; });
     return head.map(function (h) { return o[h] === undefined ? '' : o[h]; });
   });
@@ -287,7 +290,7 @@ function servePollBoard_() {
 /** Today's polls with live counts for the projector (no 800#s, no names). */
 function clashPollBoard() {
   const today = todayYmd_();
-  const size = squadSizes_();
+  const size = squadSizes_(today.slice(0, 7));
   const all = pollsWithVotes_().filter(function (p) { return p.show && p.question && p.choices.length >= (p.kind === 'Check-in' ? 1 : 2); });
   let list = all.filter(function (p) { return p.date === today; });
   const live = list.length > 0;

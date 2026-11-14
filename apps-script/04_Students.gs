@@ -42,6 +42,7 @@ function standingFor_(squad, totals) {
     leadBy: place === 0 ? totals[squad] - totals[order[1]] : 0,
     frozen: freezeDetail_(squad), // the freeze and its thaw progress while the squad can't earn points (14_Thaw.gs)
     frost: frostFor_(squad), // the frost meter: squad totals against each freeze line this month (28_Frost.gs)
+    freshStart: (function () { const f = String(getSetting_('FRESH_START') || '').trim().slice(0, 10); return /^\d{4}-\d{2}-\d{2}$/.test(f) && f >= todayYmd_() ? f : ''; })(),
   };
 }
 

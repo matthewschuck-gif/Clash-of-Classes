@@ -62,7 +62,7 @@
   function title(s) { return s.charAt(0) + s.slice(1).toLowerCase(); }
   function kindTag(p) {
     if (p.kind === 'Check-in') return '✋ ' + esc(p.kindLabel || 'Check-in');
-    if (p.kind === 'School Pulse') return '📊 School Pulse';
+    if (p.kind === 'Pulse') return '📊 Pulse';
     if (p.kind === 'Trivia') return '🧠 Trivia';
     return '🗳️ This or That';
   }

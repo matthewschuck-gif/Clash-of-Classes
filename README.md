@@ -15,7 +15,9 @@ Ephrata Middle School's squad competition site, clashofclasses.org.
 | `apps-script/03_Web.gs` | Serves the page. Also handles admin sign-in (scrambled password), merging saves, poll votes, Trail Journal stats and the Sheet menu |
 | `apps-script/04_Students.gs` | The My Squad page, automatic squad challenges and bonuses, and the TV feed |
 | `apps-script/05_Generals.gs` | Generals HQ (800# + `GENERALS_CODE`): squad roster with who isn't placed yet, event sign-ups, Mayhem Week checklist, service project. Also MLC roles on My Squad (Vanguard stays private) |
-| `apps-script/06_Polls.gs` | Daily Polls (This or That and Trivia) from the Daily Polls tab. Students vote with their 800#, and squads earn points for each voter plus each winner (DAILY_POLL_POINTS). Also the read-aloud announcement |
+| `apps-script/06_Polls.gs` | Daily Polls (This or That, Trivia and Pulse) from the Daily Polls tab. Students vote with their 800#, and squads earn points for each voter plus each winner (DAILY_POLL_POINTS). Pulse questions have no winner, show live results on the Pulse page and TV, and come from the Poll Ideas bank. Also the read-aloud announcement |
+| `apps-script/18_Conquest.gs` | The map: zones won on last month's numbers (Squad Monthly tab, filled by Define a Climb-er), fewest-wins and per-100 rules, and the Multiplier column |
+| `apps-script/07_Freezes.gs`, `14_Thaw.gs` | Point freezes, thaw goals (points, everyone, votes), the FRESH_START reset and the student release |
 | `apps-script/Index.html` | The page markup |
 | `apps-script/Styles.html`, `SiteCss.html` | Styles |
 | `apps-script/App.html` | The main site script |

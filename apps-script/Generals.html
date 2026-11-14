@@ -105,8 +105,10 @@
       (tags ? '<div class="hq-tags">' + tags + '</div>' : '') + '</div>';
     var tabs = [['roster', '👥 Roster & sign-ups'], ['mayhem', '⚡ Mayhem checklist'], ['hype', '📣 Hype script'], ['meeting', '🎤 Squad meeting'], ['service', '🤝 Service project'], ['nominate', '📝 Nominate & letters'], ['shirts', '👕 Shirt designs']];
     tabs.splice(1, 0, ['game', '🎲 Game']);
+    var waiting = d.checkins ? d.checkins.waiting : 0;
+    tabs.splice(1, 0, ['checkins', '✅ Check-ins' + (waiting ? ' (' + waiting + ')' : '')]);
     tabs.push(['job', '🎖️ My job']);
-    var body = { roster: rosterView, game: gameView, mayhem: mayhemView, hype: hypeView, meeting: meetingView, service: serviceView, nominate: nominateView, shirts: shirtsView, job: jobView }[view]();
+    var body = { roster: rosterView, checkins: checkinsView, game: gameView, mayhem: mayhemView, hype: hypeView, meeting: meetingView, service: serviceView, nominate: nominateView, shirts: shirtsView, job: jobView }[view]();
     el().innerHTML = head + '<div class="hq-tabs">' + tabs.map(function (t) { return '<button class="hq-tab' + (view === t[0] ? ' on' : '') + '" data-v="' + t[0] + '">' + t[1] + '</button>'; }).join('') +
       '<button class="hq-tab" data-v="out">Sign out</button></div>' + body;
     el().querySelectorAll('.hq-tab').forEach(function (b) { b.onclick = function () { if (b.dataset.v === 'out') { token = ''; signIn(); return; } view = b.dataset.v; render(); }; });
@@ -161,6 +163,30 @@
   }
 
   // Everyone placed once before anyone doubles up (Generals Handbook): least-placed first.
+  // Squad event check-ins (26_CheckIns.gs): confirm who really took part. Only confirmed ones count
+  // toward Gym 1 (Move · Make · Talk) on the map.
+  function checkinsView() {
+    var c = data.checkins || { rows: [], events: [] };
+    var byEvent = {};
+    c.rows.forEach(function (r) { var k = r.date + '|' + r.event; (byEvent[k] = byEvent[k] || { event: r.event, date: r.date, kind: r.kind, rows: [] }).rows.push(r); });
+    var groups = Object.keys(byEvent).sort().reverse().map(function (k) {
+      var g = byEvent[k], done = g.rows.filter(function (r) { return r.confirmed; }).length;
+      return '<div class="ms-card"><div class="ms-h">' + esc(g.event) + ' <span class="ms-small">' + esc(g.kind) + ' · ' + esc(g.date) + ' · ' + done + ' of ' + g.rows.length + ' confirmed</span></div>' +
+        g.rows.map(function (r) {
+          return '<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>' + esc(r.name) + '</span><span>' +
+            (r.confirmed ? '<span class="ch-done">✓ Confirmed' + (r.by ? ' by ' + esc(r.by) : '') + '</span>'
+              : '<button class="btn btn-gold" data-ci-ok="' + r.row + '">Confirm</button>') +
+            ' <button class="btn" data-ci-rm="' + r.row + '" title="Didn\'t take part">✕</button></span></div>';
+        }).join('') + '</div>';
+    }).join('');
+    var add = c.events.length ? '<div class="ms-card"><div class="ms-h">Add someone who forgot to check in</div><div class="ms-form">' +
+      '<select id="ciEvent" aria-label="Event">' + c.events.map(function (e) { return '<option value="' + esc(e.event) + '">' + esc(e.event) + ' (' + esc(e.kind) + ', ' + esc(e.date) + ')</option>'; }).join('') + '</select>' +
+      '<select id="ciWho" aria-label="Squad member"><option value="">Pick a member…</option>' + (data.roster || []).map(function (s) { return '<option value="' + esc(s.id) + '">' + esc(s.name) + '</option>'; }).join('') + '</select>' +
+      '<button class="btn btn-purple" id="ciAdd">Add as confirmed</button></div></div>' : '';
+    return '<div class="ms-card"><div class="ms-h">Squad event check-ins</div><p class="ms-small">Students check in on the site at Move, Make and Talk events. Confirm the ones who really took part and remove the rest. ' +
+      'Confirmed members plus the squad\'s event points win Gym 1 on the map each month.</p></div>' +
+      (groups || '<div class="ms-card"><p>No check-ins yet. They show up here when your squad checks in at a Move, Make or Talk event.</p></div>') + add;
+  }
   function rosterView() {
     var d = data;
     var open = d.events.filter(function (e) { return e.open; });
@@ -240,6 +266,18 @@
   function meetingSlides(d, sq) {
     var m = d.meeting, out = [];
     if (!m) return out;
+    var fz = d.standing && d.standing.frozen;
+    // January: a clean start, then freeze and thaw in two minutes.
+    if (m.fresh) {
+      var fd = m.fresh.date ? Number(m.fresh.date.slice(5, 7)) + '/' + Number(m.fresh.date.slice(8, 10)) : 'January';
+      out.push(['🌅 Fresh start', 'New year, clean ice. ' + (fz ? 'On <b>' + fd + '</b> every squad starts unfrozen, ours included.' : 'Every squad, <b>' + sq + '</b> included, starts ' + fd + ' unfrozen.') +
+        '<br><br>Every point we have is still ours. Let\'s keep it that way.']);
+      out.push(['❄️ Freeze & thaw in 60 seconds', '<b>We never lose points.</b> A freeze just stops new points for a while.<br><br>' +
+        '<b>Peaks Freeze</b>: the whole squad slipped on Mountaineer Peaks. We thaw it <i>together</i>: hit the goals on My Squad, then our advisor signs off.<br>' +
+        '<b>Fun Freeze</b>: a game. Hit the goal once, twice or three times to win back more. Generals cash out before Thaw By or it melts.<br>' +
+        '<b>New</b>: poll and Pulse votes count toward thawing.<br><br><span style="opacity:.85">How do we stay unfrozen? <b>Turn and talk: one thing our squad will do this month.</b></span>']);
+    }
+    if (fz && window.thawHtml) out.push(['❄️ Our freeze', '<div style="text-align:left;max-width:900px;margin:0 auto">' + window.thawHtml(fz) + '</div>']);
     if (m.mp) {
       var mp = m.mp, beat = mp.prevPoints != null && mp.points > mp.prevPoints;
       out.push(['Our ' + esc(mp.name), '<b>' + mp.points.toLocaleString() + '</b> points so far this marking period' +
@@ -251,12 +289,18 @@
       out.push(['School counts too', 'Attendance <b>' + n(m.metrics.attendance) + '</b> (' + pl('attendance') + ')<br>No office referral <b>' + n(m.metrics.referral) + '</b> (' + pl('referral') + ')<br>No F <b>' + n(m.metrics.grades) + '</b> (' + pl('grades') + ')<br><span style="opacity:.8">The top squad in each earns 250 every month.</span>']);
     }
     out.push(['Our territory', m.zones.length ? 'We hold <b>' + m.zones.length + '</b>: ' + m.zones.map(esc).join(', ') + (m.wings.length ? '<br>Whole wing: ' + m.wings.map(esc).join(', ') : '') : 'No zones yet. Pick one and go take it!']);
+    if (m.doubles && m.doubles.length) {
+      out.push(['Zones that pay 2x', 'These zones are won by students <b>showing up and checking in</b>, so they pay double every week:<br>' + m.doubles.map(function (z) {
+        return '<b>' + esc(z.zone) + '</b> · ' + esc(z.rule || '') + ' · ' + (z.holder === d.squad ? '<span style="color:#4ade80">ours</span>' : z.holder ? esc(title(z.holder)) : 'open');
+      }).join('<br>') + '<br><span style="opacity:.8">Each is judged on last month. Start now, and it\'s ours next month.</span>']);
+    }
+    if (m.pulse) out.push(['📊 This week\'s Pulse', '<b>' + esc(m.pulse) + '</b><br><br>Answer on clashofclasses.org with your 800#. Every answer = a point for ' + sq + ', and it helps thaw a freeze.']);
     out.push(['Our climbers', '<b>' + m.evolved + '</b> of ' + m.students + ' creatures have evolved' + (m.summit ? ', ' + m.summit + ' at Summit' : '') + '.<br>Open My Climb and earn LRG points to evolve yours.']);
     if (m.firsts.length) out.push(['Where we lead', m.firsts.map(esc).join('<br>')]);
     return out;
   }
   function meetingView() {
-    return '<div class="ms-card"><div class="ms-h">Monthly squad meeting</div><p class="ms-small">Opening · Clash update · Our marking period · School counts · Territory · Climbers · Wins · Coming up · Trait · Delegate voice · Service · Exit ticket</p>' +
+    return '<div class="ms-card"><div class="ms-h">Monthly squad meeting</div><p class="ms-small">Opening · Clash update · (January: Fresh start · Freeze &amp; thaw) · Our freeze, if any · Our marking period · School counts · Territory · 2x zones · Pulse · Climbers · Wins · Coming up · Trait · Delegate voice · Service · Exit ticket</p>' +
       '<button class="btn btn-purple" id="hqMeet">▶ Start full screen</button></div>';
   }
   function showSlide() {
@@ -337,6 +381,11 @@
   }
 
   function wire() {
+    // Check-ins tab (26_CheckIns.gs).
+    el().querySelectorAll('[data-ci-ok]').forEach(function (b) { b.onclick = function () { b.disabled = true; act('clashGeneralsConfirmCheckin', Number(b.dataset.ciOk), true); }; });
+    el().querySelectorAll('[data-ci-rm]').forEach(function (b) { b.onclick = function () { if (confirm('Remove this check-in? Only remove it if they did not take part.')) act('clashGeneralsConfirmCheckin', Number(b.dataset.ciRm), false); }; });
+    var ciAdd = document.getElementById('ciAdd');
+    if (ciAdd) ciAdd.onclick = function () { var who = document.getElementById('ciWho').value; if (!who) { alert('Pick a squad member.'); return; } act('clashGeneralsAddCheckin', document.getElementById('ciEvent').value, who); };
     // Game tab (15_Game.gs).
     var gd = document.getElementById('gDraw');
     if (gd) gd.onclick = function () {

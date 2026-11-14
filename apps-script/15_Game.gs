@@ -31,7 +31,7 @@
  */
 
 const GAME_TYPES_ = ['territory', 'chance', 'streak_bank', 'round_goal', 'engine', 'monster', 'destination_ticket', 'freeze_thaw', 'evolution_boost', 'mp_bonus'];
-const MAP_HEADERS_ = ['Show', 'Zone', 'Wing', 'Summit', 'Claimed By', 'Weekly Points', 'X', 'Y', 'W', 'H', 'Holder', 'Since', 'Conquer By', 'Borders', 'Multiplier'];
+const MAP_HEADERS_ = ['Show', 'Zone', 'Wing', 'Summit', 'Claimed By', 'Weekly Points', 'X', 'Y', 'W', 'H', 'Holder', 'Since', 'Conquer By', 'Borders', 'Multiplier', 'Locked'];
 const CARD_HEADERS_ = ['Show', 'Card', 'Text', 'Effect', 'Value', 'Copies'];
 const HAND_HEADERS_ = ['Squad', 'Card', 'Effect', 'Value', 'Drawn', 'Status', 'Note'];
 const BANK_HEADERS_ = ['Squad', 'Through', 'Length', 'Points', 'At', 'By'];
@@ -39,12 +39,14 @@ const ROUND_HEADERS_ = ['Show', 'Start', 'End', 'Goal', 'Measure', '1st', '2nd',
 const ENGINE_HEADERS_ = ['Show', 'Habitat', 'Power', 'Text', 'Unlock When', 'Effect', 'Value', 'Unlocked'];
 const MONSTER_HEADERS_ = ['Show', 'Start', 'End', 'Opponent', 'Story', 'Image', 'Defeat Goal', 'Reward', 'Status', 'Defeated Image'];
 
+// [first day, last day] of the month offset months from today's (school time zone). Built from
+// today's date string, so a late-evening run on a server clock in another zone can't skip the 1st.
 function monthBounds_(offset) {
-  const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + (offset || 0));
-  const tz = Session.getScriptTimeZone();
-  const start = Utilities.formatDate(d, tz, 'yyyy-MM-dd');
-  const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-  return [start, Utilities.formatDate(end, tz, 'yyyy-MM-dd')];
+  const t = todayYmd_();
+  let y = Number(t.slice(0, 4)), m = Number(t.slice(5, 7)) - 1 + (offset || 0);
+  y += Math.floor(m / 12); m = ((m % 12) + 12) % 12;
+  const mm = ('0' + (m + 1)).slice(-2), last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+  return [y + '-' + mm + '-01', y + '-' + mm + '-' + ('0' + last).slice(-2)];
 }
 
 function ensureGameTabs_() {
@@ -490,8 +492,8 @@ function gameTick() {
       const hand = sheetRows_('Squad Hand');
       SQUAD_KEYS_.forEach(function (s) {
         const mine = zones.filter(function (z) { return z.holder === s; });
-        // Each zone pays its Weekly Points x its rule's Multiplier (how the data is captured) x 2 on the Summit.
-        let pts = Math.round(mine.reduce(function (n, z) { return n + z.weekly * (z.mult || 1) * (z.summit ? 2 : 1); }, 0));
+        // Weekly Points x Summit (2) x the zone's Multiplier (check-ins 2, school records 1.5; set per zone).
+        let pts = Math.round(mine.reduce(function (n, z) { return n + z.weekly * (z.summit ? 2 : 1) * (z.mult === undefined ? 1 : z.mult); }, 0));
         pts += mine.length * engineBonus_(engine, s, 'rent');
         Object.keys(wings).forEach(function (w) { if (wings[w] === s) pts += zones.filter(function (z) { return z.wing === w; }).reduce(function (n, z) { return n + z.weekly; }, 0) * (mult - 1); });
         const armed = hand.filter(function (h) { return squadOf_(h['Squad']) === s && String(h['Effect']).toLowerCase() === 'double_rent' && String(h['Status']) === 'Armed'; })[0];

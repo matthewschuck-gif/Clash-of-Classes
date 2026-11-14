@@ -281,10 +281,10 @@
       var fs = Math.max(11, Math.min(22, (zw - 8) / Math.max(4, String(z.zone).length * .6)));
       var crown = z.summit ? '<path d="M' + (cx - 14) + ' ' + (cy - fs - 18) + ' l5 -13 l9 8 l9 -8 l5 13 Z" fill="#ffe100" stroke="#12081f" stroke-width="2"/>' : '';
       var tag = z.border ? '⚔ ' : z.method === 'staff pick' ? '★ ' : '';
-      var sub = z.holder ? (z.summit ? 'KING OF THE MOUNTAIN' : z.holder) : 'unclaimed';
+      var sub = (z.holder ? (z.summit ? 'KING OF THE MOUNTAIN' : z.holder) : 'unclaimed') + (z.mult > 1 ? ' · ' + z.mult + 'x' : '');
       var small = Math.max(9, Math.min(12, fs * .6)), line = Math.min(20, fs);
       return '<g class="zone">' + shape + ' fill="' + fill + '" fill-opacity="' + (z.holder ? .92 : .6) + '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linejoin="round"><title>' +
-        esc(z.zone + (z.holder ? ', held by ' + z.holder : ', unclaimed') + (z.wing ? ' · ' + z.wing : '') + (z.rule ? ' · won by ' + z.rule : '') +
+        esc(z.zone + (z.holder ? ', held by ' + z.holder : ', unclaimed') + (z.wing ? ' · ' + z.wing : '') + (z.rule ? ' · won by ' + z.rule : '') + (z.mult > 1 ? ' · pays ' + z.mult + 'x' : '') +
           (z.neighbors && z.neighbors.length ? ' · next to ' + z.neighbors.join(', ') : '')) + '</title>' + (clean ? '</rect>' : '</path>') +
         crown + '<text x="' + cx + '" y="' + (cy + 2) + '" text-anchor="middle" font-family="Fraunces,serif" font-weight="900" font-size="' + fs.toFixed(1) + '" fill="' + (z.holder ? ink : '#d6c2ff') + '">' + esc(z.zone) + '</text>' +
         '<text x="' + cx + '" y="' + (cy + 2 + line) + '" text-anchor="middle" font-family="DM Mono,monospace" font-size="' + small.toFixed(1) + '" fill="' + (z.holder ? ink : '#b09ec8') + '" opacity=".85">' + esc(sub) + '</text>' +
@@ -300,7 +300,8 @@
     }).join('') + '</div>' : '';
     var rules = map.rules && map.rules.length && opts.rules !== false ? '<details class="gb-rules"><summary>How to win each zone</summary>' + map.rules.map(function (r) {
       return '<div><b>' + (r.border ? '⚔ ' : r.method === 'staff pick' ? '★ ' : '') + esc(r.rule) + '</b>: ' + esc(r.text) +
-        (r.method !== 'staff pick' ? ' <span>(' + (r.lastMonth ? 'judged on last month, held all this month' : r.thisMonth ? 'this month' : 'last ' + r.days + ' days') + (r.per100 ? ', per 100 students' : '') + (r.mult && r.mult !== 1 ? ', pays ×' + r.mult : '') + (r.defense ? ', the holder has a ' + r.defense + '% edge' : '') + (r.border ? (r.far != null ? ', ' + r.far + '% from farther away' : ', next door only') : '') + ')</span>' : '') +
+        (r.method !== 'staff pick' ? ' <span>(' + (r.month ? 'last month' + (r.window ? ', ' + monthName(r.window) : '') : r.thisMonth ? 'this month, so far' : 'last ' + r.days + ' days') + (r.low ? ', lowest wins' : '') + (r.per100 ? ', per 100 students' : '') +
+          (r.defense ? ', the holder has a ' + r.defense + '% edge' : '') + (r.border ? (r.far != null ? ', ' + r.far + '% from farther away' : ', next door only') : '') + ')</span>' : '') +
         '<em>' + esc(r.zones.join(' · ')) + '</em></div>';
     }).join('') + '</details>' : '';
     return '<div class="gb' + (building ? ' gb-building' : '') + '"><svg viewBox="' + (-cell / 4) + ' ' + (-cell / 4) + ' ' + (W + cell / 2) + ' ' + (H + cell / 2) + '" role="img" aria-label="Clash territory map">' +
@@ -308,6 +309,11 @@
       '<pattern id="gbTiles" width="' + cell + '" height="' + cell + '" patternUnits="userSpaceOnUse"><path d="M' + cell + ' 0 V' + cell + ' H0" fill="none" stroke="#bb8ef5" stroke-opacity=".06"/></pattern></defs>' +
       '<rect x="' + (-cell / 4) + '" y="' + (-cell / 4) + '" width="' + (W + cell / 2) + '" height="' + (H + cell / 2) + '" fill="#170b29"/><rect width="' + W + '" height="' + H + '" fill="url(#' + (building ? 'gbTiles' : 'gbTopo') + ')"/>' + slab + zones + '</svg></div>' +
       (opts.legend === false ? '' : legend + feed + rules);
+  }
+
+  function monthName(ym) {
+    var m = String(ym || '').split('-');
+    return ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][Number(m[1]) - 1] || ym;
   }
 
   // ── The Opponent (was Monster of the Month) ───────────────────────

@@ -218,6 +218,7 @@ function clashGeneralsHq(token) {
     shirtVoting: String(getSetting_('SHIRT_VOTING')).toUpperCase() === 'ON',
     signupLimit: Number(getSetting_('SIGNUP_LIMIT')) || 0,
     game: hqGame_(squad), // 15_Game.gs: hand, draws left, Hot Streak, engine, map, monster
+    checkins: hqCheckins_(squad), // 26_CheckIns.gs: Move / Make / Talk check-ins to confirm
     mascot: mascotFor_(squad), // 16_Me.gs
     nominations: sheetRows_('Nominations').filter(function (r) { return id800_(r['General']) === me.id || String(r['General']) === me.name; })
       .map(function (r) { return { date: String(r['Date']), for: String(r['For']), nominee: String(r['Nominee']), why: String(r['Why']) }; }),

@@ -162,6 +162,12 @@ html[data-squad="BLACK"] .hero-sq-card[data-sq="BLACK"], html[data-squad="GOLD"]
 .thaw-ice path { fill: none; stroke: #e0f2fe; stroke-width: 1.4; stroke-linecap: round; stroke-dasharray: 1; transition: stroke-dashoffset 1.4s var(--craft-spring, ease-out); }
 .thaw > :not(.thaw-ice) { position: relative; }
 .thaw-h { font-family: 'Fraunces', serif; font-weight: 900; font-size: 19px; color: #fff; }
+/* How freezes work (the student release, on My Squad) */
+.fz-how { margin-top: 12px; border: 1px solid rgba(147,197,253,.3); border-radius: 12px; background: rgba(147,197,253,.06); }
+.fz-how summary { cursor: pointer; padding: 10px 14px; font-weight: 700; color: #bfdbfe; font-size: 14px; }
+.fz-how-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; padding: 0 14px 14px; }
+.fz-how-grid div { background: var(--surface2); border-radius: 10px; padding: 10px 12px; font-size: 13px; line-height: 1.5; color: var(--text2); }
+.fz-how-grid b { display: block; color: var(--text); font-size: 14px; margin-bottom: 2px; }
 .thaw p { margin: 6px 0 10px; font-size: 13.5px; line-height: 1.55; color: #cfe6fb; }
 .thaw-goals { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
 .thaw-goals li { display: grid; grid-template-columns: 22px 1fr auto; gap: 4px 8px; align-items: center; font-size: 14px; }
@@ -254,6 +260,16 @@ html[data-squad="BLACK"] .hero-sq-card[data-sq="BLACK"], html[data-squad="GOLD"]
   // Squad skin: remembered on this device; '' clears it. Applied at once on load.
   // Thaw panel (14_Thaw.gs freezeDetail_), shared by My Squad and Generals HQ. opts.hq adds the
   // Generals' Fun Freeze buttons (#thawCashOut, #thawSecond).
+  // The student release: how freezes work, short enough to read on a phone. fresh = FRESH_START date.
+  window.freezeExplainer = function (fresh, open) {
+    var when = fresh ? 'On ' + Number(fresh.slice(5, 7)) + '/' + Number(fresh.slice(8, 10)) : 'In January';
+    return '<details class="fz-how"' + (open ? ' open' : '') + '><summary>❄️ How freezes work</summary><div class="fz-how-grid">' +
+      '<div><b>You never lose points</b>A freeze only stops new points from counting for a while.</div>' +
+      '<div><b>❄️ Peaks Freeze</b>The whole squad wasn\'t meeting Mountaineer Peaks expectations. Hit your squad\'s goals together, then your advisor signs off.</div>' +
+      '<div><b>🧊 Fun Freeze</b>A push-your-luck game: hit the goal once, twice or three times to get back more of your frozen points. Cash out before Thaw By or it melts.</div>' +
+      '<div><b>🗳️ Votes help</b>Poll and Pulse votes count toward thawing. Your answers help your squad and help EMS.</div>' +
+      '<div><b>🌅 Fresh start</b>' + when + ', every squad starts unfrozen.</div></div></details>';
+  };
   window.thawHtml = function (fz, opts) {
     if (!fz) return '';
     opts = opts || {};
