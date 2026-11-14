@@ -608,7 +608,7 @@ async function sbLoad(){
   if(pg) goTo(pg); else goTo('home');
   // ?tv=1 auto-launches TV display (for pop-out window on projector/second screen)
   if(params.get('tv')==='1'||params.get('tv')==='polls') setTimeout(()=>openDisplay(),600);
-  // ?go=polls (the QR code on the TV and the Poll Board): straight to today's poll.
+  // ?go=polls (clashofclasses.org/vote, the link on the TV and the Poll Board): straight to today's poll.
   if(params.get('go')==='polls') setTimeout(function(){ if(typeof goTo==='function') goTo('home'); var el=document.getElementById('dailyPollSection'); if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.style.outline='3px solid var(--gold-soft,#ffe100)'; el.style.borderRadius='16px'; setTimeout(function(){ el.style.outline=''; },4000); } },1400);
   if(ADMIN_URL){ requireAdmin(openAdmin); } // ?admin=true opens the sign-in, then Admin
   if(window._pendingTrait){ currentTrait=window._pendingTrait; window._pendingTrait=null; renderTrait(); }
@@ -3061,14 +3061,14 @@ function renderWeek(){
 }
 
 // Admin › System (22_Week.gs): what runs on its own, today's announcement, page opens.
-// Admin › System: the TV links (36_TV.gs), each with Copy and a QR code to put up in a room.
+// Admin › System: the TV links (36_TV.gs), each with a Copy button.
 function tvLinksCard(){
   var base=((window.D&&D.tv&&D.tv.siteUrl)||'https:'+String.fromCharCode(47,47)+'clashofclasses.org');
-  var links=[['📺 Full TV rotation','Standings, map, polls, Pulse, challenges, latest points',base+'/?tv=1'],['🗳️ Polls-only TV','Today\'s polls, the Pulse and the standings (homeroom mornings)',base+'/?tv=polls'],['📊 Poll Board','One poll at a time, big bars, squad turnout, standings along the bottom',base+'/?page=pollboard'],['📱 Vote link (QR on every poll screen)','Opens straight to today\'s poll',base+'/?go=polls']];
+  var links=[['📺 Full TV rotation','Standings, map, polls, Pulse, challenges, latest points',base+'/?tv=1'],['🗳️ Polls-only TV','Today\'s polls, the Pulse and the standings (homeroom mornings)',base+'/?tv=polls'],['📊 Poll Board','One poll at a time, big bars, squad turnout, standings along the bottom',base+'/?page=pollboard'],['📱 Vote link (shown big on every poll screen)','Students type it on a Chromebook: opens straight to today\'s poll',base+'/vote']];
   var esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
   return '<div style="border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px"><div style="font-weight:800;margin-bottom:6px">📺 TV links (all update live)</div>'+
     links.map(function(l){ return '<div style="display:flex;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--border)"><div style="flex:1;min-width:0"><b>'+esc(l[0])+'</b><div style="font-size:12px;color:var(--text3)">'+esc(l[1])+'</div><div style="font-family:DM Mono,monospace;font-size:12px;word-break:break-all">'+esc(l[2])+'</div></div>'+
-      '<button class="btn btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+esc(l[2])+'\');this.textContent=\'Copied ✓\'">Copy</button><div style="width:76px;height:76px;background:#fff;border-radius:8px;padding:4px;flex:none">'+(window.clashQr?window.clashQr(l[2],2):'')+'</div></div>'; }).join('')+
+      '<button class="btn btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+esc(l[2])+'\');this.textContent=\'Copied ✓\'">Copy</button></div>'; }).join('')+
     '<div style="font-size:12px;color:var(--text3);margin-top:6px">Seconds per slide and which slides run: Settings TV_SECONDS, TV_SLIDES, TV_POLL_SLIDES (Admin › Sheet › Settings).</div></div>';
 }
 function renderSystem(){

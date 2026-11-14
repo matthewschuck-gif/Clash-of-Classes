@@ -50,8 +50,7 @@
   .dots i { width:.6em; height:.6em; border-radius:50%; background:#ffffff33; }
   .dots i.on { background:var(--gold); }
   .joinbox { display:flex; align-items:center; gap:1.2vw; }
-  .qr { width:clamp(70px,9vw,150px); background:#fff; border-radius:12px; padding:6px; flex:none; }
-  .qr svg { display:block; width:100%; height:auto; }
+  .votelink { font-weight:900; color:var(--gold); font-size:clamp(18px,2.4vw,42px); letter-spacing:.01em; }
   .stand { display:grid; grid-template-columns:repeat(4,1fr); gap:1vw; border-top:1px solid #ffffff1a; padding-top:1.4vh; }
   .st { display:flex; align-items:baseline; gap:.6vw; font-size:clamp(12px,1.3vw,22px); color:var(--mute); padding:0 1.2vw; border-left:1px solid #ffffff14; }
   .st:first-child { border-left:0; padding-left:0; }
@@ -66,7 +65,6 @@
 </head>
 <body>
 <div class="wrap" id="board"><div class="empty">Loading the poll…</div></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
 (function () {
   var SQ = ['BLACK', 'GOLD', 'GREY', 'PURPLE'];
@@ -87,10 +85,7 @@
     setTimeout(function () { el.remove(); }, 1500);
   }
   var lastPts = {};
-  function qr(url) {
-    if (!window.qrcode || !url) return '';
-    try { var q = window.qrcode(0, 'M'); q.addData(String(url)); q.make(); return '<div class="qr">' + q.createSvgTag({ cellSize: 4, margin: 1, scalable: true }) + '</div>'; } catch (e) { return ''; }
-  }
+  function vote() { return esc((data && data.voteText) || ((data && data.url) || 'clashofclasses.org') + '/vote'); }
   function dayName(ymd) { var d = new Date(String(ymd) + 'T12:00:00'); return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d.getDay()] + ' ' + (d.getMonth() + 1) + '/' + d.getDate(); }
   // The live standings along the bottom (the tracker): rank, squad, total, what they earned today.
   function standings() {
@@ -108,7 +103,7 @@
     var box = document.getElementById('board');
     if (!data || !data.polls.length) {
       var n = data && data.next && data.next[0];
-      box.innerHTML = (n ? '<div class="top"><div class="tag">📅 Coming up · ' + kindTag(n) + '</div><div class="joinbox"><div class="join">Opens <b>' + esc(dayName(n.date)) + '</b><br>vote at <b>' + esc(data.url) + '</b></div>' + qr(data.voteUrl) + '</div></div><h1>' + esc(n.question) + '</h1>' +
+      box.innerHTML = (n ? '<div class="top"><div class="tag">📅 Coming up · ' + kindTag(n) + '</div><div class="joinbox"><div class="join">Opens <b>' + esc(dayName(n.date)) + '</b> at<br><span class="votelink">' + vote() + '</span></div></div></div><h1>' + esc(n.question) + '</h1>' +
         '<div class="empty" style="font-size:clamp(16px,2vw,32px)">' + (n.choices && n.choices.length > 1 ? esc(n.choices.join('  ·  ')) : '') + '</div>'
         : '<div class="empty">No poll today.<br>Check back tomorrow morning!</div>') + standings();
       return;
@@ -116,7 +111,7 @@
     if (shown >= data.polls.length) shown = 0;
     var p = data.polls[shown];
     var head = '<div class="top"><div class="tag">' + (data.live ? '<span class="live"><i></i>Live</span> · ' : 'Results · ') + kindTag(p) + '</div>' +
-      '<div class="joinbox"><div class="join">Vote at <b>' + esc(data.url) + '</b><br>with your 800 number</div>' + qr(data.voteUrl) + '</div></div><h1>' + esc(p.question) + '</h1>';
+      '<div class="joinbox"><div class="join">Vote at<br><span class="votelink">' + vote() + '</span><br>with your 800 number</div></div></div><h1>' + esc(p.question) + '</h1>';
     var body;
     if (p.kind === 'Check-in') {
       body = '<div class="big"><div class="count" id="pbCount">' + p.total + '</div><div class="sub">' + (p.total === 1 ? 'student has' : 'students have') + ' checked in</div></div>';

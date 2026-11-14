@@ -37,16 +37,16 @@
 .pulse-bars { display: grid; gap: 12px; }
 /* TV polls slide (36_TV.gs): the poll big, the QR to vote on the right. */
 #tvView { color: var(--text); } /* the TV is light: its text must not inherit the dark page's white */
-.tvp { display: grid; grid-template-columns: minmax(0, 1fr) minmax(140px, 22%); gap: 3vw; align-items: center; }
+.tvp { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 31%); gap: 3vw; align-items: center; }
 .tvp-q { font-family: 'Fraunces', serif; font-weight: 900; font-size: clamp(26px, 3.6vw, 64px); line-height: 1.08; margin: 10px 0 18px; color: var(--text); }
 .tvp-big { font-family: 'Fraunces', serif; font-weight: 900; font-size: clamp(60px, 9vw, 160px); color: var(--gold-soft, #ffe100); line-height: 1; }
 .tvp-sub { font-size: clamp(14px, 1.6vw, 26px); color: var(--text2); }
 .tvp-race { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1vw; margin-top: 18px; font-size: clamp(12px, 1.2vw, 20px); color: var(--text2); }
 .tvp-race b { display: block; font-size: clamp(16px, 1.8vw, 30px); }
-.tvp-qr { background: #fff; border-radius: 16px; padding: 10px; }
-.tvp-qr svg { display: block; width: 100%; height: auto; }
-.tvp-join { text-align: center; margin-top: 10px; font-size: clamp(13px, 1.3vw, 22px); color: var(--text2); line-height: 1.35; }
-.tvp-join b { color: var(--text); }
+.tvp-link { text-align: center; background: var(--surface, #fff); border: 3px solid var(--purple-lt, #7c3aed); border-radius: 18px; padding: 2.2vh 1.2vw; }
+.tvp-link-lbl { font-family: 'DM Mono', monospace; letter-spacing: 2px; text-transform: uppercase; font-size: clamp(12px, 1.1vw, 18px); color: var(--text3); }
+.tvp-link-url { font-family: 'Fraunces', serif; font-weight: 900; font-size: clamp(16px, 2vw, 44px); line-height: 1.1; color: var(--purple-lt, #7c3aed); margin: 1vh 0; white-space: nowrap; }
+.tvp-join { font-size: clamp(13px, 1.3vw, 22px); color: var(--text2); line-height: 1.35; }
 @media (max-width: 760px) { .tvp { grid-template-columns: 1fr; } }
 .pulse-row { display: grid; grid-template-columns: minmax(110px, 30%) 1fr 92px; gap: 12px; align-items: center; }
 .pulse-lbl { font-weight: 700; font-size: clamp(14px, 1.6vw, 20px); overflow-wrap: anywhere; }
@@ -536,12 +536,7 @@
     }).catch(function () { window._tvPulse = false; });
   };
 
-  // ── Today's polls on the TV (36_TV.gs): live bars, squad turnout, a QR code to vote ──
-  // A QR code as an SVG string (the qrcode-generator library is loaded in Index.html).
-  window.clashQr = function (url, cell) {
-    if (!window.qrcode || !url) return '';
-    try { var q = window.qrcode(0, 'M'); q.addData(String(url)); q.make(); return q.createSvgTag({ cellSize: cell || 4, margin: 1, scalable: true }); } catch (e) { return ''; }
-  };
+  // ── Today's polls on the TV (36_TV.gs): live bars, squad turnout, the short link to vote ──
   var tvPolls = { data: null, i: 0, was: false, timer: null };
   function tvDay(ymd) { var d = new Date(String(ymd) + 'T12:00:00'); return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d.getDay()] + ' ' + (d.getMonth() + 1) + '/' + d.getDate(); }
   function tvPollTag(p) { return p.kind === 'Check-in' ? '✋ ' + (p.kindLabel || 'Check-in') : p.kind === 'Pulse' ? '📊 Pulse' : p.kind === 'Trivia' ? '🧠 Trivia' : '🗳️ This or That'; }
@@ -549,7 +544,7 @@
     var box = document.getElementById('tvPolls'), d = tvPolls.data;
     if (!box || !d) return;
     var site = String(d.url || 'clashofclasses.org');
-    var qr = '<div><div class="tvp-qr">' + (window.clashQr(d.voteUrl, 6) || '') + '</div><div class="tvp-join">Scan to vote, or go to<br><b>' + esc(site) + '</b><br>with your 800 number</div></div>';
+    var qr = '<div class="tvp-link"><div class="tvp-link-lbl">Vote on your Chromebook</div><div class="tvp-link-url">' + esc(d.voteText || site + '/vote') + '</div><div class="tvp-join">with your 800 number</div></div>';
     var polls = d.polls || [], left;
     if (d.live && polls.length) {
       var p = polls[tvPolls.i % polls.length];

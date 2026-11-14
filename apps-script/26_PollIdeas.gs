@@ -298,7 +298,7 @@ function clashPollBoard() {
   let standings = [];
   try { standings = tvStandings_(); } catch (e) { standings = []; }
   return JSON.stringify({
-    live: live, url: String(getSetting_('SITE_URL') || 'clashofclasses.org').replace(/^https?:\W+/i, ''), voteUrl: siteUrl_() + '/?go=polls', standings: standings,
+    live: live, url: String(getSetting_('SITE_URL') || 'clashofclasses.org').replace(/^https?:\W+/i, ''), voteUrl: siteUrl_() + '/vote', voteText: voteText_(), standings: standings,
     next: all.filter(function (p) { return p.date > today; }).sort(function (a, b) { return a.date.localeCompare(b.date); }).slice(0, 1)
       .map(function (p) { return { kind: p.kind, kindLabel: p.kindLabel, question: p.question, choices: p.choices, date: p.date }; }),
     polls: list.map(function (p) {

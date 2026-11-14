@@ -8,7 +8,8 @@
  *                                       (homeroom mornings)
  *   clashofclasses.org/?page=pollboard  the Poll Board: one poll at a time, big bars, squad turnout
  *                                       and the live standings along the bottom
- * Every poll screen has a QR code to clashofclasses.org/?go=polls, which opens the poll to vote.
+ * Every poll screen shows the short link clashofclasses.org/vote (phones aren't allowed in the building,
+ * so students type it on a Chromebook). It opens the site at today's poll (the vote/ page in the repo).
  * Settings (edit in Admin › Sheet › Settings):
  *   TV_SECONDS     seconds per slide (default 9)
  *   TV_SLIDES      which slides run: all, or a list of standings, podium, categories, metrics,
@@ -25,6 +26,9 @@ function tvSlideList_(spec, def) {
   return keep.length ? keep : TV_SLIDE_NAMES_.slice();
 }
 
+// The short vote link as students should type it: clashofclasses.org/vote
+function voteText_() { return siteUrl_().replace(/^https?:\W+/i, '') + '/vote'; }
+
 function siteUrl_() { return String(getSetting_('SITE_URL') || 'https:\/\/clashofclasses.org').trim().replace(/\/+$/, ''); }
 
 /** What the page needs to run the TV (rides along with the site data). */
@@ -34,7 +38,8 @@ function tvSettings_() {
     slides: tvSlideList_(getSetting_('TV_SLIDES'), 'all'),
     pollSlides: tvSlideList_(getSetting_('TV_POLL_SLIDES'), 'polls, pulse, standings'),
     siteUrl: siteUrl_(),
-    voteUrl: siteUrl_() + '/?go=polls',
+    voteUrl: siteUrl_() + '/vote',
+    voteText: voteText_(),
   };
 }
 

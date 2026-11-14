@@ -2094,7 +2094,7 @@ test('TV: settings pick the slides and seconds, the Poll Board carries the stand
   assert.strictEqual(tv.seconds, 9);
   assert.strictEqual(tv.slides.length, 11);
   assert.deepStrictEqual(tv.pollSlides, ['standings', 'pulse', 'polls']);
-  assert.ok(/clashofclasses\.org\/\?go=polls$/.test(tv.voteUrl));
+  assert.strictEqual(tv.voteUrl, "https://clashofclasses.org/vote"); assert.strictEqual(tv.voteText, "clashofclasses.org/vote");
   w.setSettingValue_('TV_SECONDS', '15'); w.setSettingValue_('TV_SLIDES', 'polls, standings, nonsense');
   assert.deepStrictEqual(J(w.tvSettings_()).slides, ['standings', 'polls']);
   assert.strictEqual(J(w.tvSettings_()).seconds, 15);
@@ -2109,7 +2109,7 @@ test('TV: settings pick the slides and seconds, the Poll Board carries the stand
   assert.strictEqual(b.polls[0].counts, null, 'trivia counts hidden while it is open');
   assert.strictEqual(b.polls[0].answer, '');
   assert.strictEqual(b.next[0].question, 'Lunch?');
-  assert.ok(/\?go=polls$/.test(b.voteUrl));
+  assert.strictEqual(b.voteText, "clashofclasses.org/vote");
   assert.strictEqual(b.standings.length, 4);
   assert.strictEqual(b.standings.find(x => x.squad === 'GOLD').today, 30, 'what each squad earned today');
   assert.ok(b.standings[0].total >= b.standings[3].total, 'ranked');
