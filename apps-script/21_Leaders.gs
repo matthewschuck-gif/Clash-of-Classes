@@ -132,3 +132,6 @@ function clashTraitDough() {
   cachePutBig_(key, text, 300);
   return text;
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_21_Leaders = 'de1fe45afe';

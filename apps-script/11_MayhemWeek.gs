@@ -260,3 +260,6 @@ function sendSquadNightPoints() {
   return [SQUAD_KEYS_.map(function (s) { return s + ' ' + c[s] + ' → +' + c[s] * per; }).join(', ')];
 }
 function menuSendSquadNightPoints_() { SpreadsheetApp.getUi().alert('Squad Night points', sendSquadNightPoints().join('\n'), SpreadsheetApp.getUi().ButtonSet.OK); }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_11_MayhemWeek = 'df5e2111d5';

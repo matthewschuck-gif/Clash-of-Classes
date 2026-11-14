@@ -381,3 +381,49 @@ function menuPreviewDigest_() {
   MailApp.sendEmail({ to: me, subject: '[Preview] This Week in Clash · week of ' + d.weekOf, htmlBody: digestHtml_(d), name: 'Clash of Classes' });
   SpreadsheetApp.getUi().alert('Sent a preview to ' + me + '.');
 }
+
+// ── WHAT'S LIVE (Admin › System) ─────────────────────────────────────
+// Every file carries a stamp (tools/stamp-files.js). This compares the stamps in the live project
+// with the newest list on GitHub, so staff can see exactly which files still need pasting.
+const GITHUB_STAMPS_URL_ = 'https:\/\/raw.githubusercontent.com/matthewschuck-gif/Clash-of-Classes/main/apps-script/00_Version.gs';
+
+function stampsFromVersionFile_(text) {
+  const m = String(text || '').match(/FILE_STAMPS_\s*=\s*(\{[\s\S]*?\});/);
+  return m ? JSON.parse(m[1]) : null;
+}
+
+function liveStamp_(file) {
+  if (/\.gs$/.test(file)) {
+    const g = (function () { return this; })() || {};
+    const v = g['FILE_STAMP_' + file.replace(/\.gs$/, '').replace(/[^A-Za-z0-9]/g, '_')];
+    return typeof v === 'string' ? v : '';
+  }
+  try {
+    const c = HtmlService.createHtmlOutputFromFile(file.replace(/\.html$/, '')).getContent();
+    const m = c.match(/file-stamp: ([0-9a-f]+)/);
+    return m ? m[1] : '?';
+  } catch (e) { return ''; }
+}
+
+/** [{ file, live, newest, status: ok | old | missing | unknown }] plus where "newest" came from. */
+function versionReport_(newest) {
+  const src = newest ? 'GitHub' : 'this project';
+  newest = newest || (typeof FILE_STAMPS_ !== 'undefined' ? FILE_STAMPS_ : {});
+  const files = Object.keys(newest).sort().map(function (f) {
+    const live = liveStamp_(f);
+    return { file: f, live: live, newest: newest[f], status: !live ? 'missing' : live === '?' ? 'unknown' : live === newest[f] ? 'ok' : 'old' };
+  });
+  return { source: src, files: files, need: files.filter(function (x) { return x.status === 'missing' || x.status === 'old'; }).map(function (x) { return x.file; }) };
+}
+
+function clashVersion(token) {
+  requireAdmin_(token);
+  let newest = null, note = '';
+  try { newest = stampsFromVersionFile_(UrlFetchApp.fetch(GITHUB_STAMPS_URL_, { muteHttpExceptions: true }).getContentText()); } catch (e) { note = 'GitHub could not be reached (' + e.message + '); compared with this project\'s own list.'; }
+  const r = versionReport_(newest);
+  r.note = note;
+  return JSON.stringify(r);
+}
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_22_Week = 'e52a06a174';

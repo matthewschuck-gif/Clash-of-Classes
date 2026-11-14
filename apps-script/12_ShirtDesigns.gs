@@ -140,3 +140,6 @@ function hqDesigns_(squad) {
   return designsWithVotes_().filter(function (d) { return d.squad === squad; })
     .map(function (d) { return { id: d.id, title: d.title, by: d.by, approved: d.approved, votes: d.votes, winner: d.winner }; });
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_12_ShirtDesigns = '0909813410';

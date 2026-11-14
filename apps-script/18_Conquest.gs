@@ -759,3 +759,6 @@ function setupMapGuideTab_() {
   sheet.setColumnWidth(1, 900);
   sheet.setFrozenRows(1);
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_18_Conquest = 'ac119df6db';

@@ -1,0 +1,74 @@
+<style>
+/* Admin panel › Service: student service and kindness submissions (40_Service.gs). */
+.sv-item { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+.sv-item.info { border-color: #fbbf24; }
+.sv-head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.sv-head b { font-size: 15px; }
+.sv-meta { font-size: 12px; color: var(--text3); }
+.sv-body { margin-top: 8px; font-size: 14px; line-height: 1.5; color: var(--text); }
+.sv-body .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text3); margin-top: 8px; }
+.sv-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; align-items: center; }
+.sv-acts button { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-weight: 700; cursor: pointer; font-size: 13px; }
+.sv-acts button.ok { background: #16a34a; color: #fff; border-color: transparent; }
+.sv-acts button.no { color: #fca5a5; }
+.sv-acts input { flex: 1; min-width: 180px; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg, #12081f); color: var(--text); font-size: 13px; }
+.sv-file img { max-width: 100%; max-height: 360px; border-radius: 8px; margin-top: 8px; display: block; }
+.sv-msg { font-size: 13px; color: var(--text3); margin-bottom: 10px; }
+</style>
+<script>
+(function () {
+  var st = { open: [], done: [], points: [5, 10, 20] };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function title(s) { return s ? s.charAt(0) + s.slice(1).toLowerCase() : ''; }
+  function box() { return document.getElementById('serviceAdmin'); }
+  function token() { return window.ADMIN_SESSION || ''; }
+  function item(s, done) {
+    return '<div class="sv-item' + (s.status === 'More info' ? ' info' : '') + '" data-id="' + esc(s.id) + '"><div class="sv-head"><b>' + esc(s.student) + ' · ' + title(s.squad) + '</b>' +
+      '<span class="sv-meta">' + esc(s.submitted) + ' · ' + esc(s.status) + (s.points ? ' · ' + s.points + ' pts' : '') + '</span></div>' +
+      '<div class="sv-body"><div class="lbl">What</div>' + esc(s.what) + (s.when ? '<div class="lbl">When / where</div>' + esc(s.when) : '') +
+      '<div class="lbl">Reflection</div>' + esc(s.reflection) +
+      (s.link ? '<div class="lbl">Link</div><a href="' + esc(s.link) + '" target="_blank" rel="noopener" style="color:var(--purple-lt);word-break:break-all">' + esc(s.link) + '</a>' : '') +
+      (s.file ? '<div class="lbl">File</div><button class="sv-show" data-id="' + esc(s.id) + '" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer">Show the upload</button><div class="sv-file"></div>' : '') +
+      (s.note ? '<div class="lbl">Staff note</div>' + esc(s.note) : '') + (s.reply ? '<div class="lbl">Student\'s answer</div>' + esc(s.reply) : '') + '</div>' +
+      (done ? '' : '<div class="sv-acts">' + st.points.map(function (p) { return '<button class="ok" data-do="approve" data-p="' + p + '">Approve ' + p + '</button>'; }).join('') +
+        '<input placeholder="Question for the student, or a reason"><button data-do="info">❓ Ask for more</button><button class="no" data-do="deny">Deny</button></div>') + '</div>';
+  }
+  function draw(msg) {
+    box().innerHTML = '<div class="sv-msg">' + esc(msg || (st.open.length ? st.open.length + ' to look at. Approve with points, ask the student a question (they answer on My Squad), or deny with a reason.' : 'Nothing waiting. Students send these from My Squad.')) + '</div>' +
+      st.open.map(function (s) { return item(s, false); }).join('') +
+      (st.done.length ? '<details style="margin-top:12px"><summary style="cursor:pointer;color:var(--text3)">Recently decided (' + st.done.length + ')</summary>' + st.done.map(function (s) { return item(s, true); }).join('') + '</details>' : '');
+  }
+  function load(res) { st.open = res.open || []; st.done = res.done || []; st.points = res.points || st.points; }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('#serviceAdmin button');
+    if (!b) return;
+    var card = b.closest('.sv-item'), id = card && card.getAttribute('data-id');
+    if (b.classList.contains('sv-show')) {
+      b.disabled = true; b.textContent = 'Loading…';
+      window.gasRun_('clashServiceFile', token(), id).then(function (f) {
+        var out = card.querySelector('.sv-file');
+        out.innerHTML = String(f.type).indexOf('image') === 0 ?'<img alt="Student upload" src="' + f.data + '">' : '<a download="' + esc(f.name) + '" href="' + f.data + '" style="color:var(--purple-lt)">Download ' + esc(f.name) + '</a>';
+        b.remove();
+      }).catch(function (x) { b.disabled = false; b.textContent = 'Show the upload'; alert(x && x.message); });
+      return;
+    }
+    var how = b.getAttribute('data-do');
+    if (!how) return;
+    var note = (card.querySelector('.sv-acts input') || {}).value || '';
+    if (how === 'deny' && !confirm('Deny this one? The student sees your reason.')) return;
+    Array.prototype.forEach.call(card.querySelectorAll('button'), function (x) { x.disabled = true; });
+    window.gasRun_('clashServiceDecide', token(), id, how, Number(b.getAttribute('data-p')) || 0, note).then(function (res) {
+      load(res); draw(how === 'approve' ? '✅ Approved: the points are on the board.' : how === 'info' ? '❓ Sent: the student sees your question on My Squad.' : 'Denied.');
+    }).catch(function (x) { Array.prototype.forEach.call(card.querySelectorAll('button'), function (y) { y.disabled = false; }); alert((x && x.message || '').replace(/^Exception:\s{0,}/, '')); });
+  });
+  window.ServiceAdmin = {
+    open: function () {
+      if (!box() || !window.gasRun_) return;
+      box().innerHTML = '<p class="sv-msg">Loading…</p>';
+      window.gasRun_('clashServiceList', token()).then(function (res) { load(res); draw(); })
+        .catch(function (x) { box().innerHTML = '<p class="sv-msg">Could not load: ' + esc(x && x.message) + '</p>'; });
+    },
+  };
+})();
+</script>
+<!-- file-stamp: 60c1fdcf9d -->

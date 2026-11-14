@@ -156,3 +156,6 @@ function clashEventPages() {
   out.mayhem.scoreboard = mayhemWeekScores_();
   return JSON.stringify(out);
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_10_EventPages = '3d41cdb62f';

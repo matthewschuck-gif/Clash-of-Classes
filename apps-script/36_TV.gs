@@ -50,3 +50,6 @@ function tvStandings_() {
   return SQUAD_KEYS_.slice().sort(function (a, b) { return totals[b] - totals[a]; })
     .map(function (s) { return { squad: s, total: totals[s], today: gained[s] || 0 }; });
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_36_TV = 'a801d2f28e';

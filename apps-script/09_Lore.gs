@@ -111,3 +111,6 @@ function recentLoreUnlocks_() {
   });
   return out.sort(function (a, b) { return a.date < b.date ? 1 : -1; }).slice(0, 4);
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_09_Lore = '2196d419ec';

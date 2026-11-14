@@ -140,3 +140,6 @@ function clashYearPlan() {
   cachePutBig_(key, text, 300);
   return text;
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_24_YearPlan = '6626b30b8c';

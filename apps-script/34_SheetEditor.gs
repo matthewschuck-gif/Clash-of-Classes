@@ -60,10 +60,13 @@ const SHEET_TABS_ = [
   ['Shirt Designs', 'Events', 'Shirt designs; tick Approved to put one up for the vote.', {}],
   ['Poll Insights', 'Polls & Pulse', 'Answers by squad and grade (rebuilt by Update Poll Insights).', {}],
   ['Points Balance', 'Polls & Pulse', 'Rebuilt by the points balance check.', {}],
+  ['Squad Spotlight', 'Pages', 'Suggested every Monday (one story per squad). Tick Show to put it on the Morning Clash, the TV and the home page; edit the story if you like.', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
+  ['Avalanche', 'Game', 'Every Avalanche set off: squad, marking period, the week it ran, the bonus paid.', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
+  ['Dough Teachers', 'Points', 'Teachers who can give Virtual Trait Dough: tick Active, their squad, and their password (e.g. their room number).', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
 ];
 const SHEET_HIDDEN_ = ['app_data', 'How To Use This Sheet', 'How The Map Works', 'How My Climb Works'];
 const SHEET_PRIVATE_ = ['Students', 'Student Board', 'Poll Votes', 'Event Check-ins', 'Redemptions', 'Shirt Votes', 'Shirt Orders', 'Squad Night', 'Sign-ups',
-  'Nominations', 'General Letters', 'MLC Roster', 'Boost Ledger', 'Student Tickets', 'Avatars', 'Color Squads', 'Homeroom Points', 'Frost Log', 'Admin Edits', 'Usage', 'Weekly Digest Log', 'Squad Hand', 'Streak Banks'];
+  'Nominations', 'General Letters', 'Virtual Dough', 'Service Submissions', 'MLC Roster', 'Boost Ledger', 'Student Tickets', 'Avatars', 'Color Squads', 'Homeroom Points', 'Frost Log', 'Admin Edits', 'Usage', 'Weekly Digest Log', 'Squad Hand', 'Streak Banks'];
 const SHEET_EDIT_LOG_ = 'Admin Edits';
 
 function sheetTabInfo_(name) {
@@ -210,3 +213,6 @@ function clashSheetAction(token, name) {
   if (!a) throw new Error('Unknown action.');
   return JSON.stringify({ message: String(a[2]() || 'Done.') });
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_34_SheetEditor = '1d2d63b5f6';

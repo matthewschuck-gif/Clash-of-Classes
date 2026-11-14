@@ -102,6 +102,7 @@
         '<div class="hq-stat ' + (d.notPlaced ? 'need' : 'done') + '"><div class="v">' + d.notPlaced + '</div><div class="l">Not placed</div><div class="g">of ' + d.roster.length + ' members</div></div>' +
       '</div>' +
       (st && st.frozen && window.thawHtml ? window.thawHtml(st.frozen, { hq: true }) : '') + // thaw goals and, for a Fun Freeze, cash out (Pop.html)
+      (window.avalancheHtml ? window.avalancheHtml(st && st.avalanche, true) : '') + // the last-place comeback (38_Avalanche.gs)
       (tags ? '<div class="hq-tags">' + tags + '</div>' : '') + '</div>';
     var tabs = [['roster', '👥 Roster & sign-ups'], ['mayhem', '⚡ Mayhem checklist'], ['hype', '📣 Hype script'], ['meeting', '🎤 Squad meeting'], ['service', '🤝 Service project'], ['nominate', '📝 Nominate & letters'], ['shirts', '👕 Shirt designs']];
     tabs.splice(1, 0, ['game', '🎲 Game']);
@@ -422,6 +423,12 @@
       act('clashGeneralsCashOut').then(function () { if (window.craftCelebrate) window.craftCelebrate({ getBoundingClientRect: function () { return from; } }); });
     };
     if (second) second.onclick = function () { if (confirm('Use your squad\'s one second chance? Thaw By moves a couple of school days later.')) act('clashGeneralsSecondChance'); };
+    var av = document.getElementById('avGo');
+    if (av) av.onclick = function () {
+      if (!confirm('Set off the Avalanche now? Your squad gets double points on polls, check-ins and squad events this week. Only once this marking period.')) return;
+      var from = av.getBoundingClientRect();
+      act('clashGeneralsAvalanche').then(function () { if (window.craftCelebrate) window.craftCelebrate({ getBoundingClientRect: function () { return from; } }); });
+    };
     var ds = document.getElementById('dsGo');
     if (ds) ds.onclick = function () {
       var f = document.getElementById('dsFile').files[0], err = document.getElementById('dsErr');
@@ -459,3 +466,4 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script>
+<!-- file-stamp: 8d459e4402 -->

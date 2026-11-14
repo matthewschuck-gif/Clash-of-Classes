@@ -120,3 +120,6 @@ function menuOpenGuides_() {
   SpreadsheetApp.getUi().alert('Role guides', 'One page each for Students, Squad Generals, Teachers and staff, and Coordinator and admins, written from today\'s Settings:\n\n' + url +
     '\n\nPrint button on the page (one guide per page). Add &role=students (or generals, staff, admin) for one guide.', SpreadsheetApp.getUi().ButtonSet.OK);
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_33_Guides = '4d913f628c';

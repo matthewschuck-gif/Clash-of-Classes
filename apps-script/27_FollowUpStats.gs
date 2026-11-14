@@ -148,3 +148,6 @@ function menuFollowUpStats_() {
     SQUAD_KEYS_.map(function (s) { return s + ' ' + now.counts[s]; }).join(', ') + ' (' + now.lrr + ' LRRs, ' + now.ld + ' LDs' +
     (now.unmatched ? ', ' + now.unmatched + ' with no squad found' : '') + ').', SpreadsheetApp.getUi().ButtonSet.OK);
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_27_FollowUpStats = '0e204ffcbb';

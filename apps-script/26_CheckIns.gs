@@ -154,3 +154,6 @@ function eventParticipants_(from, to) {
   });
   return out;
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_26_CheckIns = '2f04bb0f19';

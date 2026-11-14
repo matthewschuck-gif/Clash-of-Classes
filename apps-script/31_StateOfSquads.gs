@@ -128,3 +128,6 @@ function menuSendStateOfSquads_() {
   if (ui.alert('Send the State of the Squads for last month now?', 'To: ' + to.join(', '), ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
   ui.alert(stateOfSquadsEmail(true));
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_31_StateOfSquads = 'bed091d132';

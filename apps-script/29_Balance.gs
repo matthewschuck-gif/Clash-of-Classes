@@ -96,3 +96,6 @@ function menuPointsBalance_() {
     (r.flags.length ? '⚠ ' + r.flags.join('\n⚠ ') : 'Nothing looks lopsided: no one source decides the race.') +
     '\n\nEvery type, by squad, is on the Points Balance tab. Change the lines on Settings (BALANCE_*).', SpreadsheetApp.getUi().ButtonSet.OK);
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_29_Balance = '61b7fefe7e';

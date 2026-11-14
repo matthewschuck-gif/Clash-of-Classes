@@ -138,3 +138,6 @@ function menuTurnOnCalendarSync_() {
   ScriptApp.newTrigger('scheduledSchoolCalendarSync').timeBased().everyDays(1).atHour(5).create();
   SpreadsheetApp.getUi().alert('Every morning at 5, new days off on the district calendar (Settings › SCHOOL_CALENDAR) are added to the School Calendar tab.');
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_13_SchoolCalendar = '87c920defb';

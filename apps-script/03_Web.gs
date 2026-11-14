@@ -26,6 +26,9 @@ const LEGACY_DEFAULT_PW_ = 'ephrata2026'; // the site's built-in password before
 function serveSite_(e) {
   if (e && e.parameter && e.parameter.page === 'me') return serveMe_(); // My Climb, the student dashboard (16_Me.gs)
   if (e && e.parameter && e.parameter.page === 'pollboard') return servePollBoard_(); // the live poll screen (26_PollIdeas.gs)
+  if (e && e.parameter && e.parameter.page === 'dough') return serveDough_(); // Virtual Trait Dough for teachers (39_VirtualDough.gs)
+  if (e && e.parameter && (e.parameter.page === 'morning' || e.parameter.tv === 'morning')) return serveMorning_(); // Morning Clash (41_Morning.gs)
+  if (e && e.parameter && e.parameter.page === 'family') return serveFamily_(); // the monthly family update (42_Family.gs)
   if (e && e.parameter && e.parameter.page === 'guides') return serveGuides_(); // one-page role guides from Settings (33_Guides.gs)
   if (e && e.parameter && e.parameter.page === 'frost') return serveFrostPage_(); // Freeze & Thaw slides + frost meter (28_Frost.gs)
   const t = HtmlService.createTemplateFromFile('Index');
@@ -60,6 +63,7 @@ function publicLoad_(raw) {
     try { res.value.schoolCalendar = schoolCalendar_(); } catch (e) { /* the page falls back to its built-in list */ }
     try { res.value.siteTraits = siteTraits_(); res.value.siteWheel = siteWheel_(); } catch (e) { /* the page keeps its built-in traits and wheel */ }
     try { res.value.tv = tvSettings_(); } catch (e) { /* the TV keeps its defaults */ } // 36_TV.gs
+    try { res.value.season = seasonInfo_(); res.value.spotlight = spotlightPublic_(4); } catch (e) { /* none */ } // 37, 41
     if (!raw && Array.isArray(res.value.events)) res.value.events = res.value.events.map(publicEvent_);
   }
   return res;
@@ -143,6 +147,8 @@ function backgroundTick() {
   try { maybeFrostCheck_(); } catch (e) { noteError_('frost check', e); } // 28_Frost.gs: monthly check + approvals
   try { maybeSyncYouSaid_(); } catch (e) { noteError_('you said we did', e); } // 30_YouSaid.gs, once a day
   try { maybeStateOfSquads_(); } catch (e) { noteError_('state of the squads', e); } // 31_StateOfSquads.gs, monthly email
+  try { maybePayAvalanches_(); } catch (e) { noteError_('avalanche', e); } // 38_Avalanche.gs, hourly
+  try { maybeSuggestSpotlights_(); } catch (e) { noteError_('spotlight', e); } // 41_Morning.gs, Mondays
   try { cachedPublicLoad_(true); cachedGame_(true); } catch (e) { noteError_('warm cache', e); }
 }
 
@@ -171,7 +177,7 @@ function clashSave(token, valueJson, syncJson) {
     delete value.freezes; // lives on the Point Freezes tab, not in the saved blob
     delete value.schoolCalendar; // lives on the School Calendar tab
     delete value.studentLink; // lives on Settings
-    delete value.siteTraits; delete value.siteWheel; delete value.tv; // live on Sheet tabs / Settings
+    delete value.siteTraits; delete value.siteWheel; delete value.tv; delete value.season; delete value.spotlight; // live on Sheet tabs / Settings
     const key = function (e) { return e.id + '|' + e.name; };
     const seen = {};
     (sync.seen || []).forEach(function (k) { seen[k] = true; });
@@ -396,3 +402,6 @@ function menuOpenSite_() {
   SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(
     '<p><a href="' + url + '" target="_blank">Open Clash of Classes</a></p>').setWidth(300).setHeight(80), 'Clash of Classes');
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_03_Web = '39f25ffc58';

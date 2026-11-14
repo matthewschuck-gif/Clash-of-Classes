@@ -99,3 +99,6 @@ function importStudentRoster() {
   console.log('Students tab: ' + r.students + ' students copied, ' + r.squads + ' with a squad, ' + r.missingSquad + ' still need one.');
   return r;
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_17_Roster = '096c622a70';

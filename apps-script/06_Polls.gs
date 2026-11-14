@@ -293,16 +293,16 @@ function pollAnnouncement_() {
   }
   d.today.forEach(function (p) {
     if (p.kind === 'Check-in') {
-      text += p.question + ' Check in on clashofclasses.org with your 800 number. Every check-in earns your squad a point, and it counts toward the map! ';
+      text += p.question + ' Check in at ' + voteText_() + ' with your 800 number. Every check-in earns your squad a point, and it counts toward the map! ';
       return;
     }
     if (p.kind === 'Pulse') {
-      text += 'This week\'s Pulse question: ' + p.question + ' There\'s no right answer: the school wants to know what you think. Answer on clashofclasses.org with your 800 number ' +
+      text += 'This week\'s Pulse question: ' + p.question + ' There\'s no right answer: the school wants to know what you think. Answer at ' + voteText_() + ' with your 800 number ' +
         (p.through > p.date ? 'any day through ' + p.through.slice(5).replace('-', '/') : 'today') + ', and every answer earns your squad a point. ';
       return;
     }
     text += (p.kind === 'Trivia' ? 'Today\'s trivia: ' + p.question + ' Is it ' + p.choices.join(', ') + '?' : 'Today\'s This or That: ' + p.question) +
-      ' Vote on clashofclasses.org with your 800 number. Every vote earns your squad a point' +
+      ' Vote at ' + voteText_() + ' with your 800 number. Every vote earns your squad a point' +
       (p.kind === 'Trivia' ? ', and every right answer earns one more!' : p.kind === 'Pulse' ? '!' : ', and voting with the winning side earns one more!') + ' ';
   });
   return text.trim() || 'No daily poll today.';
@@ -362,3 +362,6 @@ function menuTurnOffPolls_() {
   ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'awardDailyPolls') ScriptApp.deleteTrigger(t); });
   SpreadsheetApp.getUi().alert('Daily poll points are OFF. Students can still vote; no points are added.');
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_06_Polls = '79191e6a01';

@@ -126,3 +126,6 @@ function clashHomerooms() {
   cachePutBig_(key, text, 300);
   return text;
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_25_Homerooms = '82e1d971a7';

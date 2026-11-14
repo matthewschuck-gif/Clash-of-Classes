@@ -290,3 +290,6 @@ function menuOpenFrostPage_() {
   SpreadsheetApp.getUi().alert('Freeze & Thaw slides', 'For squad meetings (arrow keys or click to move; F for full screen):\n\n' + frostUrl_() +
     '\n\nAdd &view=tv for the frost meter alone (for a TV).', SpreadsheetApp.getUi().ButtonSet.OK);
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_28_Frost = '6263caaa47';

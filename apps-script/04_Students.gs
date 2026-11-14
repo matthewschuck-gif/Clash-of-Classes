@@ -24,10 +24,11 @@ const CHALLENGE_HEADERS_ = ['Show', 'Title', 'Description', 'Event Types', 'Meas
 // ── SQUAD STANDINGS (same math as the site: events + finalized months) ──
 function squadTotals_() {
   const totals = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
-  readEventsTab_().forEach(function (e) { SQUAD_KEYS_.forEach(function (s) { totals[s] += Number(e.pts[s]) || 0; }); });
+  // Only points dated on or before SEASON_END count (37_Season.gs).
+  readEventsTab_().forEach(function (e) { if (!inSeason_(e.date)) return; SQUAD_KEYS_.forEach(function (s) { totals[s] += Number(e.pts[s]) || 0; }); });
   let months = [];
   try { months = (loadAppData_('coc').value || {}).monthlyMetrics || []; } catch (err) { /* no data yet */ }
-  months.forEach(function (m) { SQUAD_KEYS_.forEach(function (s) { totals[s] += Number(m.pts && m.pts[s]) || 0; }); });
+  months.forEach(function (m) { if (!inSeason_(ymOf_(m.month) ? ymOf_(m.month) + '-01' : '')) return; SQUAD_KEYS_.forEach(function (s) { totals[s] += Number(m.pts && m.pts[s]) || 0; }); });
   return totals;
 }
 
@@ -42,6 +43,7 @@ function standingFor_(squad, totals) {
     leadBy: place === 0 ? totals[squad] - totals[order[1]] : 0,
     frozen: freezeDetail_(squad), // the freeze and its thaw progress while the squad can't earn points (14_Thaw.gs)
     frost: frostFor_(squad), // the frost meter: squad totals against each freeze line this month (28_Frost.gs)
+    avalanche: (function () { try { return avalancheStatus_(squad, totals); } catch (e) { return null; } })(), // 38_Avalanche.gs
     freshStart: (function () { const f = String(getSetting_('FRESH_START') || '').trim().slice(0, 10); return /^\d{4}-\d{2}-\d{2}$/.test(f) && f >= todayYmd_() ? f : ''; })(),
   };
 }
@@ -262,6 +264,7 @@ function clashTvFeed() {
   const out = { latest: latest, stars: [], lore: recentLoreUnlocks_(), duels: JSON.parse(clashDuels()) };
   try { out.frost = frostMeter_(); } catch (e) { out.frost = null; }
   try { out.youSaid = youSaidPublic_(1); } catch (e) { out.youSaid = []; }
+  try { out.avalanche = avalancheBoard_(); out.spotlight = spotlightPublic_(2); } catch (e) { out.avalanche = null; out.spotlight = []; }
   if (String(getSetting_('TV_SHOW_NAMES')).toUpperCase() === 'ON') {
     const sheet = getSheetSafe_(getSetting_('STUDENT_BOARD_TAB') || 'Student Board');
     if (sheet && sheet.getLastRow() > 1) {
@@ -287,3 +290,6 @@ function parsePairsSetting_(key) {
   });
   return out;
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_04_Students = '4f92075cfc';

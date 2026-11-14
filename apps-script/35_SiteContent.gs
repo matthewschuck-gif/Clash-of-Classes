@@ -123,3 +123,6 @@ function siteWheel_() {
     return o;
   });
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_35_SiteContent = '28f3448721';

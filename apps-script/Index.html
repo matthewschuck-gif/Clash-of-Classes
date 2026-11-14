@@ -85,6 +85,7 @@
       </div>
     </div>
     <div id="heroScoreStrip" class="hero-score-strip"></div>
+    <div id="seasonBanner"></div>
     <div class="mini-board" id="miniBoard" style="display:none">
       <div style="text-align:center;padding:20px;color:var(--text3);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px">Connecting…</div>
     </div>
@@ -1685,6 +1686,7 @@
       <button class="a-tab" onclick="aTab('settings')">Settings</button>
       <button class="a-tab" onclick="aTab('map')">🗺️ Map</button>
       <button class="a-tab" onclick="aTab('sheet')">📋 Sheet</button>
+      <button class="a-tab" onclick="aTab('service')">✅ Service</button>
       <button class="a-tab" onclick="aTab('system')">🩺 System</button>
     </div>
 
@@ -1696,6 +1698,9 @@
 
     <!-- SHEET (SheetEditor.html): polls, Pulse, Squad Monthly, freezes, events, settings... edited here -->
     <div class="a-panel" id="ap-sheet"><div id="sheetEditor"></div></div>
+
+    <!-- SERVICE (ServiceAdmin.html, 40_Service.gs): approve student service, ask for more, or deny -->
+    <div class="a-panel" id="ap-service"><div id="serviceAdmin"></div></div>
 
     <!-- POINTS -->
     <div class="a-panel on" id="ap-points">
@@ -2393,6 +2398,7 @@ document.addEventListener('click', function (ev) {
 <?!= include('Generals'); ?>
 <?!= include('MapEditor'); ?>
 <?!= include('SheetEditor'); ?>
+<?!= include('ServiceAdmin'); ?>
 
 <div class="overlay" id="embedOverlay" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal" style="max-width:560px">
@@ -2421,3 +2427,4 @@ document.addEventListener('click', function (ev) {
 
 </body>
 </html>
+<!-- file-stamp: df43be0163 -->

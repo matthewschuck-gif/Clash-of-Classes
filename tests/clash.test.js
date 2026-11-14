@@ -370,7 +370,7 @@ test('Daily Polls: one vote per 800#, results after voting, points for voters an
   assert.deepStrictEqual(J(w.awardDailyPolls()), [], 'never twice');
   const last = JSON.parse(w.clashDailyPolls('8001234')).last;
   assert.deepStrictEqual([last.answer, last.voted, J(last.winners)], ['4', '4', ['4']]);
-  assert.ok(/Today's This or That: Coke or Pepsi\? Vote on/.test(w.pollAnnouncement_()), w.pollAnnouncement_());
+  assert.ok(/Today's This or That: Coke or Pepsi\? Vote at clashofclasses\.org\/vote/.test(w.pollAnnouncement_()), w.pollAnnouncement_());
   assert.ok(/The answer: 4/.test(w.pollAnnouncement_()));
 });
 
@@ -2113,6 +2113,142 @@ test('TV: settings pick the slides and seconds, the Poll Board carries the stand
   assert.strictEqual(b.standings.length, 4);
   assert.strictEqual(b.standings.find(x => x.squad === 'GOLD').today, 30, 'what each squad earned today');
   assert.ok(b.standings[0].total >= b.standings[3].total, 'ranked');
+});
+
+test('season end: points after SEASON_END do not count; the reveal names the winner; the page gets it', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_();
+  const today = w.todayYmd_();
+  const ev = w.book.getSheetByName('events'); ev.rows.splice(1);
+  ev.rows.push([1, 'Before', 'event', w.ymdShift_(today, -5), '', '', 0, 10, 0, 0], [2, 'After', 'event', today, '', '', 50, 0, 0, 0]);
+  w.setSettingValue_('SEASON_END', w.ymdShift_(today, -1));
+  const tot = J(w.squadTotals_());
+  assert.deepStrictEqual([tot.GOLD, tot.BLACK], [10, 0], 'the 50 after the season ends never counts');
+  let si = J(w.seasonInfo_());
+  assert.ok(si.over && si.revealed && si.winner === 'GOLD');
+  w.setSettingValue_('BASH_REVEAL', w.ymdShift_(today, 3));
+  si = J(w.seasonInfo_());
+  assert.ok(si.over && !si.revealed && !si.winner, 'the winner waits for the reveal');
+  w.setSettingValue_('SEASON_END', w.ymdShift_(today, 10));
+  si = J(w.seasonInfo_());
+  assert.deepStrictEqual([si.over, si.daysLeft], [false, 10]);
+  assert.strictEqual(JSON.parse(JSON.stringify(w.publicLoad_(false))).value.season.end, w.ymdShift_(today, 10));
+});
+
+test('Avalanche: only last place, charged by votes + confirmed check-ins this marking period, once per marking period, double points paid as a bonus row', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureAvalancheTab_();
+  const today = w.todayYmd_(), mp = J(w.mpFor_(today)).now;
+  assert.ok(mp, 'today is in a marking period');
+  const ev = w.book.getSheetByName('events'); ev.rows.splice(1);
+  ev.rows.push([1, 'Big', 'event', w.ymdShift_(today, -3), '', '', 100, 90, 80, 10]); // PURPLE last
+  w.setSettingValue_('AVALANCHE_CHARGE', 3);
+  let st = J(w.avalancheStatus_('PURPLE'));
+  assert.ok(st.last && !st.full && !st.ready);
+  assert.strictEqual(J(w.avalancheStatus_('GOLD')).last, false);
+  assert.throws(() => w.startAvalanche_('PURPLE', 'test'), /meter isn't full/);
+  const votes = w.book.getSheetByName('Poll Votes');
+  votes.rows.push([2, today, '8000001', 'PURPLE', 'A', '', '7'], [2, today, '8000002', 'PURPLE', 'B', '', '7'], [2, today, '8000003', 'GOLD', 'A', '', '7']);
+  w.book.insertSheet('Event Check-ins').rows = [['Event', 'Date', 'Kind', '800#', 'Name', 'Squad', 'Checked In', 'Confirmed', 'Confirmed By'],
+    ['Relay', today, 'Move', '8000004', 'X', 'PURPLE', today, true, 'G'], ['Relay', today, 'Move', '8000005', 'Y', 'PURPLE', today, false, '']];
+  st = J(w.avalancheStatus_('PURPLE'));
+  assert.deepStrictEqual([st.charge, st.full, st.ready], [3, true, true], '2 votes + 1 confirmed check-in (the unconfirmed one does not count)');
+  assert.throws(() => w.startAvalanche_('GOLD', 'test'), /last place/);
+  st = J(w.startAvalanche_('PURPLE', 'General: Test'));
+  assert.ok(st.active && st.active.start === today);
+  assert.throws(() => w.startAvalanche_('PURPLE', 'again'), /already rolling/);
+  // Double points: matching points earned in the window are paid again, once.
+  ev.rows.push([2, 'Daily Poll', 'daily_poll', today, '', '', 0, 0, 0, 6], [3, 'Spirit', 'event', today, '', '', 0, 0, 0, 40]);
+  w.payAvalanches_();
+  const bonus = ev.rows.filter(r => r[2] === 'avalanche');
+  assert.strictEqual(bonus.length, 1);
+  assert.strictEqual(bonus[0][9], 6, 'only the poll points double, not the plain event');
+  w.payAvalanches_();
+  assert.strictEqual(ev.rows.filter(r => r[2] === 'avalanche').length, 1, 'paid once');
+  // Once per marking period, even after it ends.
+  const av = w.book.getSheetByName('Avalanche'); av.rows[1][2] = w.ymdShift_(today, -20); av.rows[1][3] = w.ymdShift_(today, -14);
+  assert.throws(() => w.startAvalanche_('PURPLE', 'x'), /already used/);
+  assert.ok(J(w.standingFor_('PURPLE', J(w.squadTotals_()))).avalanche, 'My Squad and HQ get it with the standing');
+});
+
+test('Virtual Trait Dough: teacher password, never their own squad, 1/3/5 points, a trait and what they did, daily limit, lockout; counts as Trait Dough with only "Ann L." public', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureDoughTabs_(); w.ensureSiteContentTabs_();
+  w.book.insertSheet('Students').rows = [['800#', 'First Name', 'Last Name', 'Grade', 'Email', 'Squad'],
+    ['8001111', 'Ann', 'Lee', '7', '', 'Grey'], ['8002222', 'Ed', 'Park', '8', '', 'Gold'], ['8003333', 'Cy', 'Ro', '7', '', 'Purple']];
+  w.book.getSheetByName('Dough Teachers').rows.push([true, 'Mrs. Example', 'GOLD', 74]);
+  const start = JSON.parse(w.clashDoughStart());
+  assert.ok(start.teachers.includes('Mrs. Example') && !JSON.stringify(start).includes('74'), 'names only: never a password or a squad');
+  assert.deepStrictEqual(start.points, [1, 3, 5]);
+  assert.strictEqual(start.traits.length, 9, 'the LRG traits');
+  assert.throws(() => w.clashDoughSignIn('Mrs. Example', '75'), /doesn't match/);
+  const me = JSON.parse(w.clashDoughSignIn('Mrs. Example', '74'));
+  assert.deepStrictEqual([me.squad, me.left], ['GOLD', 10]);
+  const found = JSON.parse(w.clashDoughFind(me.token, 'e'));
+  assert.ok(found.every(x => x.squad !== 'GOLD'), 'her own squad never comes up');
+  assert.throws(() => w.clashDoughGive(me.token, '8002222', start.traits[0], 'Helped clean up the room', 3), /other squads/);
+  assert.throws(() => w.clashDoughGive(me.token, '8001111', start.traits[0], 'Helped', 3), /what they did/);
+  assert.throws(() => w.clashDoughGive(me.token, '8001111', start.traits[0], 'Helped clean up the room', 4), /Pick 1, 3, 5/);
+  const r = JSON.parse(w.clashDoughGive(me.token, '8001111', start.traits[0], 'Helped a classmate who was stuck', 5));
+  assert.deepStrictEqual([r.student, r.squad, r.points, r.left], ['Ann L.', 'GREY', 5, 9]);
+  const row = events(w).find(x => x[2] === 'trait_dough' && /^Virtual/.test(x[1]));
+  assert.ok(row && row[1] === 'Virtual Trait Dough: Ann L.' && row[8] === 5, 'Trait Dough for Grey, first name + last initial');
+  assert.ok(w.book.getSheetByName('Virtual Dough').rows[1].includes('Ann Lee'), 'the full name stays on the staff tab');
+  w.setSettingValue_('VIRTUAL_DOUGH_DAILY', 1);
+  assert.throws(() => w.clashDoughGive(me.token, '8003333', start.traits[1], 'Held the door for everyone', 1), /all 1 of today/);
+  for (let i = 0; i < 5; i++) { try { w.clashDoughSignIn('Mrs. Example', 'nope'); } catch (e) {} }
+  assert.throws(() => w.clashDoughSignIn('Mrs. Example', '74'), /15 minutes/);
+});
+
+test('Service: a student sends what they did + a reflection + a link; staff ask for more, the student answers, staff approve 5/10/20 (or deny); points go to the squad', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureServiceTab_();
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  w.book.insertSheet('Students').rows = [['800#', 'First Name', 'Last Name', 'Grade', 'Email', 'Squad'], ['8001111', 'Ann', 'Lee', '7', '', 'Grey']];
+  assert.throws(() => w.clashServiceSubmit('8009999', '{}'), /800 number/);
+  assert.throws(() => w.clashServiceSubmit('8001111', JSON.stringify({ what: 'Food drive', reflection: 'short' })), /reflection/);
+  assert.throws(() => w.clashServiceSubmit('8001111', JSON.stringify({ what: 'Food drive at church', reflection: 'It mattered because families need food and I learned how much a small thing helps.', link: 'javascript:x' })), /https/);
+  let mine = JSON.parse(w.clashServiceSubmit('8001111', JSON.stringify({ what: 'Food drive at church', when: 'Saturday', reflection: 'It mattered because families need food and I learned how much a small thing helps.', link: 'https://example.org/photo' })));
+  assert.strictEqual(mine[0].status, 'Waiting');
+  let list = JSON.parse(w.clashServiceList('T'));
+  assert.strictEqual(list.open.length, 1);
+  const id = list.open[0].id;
+  assert.throws(() => w.clashServiceDecide('T', id, 'info', 0, ''), /question/);
+  list = JSON.parse(w.clashServiceDecide('T', id, 'info', 0, 'Who ran the drive?'));
+  mine = JSON.parse(w.clashServiceMine('8001111'));
+  assert.deepStrictEqual([mine[0].status, mine[0].note], ['More info', 'Who ran the drive?']);
+  mine = JSON.parse(w.clashServiceReply('8001111', id, JSON.stringify({ reply: 'Our youth group did' })));
+  assert.strictEqual(mine[0].status, 'Waiting', 'back on the list');
+  assert.throws(() => w.clashServiceDecide('T', id, 'approve', 7, ''), /Pick 5, 10, 20/);
+  w.clashServiceDecide('T', id, 'approve', 10, '');
+  const row = events(w).find(x => x[2] === 'service');
+  assert.ok(row && row[1] === 'Service: Ann L.' && row[8] === 10);
+  assert.throws(() => w.clashServiceDecide('T', id, 'deny', 0, 'nope nope'), /Already approved/);
+  assert.strictEqual(JSON.parse(w.clashServiceMine('8001111'))[0].points, 10);
+  assert.ok(!JSON.parse(w.clashServiceMine('8002222')).length, 'only your own');
+});
+
+test('Squad Spotlight suggests from Virtual Dough and service; Morning Clash and the family update carry counts, the vote link and first-name stories only; the version check names stale files', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureDoughTabs_(); w.ensureServiceTab_(); w.ensureSpotlightTab_(); w.ensureSiteContentTabs_(); w.ensureYouSaidTab_();
+  const today = w.todayYmd_(), lastWeek = w.ymdShift_(w.mondayOf_(today), -3);
+  w.book.getSheetByName('Virtual Dough').rows.push([lastWeek + ' 10:00', 'Mrs. Example', 'GOLD', '8001111', 'Ann Lee', 'GREY', 'Communication', 'Explained the lab to a new student', 3]);
+  assert.strictEqual(w.suggestSpotlights_(), 1);
+  assert.strictEqual(w.suggestSpotlights_(), 0, 'once a week');
+  const sp = w.book.getSheetByName('Squad Spotlight');
+  assert.deepStrictEqual(J(sp.rows[1].slice(2, 4)), ['GREY', 'Ann L.']);
+  assert.deepStrictEqual(J(w.spotlightPublic_()), [], 'nothing shows until staff tick Show');
+  sp.rows[1][0] = true;
+  const m = JSON.parse(w.clashMorning());
+  assert.ok(m.standings.length === 4 && m.voteText === 'clashofclasses.org/vote' && m.spotlight[0].who === 'Ann L.' && m.trait);
+  const fam = JSON.parse(w.clashFamily('', 'gold'));
+  assert.ok(fam.squads.length === 4 && fam.squad === 'GOLD' && /\d{4}/.test(fam.label));
+  assert.ok(!/Ann Lee|8001111/.test(JSON.stringify(m) + JSON.stringify(fam)), 'no full names or 800#s');
+  // What's live: a stamp that differs from the newest list = paste that file; no stamp = make it.
+  const rep = J(w.versionReport_({ '29_Balance.gs': 'zzzz', '30_YouSaid.gs': w.FILE_STAMP_30_YouSaid, '99_New.gs': 'abc' }));
+  assert.deepStrictEqual(rep.need.sort(), ['29_Balance.gs', '99_New.gs']);
+  assert.strictEqual(rep.files.find(x => x.file === '99_New.gs').status, 'missing');
+  assert.strictEqual(require('child_process').spawnSync(process.execPath, [require('path').join(__dirname, '..', 'tools', 'stamp-files.js'), '--check']).status, 0, 'every file stamp is current (run node tools/stamp-files.js)');
 });
 
 test('Redemption: a Trailback Summit on the private Redemptions tab gives the student a Summit Climber badge and 25 LRG points; the feed labels it', () => {

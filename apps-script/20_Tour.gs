@@ -61,3 +61,6 @@ function tourFor_(page) {
 }
 
 function clashTour(page) { return JSON.stringify(tourFor_(page === 'me' ? 'me' : 'site')); }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_20_Tour = 'ad927fca12';

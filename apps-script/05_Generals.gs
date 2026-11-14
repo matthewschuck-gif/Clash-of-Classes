@@ -301,3 +301,6 @@ function clashGeneralsService(token, progress) {
   getSheet_('Squad Themes').getRange(r._row, THEME_HEADERS_.indexOf('Service Progress') + 1).setValues([[Math.max(0, Number(progress) || 0)]]);
   return clashGeneralsHq(token);
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_05_Generals = '5174fdac76';

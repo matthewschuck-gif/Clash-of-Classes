@@ -319,3 +319,6 @@ function menuOpenPollBoard_() {
   SpreadsheetApp.getUi().alert('The live Poll Board', 'Open this on the projector or a TV (full screen):\n\n' + url +
     '\n\nIt shows today\'s polls with live bars and squad turnout, refreshing every 5 seconds.', SpreadsheetApp.getUi().ButtonSet.OK);
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_26_PollIdeas = '2c1e045e65';

@@ -32,6 +32,9 @@ function publicSurfaces_() {
     ['Mascots', clashMascots],
     ['Challenges', clashChallenges],
     ['You Said We Did', clashYouSaid],
+    ['Morning Clash', clashMorning],
+    ['Squad Spotlight', clashSpotlight],
+    ['Family update', function () { return clashFamily('', ''); }],
   ];
 }
 
@@ -77,3 +80,6 @@ function menuPrivacyCheck_() {
     (r.some(function (x) { return x.note; }) ? '\n\nNot checked: ' + r.filter(function (x) { return x.note; }).map(function (x) { return x.surface + ' (' + x.note + ')'; }).join('; ') : ''),
     SpreadsheetApp.getUi().ButtonSet.OK);
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_32_Privacy = '0fe1776164';

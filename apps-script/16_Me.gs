@@ -340,3 +340,6 @@ function serveMe_() {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, viewport-fit=cover')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_16_Me = '1091e03a42';

@@ -142,3 +142,6 @@ function menuImportGenerals_() {
         '\n\nType their 800# into MLC Roster (column A) so they can sign in to Generals HQ.' : ''));
   } catch (e) { ui.alert(e.message); }
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_23_Drive = '423bfd8ad6';

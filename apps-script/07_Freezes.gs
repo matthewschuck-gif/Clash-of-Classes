@@ -95,3 +95,6 @@ function applyFreezes_(sheet, events, rowNumbers) {
     if (sheet) sheet.getRange(rowNumbers[i], noteCol + 1).setValue(e.note);
   });
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_07_Freezes = '21781cf437';

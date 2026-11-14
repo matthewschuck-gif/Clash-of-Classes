@@ -281,3 +281,6 @@ function freezeRelease_() {
 }
 
 function menuFreezeRelease_() { SpreadsheetApp.getUi().alert('Freeze & thaw: read this in the morning announcements', freezeRelease_(), SpreadsheetApp.getUi().ButtonSet.OK); }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_14_Thaw = 'a74da067f7';

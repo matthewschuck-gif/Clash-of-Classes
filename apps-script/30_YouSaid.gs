@@ -78,3 +78,6 @@ function menuSyncYouSaid_() {
     waiting + ' waiting for What We Did on the You Said We Did tab. Type what changed (and Who), then tick Show: it appears on the Pulse page and the TV.',
     SpreadsheetApp.getUi().ButtonSet.OK);
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_30_YouSaid = '8e2ddd7861';

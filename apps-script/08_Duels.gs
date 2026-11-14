@@ -122,3 +122,6 @@ function menuTurnOffDuels_() {
   ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'awardDuels') ScriptApp.deleteTrigger(t); });
   SpreadsheetApp.getUi().alert('Squad Duel bonuses are OFF. Duels still show on the site; no bonus is added.');
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_08_Duels = 'aa437cc462';

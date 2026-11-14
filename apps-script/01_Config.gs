@@ -94,6 +94,7 @@ function setupSpreadsheet() {
   ensureFrostTabs_(); // Freeze Lines + Frost Log (28_Frost.gs)
   ensureYouSaidTab_(); // You Said We Did (30_YouSaid.gs)
   ensureSiteContentTabs_(); // LRG Traits + Wheel Slices (35_SiteContent.gs)
+  ensureAvalancheTab_(); ensureDoughTabs_(); ensureServiceTab_(); ensureSpotlightTab_(); // 38, 39, 40, 41
   ensureFreezeTab_();
   ensureDuelTab_();
   ensureLoreTab_();
@@ -197,6 +198,18 @@ const DEFAULT_SETTINGS = [
   ['FROST_THAW_EVERYONE', '70', 'Freeze & Thaw: share of the squad (%) that must pitch in to thaw a Peaks freeze.'],
   ['FROST_THAW_POINTS', '150', 'Freeze & Thaw: points a frozen squad earns together (they still do not count) to thaw a Peaks freeze.'],
   ['FROST_FUN_POINTS', '100', 'Freeze & Thaw: the goal for a Fun freeze (points floor). Twice and three times it win back more (FUN_THAW_TIERS).'],
+  ['SEASON_END', '2027-05-28', 'The last day squad points count toward the Clash Bash (the last school day of May; check it against the district calendar). Later points are still recorded but don\'t change the standings.'],
+  ['BASH_REVEAL', '', 'Optional (yyyy-mm-dd): until this day the site shows the final standings but keeps the Clash Bash winner for the reveal. Blank = the winner shows as soon as the season ends.'],
+  ['AVALANCHE', 'ON', 'Avalanche: the squad in last place charges a meter by taking part (votes, check-ins) and a General sets it off once per marking period for double points. OFF = no Avalanche.'],
+  ['AVALANCHE_CHARGE', '100', 'Avalanche: votes + confirmed check-ins this marking period to fill the meter.'],
+  ['AVALANCHE_DAYS', '7', 'Avalanche: how many days the double points last.'],
+  ['AVALANCHE_TYPES', 'daily_poll, squad_move, squad_make, squad_talk, pride_day', 'Avalanche: the kinds of points that count double.'],
+  ['VIRTUAL_DOUGH_POINTS', '1, 3, 5', 'Virtual Trait Dough: the point choices a teacher picks from.'],
+  ['VIRTUAL_DOUGH_DAILY', '10', 'Virtual Trait Dough: bills each teacher can give per day.'],
+  ['VIRTUAL_DOUGH_TRAITS', '', 'Virtual Trait Dough: the traits to pick from, comma-separated. Blank = the LRG traits (LRG Traits tab).'],
+  ['SERVICE_POINTS', '5, 10, 20', 'Service submissions: the point choices staff approve with.'],
+  ['SERVICE_OPEN', '3', 'Service submissions: how many a student can have waiting at once.'],
+  ['SERVICE_FOLDER_ID', '', 'Service evidence uploads go to this private Drive folder (made for you the first time; staff see files in Admin › Service).'],
   ['TV_SECONDS', '9', 'TV (clashofclasses.org/?tv=1): seconds each slide stays up.'],
   ['TV_SLIDES', 'all', 'TV: which slides run. all, or a list of: standings, podium, categories, metrics, challenges, feed, summit, map, opponent, pulse, polls.'],
   ['TV_POLL_SLIDES', 'polls, pulse, standings', 'The polls-only TV (clashofclasses.org/?tv=polls): which slides run. Same names as TV_SLIDES.'],
@@ -431,3 +444,6 @@ function getProp_(key) {
 function nowIso_() {
   return new Date().toISOString();
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_01_Config = 'd1712a608b';

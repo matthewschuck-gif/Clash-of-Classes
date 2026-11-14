@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root { --bg:#f6f2ea; --card:#ffffff; --ink:#22123b; --mute:#6b5a85; --line:#e7dcc8; --green:#1f7a4d; --green-lt:#e7f5ec; --gold:#b8860b; --purple:#6d28d9; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif; }
+  header { background:#2a0f45; color:#fff; padding:18px 16px; }
+  header .in { max-width:640px; margin:0 auto; display:flex; align-items:center; gap:12px; }
+  header .bill { font-size:34px; }
+  header h1 { margin:0; font-size:22px; }
+  header p { margin:2px 0 0; font-size:13px; opacity:.85; }
+  main { max-width:640px; margin:0 auto; padding:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; margin-bottom:14px; }
+  label { display:block; font-weight:700; font-size:14px; margin:12px 0 6px; }
+  select, input, textarea { width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px; font:inherit; background:#fffdf8; color:var(--ink); }
+  textarea { min-height:84px; resize:vertical; }
+  button { font:inherit; cursor:pointer; }
+  .go { width:100%; margin-top:16px; padding:13px; border:0; border-radius:12px; background:var(--green); color:#fff; font-weight:800; font-size:17px; }
+  .go:disabled { opacity:.5; cursor:default; }
+  .pts { display:flex; gap:10px; }
+  .pts button { flex:1; padding:12px; border:2px solid var(--line); border-radius:12px; background:#fffdf8; font-weight:800; font-size:18px; color:var(--ink); }
+  .pts button.on { border-color:var(--green); background:var(--green-lt); color:var(--green); }
+  .list { margin-top:8px; display:grid; gap:6px; }
+  .stu { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:#fffdf8; text-align:left; width:100%; }
+  .stu.on { border-color:var(--green); background:var(--green-lt); }
+  .stu small { color:var(--mute); }
+  .sq { font-size:12px; font-weight:800; padding:2px 8px; border-radius:999px; background:#eee; }
+  .sq.BLACK { background:#1f2430; color:#fff; } .sq.GOLD { background:#ffe100; color:#2a1a00; } .sq.GREY { background:#99a8bb; color:#12081f; } .sq.PURPLE { background:#7c3aed; color:#fff; }
+  .err { color:#b91c1c; font-size:14px; margin-top:10px; min-height:1em; }
+  .ok { text-align:center; padding:8px 0; }
+  .ok .big { font-size:54px; animation:pop .6s; }
+  @keyframes pop { 0% { transform:scale(.4); opacity:0; } 60% { transform:scale(1.15); opacity:1; } 100% { transform:scale(1); } }
+  .who { display:flex; justify-content:space-between; align-items:center; font-size:14px; color:var(--mute); }
+  .who b { color:var(--ink); }
+  .link { background:none; border:0; color:var(--purple); font-weight:700; padding:0; }
+  .hint { font-size:13px; color:var(--mute); }
+  @media (prefers-reduced-motion: reduce) { .ok .big { animation:none; } }
+</style>
+</head>
+<body>
+<header><div class="in"><div class="bill">💵</div><div><h1>Virtual Trait Dough</h1><p>Catch a student from another squad showing a trait. Give them dough.</p></div></div></header>
+<main id="main"><div class="card">Loading…</div></main>
+<script>
+(function () {
+  var S = { start: null, me: null, picked: null, points: 0 };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function title(s) { return s.charAt(0) + s.slice(1).toLowerCase(); }
+  function run(fn) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return new Promise(function (ok, no) {
+      var r = google.script.run.withSuccessHandler(function (t) { try { ok(JSON.parse(t)); } catch (e) { ok(t); } }).withFailureHandler(no);
+      r[fn].apply(r, args);
+    });
+  }
+  function msg(id, t) { var e = document.getElementById(id); if (e) e.textContent = (t || '').replace(/^Exception:\s{0,}/, ''); }
+  function main(html) { document.getElementById('main').innerHTML = html; }
+  try { var saved = JSON.parse(sessionStorage.getItem('dough-me') || 'null'); if (saved) S.me = saved; } catch (e) { S.me = null; }
+
+  function signIn() {
+    main('<div class="card"><label for="t">Your name</label><select id="t"><option value="">Pick your name</option>' +
+      S.start.teachers.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join('') + '</select>' +
+      '<label for="pw">Your password</label><input id="pw" type="password" autocomplete="off" placeholder="From the Clash coordinator">' +
+      '<button class="go" id="in">Sign in</button><div class="err" id="e1"></div>' +
+      '<p class="hint">Not on the list? Ask the Clash coordinator to add you.</p></div>');
+    document.getElementById('in').onclick = function () {
+      var b = this; b.disabled = true; msg('e1', '');
+      run('clashDoughSignIn', document.getElementById('t').value, document.getElementById('pw').value).then(function (me) {
+        S.me = me; try { sessionStorage.setItem('dough-me', JSON.stringify(me)); } catch (e) {}
+        give();
+      }).catch(function (e) { b.disabled = false; msg('e1', e && e.message); });
+    };
+  }
+
+  function give() {
+    S.picked = null; S.points = 0;
+    var other = ['BLACK', 'GOLD', 'GREY', 'PURPLE'].filter(function (s) { return s !== S.me.squad; }).map(title).join(', ');
+    main('<div class="card"><div class="who"><span>Signed in as <b>' + esc(S.me.name) + '</b> (' + title(S.me.squad) + ')</span><button class="link" id="out">Sign out</button></div>' +
+      '<div class="hint" style="margin-top:4px"><span id="left">' + S.me.left + '</span> of ' + S.me.max + ' bills left today · you can give to ' + other + ' students</div>' +
+      '<label for="q">Student</label><input id="q" type="search" placeholder="Type a name or 800 number" autocomplete="off"><div class="list" id="res"></div>' +
+      '<label for="tr">Trait they showed</label><select id="tr"><option value="">Pick a trait</option>' + S.start.traits.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('') + '</select>' +
+      '<label for="wh">What they did</label><textarea id="wh" maxlength="300" placeholder="Helped a classmate who was stuck without being asked."></textarea>' +
+      '<label>Points</label><div class="pts">' + S.start.points.map(function (p) { return '<button data-p="' + p + '">' + p + '</button>'; }).join('') + '</div>' +
+      '<button class="go" id="give" disabled>💵 Give Trait Dough</button><div class="err" id="e2"></div></div>');
+    var timer;
+    document.getElementById('q').oninput = function () {
+      var q = this.value; clearTimeout(timer); S.picked = null; check();
+      timer = setTimeout(function () {
+        if (q.trim().length < 2) { document.getElementById('res').innerHTML = ''; return; }
+        run('clashDoughFind', S.me.token, q).then(function (list) {
+          document.getElementById('res').innerHTML = list.length ? list.map(function (s) {
+            return '<button class="stu" data-id="' + esc(s.id) + '" data-name="' + esc(s.name) + '"><span>' + esc(s.name) + ' <small>gr ' + esc(s.grade) + '</small></span><span class="sq ' + s.squad + '">' + title(s.squad) + '</span></button>';
+          }).join('') : '<div class="hint">No student in the other squads matches.</div>';
+        }).catch(function (e) { if (/sign in/i.test(e && e.message)) { S.me = null; sessionStorage.removeItem('dough-me'); signIn(); } });
+      }, 250);
+    };
+    document.getElementById('tr').onchange = check;
+    document.getElementById('wh').oninput = check;
+  }
+  function check() {
+    var b = document.getElementById('give');
+    if (b) b.disabled = !(S.picked && S.points && document.getElementById('tr').value && document.getElementById('wh').value.trim().length >= 8);
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('button');
+    if (!t) return;
+    if (t.id === 'out') { S.me = null; sessionStorage.removeItem('dough-me'); signIn(); return; }
+    if (t.classList.contains('stu')) {
+      Array.prototype.forEach.call(document.querySelectorAll('.stu'), function (x) { x.classList.toggle('on', x === t); });
+      S.picked = { id: t.getAttribute('data-id'), name: t.getAttribute('data-name') }; check(); return;
+    }
+    if (t.hasAttribute('data-p')) {
+      Array.prototype.forEach.call(document.querySelectorAll('.pts button'), function (x) { x.classList.toggle('on', x === t); });
+      S.points = Number(t.getAttribute('data-p')); check(); return;
+    }
+    if (t.id === 'give') {
+      t.disabled = true; msg('e2', '');
+      run('clashDoughGive', S.me.token, S.picked.id, document.getElementById('tr').value, document.getElementById('wh').value, S.points).then(function (r) {
+        S.me.left = r.left; try { sessionStorage.setItem('dough-me', JSON.stringify(S.me)); } catch (e) {}
+        main('<div class="card ok"><div class="big">💵</div><h2 style="margin:6px 0">' + r.points + ' Trait Dough to ' + esc(r.student) + '</h2>' +
+          '<p class="hint">' + title(r.squad) + ' squad · ' + r.left + ' bills left today</p><button class="go" id="again">Give another</button></div>');
+      }).catch(function (err) {
+        if (/sign in/i.test(err && err.message)) { S.me = null; sessionStorage.removeItem('dough-me'); signIn(); return; }
+        t.disabled = false; msg('e2', err && err.message);
+      });
+      return;
+    }
+    if (t.id === 'again') give();
+  });
+
+  run('clashDoughStart').then(function (s) { S.start = s; if (S.me) give(); else signIn(); })
+    .catch(function (e) { main('<div class="card">Could not load: ' + esc(e && e.message) + '</div>'); });
+})();
+</script>
+</body>
+</html>
+<!-- file-stamp: 79de2e13ce -->

@@ -659,7 +659,9 @@ async function sbLoad(){
 
 
 // ── CALCS ──
-const evtTotal=sq=>(D.events||[]).reduce((s,e)=>s+(e.pts[sq]||0),0);
+// Points dated after the season's end (Settings SEASON_END, 37_Season.gs) don't count toward the Clash Bash.
+const inSeason=d=>!(D.season&&D.season.end)||!d||String(d).slice(0,10)<=D.season.end;
+const evtTotal=sq=>(D.events||[]).reduce((s,e)=>s+(inSeason(e.date)?(e.pts[sq]||0):0),0);
 
 // Rank-based points for the 3 monthly metrics (attendance / no-referral / no-fail-grade):
 // highest % gets 250, 2nd 125, 3rd 50, last 0. Ties share the higher rank's point value and
@@ -683,9 +685,9 @@ function rankPoints_(valsBySquad){
 // finalizeMonth()). This keeps a month's points locked in permanently once awarded, the same
 // way D.events entries are permanent, instead of a live snapshot that can silently change the
 // grand total whenever someone edits a percentage.
-const metTotal=sq=>(D.monthlyMetrics||[]).reduce((s,m)=>s+((m.pts&&m.pts[sq])||0),0);
+const metTotal=sq=>(D.monthlyMetrics||[]).reduce((s,m)=>s+(inSeason(m.month&&/^\d{4}-\d{2}/.test(m.month)?String(m.month).slice(0,7)+'-01':'')?((m.pts&&m.pts[sq])||0):0),0);
 let sheetEvents=[];
-const sheetTotal=sq=>sheetEvents.reduce((s,e)=>s+(e.pts[sq]||0),0);
+const sheetTotal=sq=>sheetEvents.reduce((s,e)=>s+(inSeason(e.date)?(e.pts[sq]||0):0),0);
 const grand=sq=>evtTotal(sq)+metTotal(sq)+sheetTotal(sq);
 const ranked=()=>[...SQUADS].sort((a,b)=>grand(b)-grand(a));
 const maxGrand=()=>Math.max(...SQUADS.map(grand),1);
@@ -1209,6 +1211,7 @@ function applySeasonTheme(theme){
 // ══ HERO SCORE STRIP ══
 function renderHeroStrip(){
   var el=document.getElementById('heroScoreStrip'); if(!el) return;
+  renderSeasonBanner();
   var r=ranked(), mx=maxGrand()||1;
   el.innerHTML=r.map(function(sq,i){
     var pts=grand(sq), pct=Math.round(pts/mx*100);
@@ -3061,10 +3064,37 @@ function renderWeek(){
 }
 
 // Admin › System (22_Week.gs): what runs on its own, today's announcement, page opens.
+// Home: the season (37_Season.gs) and this week's Squad Spotlight (41_Morning.gs).
+function renderSeasonBanner(){
+  var box=document.getElementById('seasonBanner'); if(!box) return;
+  var s=D.season||{}, esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  var nm=q=>q.charAt(0)+q.slice(1).toLowerCase();
+  var line=s.over?(s.revealed&&s.winner?'🏆 '+nm(s.winner)+' wins the Clash Bash! Final standings below.':'🏁 The season is over. The Clash Bash winner is revealed '+esc(s.reveal)+'.')
+    :(s.end&&s.daysLeft<=45?'⏳ '+s.daysLeft+' days left to earn points for the Clash Bash (points count through '+esc(s.end)+').':'');
+  var spot=(D.spotlight||[]).slice(0,4).map(function(x){ return '<div style="padding:8px 0;border-top:1px solid var(--border)"><b style="color:'+(SQ_HEX[x.squad]||'inherit')+'">'+esc(x.who)+' · '+nm(x.squad)+'</b><div style="color:var(--text2);font-size:14px">'+esc(x.story)+'</div></div>'; }).join('');
+  box.innerHTML=(line?'<div style="margin-top:14px;padding:10px 14px;border-radius:12px;background:var(--surface2);font-weight:700">'+line+'</div>':'')+
+    (spot?'<div style="margin-top:14px;padding:12px 14px;border-radius:12px;border:1px solid var(--border)"><div style="font-weight:800;margin-bottom:4px">⭐ Squad Spotlight</div>'+spot+'</div>':'');
+}
+// Admin › System: what's live (22_Week.gs clashVersion): which files still need pasting.
+function renderVersion(){
+  var box=document.getElementById('versionCard'); if(!box||!window.gasRun_) return;
+  var esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  box.innerHTML='<div style="border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px;color:var(--text3)">Checking which files are live…</div>';
+  window.gasRun_('clashVersion', window.ADMIN_SESSION||'').then(function(r){
+    var miss=r.files.filter(function(f){return f.status==='missing';}), old=r.files.filter(function(f){return f.status==='old';});
+    var ok=!miss.length&&!old.length;
+    box.innerHTML='<div style="border:2px solid '+(ok?'#16a34a':'#f59e0b')+';border-radius:12px;padding:12px 14px;margin-bottom:14px">'+
+      '<div style="font-weight:800">'+(ok?'✅ Everything is live: every file matches '+esc(r.source)+'.':'⚠ '+(miss.length+old.length)+' file'+(miss.length+old.length===1?'':'s')+' to paste (compared with '+esc(r.source)+')')+'</div>'+
+      (miss.length?'<div style="margin-top:6px"><b>New files to make</b> (+ in the Apps Script editor, then paste): '+miss.map(function(f){return esc(f.file);}).join(', ')+'</div>':'')+
+      (old.length?'<div style="margin-top:6px"><b>Older than GitHub</b> (paste over them): '+old.map(function(f){return esc(f.file);}).join(', ')+'</div>':'')+
+      (!ok?'<div style="font-size:12px;color:var(--text3);margin-top:6px">Each file is at raw.githubusercontent.com/matthewschuck-gif/Clash-of-Classes/main/apps-script/ followed by its name. After pasting: Ctrl+S, Run setup, then Deploy › Manage deployments › New version.</div>':'')+
+      (r.note?'<div style="font-size:12px;color:var(--text3);margin-top:6px">'+esc(r.note)+'</div>':'')+'</div>';
+  }).catch(function(e){ box.innerHTML='<div style="color:#fca5a5;margin-bottom:14px">Version check: '+esc(e&&e.message||e)+'</div>'; });
+}
 // Admin › System: the TV links (36_TV.gs), each with a Copy button.
 function tvLinksCard(){
   var base=((window.D&&D.tv&&D.tv.siteUrl)||'https:'+String.fromCharCode(47,47)+'clashofclasses.org');
-  var links=[['📺 Full TV rotation','Standings, map, polls, Pulse, challenges, latest points',base+'/?tv=1'],['🗳️ Polls-only TV','Today\'s polls, the Pulse and the standings (homeroom mornings)',base+'/?tv=polls'],['📊 Poll Board','One poll at a time, big bars, squad turnout, standings along the bottom',base+'/?page=pollboard'],['📱 Vote link (shown big on every poll screen)','Students type it on a Chromebook: opens straight to today\'s poll',base+'/vote']];
+  var links=[['📺 Full TV rotation','Standings, map, polls, Pulse, challenges, latest points',base+'/?tv=1'],['🗳️ Polls-only TV','Today\'s polls, the Pulse and the standings (homeroom mornings)',base+'/?tv=polls'],['📊 Poll Board','One poll at a time, big bars, squad turnout, standings along the bottom',base+'/?page=pollboard'],['☀️ Morning Clash','Homeroom: announcement, today\'s poll, standings, the trait, the Spotlight (plays by itself)',base+'/morning'],['💵 Virtual Trait Dough','Teachers give dough to students in the other squads (their own password)',base+'/dough'],['📰 Family update','Last month for families, printable (add ?squad=gold for one squad)',base+'/family'],['📱 Vote link (shown big on every poll screen)','Students type it on a Chromebook: opens straight to today\'s poll',base+'/vote']];
   var esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
   return '<div style="border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px"><div style="font-weight:800;margin-bottom:6px">📺 TV links (all update live)</div>'+
     links.map(function(l){ return '<div style="display:flex;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--border)"><div style="flex:1;min-width:0"><b>'+esc(l[0])+'</b><div style="font-size:12px;color:var(--text3)">'+esc(l[1])+'</div><div style="font-family:DM Mono,monospace;font-size:12px;word-break:break-all">'+esc(l[2])+'</div></div>'+
@@ -3080,7 +3110,8 @@ function renderSystem(){
   Promise.all([window.gasRun_('clashHealth', window.ADMIN_SESSION||''), window.gasRun_('clashAnnouncement', window.ADMIN_SESSION||'').catch(()=>({text:''}))]).then(function(r){
     const h=r[0], a=r[1], ok=b=>b?'<span style="color:#86efac">✓</span>':'<span style="color:#fbbf24">⚠</span>';
     const jobs=h.jobs.map(j=>'<div style="display:grid;grid-template-columns:22px 1fr auto;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">'+ok(j.ok)+'<span>'+esc(j.label)+(j.expected?'':' <span style="color:var(--text3)">(off)</span>')+(j.expected&&!j.trigger?'<br><span style="color:#fbbf24">No trigger: run setup or its Turn on menu item.</span>':'')+'</span><span style="color:var(--text3)">'+(j.ago||'never')+'</span></div>').join('');
-    box.innerHTML=tvCard+
+    setTimeout(renderVersion,0);
+    box.innerHTML=tvCard+'<div id="versionCard"></div>'+
       '<div class="fr"><label>Automatic jobs</label>'+jobs+'</div>'+
       (h.lastError?'<div class="fr"><label>Last error</label><div style="font-size:13px;color:#fca5a5">'+esc(h.lastError.job)+': '+esc(h.lastError.message)+' <span style="color:var(--text3)">('+esc(h.lastError.ago)+')</span></div></div>':'')+
       '<div class="fr"><label>Data from Define a Climb-er</label><div style="font-size:13px">'+ok(h.studentBoard.ok)+' Student Board updated '+esc(h.studentBoard.updated||'never')+'<br><span style="color:var(--text3)">'+esc(h.squadBoard)+'</span><br><span style="color:var(--text3)">'+esc(h.metricsNote)+'</span></div></div>'+
@@ -3906,7 +3937,7 @@ function openAdmin(){ document.getElementById('adminModal').classList.add('open'
 function close1(id){ const m=document.getElementById(id); if(!m) return; m.classList.remove('open'); m.style.display=''; }
 
 function aTab(name){
-  const names=['points','metrics','pages','navorder','mayhem','champs','kickoff','links','gallery','scores','history','settings','map','sheet','system'];
+  const names=['points','metrics','pages','navorder','mayhem','champs','kickoff','links','gallery','scores','history','settings','map','sheet','service','system'];
   document.querySelectorAll('#adminModal .a-tab').forEach((b,i)=>b.classList.toggle('on',names[i]===name));
   names.forEach(n=>{ const el=document.getElementById('ap-'+n); if(el) el.classList.toggle('on',n===name); });
   if(name==='scores') renderScoreSummary();
@@ -3916,6 +3947,7 @@ function aTab(name){
   if(name==='mayhem'){ loadMayhemEditor(); }
   if(name==='map'&&window.MapEditor){ MapEditor.open(); }
   if(name==='sheet'&&window.SheetEditor){ SheetEditor.open(); }
+  if(name==='service'&&window.ServiceAdmin){ ServiceAdmin.open(); }
   if(name==='system'){ renderSystem(); }
   if(name==='champs'){ loadChampsEditor(); }
   if(name==='kickoff'){ loadKickoffEditor(); }
@@ -5655,3 +5687,4 @@ window.__moduleReady=true;
 // Now that all functions are live, re-render whatever page the user navigated to
 goTo(window.__currentPage || currentPage);
 </script>
+<!-- file-stamp: ec33553bae -->

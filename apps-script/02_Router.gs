@@ -414,3 +414,6 @@ function writeMetricsTab_(metrics) {
   });
   sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
 }
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_02_Router = '3712b23951';

@@ -35,6 +35,7 @@
 .pulse-q { font-family: 'Fraunces', serif; font-weight: 900; font-size: clamp(22px, 3.4vw, 40px); line-height: 1.15; margin: 4px 0 18px; }
 .pulse-tag { display: inline-block; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #12081f; background: #38bdf8; padding: 3px 10px; border-radius: 999px; }
 .pulse-bars { display: grid; gap: 12px; }
+#serviceCard textarea, #serviceCard input[type=text], #serviceCard input:not([type]) { width: 100%; box-sizing: border-box; background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font: inherit; }
 /* TV polls slide (36_TV.gs): the poll big, the QR to vote on the right. */
 #tvView { color: var(--text); } /* the TV is light: its text must not inherit the dark page's white */
 .tvp { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 31%); gap: 3vw; align-items: center; }
@@ -105,6 +106,75 @@
       }).join('') + '</div>';
   }
   // Trail Passport (04_Students.gs passportFor_): a stamp for each part of the program tried.
+  // ── Avalanche (38_Avalanche.gs): the last-place squad's comeback meter. hq = Generals HQ (shows the button). ──
+  window.avalancheHtml = function (av, hq) {
+    if (!av || (!av.active && !av.last && !av.used)) return '';
+    var box = function (inner, color) { return '<div style="margin-top:12px;padding:12px 14px;border-radius:12px;border:2px solid ' + (color || '#38bdf8') + ';background:rgba(56,189,248,.08)">' + inner + '</div>'; };
+    if (av.active) return box('<b>🏔️ AVALANCHE! Through ' + esc(av.active.end) + '</b><div class="ms-small">Your squad\'s poll votes, check-ins and squad-event points count double. Go, go, go!</div>');
+    if (av.used) return hq ? box('<b>🏔️ Avalanche used this marking period</b><div class="ms-small">It comes back in the next marking period if you\'re in last place.</div>', '#64748b') : '';
+    var pct = Math.round(100 * av.charge / av.need);
+    var meter = '<div style="height:14px;border-radius:99px;background:rgba(127,127,127,.2);overflow:hidden;margin:8px 0"><div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,#38bdf8,#e0f2fe)"></div></div>';
+    return box('<b>🏔️ Avalanche meter: ' + av.charge + ' of ' + av.need + '</b>' + meter +
+      '<div class="ms-small">' + (av.full ? 'Full! ' + (hq ? 'Set it off when your squad is ready: ' + av.days + ' days of double points on polls, check-ins and squad events.' : 'A General can set it off in HQ for ' + av.days + ' days of double points.')
+        : 'Last place charges it: every poll vote and every confirmed check-in by your squad adds one. Full = ' + av.days + ' days of double points.') + '</div>' +
+      (hq && av.ready ? '<button class="btn btn-purple" id="avGo" style="margin-top:8px">🏔️ Set off the Avalanche</button>' : ''));
+  };
+
+  // ── Service (40_Service.gs): tell us about service or a kind act, with a reflection; staff approve it. ──
+  var svc = { list: [], file: '' };
+  function serviceStatus(s) { return s === 'Approved' ? '✅ Approved' : s === 'Denied' ? 'Not approved' : s === 'More info' ? '❓ Staff have a question' : '⏳ Waiting for staff'; }
+  function renderService() {
+    var el = document.getElementById('serviceCard');
+    if (!el) return;
+    var mine = svc.list.map(function (s) {
+      return '<div style="padding:8px 0;border-top:1px solid var(--border)"><b>' + esc(s.what) + '</b><div class="ms-small">' + esc(s.submitted) + ' · ' + serviceStatus(s.status) + (s.points ? ' · +' + s.points + ' for your squad' : '') + '</div>' +
+        (s.note ? '<div class="ms-small" style="margin-top:4px">Staff: ' + esc(s.note) + '</div>' : '') +
+        (s.status === 'More info' ? '<div class="ms-form" style="margin-top:6px"><textarea class="sv-reply" data-id="' + esc(s.id) + '" rows="2" placeholder="Your answer" style="width:100%"></textarea>' +
+          '<input class="sv-rlink" data-id="' + esc(s.id) + '" placeholder="Link (optional)" style="width:100%;margin-top:4px"><button class="btn btn-purple sv-send" data-id="' + esc(s.id) + '" style="margin-top:6px">Send answer</button></div>' : '') + '</div>';
+    }).join('');
+    el.innerHTML = '<div class="ms-h">🤝 Service & kindness</div><div class="ms-small">Did service, volunteered, or helped someone? Tell us what you did and what it meant. Staff approve it for squad points.</div>' +
+      '<div class="ms-form" style="display:grid;gap:8px;margin-top:10px">' +
+        '<input id="svWhat" maxlength="400" placeholder="What did you do?">' +
+        '<input id="svWhen" maxlength="200" placeholder="When and where?">' +
+        '<textarea id="svRefl" rows="4" maxlength="1500" placeholder="Reflection: why did it matter? What did you learn? (a few sentences)"></textarea>' +
+        '<input id="svLink" placeholder="Link to evidence (optional, starts with https:)">' +
+        '<label class="ms-small">Or add a photo or PDF (optional): <input type="file" id="svFile" accept="image/png,image/jpeg,application/pdf"></label>' +
+        '<button class="btn btn-purple" id="svSend">Send to staff</button><div class="ms-err" id="svErr"></div></div>' +
+      (mine ? '<div class="ms-h" style="margin-top:12px">Yours</div>' + mine : '');
+  }
+  function loadService() {
+    var id = stored(KEY);
+    if (!id || !window.gasRun_) return;
+    window.gasRun_('clashServiceMine', id).then(function (l) { svc.list = l || []; renderService(); }).catch(function () { renderService(); });
+  }
+  function readFile(input) {
+    return new Promise(function (ok, no) {
+      var f = input && input.files && input.files[0];
+      if (!f) return ok('');
+      if (f.size > 6 * 1024 * 1024) return no(new Error('That file is too big (6 MB most). Try a smaller photo, or paste a link.'));
+      var r = new FileReader(); r.onload = function () { ok(r.result); }; r.onerror = function () { no(new Error('Could not read that file.')); }; r.readAsDataURL(f);
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('#svSend, .sv-send');
+    if (!b) return;
+    var id = stored(KEY), err = document.getElementById('svErr');
+    if (b.id === 'svSend') {
+      b.disabled = true; if (err) err.textContent = 'Sending…';
+      readFile(document.getElementById('svFile')).then(function (file) {
+        return window.gasRun_('clashServiceSubmit', id, JSON.stringify({ what: document.getElementById('svWhat').value, when: document.getElementById('svWhen').value,
+          reflection: document.getElementById('svRefl').value, link: document.getElementById('svLink').value, file: file }));
+      }).then(function (l) { svc.list = l || []; renderService(); var e2 = document.getElementById('svErr'); if (e2) e2.textContent = '✅ Sent! Staff will look at it soon.'; })
+        .catch(function (x) { b.disabled = false; if (err) err.textContent = (x && x.message || '').replace(/^Exception:\s{0,}/, ''); });
+      return;
+    }
+    var sid = b.getAttribute('data-id'), box = b.parentNode;
+    b.disabled = true;
+    window.gasRun_('clashServiceReply', id, sid, JSON.stringify({ reply: box.querySelector('.sv-reply').value, link: box.querySelector('.sv-rlink').value }))
+      .then(function (l) { svc.list = l || []; renderService(); })
+      .catch(function (x) { b.disabled = false; alert((x && x.message || '').replace(/^Exception:\s{0,}/, '')); });
+  });
+
   function passportCard(p) {
     if (!p) return '';
     var n = p.stamps.filter(function (s) { return s.done; }).length;
@@ -347,7 +417,7 @@
         (r.theme && r.theme.theme ? '<div class="ms-standing">Squad theme: <b>' + esc(r.theme.theme) + '</b>' + (r.theme.meaning ? ' · ' + esc(r.theme.meaning) : '') +
           (r.theme.project ? '<br>Service project: ' + esc(r.theme.project) + (r.theme.goal ? ' (' + r.theme.progress + ' of ' + r.theme.goal + ')' : '') : '') + '</div>' : '') +
         (r.theme && r.theme.trait ? '<div class="ms-standing">Squad trait: <b>' + esc(r.theme.trait) + '</b></div>' : '') +
-        '<div class="ms-standing">' + standing + '</div>' + (st && st.frozen && window.thawHtml ? window.thawHtml(st.frozen) : '') + (st && st.frost && window.frostHtml ? window.frostHtml(st.frost) : '') +
+        '<div class="ms-standing">' + standing + '</div>' + (st && st.frozen && window.thawHtml ? window.thawHtml(st.frozen) : '') + (st && st.frost && window.frostHtml ? window.frostHtml(st.frost) : '') + window.avalancheHtml(st && st.avalanche, false) +
         (window.freezeExplainer ? window.freezeExplainer(st && st.freshStart, false) : '') + '</div>' +
       loreCard(r.theme, me.squad) + chaptersCard(r.lore, me.squad) +
       (r.duels || []).map(function (d) { return duelCard(d, me.squad); }).join('') +
@@ -363,9 +433,11 @@
       passportCard(r.passport) +
       '<div id="myPollSection" style="display:none"></div>' +
       '<div id="myCheckinSection" style="display:none"></div>' +
+      '<div class="ms-card" id="serviceCard"></div>' +
       (mine ? '<div class="ms-h" style="margin-top:6px">Your squad\'s challenges</div>' + mine : '') +
       '<div class="ms-small">Updated every hour' + (me.updated ? ' · last update ' + esc(me.updated) : '') +
       ' · <a href="#" id="msNotMe" style="color:var(--purple-lt)">Not you? Switch</a></div>';
+    renderService(); loadService();
     document.getElementById('msNotMe').onclick = function (e) { e.preventDefault(); store(KEY, null); if (window.popSkin) window.popSkin(''); renderForm(); };
     if (typeof loadPolls === 'function') loadPolls(); // shows what this student voted
     loadCheckins(); // squad event check-in (26_CheckIns.gs)
@@ -401,6 +473,8 @@
         return '<span style="color:' + COLOR[s] + ';margin-right:14px">' + title(s) + ' ' + (over ? (over === 1 ? '⚠️' : '🧊') : '✅') + '</span>';
       }).join('') : '';
       if (fm) extra = '<div class="ch-card"><div class="ch-title">❄️ Frost meter: this month so far</div><div class="ch-desc">' + fm + ' ✅ safe · ⚠️ frost warning pace · 🧊 freeze pace</div></div>' + extra;
+      if (f.avalanche && f.avalanche.active) f.avalanche.active.forEach(function (a) { extra += '<div class="ch-card" style="border-color:#38bdf8"><div class="ch-title">🏔️ AVALANCHE! ' + title(a.squad) + ' is on a comeback</div><div class="ch-desc">Their polls, check-ins and squad-event points count double through ' + esc(a.active.end) + '.</div></div>'; });
+      (f.spotlight || []).forEach(function (s) { extra += '<div class="ch-card"><div class="ch-title" style="color:' + COLOR[s.squad] + '">⭐ Spotlight: ' + esc(s.who) + ' · ' + title(s.squad) + '</div><div class="ch-desc">' + esc(s.story) + '</div></div>'; });
       if (f.youSaid && f.youSaid[0]) extra += '<div class="ch-card" style="border-color:#4ade80"><div class="ch-title">💬 You said: ' + esc(f.youSaid[0].said) + '</div><div class="ch-desc">We did: ' + esc(f.youSaid[0].did) + '</div></div>';
       if (ch && extra) ch.innerHTML = extra + ch.innerHTML.replace(/<div class="ch-card"><div class="ch-title">🏁 No challenge running right now<\/div><\/div>/, '');
       var left = '<div><div class="tv-cat-title">⚡ Latest points</div>' + (f.latest || []).map(function (e) {
@@ -675,3 +749,4 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script>
+<!-- file-stamp: e14de06e3c -->

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root { --ink:#22123b; --mute:#5d4d78; --line:#e4d9f3; --accent:#490e6f; --gold:#a16207; --bg:#f7f3fc;
+    --BLACK:#1f2430; --GOLD:#a16207; --GREY:#5f6f86; --PURPLE:#6d28d9; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.55 Georgia,'Times New Roman',serif; }
+  main { max-width:760px; margin:0 auto; padding:24px 16px 60px; }
+  .paper { background:#fff; border:1px solid var(--line); border-radius:16px; padding:28px 30px; }
+  .kicker { font:700 12px system-ui,sans-serif; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); }
+  h1 { margin:4px 0 2px; font-size:30px; color:var(--accent); }
+  .sub { color:var(--mute); margin:0 0 18px; font-family:system-ui,sans-serif; font-size:14px; }
+  h2 { font-size:19px; margin:22px 0 8px; color:var(--accent); border-bottom:2px solid #f2e3ff; padding-bottom:4px; }
+  table { width:100%; border-collapse:collapse; font-family:system-ui,sans-serif; font-size:14px; }
+  td, th { padding:7px 6px; border-top:1px solid var(--line); text-align:left; vertical-align:top; }
+  th { color:var(--mute); font-size:12px; text-transform:uppercase; letter-spacing:.06em; border-top:0; }
+  .num { text-align:right; font-variant-numeric:tabular-nums; }
+  ul { margin:6px 0; padding-left:20px; }
+  li { margin:4px 0; }
+  .q { font-weight:700; }
+  .said { color:var(--mute); font-family:system-ui,sans-serif; font-size:14px; }
+  .did { color:#166534; font-family:system-ui,sans-serif; font-size:14px; }
+  .foot { margin-top:22px; color:var(--mute); font:13px system-ui,sans-serif; }
+  .bar { display:flex; gap:8px; justify-content:flex-end; margin-bottom:10px; font-family:system-ui,sans-serif; }
+  .bar select, .bar button { padding:7px 10px; border-radius:8px; border:1px solid var(--line); background:#fff; font:inherit; font-size:14px; }
+  @media print { body { background:#fff; } .bar { display:none; } main { padding:0; } .paper { border:0; padding:0; } }
+</style>
+</head>
+<body>
+<main><div class="bar"><select id="sq"><option value="">All squads</option><option>BLACK</option><option>GOLD</option><option>GREY</option><option>PURPLE</option></select><button onclick="window.print()">Print</button></div>
+<div class="paper" id="paper">Loading…</div></main>
+<script>
+(function () {
+  var D = null, pick = '';
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function title(s) { return s.charAt(0) + s.slice(1).toLowerCase(); }
+  function day(ymd) { var d = new Date(ymd + 'T12:00:00'); return (d.getMonth() + 1) + '/' + d.getDate(); }
+  function draw() {
+    var sq = D.squads.filter(function (s) { return !pick || s.squad === pick; });
+    var mine = pick ? sq[0] : null;
+    var season = D.season || {};
+    var html = '<div class="kicker">Clash of Classes · Ephrata Middle School</div><h1>' + (mine ? title(mine.squad) + ' Squad: ' : '') + esc(D.label) + '</h1>' +
+      '<p class="sub">A note for families: what your student\'s squad did last month. Every student belongs to one of four squads; squads earn points together for showing up, taking part and showing our traits.</p>';
+    html += '<h2>The squads</h2><table><tr><th>Squad</th><th class="num">Points in ' + esc(D.label.split(' ')[0]) + '</th><th class="num">Total</th><th class="num">Place</th><th>Areas of the school held</th></tr>' +
+      sq.map(function (s) { return '<tr><td style="color:var(--' + s.squad + ');font-weight:700">' + title(s.squad) + '</td><td class="num">' + s.month.toLocaleString() + '</td><td class="num">' + s.total.toLocaleString() + '</td><td class="num">' + s.place + '</td><td>' + (s.zones.length ? s.zones.map(esc).join(', ') : '—') + '</td></tr>'; }).join('') + '</table>';
+    if (season.end) html += '<p class="said">' + (season.over ? (season.revealed && season.winner ? '🏆 ' + title(season.winner) + ' won the Clash Bash this year.' : 'The season is over; the Clash Bash winner is revealed soon.') : 'Points count toward the end-of-year Clash Bash through ' + day(season.end) + '.') + '</p>';
+    if (D.pulses.length || D.youSaid.length) {
+      html += '<h2>What students told the school</h2><ul>' + D.pulses.map(function (p) { return '<li><span class="q">' + esc(p.question) + '</span><br><span class="said">' + esc(p.said) + '</span></li>'; }).join('') +
+        D.youSaid.map(function (y) { return '<li><span class="q">' + esc(y.question) + '</span><br><span class="said">You said: ' + esc(y.said) + '</span><br><span class="did">What we did: ' + esc(y.did) + '</span></li>'; }).join('') + '</ul>';
+    }
+    var spot = D.spotlight.filter(function (s) { return !pick || s.squad === pick; });
+    if (spot.length) html += '<h2>Squad Spotlight</h2><ul>' + spot.map(function (s) { return '<li><b>' + esc(s.who) + '</b> (' + title(s.squad) + '): ' + esc(s.story) + '</li>'; }).join('') + '</ul>';
+    if (D.coming.length) html += '<h2>Coming up</h2><ul>' + D.coming.map(function (c) { return '<li>' + day(c.date) + ': ' + esc(c.title) + (c.kind ? ' <span class="said">(' + esc(c.kind) + ')</span>' : '') + '</li>'; }).join('') + '</ul>';
+    html += '<p class="foot">Ask your student about their squad tonight. Live standings: ' + esc(D.site) + '</p>';
+    document.getElementById('paper').innerHTML = html;
+  }
+  document.getElementById('sq').onchange = function () { pick = this.value; draw(); };
+  function start(p) {
+    pick = (p && p.squad || '').toUpperCase().replace('GRAY', 'GREY');
+    document.getElementById('sq').value = pick;
+    google.script.run.withSuccessHandler(function (t) { D = JSON.parse(t); draw(); })
+      .withFailureHandler(function (e) { document.getElementById('paper').textContent = 'Could not load: ' + (e && e.message); }).clashFamily((p && p.month) || '', pick);
+  }
+  try { google.script.url.getLocation(function (loc) { start(loc && loc.parameter); }); } catch (e) { start({}); }
+})();
+</script>
+</body>
+</html>
+<!-- file-stamp: 9cd1fa4100 -->
