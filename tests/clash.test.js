@@ -2347,6 +2347,38 @@ test('Virtual Dough guardrails: per-student daily cap, lopsided-giving flags in 
   assert.ok(fam.lang === 'es' && / de \d{4}$/.test(fam.label), fam.label);
 });
 
+test('Plinko: editable slots (rows + 1), staff give and drop squad drops, the server picks a fair path, prizes go on the events tab, practice saves nothing', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePlinkoTabs_();
+  let b = JSON.parse(w.clashPlinkoBoard());
+  assert.strictEqual(b.slots.length, 9);
+  assert.strictEqual(b.slots[0].label, 'JACKPOT 100');
+  assert.deepStrictEqual(J(b.waiting), { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 });
+  assert.throws(() => w.clashPlinkoDrop('nope', 'GOLD'), /sign in as admin/);
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  assert.throws(() => w.clashPlinkoDrop('T', 'GOLD'), /no drop waiting/);
+  w.clashPlinkoGrant('T', 'gold', 'Won the Squad Duel', 2);
+  assert.strictEqual(JSON.parse(w.clashPlinkoBoard()).waiting.GOLD, 2);
+  // Every slot pays what the tab says: make them all 7 points so the test doesn't depend on luck.
+  const st = w.book.getSheetByName('Plinko Slots'); st.rows.slice(1).forEach(r => { r[2] = 'points'; r[3] = 7; });
+  const r = JSON.parse(w.clashPlinkoDrop('T', 'GOLD'));
+  assert.strictEqual(r.path.length, 8);
+  assert.strictEqual(r.slot, r.path.reduce((a, x) => a + x, 0), 'the slot is where the path ends');
+  assert.strictEqual(r.points, 7);
+  const ev = events(w).find(x => x[2] === 'plinko');
+  assert.ok(ev && ev[7] === 7 && ev[4] === 'Won the Squad Duel');
+  assert.strictEqual(JSON.parse(w.clashPlinkoBoard()).waiting.GOLD, 1, 'one drop used');
+  const pr = JSON.parse(w.clashPlinkoDrop('T', 'GOLD', true));
+  assert.ok(pr.practice && pr.points === 0);
+  assert.strictEqual(JSON.parse(w.clashPlinkoBoard()).waiting.GOLD, 1, 'practice uses no drop');
+  // Odds: a real board, the middle most often, the edges rare.
+  const odds = J(w.plinkoOdds_());
+  assert.ok(odds[4].percent > 27 && odds[0].percent < 0.5 && Math.abs(odds.reduce((a, o) => a + o.percent, 0) - 100) < 0.1);
+  // Mystery and nothing.
+  assert.strictEqual(J(w.plinkoPrize_({ kind: 'nothing', label: 'So close!' })).points, 0);
+  assert.ok([5, 10].includes(J(w.plinkoPrize_({ kind: 'mystery', value: '5|10' })).points));
+});
+
 test('Redemption: a Trailback Summit on the private Redemptions tab gives the student a Summit Climber badge and 25 LRG points; the feed labels it', () => {
   const w = world();
   w.ensureSettings_();

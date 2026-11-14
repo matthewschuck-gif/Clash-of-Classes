@@ -95,6 +95,7 @@ function setupSpreadsheet() {
   ensureYouSaidTab_(); // You Said We Did (30_YouSaid.gs)
   ensureSiteContentTabs_(); // LRG Traits + Wheel Slices (35_SiteContent.gs)
   ensureAvalancheTab_(); ensureDoughTabs_(); ensureServiceTab_(); ensureSpotlightTab_(); // 38, 39, 40, 41
+  ensurePlinkoTabs_(); // Plinko Slots + Plinko Drops (46_Plinko.gs)
   ensureFreezeTab_();
   ensureDuelTab_();
   ensureLoreTab_();
@@ -213,6 +214,7 @@ const DEFAULT_SETTINGS = [
   ['SERVICE_POINTS', '5, 10, 20', 'Service submissions: the point choices staff approve with.'],
   ['SERVICE_OPEN', '3', 'Service submissions: how many a student can have waiting at once.'],
   ['SERVICE_FOLDER_ID', '', 'Service evidence uploads go to this private Drive folder (made for you the first time; staff see files in Admin › Service).'],
+  ['PLINKO_ROWS', '8', 'Plinko: rows of pegs (4 to 12). The Plinko Slots tab needs one more slot than rows.'],
   ['TV_SECONDS', '9', 'TV (clashofclasses.org/?tv=1): seconds each slide stays up.'],
   ['TV_SLIDES', 'all', 'TV: which slides run. all, or a list of: standings, podium, categories, metrics, challenges, feed, summit, map, opponent, pulse, polls.'],
   ['TV_POLL_SLIDES', 'polls, pulse, standings', 'The polls-only TV (clashofclasses.org/?tv=polls): which slides run. Same names as TV_SLIDES.'],
@@ -449,4 +451,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = '106a706161';
+var FILE_STAMP_01_Config = 'ad4e6f6f44';

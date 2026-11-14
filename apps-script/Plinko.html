@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root { --bg:#170b29; --panel:#22123b; --line:#3b2a5a; --ink:#f6f0ff; --mute:#b9a6d8; --gold:#ffd23f;
+    --BLACK:#e9e3f5; --GOLD:#ffd23f; --GREY:#9aa5b8; --PURPLE:#b583ff; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,'Segoe UI',sans-serif; }
+  body { background: radial-gradient(1100px 700px at 30% -10%, #3b1a66 0%, transparent 60%), var(--bg); }
+  .wrap { height:100%; display:grid; grid-template-columns: minmax(0,1fr) minmax(260px, 24%); gap:2vw; padding:2.4vh 2.4vw; }
+  .head { display:flex; align-items:baseline; gap:1vw; margin-bottom:1vh; }
+  .head h1 { margin:0; font-family:Georgia,serif; font-weight:900; font-size:clamp(26px,3.4vw,58px); }
+  .head span { color:var(--gold); font-weight:800; letter-spacing:.14em; text-transform:uppercase; font-size:clamp(11px,1vw,16px); }
+  .boardbox { position:relative; height:calc(100% - 7vh); }
+  canvas { width:100%; height:100%; display:block; }
+  .banner { position:absolute; left:50%; top:38%; transform:translate(-50%,-50%) scale(.6); opacity:0; pointer-events:none; text-align:center;
+    font-family:Georgia,serif; font-weight:900; font-size:clamp(34px,5.4vw,96px); text-shadow:0 6px 30px #000a; transition:transform .45s cubic-bezier(.2,1.5,.4,1), opacity .3s; }
+  .banner.on { opacity:1; transform:translate(-50%,-50%) scale(1); }
+  .banner small { display:block; font-family:system-ui,sans-serif; font-size:.32em; color:var(--mute); font-weight:700; letter-spacing:.06em; }
+  .side { display:flex; flex-direction:column; gap:1.4vh; min-height:0; overflow:auto; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:14px; }
+  .card h3 { margin:0 0 8px; font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--mute); }
+  .sq { display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--line); }
+  .sq:first-of-type { border-top:0; }
+  .sq b { flex:1; font-size:clamp(15px,1.4vw,22px); }
+  .sq .n { font-weight:900; font-size:clamp(15px,1.4vw,22px); min-width:2ch; text-align:right; }
+  button { font:inherit; cursor:pointer; border:0; border-radius:999px; padding:8px 14px; font-weight:800; }
+  .drop { background:var(--gold); color:#1a0b2e; }
+  .drop:disabled { opacity:.35; cursor:default; }
+  .ghost { background:#ffffff1a; color:var(--ink); }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  select, input { font:inherit; padding:8px 10px; border-radius:10px; border:1px solid var(--line); background:#12081f; color:var(--ink); }
+  .recent div { font-size:14px; color:var(--mute); padding:3px 0; }
+  .odds { width:100%; border-collapse:collapse; font-size:13px; color:var(--mute); }
+  .odds td { padding:2px 4px; } .odds td:last-child { text-align:right; }
+  .msg { font-size:13px; color:#fca5a5; min-height:1em; margin-top:6px; }
+  .confetti { position:fixed; top:-20px; width:10px; height:16px; border-radius:3px; pointer-events:none; animation:fall linear forwards; }
+  @keyframes fall { to { transform:translateY(110vh) rotate(720deg); } }
+  @media (max-width: 900px) { .wrap { grid-template-columns:1fr; height:auto; } .boardbox { height:70vh; } }
+  @media (prefers-reduced-motion: reduce) { .banner { transition:none; } .confetti { display:none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div><div class="head"><h1>Clash Plinko</h1><span>Drop · bounce · win</span></div>
+    <div class="boardbox"><canvas id="cv"></canvas><div class="banner" id="banner"></div></div></div>
+  <div class="side">
+    <div class="card"><h3>Drops waiting</h3><div id="squads"></div><div class="row"><button class="ghost" id="practice">Practice drop</button></div><div class="msg" id="msg"></div></div>
+    <div class="card" id="staff"><h3>Staff</h3><div id="signin"><input id="pw" type="password" placeholder="Admin password" style="width:100%"><div class="row"><button class="drop" id="in">Sign in to drop</button></div></div>
+      <div id="tools" style="display:none"><div class="row"><select id="gs"><option value="BLACK">Black</option><option value="GOLD">Gold</option><option value="GREY">Grey</option><option value="PURPLE">Purple</option></select>
+        <input id="gr" placeholder="Why (e.g. won the Squad Duel)" style="flex:1;min-width:120px"></div><div class="row"><button class="ghost" id="grant">+ Give a drop</button></div>
+        <table class="odds" id="odds"></table></div></div>
+    <div class="card recent"><h3>Last drops</h3><div id="recent"></div></div>
+  </div>
+</div>
+<script>
+(function () {
+  var SQ = ['BLACK', 'GOLD', 'GREY', 'PURPLE'], HEX = { BLACK: '#e9e3f5', GOLD: '#ffd23f', GREY: '#9aa5b8', PURPLE: '#b583ff' };
+  var B = null, token = '', busy = false, cv = document.getElementById('cv'), ctx = cv.getContext('2d'), geo = null, ball = null, lit = {}, landed = -1;
+  try { token = sessionStorage.getItem('plinko-admin') || ''; } catch (e) { token = ''; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function title(s) { return s.charAt(0) + s.slice(1).toLowerCase(); }
+  function run(fn) { var a = Array.prototype.slice.call(arguments, 1); return new Promise(function (ok, no) { var r = google.script.run.withSuccessHandler(function (t) { ok(JSON.parse(t)); }).withFailureHandler(no); r[fn].apply(r, a); }); }
+  function msg(t) { document.getElementById('msg').textContent = String(t || '').replace(/^Exception:\s{0,}/, ''); }
+
+  // ── Geometry: pegs in a triangle, one more slot than rows ──
+  function layout() {
+    var dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var R = B.rows, slotH = Math.max(54, h * 0.13), top = h * 0.07;
+    var gap = Math.min((w * 0.96) / (R + 1), (h - slotH - top - 20) / (R * 0.9));
+    var rowH = gap * 0.9, cx = w / 2;
+    geo = { w: w, h: h, R: R, gap: gap, rowH: rowH, cx: cx, top: top, slotY: top + R * rowH + rowH * 0.35, slotH: slotH, peg: Math.max(3, gap * 0.09), ball: Math.max(7, gap * 0.22) };
+  }
+  function pegXY(row, j) { return { x: geo.cx + (j - row / 2) * geo.gap, y: geo.top + row * geo.rowH + geo.rowH * 0.5 }; }
+  function slotX(k) { return geo.cx + (k - geo.R / 2) * geo.gap; }
+
+  function draw() {
+    if (!geo) return;
+    var g = geo;
+    ctx.clearRect(0, 0, g.w, g.h);
+    // Pegs (lit ones glow for a moment after the ball hits them).
+    var now = performance.now();
+    for (var r = 0; r < g.R; r++) for (var j = 0; j <= r; j++) {
+      var p = pegXY(r, j), t = lit[r + ':' + j], glow = t ? Math.max(0, 1 - (now - t) / 450) : 0;
+      ctx.beginPath(); ctx.arc(p.x, p.y, g.peg * (1 + glow * 0.8), 0, Math.PI * 2);
+      ctx.fillStyle = glow ? 'rgba(255,210,63,' + (0.5 + glow / 2) + ')' : '#cbb6ef';
+      ctx.shadowColor = '#ffd23f'; ctx.shadowBlur = glow * 18; ctx.fill(); ctx.shadowBlur = 0;
+    }
+    // Slots.
+    B.slots.forEach(function (s, k) {
+      var x = slotX(k), w = g.gap * 0.92, y = g.slotY, on = k === landed;
+      ctx.fillStyle = s.color || (s.kind === 'nothing' ? '#3b2a5a' : '#5b3584');
+      ctx.globalAlpha = on ? 1 : 0.82;
+      roundRect(x - w / 2, y, w, g.slotH, 10); ctx.fill();
+      ctx.globalAlpha = 1;
+      if (on) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; roundRect(x - w / 2, y, w, g.slotH, 10); ctx.stroke(); }
+      ctx.fillStyle = '#12081f'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      var label = String(s.label || ''), fs = Math.min(g.gap * 0.32, 26);
+      var parts = label.indexOf(' ') > -1 && label.length > 6 ? label.split(' ') : [label];
+      // Shrink the text until the widest line fits inside the slot.
+      ctx.font = '900 ' + fs + 'px Georgia, serif';
+      while (fs > 8 && Math.max.apply(null, parts.map(function (t) { return ctx.measureText(t).width; })) > w * 0.86) { fs -= 1; ctx.font = '900 ' + fs + 'px Georgia, serif'; }
+      parts.forEach(function (t, i) { ctx.fillText(t, x, y + g.slotH / 2 + (i - (parts.length - 1) / 2) * fs * 1.05); });
+    });
+    // The ball.
+    if (ball) {
+      ctx.beginPath(); ctx.arc(ball.x, ball.y, g.ball, 0, Math.PI * 2);
+      var grd = ctx.createRadialGradient(ball.x - g.ball / 3, ball.y - g.ball / 3, 1, ball.x, ball.y, g.ball);
+      grd.addColorStop(0, '#ffffff'); grd.addColorStop(1, ball.color || '#ffd23f');
+      ctx.fillStyle = grd; ctx.shadowColor = ball.color || '#ffd23f'; ctx.shadowBlur = 16; ctx.fill(); ctx.shadowBlur = 0;
+    }
+  }
+  function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+  // ── The drop: follow the server's path, one hop per row ──
+  function animate(path, color) {
+    return new Promise(function (done) {
+      var pts = [], k = 0, g = geo;
+      pts.push({ x: g.cx + (Math.random() - 0.5) * g.gap * 0.15, y: g.top - g.rowH * 0.6 });
+      for (var r = 0; r < path.length; r++) { var p = pegXY(r, k); pts.push({ x: p.x, y: p.y - g.peg - g.ball, peg: r + ':' + k }); k += path[r]; }
+      pts.push({ x: slotX(k), y: g.slotY + g.slotH * 0.45 });
+      var i = 0, t0 = performance.now(), dur = 360;
+      ball = { x: pts[0].x, y: pts[0].y, color: color };
+      (function step(now) {
+        var a = pts[i], b = pts[i + 1], t = Math.min(1, (now - t0) / dur);
+        // A hop: across in a straight line, up and over in an arc, faster as it falls.
+        var arc = i === 0 || i === pts.length - 2 ? 0 : g.rowH * 0.32;
+        ball.x = a.x + (b.x - a.x) * t + (i > 0 && i < pts.length - 2 ? (Math.random() - 0.5) * 0.6 : 0);
+        ball.y = a.y + (b.y - a.y) * (t * t) - arc * 4 * t * (1 - t);
+        draw();
+        if (t < 1) return requestAnimationFrame(step);
+        if (b.peg) lit[b.peg] = performance.now();
+        i++; t0 = now; dur = Math.max(170, dur * 0.94);
+        if (i < pts.length - 1) return requestAnimationFrame(step);
+        landed = k; draw(); done(k);
+      })(t0);
+    });
+  }
+  (function glow() { if (Object.keys(lit).length) draw(); requestAnimationFrame(glow); })();
+
+  function celebrate(text, sub, color) {
+    var b = document.getElementById('banner');
+    b.innerHTML = '<span style="color:' + color + '">' + esc(text) + '</span><small>' + esc(sub) + '</small>';
+    b.classList.add('on'); setTimeout(function () { b.classList.remove('on'); }, 3200);
+    for (var n = 0; n < 90; n++) {
+      var c = document.createElement('div'); c.className = 'confetti';
+      c.style.left = Math.random() * 100 + 'vw'; c.style.background = n % 3 ? color : '#ffffff';
+      c.style.animationDuration = (2 + Math.random() * 2.2) + 's'; c.style.animationDelay = (Math.random() * 0.8) + 's';
+      document.body.appendChild(c); setTimeout(function (el) { return function () { el.remove(); }; }(c), 5200);
+    }
+  }
+
+  function side() {
+    document.getElementById('squads').innerHTML = SQ.map(function (s) {
+      var n = B.waiting[s] || 0;
+      return '<div class="sq"><b style="color:' + HEX[s] + '">' + title(s) + '</b><span class="n">' + n + '</span><button class="drop" data-sq="' + s + '"' + (n && !busy ? '' : ' disabled') + '>Drop</button></div>';
+    }).join('');
+    document.getElementById('recent').innerHTML = (B.recent || []).map(function (r) { return '<div><b style="color:' + HEX[r.squad] + '">' + title(r.squad) + '</b> · ' + esc(r.prize) + (r.points ? ' (+' + r.points + ')' : '') + '</div>'; }).join('') || '<div>No drops yet.</div>';
+    document.getElementById('signin').style.display = token ? 'none' : 'block';
+    document.getElementById('tools').style.display = token ? 'block' : 'none';
+    var total = Math.pow(2, B.rows), choose = function (n, k) { var r = 1; for (var i = 1; i <= k; i++) r = r * (n - i + 1) / i; return r; };
+    document.getElementById('odds').innerHTML = '<tr><td colspan="2" style="padding-top:8px">How often each slot comes up</td></tr>' + B.slots.map(function (s, k) {
+      return '<tr><td>' + (k + 1) + '. ' + esc(s.label) + '</td><td>' + (Math.round(10000 * choose(B.rows, k) / total) / 100) + '%</td></tr>';
+    }).join('');
+  }
+  function load() { return run('clashPlinkoBoard').then(function (b) { B = b; layout(); draw(); side(); }); }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('button');
+    if (!t || busy) return;
+    if (t.id === 'in') {
+      run('clashLogin', document.getElementById('pw').value).then(function (r) { token = r.token; try { sessionStorage.setItem('plinko-admin', token); } catch (x) {} msg(''); side(); }).catch(function (x) { msg(x && x.message); });
+      return;
+    }
+    if (t.id === 'grant') {
+      run('clashPlinkoGrant', token, document.getElementById('gs').value, document.getElementById('gr').value || 'Staff', 1).then(function (r) { B.waiting = r.waiting; side(); msg(''); })
+        .catch(function (x) { if (/sign in/i.test(x && x.message)) { token = ''; side(); } msg(x && x.message); });
+      return;
+    }
+    var sq = t.getAttribute('data-sq'), practice = t.id === 'practice';
+    if (!sq && !practice) return;
+    if (!token && !practice) { msg('Sign in (Staff) to drop.'); return; }
+    busy = true; landed = -1; side(); msg('');
+    var go = practice && !token ? Promise.resolve(localPath()) : run('clashPlinkoDrop', token, sq || '', practice);
+    go.then(function (r) {
+      var color = sq ? HEX[sq] : '#ffffff';
+      return animate(r.path, color).then(function () {
+        if (r.practice || practice) celebrate(r.prize, 'practice drop', '#ffffff');
+        else { celebrate(r.points ? '+' + r.points + ' ' + title(sq) : r.prize, r.prize, color); B.waiting = r.waiting || B.waiting; }
+        busy = false; return load();
+      });
+    }).catch(function (x) { busy = false; side(); if (/sign in/i.test(x && x.message)) { token = ''; side(); } msg(x && x.message); });
+  });
+  // Practice without signing in: a local path, nothing saved.
+  function localPath() { var p = []; for (var i = 0; i < B.rows; i++) p.push(Math.random() < 0.5 ? 0 : 1); var k = p.reduce(function (a, b) { return a + b; }, 0); return { path: p, slot: k, prize: B.slots[k].label, practice: true }; }
+  window.addEventListener('resize', function () { if (B) { layout(); draw(); } });
+  load().catch(function (e) { msg('Could not load the board: ' + (e && e.message)); });
+  setInterval(function () { if (!busy) run('clashPlinkoBoard').then(function (b) { B.waiting = b.waiting; B.recent = b.recent; if (JSON.stringify(b.slots) !== JSON.stringify(B.slots) || b.rows !== B.rows) { B = b; layout(); draw(); } side(); }).catch(function () {}); }, 15000);
+})();
+</script>
+</body>
+</html>
+<!-- file-stamp: a57028c5d8 -->

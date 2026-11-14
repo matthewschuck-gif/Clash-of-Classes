@@ -29,6 +29,7 @@ function serveSite_(e) {
   if (e && e.parameter && e.parameter.page === 'dough') return serveDough_(); // Virtual Trait Dough for teachers (39_VirtualDough.gs)
   if (e && e.parameter && (e.parameter.page === 'morning' || e.parameter.tv === 'morning')) return serveMorning_(); // Morning Clash (41_Morning.gs)
   if (e && e.parameter && e.parameter.page === 'family') return serveFamily_();
+  if (e && e.parameter && e.parameter.page === 'plinko') return servePlinko_(); // the Plinko board (46_Plinko.gs)
   if (e && e.parameter && e.parameter.page === 'reveal') return serveReveal_(); // the Clash Bash reveal + award certificates (44_Reveal.gs) // the monthly family update (42_Family.gs)
   if (e && e.parameter && e.parameter.page === 'guides') return serveGuides_(); // one-page role guides from Settings (33_Guides.gs)
   if (e && e.parameter && e.parameter.page === 'frost') return serveFrostPage_(); // Freeze & Thaw slides + frost meter (28_Frost.gs)
@@ -411,4 +412,4 @@ function menuOpenSite_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_03_Web = '940fca963d';
+var FILE_STAMP_03_Web = 'f6ac6189cd';

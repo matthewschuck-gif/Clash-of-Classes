@@ -62,6 +62,8 @@ const SHEET_TABS_ = [
   ['Points Balance', 'Polls & Pulse', 'Rebuilt by the points balance check.', {}],
   ['Squad Spotlight', 'Pages', 'Suggested every Monday (one story per squad). Tick Show to put it on the Morning Clash, the TV and the home page; edit the story if you like.', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
   ['Avalanche', 'Game', 'Every Avalanche set off: squad, marking period, the week it ran, the bonus paid.', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
+  ['Plinko Slots', 'Game', 'The Plinko prizes, left to right (one more slot than PLINKO_ROWS). Kind: points, mystery (Value like 5|10|25|50) or nothing. The middle slots come up most; the edges are rare.', { 'Kind': ['points', 'mystery', 'nothing'] }],
+  ['Plinko Drops', 'Game', 'Drops squads have earned (a row each). Add one here or with + Give a drop on the board; Used fills in when it drops.', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
   ['Dough Teachers', 'Points', 'Teachers who can give Virtual Trait Dough: tick Active, their squad, and their password (e.g. their room number).', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
 ];
 const SHEET_HIDDEN_ = ['app_data', 'How To Use This Sheet', 'How The Map Works', 'How My Climb Works'];
@@ -215,4 +217,4 @@ function clashSheetAction(token, name) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_34_SheetEditor = '1d2d63b5f6';
+var FILE_STAMP_34_SheetEditor = '8e1fc9ccb2';

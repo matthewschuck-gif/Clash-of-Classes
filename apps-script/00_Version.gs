@@ -5,9 +5,9 @@
  * GitHub, to show which files still need pasting.
  */
 const FILE_STAMPS_ = {
-  "01_Config.gs":"106a706161",
+  "01_Config.gs":"ad4e6f6f44",
   "02_Router.gs":"3712b23951",
-  "03_Web.gs":"940fca963d",
+  "03_Web.gs":"f6ac6189cd",
   "04_Students.gs":"4f92075cfc",
   "05_Generals.gs":"5174fdac76",
   "06_Polls.gs":"79191e6a01",
@@ -39,7 +39,7 @@ const FILE_STAMPS_ = {
   "31_StateOfSquads.gs":"bed091d132",
   "32_Privacy.gs":"0fe1776164",
   "33_Guides.gs":"4d913f628c",
-  "34_SheetEditor.gs":"1d2d63b5f6",
+  "34_SheetEditor.gs":"8e1fc9ccb2",
   "35_SiteContent.gs":"28f3448721",
   "36_TV.gs":"a801d2f28e",
   "37_Season.gs":"d68c5a193b",
@@ -51,7 +51,8 @@ const FILE_STAMPS_ = {
   "43_Rollover.gs":"6ef62c4495",
   "44_Reveal.gs":"56e15fa84c",
   "45_SelfCheck.gs":"4eaab60f5d",
-  "App.html":"adc2d036f4",
+  "46_Plinko.gs":"ad5ea7680f",
+  "App.html":"696dd70ba9",
   "CliffTour.html":"41fdf27b32",
   "Dough.html":"79de2e13ce",
   "Family.html":"f53fbe5da6",
@@ -63,6 +64,7 @@ const FILE_STAMPS_ = {
   "MapEditor.html":"770000ae63",
   "Me.html":"f2cdadb797",
   "Morning.html":"9a5c9d1033",
+  "Plinko.html":"a57028c5d8",
   "PollBoard.html":"ac579ce129",
   "Pop.html":"7876356442",
   "Reveal.html":"9b4f73a817",
