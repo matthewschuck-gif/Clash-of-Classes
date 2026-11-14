@@ -3072,8 +3072,8 @@ function renderSeasonBanner(){
   var line=s.over?(s.revealed&&s.winner?'🏆 '+nm(s.winner)+' wins the Clash Bash! Final standings below.':'🏁 The season is over. The Clash Bash winner is revealed '+esc(s.reveal)+'.')
     :(s.end&&s.daysLeft<=45?'⏳ '+s.daysLeft+' days left to earn points for the Clash Bash (points count through '+esc(s.end)+').':'');
   var spot=(D.spotlight||[]).slice(0,4).map(function(x){ return '<div style="padding:8px 0;border-top:1px solid var(--border)"><b style="color:'+(SQ_HEX[x.squad]||'inherit')+'">'+esc(x.who)+' · '+nm(x.squad)+'</b><div style="color:var(--text2);font-size:14px">'+esc(x.story)+'</div></div>'; }).join('');
-  box.innerHTML=(line?'<div style="margin-top:14px;padding:10px 14px;border-radius:12px;background:var(--surface2);font-weight:700">'+line+'</div>':'')+
-    (spot?'<div style="margin-top:14px;padding:12px 14px;border-radius:12px;border:1px solid var(--border)"><div style="font-weight:800;margin-bottom:4px">⭐ Squad Spotlight</div>'+spot+'</div>':'');
+  box.innerHTML=(line?'<div class="season-line" style="margin-top:14px;padding:10px 14px;border-radius:12px;background:var(--surface2);font-weight:700">'+line+'</div>':'')+
+    (spot?'<div id="homeSpotlight" style="margin-top:14px;padding:12px 14px;border-radius:12px;border:1px solid var(--border)"><div style="font-weight:800;margin-bottom:4px">⭐ Squad Spotlight</div>'+spot+'</div>':'');
 }
 // Admin › System: what's live (22_Week.gs clashVersion): which files still need pasting.
 function renderVersion(){
@@ -5687,4 +5687,4 @@ window.__moduleReady=true;
 // Now that all functions are live, re-render whatever page the user navigated to
 goTo(window.__currentPage || currentPage);
 </script>
-<!-- file-stamp: ec33553bae -->
+<!-- file-stamp: a9505106fa -->

@@ -2251,6 +2251,32 @@ test('Squad Spotlight suggests from Virtual Dough and service; Morning Clash and
   assert.strictEqual(require('child_process').spawnSync(process.execPath, [require('path').join(__dirname, '..', 'tools', 'stamp-files.js'), '--check']).status, 0, 'every file stamp is current (run node tools/stamp-files.js)');
 });
 
+test("Cliff's tour grows on a live tab: new steps added by title, untouched first wording refreshed, staff edits kept, TOUR_VERSION bumped once", () => {
+  const w = world();
+  w.ensureSettings_();
+  const tab = w.book.insertSheet('Tutorial Steps');
+  tab.rows = [['Show', 'Page', 'Order', 'Go To', 'Spotlight', 'Title', 'Text'],
+    [true, 'site', 1, 'home', '', "Hi, I'm Cliff!", 'Our own hello'],
+    [true, 'site', 5, 'home', 'map', 'Conquer the school', 'Every area of the building is a territory. Earn the right kind of points to take it, and hold it to earn bonus points every week.'],
+    [true, 'site', 7, 'home', 'poll', 'The Daily Poll', 'Staff rewrote this one.'],
+    [true, 'site', 20, 'home', '', 'Our own step', 'Made by staff.']];
+  w.setSettingValue_('TOUR_VERSION', '3');
+  const n = w.ensureTourTab_();
+  assert.ok(n > 10, 'new steps added: ' + n);
+  const rows = J(w.sheetRows_('Tutorial Steps'));
+  const by = t => rows.find(r => r.Page === 'site' && r.Title === t);
+  assert.strictEqual(by("Hi, I'm Cliff!").Text, 'Our own hello', 'staff edits kept');
+  assert.strictEqual(by('The Daily Poll').Text, 'Staff rewrote this one.');
+  assert.ok(/judged|won a different way/.test(by('Conquer the school').Text), 'the first wording is refreshed');
+  assert.ok(by('Avalanche!') && by('Service and kindness') && by('The Pulse') && by('Our own step'));
+  assert.strictEqual(String(w.getSetting_('TOUR_VERSION')), '4', 'everyone sees the new tour once');
+  assert.strictEqual(w.ensureTourTab_(), 0, 'a second Run setup changes nothing');
+  assert.strictEqual(String(w.getSetting_('TOUR_VERSION')), '4');
+  const tour = JSON.parse(w.clashTour('site'));
+  const order = tour.steps.map(x => x.title);
+  assert.ok(order.indexOf('Avalanche!') > order.indexOf('Four squads') && order.indexOf('Avalanche!') < order.indexOf('Our own step'), 'decimal orders slot the new steps in');
+});
+
 test('Redemption: a Trailback Summit on the private Redemptions tab gives the student a Summit Climber badge and 25 LRG points; the feed labels it', () => {
   const w = world();
   w.ensureSettings_();

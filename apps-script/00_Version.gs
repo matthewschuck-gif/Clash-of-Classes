@@ -24,7 +24,7 @@ const FILE_STAMPS_ = {
   "17_Roster.gs":"096c622a70",
   "18_Conquest.gs":"ac119df6db",
   "19_Evolve.gs":"07c0faea71",
-  "20_Tour.gs":"ad927fca12",
+  "20_Tour.gs":"e2400bff5a",
   "21_Leaders.gs":"de1fe45afe",
   "22_Week.gs":"e52a06a174",
   "23_Drive.gs":"423bfd8ad6",
@@ -48,8 +48,8 @@ const FILE_STAMPS_ = {
   "40_Service.gs":"24a25fc269",
   "41_Morning.gs":"1704655998",
   "42_Family.gs":"9a5382c8d3",
-  "App.html":"ec33553bae",
-  "CliffTour.html":"9b0bd967d1",
+  "App.html":"a9505106fa",
+  "CliffTour.html":"41fdf27b32",
   "Dough.html":"79de2e13ce",
   "Family.html":"9cd1fa4100",
   "FrostPage.html":"da6c128098",
@@ -65,7 +65,7 @@ const FILE_STAMPS_ = {
   "ServiceAdmin.html":"60c1fdcf9d",
   "SheetEditor.html":"e0d2bdbaaf",
   "SiteCss.html":"a932f10ec6",
-  "Student.html":"e14de06e3c",
+  "Student.html":"134939c3e6",
   "Styles.html":"d869270812",
   "Widgets.html":"e8987ba766"
 };

@@ -109,7 +109,7 @@
   // ── Avalanche (38_Avalanche.gs): the last-place squad's comeback meter. hq = Generals HQ (shows the button). ──
   window.avalancheHtml = function (av, hq) {
     if (!av || (!av.active && !av.last && !av.used)) return '';
-    var box = function (inner, color) { return '<div style="margin-top:12px;padding:12px 14px;border-radius:12px;border:2px solid ' + (color || '#38bdf8') + ';background:rgba(56,189,248,.08)">' + inner + '</div>'; };
+    var box = function (inner, color) { return '<div class="av-meter" style="margin-top:12px;padding:12px 14px;border-radius:12px;border:2px solid ' + (color || '#38bdf8') + ';background:rgba(56,189,248,.08)">' + inner + '</div>'; };
     if (av.active) return box('<b>🏔️ AVALANCHE! Through ' + esc(av.active.end) + '</b><div class="ms-small">Your squad\'s poll votes, check-ins and squad-event points count double. Go, go, go!</div>');
     if (av.used) return hq ? box('<b>🏔️ Avalanche used this marking period</b><div class="ms-small">It comes back in the next marking period if you\'re in last place.</div>', '#64748b') : '';
     var pct = Math.round(100 * av.charge / av.need);
@@ -749,4 +749,4 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script>
-<!-- file-stamp: e14de06e3c -->
+<!-- file-stamp: 134939c3e6 -->
