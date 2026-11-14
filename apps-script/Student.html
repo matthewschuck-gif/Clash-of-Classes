@@ -388,6 +388,7 @@
         return '<span style="color:' + COLOR[s] + ';margin-right:14px">' + title(s) + ' ' + (over ? (over === 1 ? '⚠️' : '🧊') : '✅') + '</span>';
       }).join('') : '';
       if (fm) extra = '<div class="ch-card"><div class="ch-title">❄️ Frost meter: this month so far</div><div class="ch-desc">' + fm + ' ✅ safe · ⚠️ frost warning pace · 🧊 freeze pace</div></div>' + extra;
+      if (f.youSaid && f.youSaid[0]) extra += '<div class="ch-card" style="border-color:#4ade80"><div class="ch-title">💬 You said: ' + esc(f.youSaid[0].said) + '</div><div class="ch-desc">We did: ' + esc(f.youSaid[0].did) + '</div></div>';
       if (ch && extra) ch.innerHTML = extra + ch.innerHTML.replace(/<div class="ch-card"><div class="ch-title">🏁 No challenge running right now<\/div><\/div>/, '');
       var left = '<div><div class="tv-cat-title">⚡ Latest points</div>' + (f.latest || []).map(function (e) {
         var pts = SQ.filter(function (s) { return e.pts[s]; }).map(function (s) {
@@ -479,8 +480,18 @@
     var live = pulseData.live || [], recent = pulseData.recent || [];
     box.innerHTML = (live.length ? live.map(function (p) { return pulseScreen(p); }).join('')
       : '<div class="ch-card"><div class="ch-title">No Pulse question open right now</div><div class="ch-desc">A new one comes out every week or so. Here\'s what EMS said last time.</div></div>') +
-      (recent.length ? '<div class="ms-h" style="margin-top:18px">What EMS said</div>' + recent.map(function (p) { return pulseScreen(p); }).join('') : '');
+      (recent.length ? '<div class="ms-h" style="margin-top:18px">What EMS said</div>' + recent.map(function (p) { return pulseScreen(p); }).join('') : '') +
+      youSaidHtml(pulseData.youSaid || []);
     growBars(box);
+  }
+  // You said, we did (30_YouSaid.gs): what changed because students answered a Pulse.
+  function youSaidHtml(list) {
+    if (!list.length) return '';
+    return '<div class="ms-h" style="margin-top:18px">💬 You said, we did</div>' + list.map(function (y) {
+      return '<div class="ch-card" style="border-color:#4ade80"><div class="ch-desc">' + esc(y.question) + '</div>' +
+        '<div class="ch-title" style="margin-top:6px">You said: ' + esc(y.said) + '</div>' +
+        '<div class="ch-title" style="color:#4ade80">We did: ' + esc(y.did) + (y.who ? ' <span class="ms-small">(' + esc(y.who) + ')</span>' : '') + '</div></div>';
+    }).join('');
   }
   window.renderPulsePage = function () {
     var box = document.getElementById('pulseBody');

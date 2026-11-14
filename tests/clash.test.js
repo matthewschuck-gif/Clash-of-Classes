@@ -1929,6 +1929,80 @@ test('frost check: same lines for every squad, a warning first, a repeat or two 
   assert.ok(w.thawGoals_('marker: Interventions')[0].type === 'marker');
 });
 
+test('insights: points balance flags, You said we did, State of the Squads email (once a month), privacy check of every public page, role guides from Settings', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureFrostTabs_(); w.ensureYouSaidTab_(); w.ensureWeekTabs_();
+  const today = w.todayYmd_(), ago = n => w.ymdShift_(today, -n);
+  w.book.insertSheet('Students').rows = [['800#', 'First Name', 'Last Name', 'Grade', 'Email', 'Squad'],
+    ['8001111', 'Ann', 'Lee', '7', '', 'Gold'], ['8002222', 'Ed', 'Park', '8', '', 'Grey'], ['8003333', 'Cy', 'Ro', '7', '', 'Black'], ['8004444', 'Di', 'May', '8', '', 'Purple']];
+  w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade'], ['8001111', 'Ann L.', 'Gold', '7'], ['8002222', 'Ed P.', 'Grey', '8']];
+  // ── (2) Points balance: Trait Dough is most of everything, GOLD's lead is all Trait Dough, only GREY did duels.
+  const ev = w.book.getSheetByName('events');
+  ev.rows.splice(1);
+  ev.rows.push([1, 'Trait Dough', 'trait_dough', ago(3), '', '', 10, 400, 10, 10], [2, 'Duel', 'duel_bonus', ago(4), '', '', 0, 0, 60, 0],
+    [3, 'Poll', 'daily_poll', ago(5), '', '', 20, 20, 20, 20], [4, 'Old', 'trait_dough', ago(90), '', '', 0, 999, 0, 0],
+    [5, 'TJ', 'trail_journal', ago(2), '', '', 0, 0, 0, 900]);
+  const b = J(w.pointsBalance_());
+  assert.strictEqual(b.total, 570, 'last 30 days only; private behavior rows never count');
+  assert.ok(b.flags.some(l => /Trait Dough is 75\.4% of every point/.test(l)), b.flags.join(' | '));
+  assert.ok(b.flags.some(l => /Only Grey earned .*Squad Duel/.test(l)));
+  assert.ok(b.flags.some(l => /Gold's lead over Grey .* is mostly .*Trait Dough/.test(l)));
+  assert.ok(b.flags.some(l => /One row gave Gold 400 points/.test(l)));
+  w.writePointsBalance_();
+  assert.strictEqual(w.book.getSheetByName('Points Balance').rows[1][0], 'trait_dough');
+  // ── (3) You said, we did: a closed Pulse with enough answers gets a row; students see it once staff answer and tick Show.
+  const polls = w.book.getSheetByName('Daily Polls'), votes = w.book.getSheetByName('Poll Votes');
+  polls.rows.splice(1);
+  polls.rows.push([true, ago(6), 'Pulse', 'What would make lunch better?', 'More time | Quieter', '', 1, '', '', '', ago(4)]);
+  for (let i = 0; i < 12; i++) votes.rows.push([2, ago(5), '80099' + String(i).padStart(2, '0'), 'GOLD', i < 9 ? 'More time' : 'Quieter', '', '7']);
+  w.setSettingValue_('YOU_SAID_MIN', 10);
+  assert.strictEqual(w.syncYouSaid_(), 1);
+  assert.strictEqual(w.syncYouSaid_(), 0, 'once per poll');
+  const ys = w.book.getSheetByName('You Said We Did'), H = ys.rows[0];
+  const row = ys.rows[1];
+  assert.strictEqual(row[H.indexOf('What You Said')], 'Most said "More time" (75%), then "Quieter" (25%) · 12 answers');
+  assert.deepStrictEqual(J(w.youSaidPublic_()), [], 'nothing public until staff answer');
+  row[H.indexOf('What We Did')] = 'Lunch bell moved 5 minutes later'; row[H.indexOf('Who')] = 'the office';
+  assert.deepStrictEqual(J(w.youSaidPublic_()), [], 'and tick Show');
+  row[H.indexOf('Show')] = true;
+  assert.strictEqual(JSON.parse(w.clashYouSaid())[0].did, 'Lunch bell moved 5 minutes later');
+  assert.strictEqual(JSON.parse(w.clashPulseLive()).youSaid.length, 1, 'on the Pulse page');
+  assert.strictEqual(JSON.parse(w.clashTvFeed()).youSaid.length, 1, 'and the TV');
+  // ── (6) Privacy: no public page shows an 800# or a full name; a planted one is found and masked.
+  let scan = J(w.privacyScan_());
+  assert.ok(scan.length >= 15);
+  assert.deepStrictEqual(scan.filter(x => x.findings.length), [], JSON.stringify(scan.filter(x => x.findings.length)));
+  ev.rows.push([6, 'Shout-out for Ann Lee 8001111', 'shout_out', ago(1), '', '', 0, 1, 0, 0]);
+  scan = J(w.privacyScan_());
+  const hit = scan.filter(x => x.findings.length);
+  assert.deepStrictEqual(hit.map(x => x.surface), ['Site data', 'TV feed', 'This Week'], 'a full name typed into an event name is caught');
+  assert.deepStrictEqual(hit[0].findings, ['800# …111', 'full name A. L.'], 'and masked in the report');
+  assert.ok(!JSON.stringify(hit).includes('8001111') && !/ann lee/i.test(JSON.stringify(hit)));
+  assert.ok(scan.every(x => !x.note), 'every public page ran');
+  ev.rows.pop();
+  // ── (5) State of the Squads: last month's email, once a month, to STATE_EMAILS (or DIGEST_EMAILS).
+  const sent = [];
+  w.MailApp = { sendEmail: o => sent.push(o) };
+  assert.ok(/No recipients/.test(w.stateOfSquadsEmail(false)));
+  w.setSettingValue_('DIGEST_EMAILS', 'office@easdpa.org');
+  const d = J(w.stateOfSquadsData_());
+  assert.strictEqual(d.month, w.lastMonthWindow_(today).month);
+  assert.ok(d.zones.length === 12 && Array.isArray(d.flags));
+  assert.strictEqual(w.stateOfSquadsEmail(false), 'Sent to 1.');
+  assert.strictEqual(w.stateOfSquadsEmail(false), 'Already sent for ' + d.month + '.');
+  assert.ok(/State of the Squads/.test(sent[0].subject) && /The map/.test(sent[0].htmlBody) && /Squad Monthly numbers/.test(sent[0].htmlBody));
+  assert.ok(!/8001111|Ann Lee/.test(sent[0].htmlBody), 'counts only');
+  // ── (7) Role guides: written from Settings, nothing secret.
+  w.setSettingValue_('GENERALS_CODE', 'SECRET-CODE-42');
+  w.setSettingValue_('PULSE_DAYS', '4');
+  const g = JSON.parse(w.clashGuides());
+  assert.deepStrictEqual(g.roles.map(r => r.id), ['students', 'generals', 'staff', 'admin']);
+  const text = JSON.stringify(g);
+  assert.ok(/open 4 school days/.test(text), 'a Setting changes the guide');
+  assert.ok(/Gym 2: .*x2\./.test(text) && /Cafeteria \(Summit\)/.test(text), 'each area with its multiplier');
+  assert.ok(!/SECRET-CODE-42/.test(text) && !/8001111/.test(text) && !/1g8VpAeyE8md/.test(text), 'no code, 800# or sheet ID');
+});
+
 test('Redemption: a Trailback Summit on the private Redemptions tab gives the student a Summit Climber badge and 25 LRG points; the feed labels it', () => {
   const w = world();
   w.ensureSettings_();

@@ -261,6 +261,7 @@ function clashTvFeed() {
   });
   const out = { latest: latest, stars: [], lore: recentLoreUnlocks_(), duels: JSON.parse(clashDuels()) };
   try { out.frost = frostMeter_(); } catch (e) { out.frost = null; }
+  try { out.youSaid = youSaidPublic_(1); } catch (e) { out.youSaid = []; }
   if (String(getSetting_('TV_SHOW_NAMES')).toUpperCase() === 'ON') {
     const sheet = getSheetSafe_(getSetting_('STUDENT_BOARD_TAB') || 'Student Board');
     if (sheet && sheet.getLastRow() > 1) {

@@ -92,6 +92,7 @@ function setupSpreadsheet() {
   ensurePollTabs_();
   ensurePollIdeaTabs_(); // Poll Ideas + Poll Insights (26_PollIdeas.gs)
   ensureFrostTabs_(); // Freeze Lines + Frost Log (28_Frost.gs)
+  ensureYouSaidTab_(); // You Said We Did (30_YouSaid.gs)
   ensureFreezeTab_();
   ensureDuelTab_();
   ensureLoreTab_();
@@ -195,6 +196,14 @@ const DEFAULT_SETTINGS = [
   ['FROST_THAW_EVERYONE', '70', 'Freeze & Thaw: share of the squad (%) that must pitch in to thaw a Peaks freeze.'],
   ['FROST_THAW_POINTS', '150', 'Freeze & Thaw: points a frozen squad earns together (they still do not count) to thaw a Peaks freeze.'],
   ['FROST_FUN_POINTS', '100', 'Freeze & Thaw: the goal for a Fun freeze (points floor). Twice and three times it win back more (FUN_THAW_TIERS).'],
+  ['BALANCE_DAYS', '30', 'Points balance check (menu, monthly email): how many days back it looks.'],
+  ['BALANCE_MAX_SHARE', '40', 'Points balance: flag a type of points that is more than this % of every point given.'],
+  ['BALANCE_LEAD_SHARE', '60', 'Points balance: flag when more than this % of the first-place lead comes from one type of points.'],
+  ['BALANCE_BIG_ROW', '250', 'Points balance: flag one row that gives a squad more than this many points at once.'],
+  ['YOU_SAID_MIN', '10', 'You Said We Did: a closed Pulse question gets a row once it has at least this many answers.'],
+  ['STATE_OF_SQUADS', 'ON', 'ON = email the State of the Squads (last month: standings, map, Squad Monthly numbers, frost, Pulse, balance, privacy) once a month.'],
+  ['STATE_DAY', '2', 'State of the Squads: the day of the month it goes out (2 = the 2nd, after the numbers are in).'],
+  ['STATE_EMAILS', '', 'Who gets the State of the Squads: emails separated by commas (blank = DIGEST_EMAILS).'],
   ['FOLLOWUP_STATS', 'ON', 'Map (Cafeteria): ON = once a day, count last month: students per squad with an LRR or a Lunch Detention, from the same sheets EMS Follow-Up reads, into Squad Monthly (lrr_ld).'],
   ['LRR_SHEET', '1g8VpAeyE8md-1us58uHZxtRAKKFCTCKHhuwC8ZOpzyc', 'The Lunchtime Redirection Reflection responses sheet (link or ID), the same one EMS Follow-Up reads.'],
   ['CONSEQUENCE_SHEET', '1IVFnkQQvSvNSY_OZPMutPzkTqmJ1j5XYRoT9YvNy-v4', 'The Accountability & Intervention Log (link or ID), for Lunch Detentions.'],

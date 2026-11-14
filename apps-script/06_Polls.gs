@@ -203,6 +203,7 @@ function clashPulseLive() {
   return JSON.stringify({
     live: pulses.filter(function (p) { return pollOpenOn_(p, today); }).map(shape),
     recent: pulses.filter(function (p) { return p.through < today; }).sort(function (a, b) { return b.through.localeCompare(a.through); }).slice(0, 3).map(shape),
+    youSaid: youSaidPublic_(4), // 30_YouSaid.gs: what changed because of a Pulse
   });
 }
 
