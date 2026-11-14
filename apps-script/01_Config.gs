@@ -206,6 +206,9 @@ const DEFAULT_SETTINGS = [
   ['AVALANCHE_TYPES', 'daily_poll, squad_move, squad_make, squad_talk, pride_day', 'Avalanche: the kinds of points that count double.'],
   ['VIRTUAL_DOUGH_POINTS', '1, 3, 5', 'Virtual Trait Dough: the point choices a teacher picks from.'],
   ['VIRTUAL_DOUGH_DAILY', '10', 'Virtual Trait Dough: bills each teacher can give per day.'],
+  ['VIRTUAL_DOUGH_PER_STUDENT', '2', 'Virtual Trait Dough: the most bills one student can get in a day, from all teachers together.'],
+  ['DOUGH_NUDGE', 'ON', 'Fridays after 1:00: each Dough Teacher with an Email gets a short note (their bills this week, squads they haven\'t given to this month). OFF = no notes.'],
+  ['LAST_ARCHIVE', '', 'Filled in by Menu › New school year: the link to last year\'s archive copy of this Sheet.'],
   ['VIRTUAL_DOUGH_TRAITS', '', 'Virtual Trait Dough: the traits to pick from, comma-separated. Blank = the LRG traits (LRG Traits tab).'],
   ['SERVICE_POINTS', '5, 10, 20', 'Service submissions: the point choices staff approve with.'],
   ['SERVICE_OPEN', '3', 'Service submissions: how many a student can have waiting at once.'],
@@ -446,4 +449,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = 'd1712a608b';
+var FILE_STAMP_01_Config = '106a706161';

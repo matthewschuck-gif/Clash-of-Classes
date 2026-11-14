@@ -10,18 +10,28 @@
  *     Trait Dough (type trait_dough), so it counts for the Trait Dough Drive area like paper bills.
  *   - VIRTUAL_DOUGH_DAILY (10) bills per teacher per day. 5 wrong passwords = that name is locked
  *     for 15 minutes.
- * DOUGH TEACHERS tab (staff only): Active | Teacher | Squad | Password.
+ *   - VIRTUAL_DOUGH_PER_STUDENT (2) bills per student per day, from all teachers together.
+ *   - The points balance check (29_Balance.gs) flags lopsided giving: one teacher's bills mostly to one
+ *     student or one squad, or a student whose dough all comes from one teacher.
+ *   - Fridays (DOUGH_NUDGE ON) each teacher with an Email gets a short note: their bills this week and
+ *     the squads they haven't given to this month.
+ * DOUGH TEACHERS tab (staff only): Active | Teacher | Squad | Password | Email.
  * VIRTUAL DOUGH tab: every bill (When | Teacher | Teacher Squad | 800# | Student | Squad | Trait |
  * What They Did | Points). The public site only ever shows "Virtual Trait Dough: Ann L.".
  */
 
-const DOUGH_TEACHER_HEADERS_ = ['Active', 'Teacher', 'Squad', 'Password'];
+const DOUGH_TEACHER_HEADERS_ = ['Active', 'Teacher', 'Squad', 'Password', 'Email'];
 const DOUGH_LOG_HEADERS_ = ['When', 'Teacher', 'Teacher Squad', '800#', 'Student', 'Squad', 'Trait', 'What They Did', 'Points'];
 
 function ensureDoughTabs_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  [['Dough Teachers', DOUGH_TEACHER_HEADERS_, [[false, 'Example Teacher (untick or replace)', 'GOLD', '74']]], ['Virtual Dough', DOUGH_LOG_HEADERS_, null]].forEach(function (t) {
-    if (ss.getSheetByName(t[0])) return;
+  [['Dough Teachers', DOUGH_TEACHER_HEADERS_, [[false, 'Example Teacher (untick or replace)', 'GOLD', '74', '']]], ['Virtual Dough', DOUGH_LOG_HEADERS_, null]].forEach(function (t) {
+    const old = ss.getSheetByName(t[0]);
+    if (old) { // an older tab gets the newer columns (Email)
+      const head = old.getRange(1, 1, 1, Math.max(1, old.getLastColumn())).getValues()[0].map(function (h) { return String(h).trim(); });
+      t[1].forEach(function (h) { if (head.indexOf(h) === -1) { head.push(h); old.getRange(1, head.length).setValue(h).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff'); } });
+      return;
+    }
     const sh = ss.insertSheet(t[0]);
     sh.getRange(1, 1, 1, t[1].length).setValues([t[1]]).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
     sh.setFrozenRows(1);
@@ -32,7 +42,7 @@ function ensureDoughTabs_() {
 
 function doughTeachers_() {
   return sheetRows_('Dough Teachers').filter(function (r) { return ticked_(r['Active']) && String(r['Teacher'] || '').trim(); }).map(function (r) {
-    return { name: String(r['Teacher']).trim(), squad: squadOf_(r['Squad']), pw: String(r['Password'] == null ? '' : r['Password']).trim() };
+    return { name: String(r['Teacher']).trim(), squad: squadOf_(r['Squad']), pw: String(r['Password'] == null ? '' : r['Password']).trim(), email: String(r['Email'] || '').trim() };
   });
 }
 
@@ -112,6 +122,9 @@ function clashDoughGive(token, id, trait, what, points) {
   try {
     const max = Math.max(1, settingNum_('VIRTUAL_DOUGH_DAILY', 10)), given = doughGivenToday_(me.name);
     if (given >= max) throw new Error('That\'s all ' + max + ' of today\'s bills. More tomorrow!');
+    const perStudent = Math.max(1, settingNum_('VIRTUAL_DOUGH_PER_STUDENT', 2)), today = todayYmd_();
+    const theirs = sheetRows_('Virtual Dough').filter(function (r) { return id800_(r['800#']) === sid && String(r['When']).slice(0, 10) === today; }).length;
+    if (theirs >= perStudent) throw new Error('That student already got ' + theirs + ' bills today (the most per day). Catch them again tomorrow!');
     const first = String(stu['First Name'] || '').trim(), last = String(stu['Last Name'] || '').trim();
     const full = first + ' ' + last, short = first + (last ? ' ' + last.charAt(0) + '.' : '');
     ensureDoughTabs_();
@@ -127,5 +140,65 @@ function serveDough_() {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+// ── Fairness flags (for the points balance check) ──
+/** Lines about lopsided Virtual Dough between from and to. Students named first name + last initial. */
+function doughFlags_(from, to) {
+  const rows = sheetRows_('Virtual Dough').filter(function (r) { const d = String(r['When']).slice(0, 10); return d >= from && d <= to; });
+  const flags = [], byTeacher = {}, byStudent = {};
+  rows.forEach(function (r) {
+    const t = String(r['Teacher']), id = id800_(r['800#']);
+    (byTeacher[t] = byTeacher[t] || []).push(r);
+    (byStudent[id] = byStudent[id] || []).push(r);
+  });
+  Object.keys(byTeacher).forEach(function (t) {
+    const list = byTeacher[t];
+    if (list.length < 8) return;
+    const per = {}, sq = {};
+    list.forEach(function (r) { const id = id800_(r['800#']); per[id] = (per[id] || 0) + 1; sq[squadOf_(r['Squad'])] = (sq[squadOf_(r['Squad'])] || 0) + 1; });
+    const topId = Object.keys(per).sort(function (a, b) { return per[b] - per[a]; })[0];
+    if (per[topId] / list.length > 0.4) flags.push('Virtual Dough: ' + t + ' gave ' + per[topId] + ' of ' + list.length + ' bills to one student (' + shortName_(list.filter(function (r) { return id800_(r['800#']) === topId; })[0]['Student']) + ').');
+    const topSq = Object.keys(sq).sort(function (a, b) { return sq[b] - sq[a]; })[0];
+    if (sq[topSq] / list.length > 0.7) flags.push('Virtual Dough: ' + t + ' gave ' + sq[topSq] + ' of ' + list.length + ' bills to ' + titleSquad_(topSq) + '.');
+  });
+  Object.keys(byStudent).forEach(function (id) {
+    const list = byStudent[id], teachers = {};
+    list.forEach(function (r) { teachers[String(r['Teacher'])] = 1; });
+    if (list.length >= 5 && Object.keys(teachers).length === 1) flags.push('Virtual Dough: ' + shortName_(list[0]['Student']) + ' got all ' + list.length + ' bills from ' + Object.keys(teachers)[0] + '.');
+  });
+  return flags;
+}
+
+// ── The Friday nudge ──
+/** Emails each active teacher with an Email: bills this week, squads not given to this month. Returns lines. */
+function doughNudge_() {
+  const today = todayYmd_(), mon = ymdShift_(today, -((new Date(today + 'T12:00:00Z').getUTCDay() + 6) % 7)), month = today.slice(0, 7);
+  const rows = sheetRows_('Virtual Dough'), lines = [], site = siteUrl_();
+  doughTeachers_().filter(function (t) { return /@/.test(t.email); }).forEach(function (t) {
+    const mine = rows.filter(function (r) { return String(r['Teacher']) === t.name; });
+    const week = mine.filter(function (r) { return String(r['When']).slice(0, 10) >= mon; }).length;
+    const monthRows = mine.filter(function (r) { return String(r['When']).slice(0, 7) === month; });
+    const others = SQUAD_KEYS_.filter(function (s) { return s !== t.squad; });
+    const none = others.filter(function (s) { return !monthRows.some(function (r) { return squadOf_(r['Squad']) === s; }); });
+    const body = '<div style="font:15px/1.6 Arial,sans-serif;color:#22123b">' +
+      '<p>Hi ' + t.name + ',</p><p>' + (week ? 'You gave <b>' + week + '</b> Virtual Trait Dough bill' + (week === 1 ? '' : 's') + ' this week. Thank you!' : 'No Virtual Trait Dough from you yet this week.') + '</p>' +
+      (none.length ? '<p>This month, <b>' + none.map(titleSquad_).join(' and ') + '</b> ' + (none.length === 1 ? 'hasn\'t' : 'haven\'t') + ' gotten any from you. Keep an eye out for a student showing a trait.</p>' : '<p>You\'ve given to every other squad this month. 🙌</p>') +
+      '<p><a href="' + site + '/dough" style="background:#1f7a4d;color:#fff;padding:9px 16px;border-radius:999px;text-decoration:none;font-weight:700">Give Trait Dough</a></p>' +
+      '<p style="color:#888;font-size:12px">Sent on Fridays by Clash of Classes. Ask the Clash coordinator to take you off (Dough Teachers tab, Email).</p></div>';
+    try { MailApp.sendEmail({ to: t.email, subject: 'Virtual Trait Dough this week', htmlBody: body, name: 'Clash of Classes' }); lines.push(t.name + ': sent'); }
+    catch (e) { lines.push(t.name + ': not sent (' + e.message + ')'); }
+  });
+  return lines;
+}
+
+function maybeDoughNudge_() {
+  if (String(getSetting_('DOUGH_NUDGE') || 'ON').toUpperCase() !== 'ON') return;
+  const now = new Date(), today = todayYmd_();
+  if (new Date(today + 'T12:00:00Z').getUTCDay() !== 5 || Number(Utilities.formatDate(now, Session.getScriptTimeZone(), 'H')) < 13) return;
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('dough-nudge') === today) return;
+  props.setProperty('dough-nudge', today);
+  doughNudge_();
+}
+
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_39_VirtualDough = '7f6df5d1ee';
+var FILE_STAMP_39_VirtualDough = 'a4af1802a4';

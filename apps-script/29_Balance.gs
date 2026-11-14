@@ -71,6 +71,7 @@ function pointsBalance_(events, to, days) {
       flags.push(titleSquad_(place[0]) + '\'s lead over ' + titleSquad_(place[1]) + ' (' + lead + ' points) is mostly ' + edge.t.label + ' (' + edge.gap + ' of it).');
     }
   }
+  try { flags.push.apply(flags, doughFlags_(from, to)); } catch (e) { /* no Virtual Dough yet */ }
   return { from: from, to: to, days: days, total: total, squads: squads, types: types, flags: flags, leader: place[0] };
 }
 
@@ -98,4 +99,4 @@ function menuPointsBalance_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_29_Balance = '61b7fefe7e';
+var FILE_STAMP_29_Balance = '4c3e61dd8d';

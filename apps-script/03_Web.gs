@@ -28,7 +28,8 @@ function serveSite_(e) {
   if (e && e.parameter && e.parameter.page === 'pollboard') return servePollBoard_(); // the live poll screen (26_PollIdeas.gs)
   if (e && e.parameter && e.parameter.page === 'dough') return serveDough_(); // Virtual Trait Dough for teachers (39_VirtualDough.gs)
   if (e && e.parameter && (e.parameter.page === 'morning' || e.parameter.tv === 'morning')) return serveMorning_(); // Morning Clash (41_Morning.gs)
-  if (e && e.parameter && e.parameter.page === 'family') return serveFamily_(); // the monthly family update (42_Family.gs)
+  if (e && e.parameter && e.parameter.page === 'family') return serveFamily_();
+  if (e && e.parameter && e.parameter.page === 'reveal') return serveReveal_(); // the Clash Bash reveal + award certificates (44_Reveal.gs) // the monthly family update (42_Family.gs)
   if (e && e.parameter && e.parameter.page === 'guides') return serveGuides_(); // one-page role guides from Settings (33_Guides.gs)
   if (e && e.parameter && e.parameter.page === 'frost') return serveFrostPage_(); // Freeze & Thaw slides + frost meter (28_Frost.gs)
   const t = HtmlService.createTemplateFromFile('Index');
@@ -149,6 +150,7 @@ function backgroundTick() {
   try { maybeStateOfSquads_(); } catch (e) { noteError_('state of the squads', e); } // 31_StateOfSquads.gs, monthly email
   try { maybePayAvalanches_(); } catch (e) { noteError_('avalanche', e); } // 38_Avalanche.gs, hourly
   try { maybeSuggestSpotlights_(); } catch (e) { noteError_('spotlight', e); } // 41_Morning.gs, Mondays
+  try { maybeDoughNudge_(); } catch (e) { noteError_('dough nudge', e); } // 39_VirtualDough.gs, Fridays
   try { cachedPublicLoad_(true); cachedGame_(true); } catch (e) { noteError_('warm cache', e); }
 }
 
@@ -377,6 +379,11 @@ function onOpen() {
     .addItem('State of the Squads: preview last month', 'menuPreviewStateOfSquads_')
     .addItem('State of the Squads: send now', 'menuSendStateOfSquads_')
     .addItem('Open the role guides (one page each)', 'menuOpenGuides_')
+    .addItem('Setup check', 'menuSelfCheck_')
+    .addSeparator()
+    .addItem('Clash Bash reveal show + award certificates', 'menuOpenReveal_')
+    .addItem('New school year: preview (nothing changes)', 'menuRolloverPreview_')
+    .addItem('New school year: archive and roll over…', 'menuRollover_')
     .addItem('Today\'s morning announcement', 'menuAnnouncement_')
     .addItem('Turn on the weekly digest email', 'menuTurnOnDigest_')
     .addItem('Turn off the weekly digest email', 'menuTurnOffDigest_')
@@ -404,4 +411,4 @@ function menuOpenSite_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_03_Web = '39f25ffc58';
+var FILE_STAMP_03_Web = '940fca963d';

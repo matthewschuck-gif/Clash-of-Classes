@@ -30,11 +30,21 @@
 </style>
 </head>
 <body>
-<main><div class="bar"><select id="sq"><option value="">All squads</option><option>BLACK</option><option>GOLD</option><option>GREY</option><option>PURPLE</option></select><button onclick="window.print()">Print</button></div>
+<main><div class="bar"><select id="lg"><option value="en">English</option><option value="es">Español</option></select><select id="sq"><option value="">All squads</option><option>BLACK</option><option>GOLD</option><option>GREY</option><option>PURPLE</option></select><button onclick="window.print()">Print</button></div>
 <div class="paper" id="paper">Loading…</div></main>
 <script>
 (function () {
-  var D = null, pick = '';
+  var D = null, pick = '', lang = 'en';
+  var W = {
+    en: { kicker: 'Clash of Classes · Ephrata Middle School', squadOf: ' Squad: ', intro: 'A note for families: what your student\'s squad did last month. Every student belongs to one of four squads; squads earn points together for showing up, taking part and showing our traits.',
+      squads: 'The squads', squad: 'Squad', pointsIn: 'Points in', total: 'Total', place: 'Place', areas: 'Areas of the school held', won: ' won the Clash Bash this year.', soon: 'The season is over; the Clash Bash winner is revealed soon.', through: 'Points count toward the end-of-year Clash Bash through ',
+      told: 'What students told the school', youSaid: 'You said: ', weDid: 'What we did: ', spot: 'Squad Spotlight', coming: 'Coming up', ask: 'Ask your student about their squad tonight. Live standings: ', all: 'All squads', print: 'Print' },
+    es: { kicker: 'Clash of Classes · Escuela Intermedia de Ephrata', squadOf: ': escuadrón ', intro: 'Una nota para las familias: lo que hizo el escuadrón de su estudiante el mes pasado. Cada estudiante pertenece a uno de cuatro escuadrones; los escuadrones ganan puntos juntos por asistir, participar y mostrar nuestros valores.',
+      squads: 'Los escuadrones', squad: 'Escuadrón', pointsIn: 'Puntos en', total: 'Total', place: 'Lugar', areas: 'Áreas de la escuela que tienen', won: ' ganó el Clash Bash este año.', soon: 'La temporada terminó; pronto se anuncia el ganador del Clash Bash.', through: 'Los puntos cuentan para el Clash Bash de fin de año hasta el ',
+      told: 'Lo que los estudiantes le dijeron a la escuela', youSaid: 'Ustedes dijeron: ', weDid: 'Lo que hicimos: ', spot: 'Estudiantes destacados', coming: 'Próximamente', ask: 'Pregúntele hoy a su estudiante sobre su escuadrón. Posiciones en vivo: ', all: 'Todos los escuadrones', print: 'Imprimir' },
+  };
+  var SQN = { es: { BLACK: 'Negro', GOLD: 'Dorado', GREY: 'Gris', PURPLE: 'Morado' } };
+  function sqName(s) { return (SQN[lang] && SQN[lang][s]) || title(s); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function title(s) { return s.charAt(0) + s.slice(1).toLowerCase(); }
   function day(ymd) { var d = new Date(ymd + 'T12:00:00'); return (d.getMonth() + 1) + '/' + d.getDate(); }
@@ -42,31 +52,39 @@
     var sq = D.squads.filter(function (s) { return !pick || s.squad === pick; });
     var mine = pick ? sq[0] : null;
     var season = D.season || {};
-    var html = '<div class="kicker">Clash of Classes · Ephrata Middle School</div><h1>' + (mine ? title(mine.squad) + ' Squad: ' : '') + esc(D.label) + '</h1>' +
-      '<p class="sub">A note for families: what your student\'s squad did last month. Every student belongs to one of four squads; squads earn points together for showing up, taking part and showing our traits.</p>';
-    html += '<h2>The squads</h2><table><tr><th>Squad</th><th class="num">Points in ' + esc(D.label.split(' ')[0]) + '</th><th class="num">Total</th><th class="num">Place</th><th>Areas of the school held</th></tr>' +
-      sq.map(function (s) { return '<tr><td style="color:var(--' + s.squad + ');font-weight:700">' + title(s.squad) + '</td><td class="num">' + s.month.toLocaleString() + '</td><td class="num">' + s.total.toLocaleString() + '</td><td class="num">' + s.place + '</td><td>' + (s.zones.length ? s.zones.map(esc).join(', ') : '—') + '</td></tr>'; }).join('') + '</table>';
-    if (season.end) html += '<p class="said">' + (season.over ? (season.revealed && season.winner ? '🏆 ' + title(season.winner) + ' won the Clash Bash this year.' : 'The season is over; the Clash Bash winner is revealed soon.') : 'Points count toward the end-of-year Clash Bash through ' + day(season.end) + '.') + '</p>';
+    var w = W[lang];
+    var html = '<div class="kicker">' + w.kicker + '</div><h1>' + (mine ? (lang === 'es' ? esc(D.label) + w.squadOf + sqName(mine.squad) : sqName(mine.squad) + w.squadOf + esc(D.label)) : esc(D.label)) + '</h1>' +
+      '<p class="sub">' + w.intro + '</p>';
+    html += '<h2>' + w.squads + '</h2><table><tr><th>' + w.squad + '</th><th class="num">' + w.pointsIn + ' ' + esc(D.label.split(' ')[0]) + '</th><th class="num">' + w.total + '</th><th class="num">' + w.place + '</th><th>' + w.areas + '</th></tr>' +
+      sq.map(function (s) { return '<tr><td style="color:var(--' + s.squad + ');font-weight:700">' + sqName(s.squad) + '</td><td class="num">' + s.month.toLocaleString() + '</td><td class="num">' + s.total.toLocaleString() + '</td><td class="num">' + s.place + '</td><td>' + (s.zones.length ? s.zones.map(esc).join(', ') : '—') + '</td></tr>'; }).join('') + '</table>';
+    if (season.end) html += '<p class="said">' + (season.over ? (season.revealed && season.winner ? '🏆 ' + sqName(season.winner) + w.won : w.soon) : w.through + day(season.end) + '.') + '</p>';
     if (D.pulses.length || D.youSaid.length) {
-      html += '<h2>What students told the school</h2><ul>' + D.pulses.map(function (p) { return '<li><span class="q">' + esc(p.question) + '</span><br><span class="said">' + esc(p.said) + '</span></li>'; }).join('') +
-        D.youSaid.map(function (y) { return '<li><span class="q">' + esc(y.question) + '</span><br><span class="said">You said: ' + esc(y.said) + '</span><br><span class="did">What we did: ' + esc(y.did) + '</span></li>'; }).join('') + '</ul>';
+      html += '<h2>' + w.told + '</h2><ul>' + D.pulses.map(function (p) { return '<li><span class="q">' + esc(p.question) + '</span><br><span class="said">' + esc(p.said) + '</span></li>'; }).join('') +
+        D.youSaid.map(function (y) { return '<li><span class="q">' + esc(y.question) + '</span><br><span class="said">' + w.youSaid + esc(y.said) + '</span><br><span class="did">' + w.weDid + esc(y.did) + '</span></li>'; }).join('') + '</ul>';
     }
     var spot = D.spotlight.filter(function (s) { return !pick || s.squad === pick; });
-    if (spot.length) html += '<h2>Squad Spotlight</h2><ul>' + spot.map(function (s) { return '<li><b>' + esc(s.who) + '</b> (' + title(s.squad) + '): ' + esc(s.story) + '</li>'; }).join('') + '</ul>';
-    if (D.coming.length) html += '<h2>Coming up</h2><ul>' + D.coming.map(function (c) { return '<li>' + day(c.date) + ': ' + esc(c.title) + (c.kind ? ' <span class="said">(' + esc(c.kind) + ')</span>' : '') + '</li>'; }).join('') + '</ul>';
-    html += '<p class="foot">Ask your student about their squad tonight. Live standings: ' + esc(D.site) + '</p>';
+    if (spot.length) html += '<h2>' + w.spot + '</h2><ul>' + spot.map(function (s) { return '<li><b>' + esc(s.who) + '</b> (' + sqName(s.squad) + '): ' + esc(s.story) + '</li>'; }).join('') + '</ul>';
+    if (D.coming.length) html += '<h2>' + w.coming + '</h2><ul>' + D.coming.map(function (c) { return '<li>' + day(c.date) + ': ' + esc(c.title) + (c.kind ? ' <span class="said">(' + esc(c.kind) + ')</span>' : '') + '</li>'; }).join('') + '</ul>';
+    html += '<p class="foot">' + w.ask + esc(D.site) + '</p>';
+    document.getElementById('sq').options[0].text = w.all; document.querySelector('.bar button').textContent = w.print;
     document.getElementById('paper').innerHTML = html;
   }
   document.getElementById('sq').onchange = function () { pick = this.value; draw(); };
+  document.getElementById('lg').onchange = function () { lang = this.value; load(D ? D.month : ''); };
+  function load(month) {
+    document.getElementById('paper').textContent = lang === 'es' ? 'Cargando…' : 'Loading…';
+    google.script.run.withSuccessHandler(function (t) { D = JSON.parse(t); draw(); })
+      .withFailureHandler(function (e) { document.getElementById('paper').textContent = 'Could not load: ' + (e && e.message); }).clashFamily(month || '', pick, lang);
+  }
   function start(p) {
     pick = (p && p.squad || '').toUpperCase().replace('GRAY', 'GREY');
-    document.getElementById('sq').value = pick;
-    google.script.run.withSuccessHandler(function (t) { D = JSON.parse(t); draw(); })
-      .withFailureHandler(function (e) { document.getElementById('paper').textContent = 'Could not load: ' + (e && e.message); }).clashFamily((p && p.month) || '', pick);
+    lang = p && p.lang === 'es' ? 'es' : 'en';
+    document.getElementById('sq').value = pick; document.getElementById('lg').value = lang;
+    load((p && p.month) || '');
   }
   try { google.script.url.getLocation(function (loc) { start(loc && loc.parameter); }); } catch (e) { start({}); }
 })();
 </script>
 </body>
 </html>
-<!-- file-stamp: 9cd1fa4100 -->
+<!-- file-stamp: f53fbe5da6 -->

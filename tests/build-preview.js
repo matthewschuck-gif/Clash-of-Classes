@@ -10,7 +10,7 @@ const read = f => fs.readFileSync(path.join(dir, f), 'utf8');
 function build(page) {
   // ?page=me → My Climb (Me.html), signed in as the sample student Ann L.
   // ?page=pollboard → the live Poll Board with a sample School Pulse poll running today.
-  const STANDALONE = { frost: 'FrostPage', pollboard: 'PollBoard', dough: 'Dough', morning: 'Morning', family: 'Family', guides: 'Guides' };
+  const STANDALONE = { frost: 'FrostPage', pollboard: 'PollBoard', dough: 'Dough', morning: 'Morning', family: 'Family', guides: 'Guides', reveal: 'Reveal' };
   let html = (STANDALONE[page] && page !== 'frost' && page !== 'pollboard' ? read(STANDALONE[page] + '.html') : page === 'frost' ? read('FrostPage.html') : page === 'pollboard' ? read('PollBoard.html') : page === 'me' ? read('Me.html').replace(/<? if (shield) { ?>|<? } ?>/g, '').replace('<?= shield ?>', '/shield.png') : read('Index.html'))
     .replace(/<\?!= include\('([A-Za-z]+)'\); \?>/g, (m, f) => read(f + '.html'))
     .replace('<?!= config ?>', JSON.stringify({ pollMs: 5000 })).replace('<?!= boot ?>', 'null');
@@ -126,7 +126,7 @@ const out = path.join(__dirname, 'preview.html');
 fs.writeFileSync(out, build());
 http.createServer((req, res) => {
   if (req.url === '/shield.png') { res.writeHead(200, { 'Content-Type': 'image/png' }); return res.end(fs.readFileSync(path.join(__dirname, '..', 'assets', 'shield-2026-27.png'))); }
-  fs.writeFileSync(out, build((req.url.match(/page=(dough|morning|family|guides)/) || [])[1] || (/tv=morning/.test(req.url) ? 'morning' : '') || (/page=frost/.test(req.url) ? 'frost' : /page=pollboard/.test(req.url) ? 'pollboard' : '') || (/page=me/.test(req.url) ? 'me' : '')));
+  fs.writeFileSync(out, build((req.url.match(/page=(dough|morning|family|guides|reveal)/) || [])[1] || (/tv=morning/.test(req.url) ? 'morning' : '') || (/page=frost/.test(req.url) ? 'frost' : /page=pollboard/.test(req.url) ? 'pollboard' : '') || (/page=me/.test(req.url) ? 'me' : '')));
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
   res.end(fs.readFileSync(out));
 }).listen(Number(process.env.PORT) || 3041, () => console.log('Preview on http://localhost:' + (Number(process.env.PORT) || 3041)));

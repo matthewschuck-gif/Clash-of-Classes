@@ -3091,10 +3091,21 @@ function renderVersion(){
       (r.note?'<div style="font-size:12px;color:var(--text3);margin-top:6px">'+esc(r.note)+'</div>':'')+'</div>';
   }).catch(function(e){ box.innerHTML='<div style="color:#fca5a5;margin-bottom:14px">Version check: '+esc(e&&e.message||e)+'</div>'; });
 }
+// Admin › System: the setup check (45_SelfCheck.gs).
+function renderSelfCheck(){
+  var box=document.getElementById('selfCheckCard'); if(!box||!window.gasRun_) return;
+  var esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  window.gasRun_('clashSelfCheck', window.ADMIN_SESSION||'').then(function(list){
+    var bad=list.filter(function(x){return !x.ok;});
+    box.innerHTML='<div style="border:2px solid '+(bad.length?'#f59e0b':'#16a34a')+';border-radius:12px;padding:12px 14px;margin-bottom:14px"><div style="font-weight:800">'+(bad.length?'🔧 Setup check: '+bad.length+' to fix':'✅ Setup check: everything checks out')+'</div>'+
+      bad.map(function(x){ return '<div style="margin-top:8px"><b>'+esc(x.area)+':</b> '+esc(x.text)+'<div style="font-size:13px;color:var(--text3)">Fix: '+esc(x.fix)+'</div></div>'; }).join('')+
+      '<details style="margin-top:8px"><summary style="cursor:pointer;color:var(--text3);font-size:13px">What passed ('+(list.length-bad.length)+')</summary>'+list.filter(function(x){return x.ok;}).map(function(x){ return '<div style="font-size:13px;color:var(--text3)">✓ '+esc(x.area)+': '+esc(x.text)+'</div>'; }).join('')+'</details></div>';
+  }).catch(function(e){ box.innerHTML='<div style="color:#fca5a5;margin-bottom:14px">Setup check: '+esc(e&&e.message||e)+'</div>'; });
+}
 // Admin › System: the TV links (36_TV.gs), each with a Copy button.
 function tvLinksCard(){
   var base=((window.D&&D.tv&&D.tv.siteUrl)||'https:'+String.fromCharCode(47,47)+'clashofclasses.org');
-  var links=[['📺 Full TV rotation','Standings, map, polls, Pulse, challenges, latest points',base+'/?tv=1'],['🗳️ Polls-only TV','Today\'s polls, the Pulse and the standings (homeroom mornings)',base+'/?tv=polls'],['📊 Poll Board','One poll at a time, big bars, squad turnout, standings along the bottom',base+'/?page=pollboard'],['☀️ Morning Clash','Homeroom: announcement, today\'s poll, standings, the trait, the Spotlight (plays by itself)',base+'/morning'],['💵 Virtual Trait Dough','Teachers give dough to students in the other squads (their own password)',base+'/dough'],['📰 Family update','Last month for families, printable (add ?squad=gold for one squad)',base+'/family'],['📱 Vote link (shown big on every poll screen)','Students type it on a Chromebook: opens straight to today\'s poll',base+'/vote']];
+  var links=[['📺 Full TV rotation','Standings, map, polls, Pulse, challenges, latest points',base+'/?tv=1'],['🗳️ Polls-only TV','Today\'s polls, the Pulse and the standings (homeroom mornings)',base+'/?tv=polls'],['📊 Poll Board','One poll at a time, big bars, squad turnout, standings along the bottom',base+'/?page=pollboard'],['☀️ Morning Clash','Homeroom: announcement, today\'s poll, standings, the trait, the Spotlight (plays by itself)',base+'/morning'],['💵 Virtual Trait Dough','Teachers give dough to students in the other squads (their own password)',base+'/dough'],['📰 Family update','Last month for families, printable; English or Español (add ?squad=gold for one squad)',base+'/family'],['🏆 Clash Bash reveal','The June show + award certificates (admin password)',base+'/?page=reveal'],['📱 Vote link (shown big on every poll screen)','Students type it on a Chromebook: opens straight to today\'s poll',base+'/vote']];
   var esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
   return '<div style="border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px"><div style="font-weight:800;margin-bottom:6px">📺 TV links (all update live)</div>'+
     links.map(function(l){ return '<div style="display:flex;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--border)"><div style="flex:1;min-width:0"><b>'+esc(l[0])+'</b><div style="font-size:12px;color:var(--text3)">'+esc(l[1])+'</div><div style="font-family:DM Mono,monospace;font-size:12px;word-break:break-all">'+esc(l[2])+'</div></div>'+
@@ -3110,8 +3121,8 @@ function renderSystem(){
   Promise.all([window.gasRun_('clashHealth', window.ADMIN_SESSION||''), window.gasRun_('clashAnnouncement', window.ADMIN_SESSION||'').catch(()=>({text:''}))]).then(function(r){
     const h=r[0], a=r[1], ok=b=>b?'<span style="color:#86efac">✓</span>':'<span style="color:#fbbf24">⚠</span>';
     const jobs=h.jobs.map(j=>'<div style="display:grid;grid-template-columns:22px 1fr auto;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">'+ok(j.ok)+'<span>'+esc(j.label)+(j.expected?'':' <span style="color:var(--text3)">(off)</span>')+(j.expected&&!j.trigger?'<br><span style="color:#fbbf24">No trigger: run setup or its Turn on menu item.</span>':'')+'</span><span style="color:var(--text3)">'+(j.ago||'never')+'</span></div>').join('');
-    setTimeout(renderVersion,0);
-    box.innerHTML=tvCard+'<div id="versionCard"></div>'+
+    setTimeout(renderVersion,0); setTimeout(renderSelfCheck,0);
+    box.innerHTML=tvCard+'<div id="versionCard"></div><div id="selfCheckCard"></div>'+
       '<div class="fr"><label>Automatic jobs</label>'+jobs+'</div>'+
       (h.lastError?'<div class="fr"><label>Last error</label><div style="font-size:13px;color:#fca5a5">'+esc(h.lastError.job)+': '+esc(h.lastError.message)+' <span style="color:var(--text3)">('+esc(h.lastError.ago)+')</span></div></div>':'')+
       '<div class="fr"><label>Data from Define a Climb-er</label><div style="font-size:13px">'+ok(h.studentBoard.ok)+' Student Board updated '+esc(h.studentBoard.updated||'never')+'<br><span style="color:var(--text3)">'+esc(h.squadBoard)+'</span><br><span style="color:var(--text3)">'+esc(h.metricsNote)+'</span></div></div>'+
@@ -5687,4 +5698,4 @@ window.__moduleReady=true;
 // Now that all functions are live, re-render whatever page the user navigated to
 goTo(window.__currentPage || currentPage);
 </script>
-<!-- file-stamp: a9505106fa -->
+<!-- file-stamp: adc2d036f4 -->

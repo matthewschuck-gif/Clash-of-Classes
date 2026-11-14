@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root { --bg:#170b29; --panel:#22123b; --ink:#f6f0ff; --mute:#b9a6d8; --gold:#ffd23f;
+    --BLACK:#e9e3f5; --GOLD:#ffd23f; --GREY:#9aa5b8; --PURPLE:#b583ff; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,'Segoe UI',sans-serif; }
+  body { background: radial-gradient(1200px 700px at 50% -10%, #3b1a66 0%, transparent 60%), var(--bg); }
+  .stage { height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:4vh 6vw; cursor:pointer; overflow:hidden; }
+  .kick { font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); font-size:clamp(14px,1.6vw,26px); }
+  h1 { font-family:Georgia,serif; font-weight:900; font-size:clamp(36px,7vw,130px); margin:2vh 0; line-height:1.02; }
+  h2 { font-family:Georgia,serif; font-weight:900; font-size:clamp(28px,4.4vw,80px); margin:1.4vh 0; }
+  .sub { color:var(--mute); font-size:clamp(16px,2vw,34px); }
+  .pop { animation:pop .9s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes pop { from { transform:scale(.3); opacity:0; } to { transform:none; opacity:1; } }
+  .fade { animation:fade .8s ease-out; }
+  @keyframes fade { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+  .num { font-family:Georgia,serif; font-weight:900; font-size:clamp(60px,12vw,220px); font-variant-numeric:tabular-nums; }
+  .hint { position:fixed; bottom:2vh; right:3vw; color:#ffffff55; font-size:13px; }
+  .login { max-width:420px; margin:20vh auto; padding:24px; background:var(--panel); border-radius:16px; text-align:center; }
+  .login input, .login button { width:100%; padding:12px; border-radius:10px; font:inherit; margin-top:10px; border:1px solid #ffffff22; }
+  .login input { background:#12081f; color:var(--ink); }
+  .login button { background:var(--gold); border:0; font-weight:800; color:#1a0b2e; cursor:pointer; }
+  .err { color:#fca5a5; min-height:1.2em; margin-top:8px; }
+  .confetti { position:fixed; top:-20px; width:12px; height:18px; border-radius:3px; animation:fall linear forwards; pointer-events:none; }
+  @keyframes fall { to { transform:translateY(110vh) rotate(720deg); } }
+  /* Certificates: one award per printed page. */
+  .certs { display:none; }
+  .cert { width:100%; min-height:96vh; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; border:10px double #490e6f; border-radius:18px; padding:6vh 6vw; margin-bottom:4vh; background:#fff; color:#22123b; page-break-after:always; font-family:Georgia,serif; }
+  .cert .k { font:700 14px system-ui,sans-serif; letter-spacing:.2em; text-transform:uppercase; color:#a16207; }
+  .cert h1 { color:#490e6f; font-size:48px; }
+  .cert .who { font-size:40px; font-weight:900; margin:12px 0; }
+  .cert .d { font:18px system-ui,sans-serif; color:#5d4d78; }
+  .cert .foot { margin-top:40px; font:14px system-ui,sans-serif; color:#5d4d78; }
+  body.print { background:#fff; color:#22123b; }
+  body.print .stage, body.print .hint { display:none; }
+  body.print .certs { display:block; padding:16px; }
+  .bar { position:fixed; top:12px; right:12px; display:flex; gap:8px; z-index:5; }
+  .bar button { padding:8px 14px; border-radius:999px; border:0; background:#ffffff22; color:#fff; font-weight:700; cursor:pointer; }
+  body.print .bar button { background:#490e6f; }
+  @media print { .bar { display:none; } body.print .certs { padding:0; } .cert { min-height:auto; height:95vh; margin:0; } }
+  @media (prefers-reduced-motion: reduce) { .pop, .fade, .confetti { animation:none; } }
+</style>
+</head>
+<body>
+<div id="app"><div class="login"><div class="kick">Clash Bash</div><h2>The reveal</h2><div class="sub">Admin password</div><input id="pw" type="password" autocomplete="off"><button id="go">Start the show</button><div class="err" id="err"></div></div></div>
+<script>
+(function () {
+  var D = null, slides = [], i = 0;
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function title(s) { return s ? s.charAt(0) + s.slice(1).toLowerCase() : ''; }
+  function run(fn) { var a = Array.prototype.slice.call(arguments, 1); return new Promise(function (ok, no) { var r = google.script.run.withSuccessHandler(function (t) { ok(JSON.parse(t)); }).withFailureHandler(no); r[fn].apply(r, a); }); }
+  function sq(s, inner) { return '<span style="color:var(--' + s + ')">' + inner + '</span>'; }
+  function build() {
+    slides = [];
+    slides.push({ html: '<div class="kick">Clash of Classes · ' + esc(D.label) + '</div><h1 class="pop">The Clash Bash Reveal</h1><div class="sub fade">One year. Four squads. One winner.</div>' });
+    if (D.areas.length) slides.push({ html: '<div class="kick">Part 1</div><h1 class="pop">Who ruled the school?</h1><div class="sub">The squad that held each area the longest.</div>' });
+    D.areas.forEach(function (a) { slides.push({ html: '<div class="kick">' + esc(a.zone) + '</div><h1 class="pop">' + sq(a.squad, title(a.squad)) + '</h1><div class="sub fade">held it ' + a.days + ' days</div>' }); });
+    if (D.awards.length) slides.push({ html: '<div class="kick">Part 2</div><h1 class="pop">The awards</h1>' });
+    D.awards.forEach(function (w) { slides.push({ html: '<div class="kick">' + esc(w.title) + '</div><h1 class="pop">' + sq(w.squad, esc(w.who)) + '</h1><div class="sub fade">' + esc(w.detail) + (w.squad && w.who !== title(w.squad) ? ' · ' + title(w.squad) : '') + '</div>' }); });
+    if (D.spotlight.length) slides.push({ html: '<div class="kick">Squad Spotlight</div><h2 class="pop">Moments that mattered</h2>' + D.spotlight.slice(0, 4).map(function (s) { return '<div class="sub fade" style="margin:1.2vh 0">' + sq(s.squad, '<b>' + esc(s.who) + '</b>') + ': ' + esc(s.story) + '</div>'; }).join('') });
+    slides.push({ html: '<div class="kick">Part 3</div><h1 class="pop">The final standings</h1><div class="sub">Points through ' + esc(D.season.end || D.window.to) + '</div>' });
+    D.standings.forEach(function (s) {
+      var last = s.place === 1;
+      slides.push({ count: s.total, html: last ? '<div class="kick">And the Clash Bash goes to…</div><h1 class="pop" style="font-size:clamp(60px,12vw,220px)">' + sq(s.squad, title(s.squad)) + '</h1><div class="num" data-to="' + s.total + '">0</div><div class="sub">points</div>'
+        : '<div class="kick">' + ['', '', '2nd', '3rd', '4th'][s.place] + ' place</div><h1 class="pop">' + sq(s.squad, title(s.squad)) + '</h1><div class="num" data-to="' + s.total + '">0</div>', party: last });
+    });
+  }
+  function confetti() {
+    var colors = ['#ffd23f', '#b583ff', '#9aa5b8', '#e9e3f5', '#4ade80'];
+    for (var k = 0; k < 120; k++) {
+      var c = document.createElement('div'); c.className = 'confetti';
+      c.style.left = Math.random() * 100 + 'vw'; c.style.background = colors[k % colors.length];
+      c.style.animationDuration = (2.5 + Math.random() * 2.5) + 's'; c.style.animationDelay = (Math.random() * 1.5) + 's';
+      document.body.appendChild(c); setTimeout(function (el) { return function () { el.remove(); }; }(c), 6000);
+    }
+  }
+  function show() {
+    var s = slides[i];
+    document.getElementById('stage').innerHTML = s.html;
+    var n = document.querySelector('[data-to]');
+    if (n) { var to = Number(n.getAttribute('data-to')), t0 = performance.now(); (function tick(t) { var p = Math.min(1, (t - t0) / 2200); n.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))).toLocaleString(); if (p < 1) requestAnimationFrame(tick); })(t0); }
+    if (s.party) confetti();
+  }
+  function go(step) { i = Math.max(0, Math.min(slides.length - 1, i + step)); show(); }
+  function certs() {
+    return '<div class="certs">' + D.awards.map(function (w) {
+      return '<div class="cert"><div class="k">Clash of Classes · Ephrata Middle School · ' + esc(D.label) + '</div><h1>' + esc(w.title) + '</h1><div class="who">' + esc(w.who) + '</div>' +
+        '<div class="d">' + esc(w.detail) + (w.squad && w.who !== title(w.squad) ? ' · ' + title(w.squad) + ' Squad' : '') + '</div><div class="foot">Clash of Classes Coordinator ____________________</div></div>';
+    }).join('') + '</div>';
+  }
+  function start() {
+    document.getElementById('app').innerHTML = '<div class="bar"><button id="pc">🖨 Certificates</button></div><div class="stage" id="stage"></div>' + certs() + '<div class="hint">Click or → for the next slide · ← back</div>';
+    build(); show();
+    document.getElementById('stage').onclick = function () { go(1); };
+    document.getElementById('pc').onclick = function (e) {
+      e.stopPropagation();
+      var on = document.body.classList.toggle('print');
+      this.textContent = on ? '◀ Back to the show' : '🖨 Certificates';
+      if (on) setTimeout(function () { window.print(); }, 300);
+    };
+  }
+  document.addEventListener('keydown', function (e) { if (!slides.length) return; if (e.key === 'ArrowRight' || e.key === ' ') go(1); if (e.key === 'ArrowLeft') go(-1); });
+  document.getElementById('go').onclick = function () {
+    var b = this; b.disabled = true; document.getElementById('err').textContent = '';
+    run('clashLogin', document.getElementById('pw').value).then(function (r) { return run('clashReveal', r.token); })
+      .then(function (d) { D = d; start(); })
+      .catch(function (e) { b.disabled = false; document.getElementById('err').textContent = String(e && e.message || e).replace(/^Exception:\s{0,}/, ''); });
+  };
+})();
+</script>
+</body>
+</html>
+<!-- file-stamp: 9b4f73a817 -->

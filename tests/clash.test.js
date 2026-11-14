@@ -30,6 +30,7 @@ function makeSheet(name, rows) {
     },
     appendRow(row) { this.rows.push(row.slice()); },
     deleteRow(n) { this.rows.splice(n - 1, 1); },
+    deleteRows(n, k) { this.rows.splice(n - 1, k); },
     setFrozenRows() {}, setColumnWidth() {}, clear() { this.rows = []; },
   };
   return sheet;
@@ -62,7 +63,7 @@ function world(opts) {
       newDataValidation: () => { const b = new Proxy({}, { get: () => () => b }); return b; } },
     DriveApp: { getFileById: () => ({ getLastUpdated: () => new Date('2026-10-31T10:00:00Z') }) },
     CacheService: { getScriptCache: () => ({ get: k => cache[k] || null, put: (k, v) => { cache[k] = v; }, remove: k => { delete cache[k]; } }) },
-    PropertiesService: { getScriptProperties: () => ({ getProperty: k => props[k] || null, setProperty: (k, v) => { props[k] = v; } }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: k => props[k] || null, setProperty: (k, v) => { props[k] = v; }, deleteProperty: k => { delete props[k]; } }) },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     Utilities: {
       getUuid: (() => { let n = 0; return () => 'uuid-' + (++n); })(),
@@ -2275,6 +2276,75 @@ test("Cliff's tour grows on a live tab: new steps added by title, untouched firs
   const tour = JSON.parse(w.clashTour('site'));
   const order = tour.steps.map(x => x.title);
   assert.ok(order.indexOf('Avalanche!') > order.indexOf('Four squads') && order.indexOf('Avalanche!') < order.indexOf('Our own step'), 'decimal orders slot the new steps in');
+});
+
+test('end of year: awards from the season, the reveal is admin-only, new-year rollover archives first and keeps setup tabs', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureDoughTabs_(); w.ensureServiceTab_(); w.ensureSpotlightTab_(); w.ensureAvalancheTab_();
+  const today = w.todayYmd_(), d = w.ymdShift_(today, -2);
+  w.book.insertSheet('Students').rows = [['800#', 'First Name', 'Last Name', 'Grade', 'Email', 'Squad'], ['8001111', 'Ann', 'Lee', '7', '', 'Grey'], ['8002222', 'Ed', 'Park', '8', '', 'Gold']];
+  w.book.getSheetByName('Virtual Dough').rows.push([d + ' 10:00', 'Mrs. Example', 'GOLD', '8001111', 'Ann Lee', 'GREY', 'Grit', 'Kept going', 3]);
+  w.book.getSheetByName('Service Submissions').rows.push(['S1', d, '8002222', 'Ed Park', 'GOLD', 'Food drive', '', 'Long enough reflection text here.', '', '', 'Approved', 10, '', '', 'Admin', d + ' 09:00']);
+  w.book.getSheetByName('Poll Votes').rows.push([2, d, '8002222', 'GOLD', 'A', '', '8']);
+  const aw = J(w.yearAwards_());
+  const by = t => aw.find(a => a.title === t);
+  assert.ok(by('Service Star').who === 'Ed P.' && by('Voice of the School').who === 'Ed P.', JSON.stringify(aw));
+  assert.ok(aw.some(a => a.title === 'Never Froze'));
+  assert.ok(!/Ann Lee|Ed Park|8001111/.test(JSON.stringify(aw)), 'first name + last initial only');
+  assert.throws(() => w.clashReveal('nope'), /sign in as admin/);
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  const rv = JSON.parse(w.clashReveal('T'));
+  assert.ok(rv.standings.length === 4 && rv.standings[3].place === 1 && rv.winner === rv.standings[3].squad, 'standings run 4th to 1st, winner last');
+  // Rollover: preview changes nothing; the run needs NEW YEAR and an archive copy first.
+  const before = w.book.getSheetByName('events').rows.length;
+  const p = J(w.rolloverPreview_());
+  assert.ok(p.tabs.some(t => t.tab === 'events') && /archive/.test(p.archive));
+  assert.strictEqual(w.book.getSheetByName('events').rows.length, before, 'preview changes nothing');
+  assert.throws(() => w.rolloverYear_('yes'), /NEW YEAR/);
+  let copied = null;
+  w.DriveApp = { getFileById: () => ({ getLastUpdated: () => new Date(), makeCopy: n => { copied = n; return { getId: () => 'copy1', getUrl: () => 'https://docs.google.com/x' }; } }) };
+  w.setSettingValue_('SEASON_END', '2027-05-28');
+  w.book.getSheetByName('Dough Teachers').rows.push([true, 'Mrs. Example', 'GOLD', 74, '']);
+  const lines = J(w.rolloverYear_('new year'));
+  assert.ok(copied && /archive/.test(copied), 'archived first');
+  assert.strictEqual(w.book.getSheetByName('events').rows.length, 1, 'points cleared, header kept');
+  assert.strictEqual(w.book.getSheetByName('Virtual Dough').rows.length, 1);
+  assert.ok(w.book.getSheetByName('Dough Teachers').rows.length === 3 && w.book.getSheetByName('Conquest Rules').rows.length > 5, 'setup tabs kept');
+  assert.strictEqual(String(w.getSetting_('SEASON_END')), '2028-05-26', 'a year on, same weekday');
+  assert.ok(lines.some(l => /MARKING_PERIODS/.test(l)));
+});
+
+test('Virtual Dough guardrails: per-student daily cap, lopsided-giving flags in the balance check, the Friday nudge to teachers with an email; the setup check; Spanish family update falls back cleanly', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureDoughTabs_(); w.ensureSiteContentTabs_(); w.ensurePollTabs_();
+  w.book.insertSheet('Students').rows = [['800#', 'First Name', 'Last Name', 'Grade', 'Email', 'Squad'], ['8001111', 'Ann', 'Lee', '7', '', 'Grey']];
+  const dt = w.book.getSheetByName('Dough Teachers');
+  assert.ok(dt.rows[0].includes('Email'));
+  dt.rows.push([true, 'Mrs. A', 'GOLD', 11, 'a@easdpa.org'], [true, 'Mr. B', 'BLACK', 22, '']);
+  const a = JSON.parse(w.clashDoughSignIn('Mrs. A', '11')), b = JSON.parse(w.clashDoughSignIn('Mr. B', '22'));
+  const trait = JSON.parse(w.clashDoughStart()).traits[0];
+  w.clashDoughGive(a.token, '8001111', trait, 'Helped a classmate out', 1);
+  w.clashDoughGive(b.token, '8001111', trait, 'Cleaned up the lab table', 1);
+  assert.throws(() => w.clashDoughGive(a.token, '8001111', trait, 'Kind to a new student', 1), /already got 2 bills today/);
+  // Flags: one teacher, one student, many bills.
+  const today = w.todayYmd_(), vd = w.book.getSheetByName('Virtual Dough');
+  for (let i = 0; i < 8; i++) vd.rows.push([w.ymdShift_(today, -i - 1) + ' 10:00', 'Mrs. A', 'GOLD', '8001111', 'Ann Lee', 'GREY', trait, 'x', 1]);
+  const flags = J(w.pointsBalance_()).flags.join(' | ');
+  assert.ok(/Mrs\. A gave \d+ of \d+ bills to one student \(Ann L\.\)/.test(flags), flags);
+  assert.ok(!/Ann Lee/.test(flags));
+  // The nudge: only teachers with an email.
+  const sent = []; w.MailApp = { sendEmail: o => sent.push(o) };
+  const lines = J(w.doughNudge_());
+  assert.deepStrictEqual(lines, ['Mrs. A: sent']);
+  assert.ok(/Black|Purple/.test(sent[0].htmlBody) && /\/dough/.test(sent[0].htmlBody));
+  // The setup check names what to fix.
+  const chk = J(w.selfCheck_());
+  assert.ok(chk.length > 8 && chk.every(x => x.area && x.text));
+  assert.ok(chk.filter(x => !x.ok).every(x => x.fix), 'every problem says how to fix it');
+  assert.ok(chk.some(x => x.area === 'Background' && !x.ok), 'no timer in tests');
+  // Spanish: the page asks for es; with no translator the Sheet text comes back in English, the label in Spanish.
+  const fam = JSON.parse(w.clashFamily('', '', 'es'));
+  assert.ok(fam.lang === 'es' && / de \d{4}$/.test(fam.label), fam.label);
 });
 
 test('Redemption: a Trailback Summit on the private Redemptions tab gives the student a Summit Climber badge and 25 LRG points; the feed labels it', () => {
