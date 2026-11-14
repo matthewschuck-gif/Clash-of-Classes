@@ -2087,6 +2087,34 @@ test('the site shows polls and the Pulse before they open; LRG traits and wheel 
   assert.strictEqual(w.siteWheel_(), null, 'an empty tab = the built-in wheel');
 });
 
+test('TV: settings pick the slides and seconds, the Poll Board carries the standings, the next poll and the vote link, multi-day polls stay live', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensurePollTabs_();
+  const tv = J(w.tvSettings_());
+  assert.strictEqual(tv.seconds, 9);
+  assert.strictEqual(tv.slides.length, 11);
+  assert.deepStrictEqual(tv.pollSlides, ['standings', 'pulse', 'polls']);
+  assert.ok(/clashofclasses\.org\/\?go=polls$/.test(tv.voteUrl));
+  w.setSettingValue_('TV_SECONDS', '15'); w.setSettingValue_('TV_SLIDES', 'polls, standings, nonsense');
+  assert.deepStrictEqual(J(w.tvSettings_()).slides, ['standings', 'polls']);
+  assert.strictEqual(J(w.tvSettings_()).seconds, 15);
+  assert.ok(JSON.parse(JSON.stringify(w.publicLoad_(false))).value.tv.seconds === 15, 'the page gets it');
+  const today = w.todayYmd_(), ahead = n => w.ymdShift_(today, n);
+  const polls = w.book.getSheetByName('Daily Polls');
+  polls.rows.splice(1);
+  polls.rows.push([true, w.ymdShift_(today, -1), 'Trivia', '2+2?', '3 | 4', '4', 1, 1, '', '', ahead(1)], [true, ahead(3), 'Pulse', 'Lunch?', 'A | B', '', 1, '', '', '', '']);
+  w.book.getSheetByName('events').rows.push([901, 'Big day', 'event', today, '', '', 0, 30, 5, 0]);
+  const b = JSON.parse(w.clashPollBoard());
+  assert.strictEqual(b.live, true, 'a poll that opened yesterday and runs through tomorrow is live today');
+  assert.strictEqual(b.polls[0].counts, null, 'trivia counts hidden while it is open');
+  assert.strictEqual(b.polls[0].answer, '');
+  assert.strictEqual(b.next[0].question, 'Lunch?');
+  assert.ok(/\?go=polls$/.test(b.voteUrl));
+  assert.strictEqual(b.standings.length, 4);
+  assert.strictEqual(b.standings.find(x => x.squad === 'GOLD').today, 30, 'what each squad earned today');
+  assert.ok(b.standings[0].total >= b.standings[3].total, 'ranked');
+});
+
 test('Redemption: a Trailback Summit on the private Redemptions tab gives the student a Summit Climber badge and 25 LRG points; the feed labels it', () => {
   const w = world();
   w.ensureSettings_();

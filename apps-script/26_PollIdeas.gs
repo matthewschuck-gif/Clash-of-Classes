@@ -292,20 +292,24 @@ function clashPollBoard() {
   const today = todayYmd_();
   const size = squadSizes_(today.slice(0, 7));
   const all = pollsWithVotes_().filter(function (p) { return p.show && p.question && p.choices.length >= (p.kind === 'Check-in' ? 1 : 2); });
-  let list = all.filter(function (p) { return p.date === today; });
+  let list = all.filter(function (p) { return pollOpenOn_(p, today); });
   const live = list.length > 0;
-  if (!live) list = all.filter(function (p) { return p.date < today; }).sort(function (a, b) { return b.date.localeCompare(a.date); }).slice(0, 1);
+  if (!live) list = all.filter(function (p) { return p.through < today; }).sort(function (a, b) { return b.through.localeCompare(a.through); }).slice(0, 1);
+  let standings = [];
+  try { standings = tvStandings_(); } catch (e) { standings = []; }
   return JSON.stringify({
-    live: live, url: String(getSetting_('SITE_URL') || 'clashofclasses.org').replace(/^https?:\W+/i, ''),
+    live: live, url: String(getSetting_('SITE_URL') || 'clashofclasses.org').replace(/^https?:\W+/i, ''), voteUrl: siteUrl_() + '/?go=polls', standings: standings,
+    next: all.filter(function (p) { return p.date > today; }).sort(function (a, b) { return a.date.localeCompare(b.date); }).slice(0, 1)
+      .map(function (p) { return { kind: p.kind, kindLabel: p.kindLabel, question: p.question, choices: p.choices, date: p.date }; }),
     polls: list.map(function (p) {
-      const hide = p.kind === 'Trivia' && p.date === today; // no copying the answer
+      const hide = p.kind === 'Trivia' && pollOpenOn_(p, today); // no copying the answer
       const turnout = {};
       SQUAD_KEYS_.forEach(function (s) {
         const n = Object.keys(p.bySquad[s] || {}).reduce(function (t, c) { return t + p.bySquad[s][c]; }, 0);
         turnout[s] = size[s] ? Math.round(1000 * n / size[s]) / 10 : n;
       });
       return { id: p.id, kind: p.kind, kindLabel: p.kindLabel, question: p.question, choices: p.choices, total: p.total, date: p.date,
-        counts: hide ? null : p.counts, answer: p.date < today && p.kind === 'Trivia' ? p.answer : '', turnout: turnout, per100: SQUAD_KEYS_.some(function (s) { return size[s]; }) };
+        counts: hide ? null : p.counts, answer: p.through < today && p.kind === 'Trivia' ? p.answer : '', through: p.through, turnout: turnout, per100: SQUAD_KEYS_.some(function (s) { return size[s]; }) };
     }),
   });
 }

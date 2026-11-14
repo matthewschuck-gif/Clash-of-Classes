@@ -49,11 +49,24 @@
   .dots { display:flex; gap:.6em; justify-content:center; }
   .dots i { width:.6em; height:.6em; border-radius:50%; background:#ffffff33; }
   .dots i.on { background:var(--gold); }
+  .joinbox { display:flex; align-items:center; gap:1.2vw; }
+  .qr { width:clamp(70px,9vw,150px); background:#fff; border-radius:12px; padding:6px; flex:none; }
+  .qr svg { display:block; width:100%; height:auto; }
+  .stand { display:grid; grid-template-columns:repeat(4,1fr); gap:1vw; border-top:1px solid #ffffff1a; padding-top:1.4vh; }
+  .st { display:flex; align-items:baseline; gap:.6vw; font-size:clamp(12px,1.3vw,22px); color:var(--mute); padding:0 1.2vw; border-left:1px solid #ffffff14; }
+  .st:first-child { border-left:0; padding-left:0; }
+  .st .rk { font-weight:800; color:var(--ink); }
+  .st .nm { font-weight:800; }
+  .st .pts { margin-left:auto; font-weight:900; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .st .up { color:#4ade80; font-size:.8em; font-weight:800; }
+  .st .pts.bump { animation:bump .6s; }
+  @keyframes bump { 40% { transform:scale(1.25); } }
   @media (prefers-reduced-motion: reduce) { .fill, .sq .mini i { transition:none; } .fill::after, .live i, .count.bump, .pop { animation:none; } }
 </style>
 </head>
 <body>
 <div class="wrap" id="board"><div class="empty">Loading the poll…</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
 (function () {
   var SQ = ['BLACK', 'GOLD', 'GREY', 'PURPLE'];
@@ -73,13 +86,37 @@
     document.body.appendChild(el);
     setTimeout(function () { el.remove(); }, 1500);
   }
+  var lastPts = {};
+  function qr(url) {
+    if (!window.qrcode || !url) return '';
+    try { var q = window.qrcode(0, 'M'); q.addData(String(url)); q.make(); return '<div class="qr">' + q.createSvgTag({ cellSize: 4, margin: 1, scalable: true }) + '</div>'; } catch (e) { return ''; }
+  }
+  function dayName(ymd) { var d = new Date(String(ymd) + 'T12:00:00'); return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d.getDay()] + ' ' + (d.getMonth() + 1) + '/' + d.getDate(); }
+  // The live standings along the bottom (the tracker): rank, squad, total, what they earned today.
+  function standings() {
+    var st = (data && data.standings) || [];
+    if (!st.length) return '';
+    var html = '<div class="stand">' + st.map(function (s, i) {
+      var bump = lastPts[s.squad] != null && s.total > lastPts[s.squad];
+      return '<div class="st"><span class="rk">' + (i === 0 ? '👑' : '#' + (i + 1)) + '</span><span class="nm" style="color:var(--' + s.squad + ')">' + title(s.squad) + '</span>' +
+        (s.today ? '<span class="up">+' + s.today.toLocaleString() + ' today</span>' : '') + '<span class="pts' + (bump ? ' bump' : '') + '">' + s.total.toLocaleString() + '</span></div>';
+    }).join('') + '</div>';
+    st.forEach(function (s) { lastPts[s.squad] = s.total; });
+    return html;
+  }
   function render() {
     var box = document.getElementById('board');
-    if (!data || !data.polls.length) { box.innerHTML = '<div class="empty">No poll today.<br>Check back tomorrow morning!</div>'; return; }
+    if (!data || !data.polls.length) {
+      var n = data && data.next && data.next[0];
+      box.innerHTML = (n ? '<div class="top"><div class="tag">📅 Coming up · ' + kindTag(n) + '</div><div class="joinbox"><div class="join">Opens <b>' + esc(dayName(n.date)) + '</b><br>vote at <b>' + esc(data.url) + '</b></div>' + qr(data.voteUrl) + '</div></div><h1>' + esc(n.question) + '</h1>' +
+        '<div class="empty" style="font-size:clamp(16px,2vw,32px)">' + (n.choices && n.choices.length > 1 ? esc(n.choices.join('  ·  ')) : '') + '</div>'
+        : '<div class="empty">No poll today.<br>Check back tomorrow morning!</div>') + standings();
+      return;
+    }
     if (shown >= data.polls.length) shown = 0;
     var p = data.polls[shown];
     var head = '<div class="top"><div class="tag">' + (data.live ? '<span class="live"><i></i>Live</span> · ' : 'Results · ') + kindTag(p) + '</div>' +
-      '<div class="join">Vote at <b>' + esc(data.url) + '</b><br>with your 800 number</div></div><h1>' + esc(p.question) + '</h1>';
+      '<div class="joinbox"><div class="join">Vote at <b>' + esc(data.url) + '</b><br>with your 800 number</div>' + qr(data.voteUrl) + '</div></div><h1>' + esc(p.question) + '</h1>';
     var body;
     if (p.kind === 'Check-in') {
       body = '<div class="big"><div class="count" id="pbCount">' + p.total + '</div><div class="sub">' + (p.total === 1 ? 'student has' : 'students have') + ' checked in</div></div>';
@@ -99,7 +136,7 @@
         '<div class="v">' + (p.turnout[s] || 0) + (p.per100 ? ' per 100 students' : ' votes') + '</div></div>';
     }).join('') + '</div></div>';
     var dots = data.polls.length > 1 ? '<div class="dots">' + data.polls.map(function (_, i) { return '<i' + (i === shown ? ' class="on"' : '') + '></i>'; }).join('') + '</div>' : '';
-    box.innerHTML = head + body + foot + dots;
+    box.innerHTML = head + body + foot + dots + standings();
     requestAnimationFrame(function () { requestAnimationFrame(function () {
       Array.prototype.forEach.call(box.querySelectorAll('[data-w]'), function (el) { el.style.width = el.getAttribute('data-w') + '%'; });
     }); });

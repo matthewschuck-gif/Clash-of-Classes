@@ -59,6 +59,7 @@ function publicLoad_(raw) {
     res.value.freezes = activeFreezes_(); // read-only, from the Point Freezes tab
     try { res.value.schoolCalendar = schoolCalendar_(); } catch (e) { /* the page falls back to its built-in list */ }
     try { res.value.siteTraits = siteTraits_(); res.value.siteWheel = siteWheel_(); } catch (e) { /* the page keeps its built-in traits and wheel */ }
+    try { res.value.tv = tvSettings_(); } catch (e) { /* the TV keeps its defaults */ } // 36_TV.gs
     if (!raw && Array.isArray(res.value.events)) res.value.events = res.value.events.map(publicEvent_);
   }
   return res;
@@ -170,7 +171,7 @@ function clashSave(token, valueJson, syncJson) {
     delete value.freezes; // lives on the Point Freezes tab, not in the saved blob
     delete value.schoolCalendar; // lives on the School Calendar tab
     delete value.studentLink; // lives on Settings
-    delete value.siteTraits; delete value.siteWheel; // live on the LRG Traits / Wheel Slices tabs
+    delete value.siteTraits; delete value.siteWheel; delete value.tv; // live on Sheet tabs / Settings
     const key = function (e) { return e.id + '|' + e.name; };
     const seen = {};
     (sync.seen || []).forEach(function (k) { seen[k] = true; });
