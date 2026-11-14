@@ -77,6 +77,10 @@ function clashMyPage(id) {
     badges: String(get('Badges')).split(',').map(function (s) { return s.trim(); }).filter(String),
     last: String(get('Last Contribution')), updated: String(get('Updated')),
   };
+  // Trailback Summits (the private Redemptions tab, written by Trail Journal): a badge only the
+  // student sees, and LRG points toward their creature (19_Evolve.gs).
+  me.redemption = redemptionsFor_(want);
+  if (me.redemption && me.badges.indexOf(REDEMPTION_BADGE_) === -1) me.badges.push(REDEMPTION_BADGE_);
   const totals = squadTotals_();
   return JSON.stringify({
     me: me,
@@ -112,6 +116,16 @@ function passportFor_(id, me) {
   };
   const stamps = defs.map(function (d) { return { label: d.label, done: have(d.key) }; });
   return { stamps: stamps, complete: stamps.every(function (s) { return s.done; }) };
+}
+
+// ── REDEMPTION (Trailback Summits) ───────────────────────────────────
+// The Redemptions tab (800# | Squad | Date | Points | Case) is private: Trail Journal adds a row when
+// a student reaches the Summit of a Trailback plan. The squad's points are a separate 'redemption'
+// row on the events tab (named only if the student chose to be).
+const REDEMPTION_BADGE_ = '🏔️ Summit Climber';
+function redemptionsFor_(id) {
+  const want = id800_(id);
+  return want ? sheetRows_('Redemptions').filter(function (r) { return id800_(r['800#']) === want; }).length : 0;
 }
 
 // Every badge name, so the page can show the ones still to earn (from the Settings tab).
@@ -242,7 +256,7 @@ function clashTvFeed() {
   const latest = readEventsTab_().slice().sort(function (a, b) {
     return String(b.date).localeCompare(String(a.date)) || (Number(b.id) - Number(a.id));
   }).slice(0, 8).map(function (e) {
-    return { name: publicEvent_(e).name, label: labels[e.type] || ({ duel_bonus: '⚔️ Squad Duel', mayhem_week: '🏔️ Mayhem Week', shirt_sales: '👕 Shirt Sales', squad_night: '🌙 Squad Night' })[e.type] || '', date: e.date, pts: e.pts };
+    return { name: publicEvent_(e).name, label: labels[e.type] || ({ redemption: '🏔️ Redemption', duel_bonus: '⚔️ Squad Duel', mayhem_week: '🏔️ Mayhem Week', shirt_sales: '👕 Shirt Sales', squad_night: '🌙 Squad Night' })[e.type] || '', date: e.date, pts: e.pts };
   });
   const out = { latest: latest, stars: [], lore: recentLoreUnlocks_(), duels: JSON.parse(clashDuels()) };
   try { out.frost = frostMeter_(); } catch (e) { out.frost = null; }

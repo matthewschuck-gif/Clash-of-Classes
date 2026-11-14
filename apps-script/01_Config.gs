@@ -185,6 +185,7 @@ const DEFAULT_SETTINGS = [
   ['MINDSET_APP', 'https://script.google.com/a/macros/easdpa.org/s/AKfycbwuQCzZfVvgX-k3czsKI74DKnt2qF2XJslElr3HHcwnJTyCcHI4e7NxegIPDpElcowL7w/exec', 'The Grade 8 Mountaineer Mindset web app (bit.ly/ems8-mindset). Shows inside the site\'s Mindset page.'],
   ['GENERALS_DOC', 'https://docs.google.com/document/d/1OeKBx8SOrfkG4zaHuj66LllR1nS6EINA8Dk4KYmM6Zo/edit', 'The Squad Leadership doc (shared Clash drive) that lists the Generals for each squad. Menu › Load Squad Generals copies them onto MLC Roster.'],
   ['GENERALS_HANDBOOK', 'https://docs.google.com/document/d/1DL1VXqEK9OhvJRBPztQvOwadA-UcWpDCg_ZUabP7304/edit', 'The Squad General one-pager / handbook. Generals HQ › My job links to it.'],
+  ['REDEMPTION_LRG', '25', 'My Climb: LRG points for each Trailback Summit (Redemption). The squad\'s points come from Trail Journal (TRAILBACK_REDEMPTION_POINTS there).'],
   ['FROST_CHECK', 'ON', 'Freeze & Thaw: ON = on the 1st, check every squad on the Freeze Lines tab for the month before (Frost Log tab). Nothing freezes until staff tick Approve. Also shows the frost meter.'],
   ['FROST_START', '2027-01', 'Freeze & Thaw: the first month that counts (yyyy-MM). Its check runs on the 1st of the next month. Earlier months are practice: the meter shows, nothing freezes.'],
   ['FROST_THAW_EVERYONE', '70', 'Freeze & Thaw: share of the squad (%) that must pitch in to thaw a Peaks freeze.'],

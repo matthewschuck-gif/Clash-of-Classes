@@ -101,6 +101,8 @@ function rulesList_(setting, fallback) {
 
 function climbXp_(vals) {
   const w = rulesList_('LRG_POINTS', 'bills=1; mindset=5; shoutouts=2; star=1; streak=2; buddy=3; tickets=3; passport=5; journal=2');
+  // A Trailback Summit (Redemption) is worth REDEMPTION_LRG (25) unless LRG_POINTS names redemption itself.
+  if (w.redemption == null) w.redemption = Number(getSetting_('REDEMPTION_LRG')) >= 0 && String(getSetting_('REDEMPTION_LRG') || '').trim() !== '' ? Number(getSetting_('REDEMPTION_LRG')) : 25;
   return Math.round(Object.keys(w).reduce(function (n, k) { return n + (Number(vals[k]) || 0) * w[k]; }, 0));
 }
 
@@ -246,7 +248,7 @@ function cliffInfo_() {
 // ── STUDENT ACTIONS ─────────────────────────────────────────────────
 function climbVals_(id, page) {
   const me = page.me;
-  return { bills: me.bills, mindset: me.mindset, shoutouts: me.shoutouts, star: me.star, streak: me.streak, buddy: me.ambassador, journal: me.journal,
+  return { bills: me.bills, mindset: me.mindset, shoutouts: me.shoutouts, star: me.star, streak: me.streak, buddy: me.ambassador, journal: me.journal, redemption: me.redemption || 0,
     tickets: (page.tickets || []).filter(function (t) { return t.status === 'Completed'; }).length,
     passport: page.passport && page.passport.complete ? 1 : 0 };
 }

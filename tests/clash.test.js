@@ -1675,4 +1675,23 @@ test('frost check: same lines for every squad, a warning first, a repeat or two 
   assert.ok(w.thawGoals_('marker: Interventions')[0].type === 'marker');
 });
 
+test('Redemption: a Trailback Summit on the private Redemptions tab gives the student a Summit Climber badge and 25 LRG points; the feed labels it', () => {
+  const w = world();
+  w.ensureSettings_();
+  w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade', 'Badges'], ['8001111', 'Ann L.', 'Gold', '7', '🍞 First Trait Dough']];
+  let me = JSON.parse(w.clashMyPage('8001111')).me;
+  assert.strictEqual(me.redemption, 0);
+  assert.ok(!me.badges.includes('🏔️ Summit Climber'));
+  w.book.insertSheet('Redemptions').rows = [['800#', 'Squad', 'Date', 'Points', 'Case'], ['8001111', 'GOLD', '2027-01-20', 75, 'TB-1']];
+  me = JSON.parse(w.clashMyPage('8001111')).me;
+  assert.strictEqual(me.redemption, 1);
+  assert.deepStrictEqual(J(me.badges), ['🍞 First Trait Dough', '🏔️ Summit Climber']);
+  assert.strictEqual(w.climbXp_({ redemption: 1 }), 25);
+  w.setSettingValue_('REDEMPTION_LRG', '40');
+  assert.strictEqual(w.climbXp_({ redemption: 1 }), 40);
+  w.book.getSheetByName('events').rows.push([501, 'Redemption: a Gold climber reached the Summit', 'redemption', w.todayYmd_(), 'Trailback Summit', '', '', 75, '', '']);
+  const feed = JSON.parse(w.clashTvFeed());
+  assert.ok(feed.latest.some(e => e.label === '🏔️ Redemption' && /Gold climber/.test(e.name)));
+});
+
 console.log('\n' + passed + ' tests passed');
