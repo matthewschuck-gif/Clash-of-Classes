@@ -219,6 +219,7 @@ const DEFAULT_SETTINGS = [
   ['SHIELD_LOGO_URL', 'https://raw.githubusercontent.com/matthewschuck-gif/Clash-of-Classes/ready-to-go-live/assets/shield-2026-27.png', 'The 2026-27 shield logo shown on My Climb (any https picture link).'],
   ['STUDENT_LINK', '', 'The student link (the second deployment, Anyone within EASD). The site\'s My Climb button opens it with ?page=me.'],
   ['SCHOOL_START', '', 'First day of school (yyyy-mm-dd) for the home page day counts. Blank = the date set in the site\'s admin settings.'],
+  ['NEXT_YEAR_START', '2027-08-30', 'The McCracken Countdown on the home page: the first day of NEXT school year (yyyy-mm-dd). It counts every calendar day until then.'],
   ['LAST_DAY', '', 'Last day of school (yyyy-mm-dd). Blank = the date set in the site\'s admin settings.'],
   ['SCHOOL_CALENDAR', '', 'Optional: the district calendar, as its Google Calendar ID or its iCal (.ics) link. Clash of Classes › Sync days off from the district calendar adds its days off to the School Calendar tab.'],
   ['SCHOOL_CALENDAR_WORDS', 'no school, holiday, break, closed, closing, conference, records day, snow, vacation day, inservice, in-service, act 80, labor day, memorial day, thanksgiving', 'An all-day district calendar event counts as a day off when its title has one of these (half days and early dismissals never do).'],];

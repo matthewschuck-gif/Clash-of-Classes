@@ -1517,10 +1517,11 @@ function renderCountdown(){
   // weekend or day off, so it ran one short then.)
   const tomorrow=new Date(now); tomorrow.setDate(tomorrow.getDate()+1);
   const daysToEnd=countSchoolDays(localYmd(tomorrow), endStr);
-  const events=D.countdownEvents||DEF.countdownEvents||[];
-  const nextEvt=events.find(function(e){ return new Date(e.date+'T00:00:00')>=now; });
-  // School days until the event (after today, through the event day), like the other two counts.
-  const daysToNext=nextEvt?countSchoolDays(localYmd(tomorrow), nextEvt.date):null;
+  // The McCracken Countdown: every calendar day (not school days) until next school year starts
+  // (Settings NEXT_YEAR_START). Past that date it rolls to the same date a year on.
+  var nextStr=sc.nextStart||'2027-08-30', nextStart=new Date(nextStr+'T00:00:00');
+  while(nextStart<=now) nextStart.setFullYear(nextStart.getFullYear()+1);
+  const daysToNextYear=Math.round((nextStart-now)/86400000);
   // Update stat boxes
   const hs=D.homeStats||DEF.homeStats||{};
   const s1n=document.getElementById('homeStat1Num'); if(s1n) s1n.textContent=hs.stat1num||'4';
@@ -1531,11 +1532,8 @@ function renderCountdown(){
   var card1='<div class="countdown-card"><div class="countdown-num">'+daysSinceStart+'</div>'
     +'<div class="countdown-lbl">Days of School</div>'
     +'<div class="countdown-sub">Mon–Fri, excl. holidays</div></div>';
-  var card2=daysToNext!==null
-    ?'<div class="countdown-card" style="border-top-color:var(--purple-lt)"><div class="countdown-num" style="color:var(--purple-lt)">'+daysToNext+'</div>'
-      +'<div class="countdown-lbl">School Days Until</div><div class="countdown-sub">'+nextEvt.label+'</div></div>'
-    :'<div class="countdown-card"><div class="countdown-num">—</div>'
-      +'<div class="countdown-lbl">Next Event</div><div class="countdown-sub">Add in Admin — Settings</div></div>';
+  var card2='<div class="countdown-card" style="border-top-color:var(--purple-lt)"><div class="countdown-num" style="color:var(--purple-lt)">'+daysToNextYear+'</div>'
+    +'<div class="countdown-lbl">The McCracken Countdown</div><div class="countdown-sub">Days until next school year ('+(nextStart.getMonth()+1)+'/'+nextStart.getDate()+'/'+nextStart.getFullYear()+')</div></div>';
   var card3='<div class="countdown-card" style="border-top-color:#4ade80"><div class="countdown-num" style="color:#4ade80">'+daysToEnd+'</div>'
     +'<div class="countdown-lbl">School Days Left</div><div class="countdown-sub">Until '+endStr+'</div></div>';
   el.innerHTML=card1+card2+card3;

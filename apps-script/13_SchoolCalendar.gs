@@ -50,7 +50,7 @@ function schoolCalendar_() {
     if (/^\d{4}-\d{2}-\d{2}$/.test(d)) days[d] = true;
   });
   const ymd = function (k) { const v = String(getSetting_(k) || '').trim(); return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : ''; };
-  return { noSchool: Object.keys(days).sort(), start: ymd('SCHOOL_START'), end: ymd('LAST_DAY') };
+  return { noSchool: Object.keys(days).sort(), start: ymd('SCHOOL_START'), end: ymd('LAST_DAY'), nextStart: ymd('NEXT_YEAR_START') };
 }
 
 // ── District calendar sync ──────────────────────────────────────────
