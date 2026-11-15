@@ -219,5 +219,18 @@ function serveFamilyDoor_() {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+// ── The switches (Admin › ✅ Service): each family piece on or off by itself ──
+const FAMILY_SWITCHES_ = [['FAMILY_CHALLENGE', 'Weekly family challenge'], ['FAMILY_SHOUTOUTS', 'Family shout-outs'], ['FAMILY_PULSE', 'Family Pulse question'], ['FAMILY_CHECKIN', 'Family Night check-in']];
+function clashFamilySwitches(token) {
+  requireAdmin_(token);
+  return JSON.stringify(FAMILY_SWITCHES_.map(function (s) { return { key: s[0], label: s[1], on: familyOn_(s[0]) }; }));
+}
+function clashFamilySwitch(token, key, on) {
+  requireAdmin_(token);
+  if (!FAMILY_SWITCHES_.some(function (s) { return s[0] === key; })) throw new Error('Unknown switch.');
+  setSettingValue_(key, on ? 'ON' : 'OFF');
+  return clashFamilySwitches(token);
+}
+
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_47_Families = '534d2d23f5';
+var FILE_STAMP_47_Families = '7397d88a21';

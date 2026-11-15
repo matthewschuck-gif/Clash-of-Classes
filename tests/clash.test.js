@@ -2430,6 +2430,34 @@ test('families: every piece is hidden until switched on; challenge via My Squad,
   assert.ok(!/Ann Lee|Ed Park|8001111/.test(JSON.stringify(page)));
 });
 
+test('tabs grouped, colored and ordered (Start here first, system tabs last); family pieces switch on and off one at a time', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureFamilyTabs_(); w.ensurePlinkoTabs_();
+  w.book.insertSheet('Something Custom'); if (!w.book.getSheetByName('app_data')) w.book.insertSheet('app_data');
+  const sheets = w.book.getSheets(); let active = sheets[0];
+  sheets.forEach(sh => { sh.setTabColor = c => { sh.color = c; }; });
+  w.book.getActiveSheet = () => active; w.book.setActiveSheet = sh => { active = sh; return sh; };
+  w.book.moveActiveSheet = pos => { const i = sheets.indexOf(active); sheets.splice(i, 1); sheets.splice(pos - 1, 0, active); };
+  const n = w.organizeTabs_();
+  const names = sheets.map(x => x.getName());
+  assert.strictEqual(n, names.length);
+  assert.strictEqual(names[0], 'Settings', 'Start here first');
+  assert.ok(names.indexOf('Daily Polls') < names.indexOf('events') && names.indexOf('events') < names.indexOf('Plinko Slots'), 'every week, then points, then game');
+  assert.ok(names.indexOf('Something Custom') < names.indexOf('Poll Votes') && names.indexOf('app_data') === names.length - 1, 'unlisted tabs before the system tabs; app_data last');
+  assert.strictEqual(w.book.getSheetByName('Daily Polls').color, '#34a853');
+  assert.strictEqual(w.book.getSheetByName('app_data').color, '#434343');
+  // Family switches: one at a time.
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  let sw = JSON.parse(w.clashFamilySwitches('T'));
+  assert.ok(sw.length === 4 && sw.every(x => !x.on), 'all off to start');
+  sw = JSON.parse(w.clashFamilySwitch('T', 'FAMILY_PULSE', true));
+  assert.deepStrictEqual(sw.filter(x => x.on).map(x => x.key), ['FAMILY_PULSE'], 'only the Pulse is on');
+  sw = JSON.parse(w.clashFamilySwitch('T', 'FAMILY_CHECKIN', true));
+  sw = JSON.parse(w.clashFamilySwitch('T', 'FAMILY_PULSE', false));
+  assert.deepStrictEqual(sw.filter(x => x.on).map(x => x.key), ['FAMILY_CHECKIN']);
+  assert.throws(() => w.clashFamilySwitch('T', 'SEASON_END', true), /Unknown switch/);
+});
+
 test('Redemption: a Trailback Summit on the private Redemptions tab gives the student a Summit Climber badge and 25 LRG points; the feed labels it', () => {
   const w = world();
   w.ensureSettings_();

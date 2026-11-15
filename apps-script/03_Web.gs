@@ -383,6 +383,7 @@ function onOpen() {
     .addItem('State of the Squads: send now', 'menuSendStateOfSquads_')
     .addItem('Open the role guides (one page each)', 'menuOpenGuides_')
     .addItem('Setup check', 'menuSelfCheck_')
+    .addItem('Group and color the tabs', 'menuOrganizeTabs_')
     .addSeparator()
     .addItem('Clash Bash reveal show + award certificates', 'menuOpenReveal_')
     .addItem('New school year: preview (nothing changes)', 'menuRolloverPreview_')
@@ -414,4 +415,4 @@ function menuOpenSite_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_03_Web = 'b986b090f1';
+var FILE_STAMP_03_Web = '4bc16ab09c';

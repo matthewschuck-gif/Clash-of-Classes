@@ -117,6 +117,7 @@ function setupSpreadsheet() {
   setupHelpTab_();
   setupMapGuideTab_(); // 18_Conquest.gs
   setupClimbGuideTab_(); // 19_Evolve.gs
+  try { organizeTabs_(); } catch (e) { console.warn('Tab order: ' + e.message); } // 49_TabOrder.gs: grouped, colored, in order
   try { SpreadsheetApp.getUi().alert('Done -- app_data, events, metrics, Settings and "How To Use This Sheet" tabs are set up. Clash of Classes has no separate PII tab (unlike Trail Journal), so there is no extra sharing/protection step required here. You can now add/edit rows directly in the events and metrics tabs and the site will pick them up within a few seconds. Staff directions live in the "How To Use This Sheet" tab -- start there.'); } catch (e) { console.log("Setup done (no pop-up when run from the editor).") } // the editor's Run button can't show pop-ups
 }
 
@@ -458,4 +459,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = '1a74bfe01c';
+var FILE_STAMP_01_Config = '911c610a8b';

@@ -33,8 +33,13 @@
       (done ? '' : '<div class="sv-acts">' + st.points.map(function (p) { return '<button class="ok" data-do="approve" data-p="' + p + '">Approve ' + p + '</button>'; }).join('') +
         '<input placeholder="Question for the student, or a reason"><button data-do="info">❓ Ask for more</button><button class="no" data-do="deny">Deny</button></div>') + '</div>';
   }
+  function switches() {
+    return st.switches && st.switches.length ? '<div class="sv-item"><b>🏠 Family pieces</b> <span class="sv-meta">each one on or off by itself</span><div class="sv-acts">' + st.switches.map(function (s) {
+      return '<label class="sv-meta" style="display:flex;gap:6px;align-items:center;margin-right:12px"><input type="checkbox" class="fam-sw" data-key="' + esc(s.key) + '"' + (s.on ? ' checked' : '') + '> ' + esc(s.label) + '</label>';
+    }).join('') + '</div></div>' : '';
+  }
   function draw(msg) {
-    box().innerHTML = '<div class="sv-msg">' + esc(msg || (st.open.length ? st.open.length + ' to look at. Approve with points, ask the student a question (they answer on My Squad), or deny with a reason.' : 'Nothing waiting. Students send these from My Squad.')) + '</div>' +
+    box().innerHTML = switches() + '<div class="sv-msg">' + esc(msg || (st.open.length ? st.open.length + ' to look at. Approve with points, ask the student a question (they answer on My Squad), or deny with a reason.' : 'Nothing waiting. Students send these from My Squad.')) + '</div>' +
       st.open.map(function (s) { return item(s, false); }).join('') +
       (st.shouts.length ? '<div class="sv-msg" style="margin-top:14px"><b>🏠 Family shout-outs (' + st.shouts.length + ')</b>: approve with points, and tick Spotlight to put it on the Squad Spotlight tab.</div>' + st.shouts.map(function (s) {
         return '<div class="sv-item" data-shout="' + esc(s.id) + '"><div class="sv-head"><b>' + esc(s.student) + (s.grade ? ' · gr ' + esc(s.grade) : '') + ' · ' + (s.squad ? title(s.squad) : '<span style="color:#fbbf24">no squad matched</span>') + '</b><span class="sv-meta">' + esc(s.sent) + (s.from ? ' · from ' + esc(s.from) : '') + '</span></div>' +
@@ -78,14 +83,22 @@
       load(res); draw(how === 'approve' ? '✅ Approved: the points are on the board.' : how === 'info' ? '❓ Sent: the student sees your question on My Squad.' : 'Denied.');
     }).catch(function (x) { Array.prototype.forEach.call(card.querySelectorAll('button'), function (y) { y.disabled = false; }); alert((x && x.message || '').replace(/^Exception:\s{0,}/, '')); });
   });
+  document.addEventListener('change', function (e) {
+    var c = e.target;
+    if (!c.classList || !c.classList.contains('fam-sw')) return;
+    c.disabled = true;
+    window.gasRun_('clashFamilySwitch', token(), c.getAttribute('data-key'), c.checked).then(function (sw) { st.switches = sw; draw(c.checked ? 'Turned on.' : 'Turned off.'); })
+      .catch(function (x) { c.disabled = false; c.checked = !c.checked; alert(x && x.message); });
+  });
   window.ServiceAdmin = {
     open: function () {
       if (!box() || !window.gasRun_) return;
       box().innerHTML = '<p class="sv-msg">Loading…</p>';
+      window.gasRun_('clashFamilySwitches', token()).then(function (sw) { st.switches = sw; if (box().querySelector('.sv-msg')) draw(); }).catch(function () {});
       window.gasRun_('clashServiceList', token()).then(function (res) { load(res); draw(); })
         .catch(function (x) { box().innerHTML = '<p class="sv-msg">Could not load: ' + esc(x && x.message) + '</p>'; });
     },
   };
 })();
 </script>
-<!-- file-stamp: 3eb5060ffb -->
+<!-- file-stamp: 7586e3fbf1 -->
