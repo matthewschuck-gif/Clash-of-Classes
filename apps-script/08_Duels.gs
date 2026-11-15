@@ -16,7 +16,7 @@
  */
 
 const DUEL_HEADERS_ = ['Show', 'Title', 'Start', 'End', 'Measure', 'Event Types', 'Squads', 'Bonus Points', 'Status', 'Results'];
-const BONUS_TYPES_ = ['challenge_bonus', 'duel_bonus'];
+const BONUS_TYPES_ = ['challenge_bonus', 'duel_bonus', 'weather', 'expedition', 'colors_day', 'arcade'];
 
 function ensureDuelTab_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -124,4 +124,4 @@ function menuTurnOffDuels_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_08_Duels = 'aa437cc462';
+var FILE_STAMP_08_Duels = 'e3f35fadac';

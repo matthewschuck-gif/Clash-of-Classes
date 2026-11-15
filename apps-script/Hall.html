@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root { --bg: #fffdf8; --ink: #1b1036; --muted: #6b5f80; --line: #e6dff0; --card: #ffffff; --brand: #490e6f;
+    --BLACK: #2b2b2b; --GOLD: #b58900; --GREY: #6b7682; --PURPLE: #7b3fbf; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #140a24; --ink: #f4efff; --muted: #b8a9d0; --line: #2e1f47; --card: #1d1033; --brand: #d6b8ff;
+    --BLACK: #d0d4da; --GOLD: #ffd84d; --GREY: #b8c2cc; --PURPLE: #c8a2ff; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+  main { max-width: 900px; margin: 0 auto; padding: 28px 16px 60px; }
+  .kick { font-family: 'DM Mono', monospace; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-family: Georgia, serif; color: var(--brand); margin: 6px 0 4px; font-size: clamp(30px, 5vw, 48px); }
+  .sub { color: var(--muted); margin: 0 0 22px; }
+  .year { border: 1px solid var(--line); background: var(--card); border-radius: 16px; padding: 18px; margin-bottom: 16px; }
+  .year h2 { margin: 0; font-size: 22px; }
+  .champ { font-family: Georgia, serif; font-size: clamp(24px, 4vw, 34px); font-weight: 800; margin: 6px 0 12px; }
+  .aw { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .a { border-top: 1px solid var(--line); padding-top: 8px; }
+  .a b { display: block; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .a span { font-size: 17px; font-weight: 700; }
+  .a small { display: block; color: var(--muted); }
+  .empty { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <div class="kick">Clash of Classes · Ephrata Middle School</div>
+  <h1>🏛️ Hall of Fame</h1>
+  <p class="sub">Every year's Clash Bash champion and award winners.</p>
+  <div id="list"><p class="empty">Loading…</p></div>
+</main>
+<script>
+(function () {
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function title(s) { s = String(s || ''); return s.charAt(0) + s.slice(1).toLowerCase(); }
+  google.script.run.withSuccessHandler(function (t) {
+    var years = JSON.parse(t);
+    document.getElementById('list').innerHTML = years.length ? years.map(function (y) {
+      return '<section class="year"><h2>' + esc(y.year) + '</h2>' + (y.champion ? '<div class="champ" style="color:var(--' + y.champion + ')">🏆 ' + title(y.champion) + ' Squad</div>' : '') +
+        '<div class="aw">' + y.awards.filter(function (a) { return !/champion/i.test(a.award) || !y.champion; }).map(function (a) {
+          return '<div class="a"><b>' + esc(a.award) + '</b><span' + (a.squad ? ' style="color:var(--' + a.squad + ')"' : '') + '>' + esc(a.who) + '</span>' + (a.detail ? '<small>' + esc(a.detail) + '</small>' : '') + '</div>';
+        }).join('') + '</div></section>';
+    }).join('') : '<p class="empty">The first champions go up here after this year\'s Clash Bash.</p>';
+  }).withFailureHandler(function (e) { document.getElementById('list').innerHTML = '<p class="empty">Could not load: ' + esc(e && e.message) + '</p>'; }).clashHall();
+})();
+</script>
+</body>
+</html>
+<!-- file-stamp: 7ba0f4fcd6 -->

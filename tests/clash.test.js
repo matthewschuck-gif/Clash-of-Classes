@@ -2449,7 +2449,7 @@ test('tabs grouped, colored and ordered (Start here first, system tabs last); fa
   // Family switches: one at a time.
   w.CacheService.getScriptCache().put('clash-admin-T', '1');
   let sw = JSON.parse(w.clashFamilySwitches('T'));
-  assert.ok(sw.length === 4 && sw.every(x => !x.on), 'all off to start');
+  assert.ok(sw.length === 6 && sw.every(x => !x.on), 'all off to start');
   sw = JSON.parse(w.clashFamilySwitch('T', 'FAMILY_PULSE', true));
   assert.deepStrictEqual(sw.filter(x => x.on).map(x => x.key), ['FAMILY_PULSE'], 'only the Pulse is on');
   sw = JSON.parse(w.clashFamilySwitch('T', 'FAMILY_CHECKIN', true));
@@ -2501,6 +2501,132 @@ test('arcade: tokens from Trait Dough, one free play, daily limit, impossible sc
   w.setSettingValue_('ARCADE', 'OFF');
   assert.strictEqual(JSON.parse(w.clashArcade('8001234', 'T')).on, false);
   assert.throws(() => start('8001234', 'dash'), /closed/);
+});
+
+test('weather days pay the extra once; expeditions go to the first squad there; announcement and home carry them', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureWeatherTabs_(); w.ensureSpotlightTab_();
+  const today = w.todayYmd_(), y = w.ymdShift_(today, -1), y2 = w.ymdShift_(today, -2);
+  const ev = w.book.getSheetByName('events');
+  ev.rows.push(['', 'Dough A', 'trait_dough', y, '', '', 5, '', '', ''], ['', 'Dough B', 'trait_dough', y, '', '', '', 3, '', ''], ['', 'Assembly', 'event', y, '', '', 10, '', '', '']);
+  const wd = w.book.getSheetByName('Weather Days');
+  wd.rows.push([true, y, '', 'Blizzard Day', 'trait_dough', 2, 'Trait Dough counts double!', '']);
+  w.payWeather_(); w.payWeather_();
+  const wx = events(w).filter(r => r[2] === 'weather');
+  assert.strictEqual(wx.length, 1, 'paid once');
+  assert.deepStrictEqual([wx[0][6], wx[0][7]], [5, 3], 'only trait_dough doubled');
+  wd.rows.push([true, today, '', 'Sunny Day', '', 3, '', '']);
+  assert.strictEqual(J(w.weatherNow_()).now.name, 'Sunny Day');
+  assert.ok(/Today is Sunny Day/.test(w.announcementScript_()));
+  // Expedition: Black reaches 12 on y2 (with entries ignored), Gold on y.
+  const ex = w.book.getSheetByName('Expeditions');
+  ex.rows.push([true, 'Service Summit', 'Do service', 'service', 'Points', 12, y2, '', 30, '', '']);
+  ev.rows.push(['', 'svc 1', 'service', y2, '', '', 12, '', '', ''], ['', 'svc 2', 'service', y, '', '', '', 20, '', '']);
+  let pub = JSON.parse(w.clashExpeditions()).filter(x => x.title === 'Service Summit')[0];
+  assert.deepStrictEqual([pub.winners, pub.open], [['BLACK'], false]);
+  w.payExpeditions_(); w.payExpeditions_();
+  const won = events(w).filter(r => r[2] === 'expedition');
+  assert.ok(won.length === 1 && won[0][6] === 30 && won[0][7] === '');
+  assert.strictEqual(J(w.sheetRows_('Expeditions')).filter(r => r.Expedition === 'Service Summit')[0].Winner, 'BLACK');
+  // Bonus rows never count toward another weather day or expedition.
+  assert.ok(!w.countsToward_({ type: 'weather' }, []) && w.countsToward_({ type: 'event' }, []));
+  assert.ok(J(w.homeExtras_()).weather.now);
+});
+
+test('quiet climbers, captains to-do, Dough reach, the Friday wrap-up only sends when asked', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureServiceTab_(); w.ensureDoughTabs_(); w.ensureArcadeTab_(); w.ensureWeatherTabs_(); w.ensureSpotlightTab_();
+  addStudentTabs(w);
+  w.book.insertSheet('Students').rows = [['800#', 'First Name', 'Last Name', 'Grade', 'Email', 'Squad'], ['8001234', 'Ann', 'Lee', '7', '', 'Gold'], ['8005678', 'Bo', 'Kim', '8', '', 'Grey'], ['8009999', 'Cy', 'Dee', '8', '', 'Grey']];
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  // Bo has nothing recent; Ann contributed on the board recently.
+  w.book.getSheetByName('Student Board').rows[1][13] = w.todayYmd_();
+  let q = J(w.quietClimbers_());
+  assert.deepStrictEqual(q.GREY.map(x => x.name), ['Bo K.']);
+  assert.strictEqual(q.GOLD.length, 0);
+  // A Virtual Dough bill takes Bo off the list.
+  w.book.getSheetByName('Virtual Dough').rows.push([w.todayYmd_() + ' 09:00', 'Ms. T', 'GOLD', '8005678', 'Bo Kim', 'GREY', 'Grit', 'Kept going', 3]);
+  assert.strictEqual(J(w.quietClimbers_()).GREY.length, 0);
+  // Captains: no service this month shows up.
+  const todo = J(w.captainTodo_('GREY'));
+  assert.ok(todo.length >= 1 && todo.length <= 3 && todo.some(t => /service/.test(t.text)));
+  // Dough reach for Ms. T (Gold): Grey 1 this month; suggests Black or Purple students (none on the roster) so no suggestions.
+  w.book.getSheetByName('Dough Teachers').rows.push([true, 'Ms. T', 'GOLD', '74', '']);
+  const tok = JSON.parse(w.clashDoughSignIn('Ms. T', '74')).token;
+  const reach = JSON.parse(w.clashDoughReach(tok));
+  assert.deepStrictEqual([reach.bySquad.GREY, reach.students, reach.bySquad.GOLD], [1, 1, undefined]);
+  // Wrap-up: built, not sent, until the button.
+  const sent = []; w.MailApp = { sendEmail: m => sent.push(m) };
+  w.setSettingValue_('WRAP_EMAILS', 'staff@example.org');
+  const wk = JSON.parse(w.clashWeekly('T'));
+  assert.ok(/Friday wrap-up/.test(wk.html) && wk.to[0] === 'staff@example.org' && !wk.sent);
+  assert.strictEqual(sent.length, 0, 'nothing sends on its own');
+  assert.ok(!/Ann Lee|Bo Kim|8005678/.test(wk.html), 'first name + last initial only');
+  w.clashWrapSend('T');
+  assert.strictEqual(sent.length, 1);
+  assert.ok(JSON.parse(w.clashWeekly('T')).sent);
+  assert.ok(JSON.parse(w.clashAnnouncePage()).text.length > 0);
+});
+
+test('hall of fame keeps each year once; send-off advice is 8th grade only, staff-ticked, nameless; season look', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureServiceTab_(); w.ensureDoughTabs_(); w.ensureLegacyTabs_();
+  addStudentTabs(w);
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  w.book.getSheetByName('events').rows.push(['', 'Big day', 'event', w.todayYmd_(), '', '', '', 50, '', '']);
+  const n = w.hallCapture_();
+  assert.ok(n >= 1);
+  assert.strictEqual(w.hallCapture_(), 0, 'once per year');
+  const hall = JSON.parse(w.clashHall());
+  assert.strictEqual(hall[0].champion, 'GOLD');
+  assert.ok(!/Ann Lee/.test(JSON.stringify(hall)));
+  // Send-off: Bo (grade 8) can write when SENDOFF_WRITE is ON; Ann (7) can't.
+  assert.throws(() => w.clashSendoffSave('Use your planner every day, it helps.', '8005678', 'T'), /closed/);
+  w.setSettingValue_('SENDOFF_WRITE', 'ON');
+  assert.throws(() => w.clashSendoffSave('Use your planner every day, it helps.', '8001234', 'T'), /8th graders/);
+  let so = JSON.parse(w.clashSendoffSave('Use your planner every day, it helps.', '8005678', 'T'));
+  assert.ok(so.write && /planner/.test(so.mine));
+  w.clashSendoffSave('Use your planner and ask for help early.', '8005678', 'T');
+  assert.strictEqual(w.book.getSheetByName('Send-off Advice').rows.length, 2, 'one row per student, edited in place');
+  // Not shown until ticked and SENDOFF_SHOW is ON.
+  w.setSettingValue_('SENDOFF_SHOW', 'ON');
+  assert.strictEqual(JSON.parse(w.clashSendoff('8001234', 'T')).show.length, 0);
+  w.book.getSheetByName('Send-off Advice').rows[1][5] = true;
+  so = JSON.parse(w.clashSendoff('8001234', 'T'));
+  assert.deepStrictEqual(so.show, [{ advice: 'Use your planner and ask for help early.', squad: 'GREY' }]);
+  w.setSettingValue_('SEASON_LOOK', 'SPRING');
+  assert.strictEqual(w.seasonLook_(), 'spring');
+  w.setSettingValue_('SEASON_LOOK', 'OFF');
+  assert.strictEqual(w.seasonLook_(), '');
+});
+
+test('Squad Colors Day and Family Pick: each hidden until switched on; colors pays the top squad once; one pick vote per family', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureFamilyTabs_(); w.ensureFamilyMoreTabs_(); w.ensureServiceTab_(); w.ensureSpotlightTab_(); w.ensureSiteContentTabs_(); w.ensureDoughTabs_();
+  w.book.insertSheet('Students').rows = [['800#', 'First Name', 'Last Name', 'Grade', 'Email', 'Squad'], ['8001111', 'Ann', 'Lee', '7', '', 'Grey'], ['8002222', 'Ed', 'Park', '8', '', 'Gold']];
+  const today = w.todayYmd_();
+  const cd = w.book.getSheetByName('Squad Colors Days');
+  cd.rows.push([w.ymdShift_(today, 3), 'Squad Colors Day', '', '', '', '', '', '']);
+  assert.strictEqual(w.colorsDayNext_(), null, 'off');
+  assert.strictEqual(J(w.familyExtras_()).colors, null);
+  w.setSettingValue_('FAMILY_COLORS', 'ON');
+  assert.strictEqual(J(w.colorsDayNext_()).name, 'Squad Colors Day');
+  cd.rows.push([w.ymdShift_(today, -1), 'Colors Monday', 40, 55, 55, 20, '', '']);
+  w.payColorsDays_(); w.payColorsDays_();
+  const c = events(w).filter(r => r[2] === 'colors_day');
+  assert.ok(c.length === 1 && c[0][7] === 25 && c[0][8] === 25 && c[0][6] === '', 'tie shares, paid once');
+  // Family Pick.
+  const fp = w.book.getSheetByName('Family Pick');
+  fp.rows[1][0] = true; fp.rows[1][1] = today.slice(0, 7);
+  assert.strictEqual(w.familyPick_(), null, 'off');
+  w.setSettingValue_('FAMILY_PICK', 'ON');
+  const r1 = JSON.parse(w.clashFamilyPickVote(JSON.stringify({ first: 'Ann', last: 'Lee', grade: '7', choice: 'Hat day' })));
+  assert.deepStrictEqual([r1.total, r1.counts['Hat day']], [1, 1]);
+  assert.throws(() => w.clashFamilyPickVote(JSON.stringify({ first: 'Ann', last: 'Lee', grade: '7', choice: 'Extra recess' })), /already voted/);
+  w.payFamilyPick_(); w.payFamilyPick_();
+  assert.strictEqual(events(w).filter(r => /^Family Pick/.test(r[1])).length, 1);
+  const page = JSON.parse(w.clashFamily('', ''));
+  assert.ok(page.extras.colors && page.extras.pick.total === 1 && !/Ann Lee|8001111/.test(JSON.stringify(page)));
 });
 
 test('Redemption: a Trailback Summit on the private Redemptions tab gives the student a Summit Climber badge and 25 LRG points; the feed labels it', () => {

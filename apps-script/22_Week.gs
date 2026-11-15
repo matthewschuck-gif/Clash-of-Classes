@@ -178,6 +178,7 @@ function announcementScript_() {
   const ev = evolvedSince_(lastSchoolDay_(y)), evN = SQUAD_KEYS_.reduce(function (n, s) { return n + ev[s]; }, 0);
   if (evN) parts.push(evN + ' creature' + (evN === 1 ? '' : 's') + ' evolved on My Climb. Keep earning LRG points!');
   try { const poll = pollAnnouncement_(); if (poll && !/^No daily poll/.test(poll)) parts.push(poll); } catch (e) { /* no polls */ }
+  try { announceExtras_().forEach(function (l) { parts.push(l); }); } catch (e) { /* 50_Weather.gs */ }
   return parts.join(' ');
 }
 
@@ -426,4 +427,4 @@ function clashVersion(token) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_22_Week = 'e52a06a174';
+var FILE_STAMP_22_Week = '927ad5a4da';

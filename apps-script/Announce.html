@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root { --bg: #fffdf8; --ink: #1b1036; --muted: #6b5f80; --line: #e6dff0; --brand: #490e6f; --gold: #ffcc00; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #140a24; --ink: #f4efff; --muted: #b8a9d0; --line: #2e1f47; --brand: #d6b8ff; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 28px 18px 60px; }
+  .kick { font-family: 'DM Mono', monospace; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-family: Georgia, serif; color: var(--brand); margin: 6px 0 18px; font-size: clamp(26px, 4vw, 40px); }
+  #text p { font-size: clamp(20px, 2.6vw, 28px); line-height: 1.5; margin: 0 0 16px; }
+  .bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
+  button { font: inherit; font-weight: 700; padding: 10px 16px; border-radius: 10px; border: 2px solid var(--brand); background: transparent; color: var(--brand); cursor: pointer; }
+  button.main { background: var(--brand); color: var(--bg); }
+  .note { color: var(--muted); font-size: 14px; margin-top: 24px; }
+  @media print { .bar, .note { display: none; } body { background: #fff; color: #000; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="kick">Clash of Classes · read over the PA</div>
+  <h1 id="day">Morning announcement</h1>
+  <div class="bar"><button class="main" id="copy">Copy</button><button id="print">Print</button><button id="again">Refresh</button></div>
+  <div id="text"><p>Loading…</p></div>
+  <p class="note">It updates every morning on its own: yesterday's points, the leader, the map, today's poll, weather days, expeditions, Squad Colors Day and the Spotlight.</p>
+</main>
+<script>
+(function () {
+  var raw = '';
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function load() {
+    google.script.run.withSuccessHandler(function (t) {
+      var d = JSON.parse(t); raw = d.text || '';
+      var when = new Date(d.date + 'T12:00:00');
+      document.getElementById('day').textContent = 'Morning announcement · ' + when.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+      var parts = raw.split(/(?<=[.!?])\s+(?=[A-Z])/);
+      var paras = [], cur = '';
+      parts.forEach(function (s) { cur = cur ? cur + ' ' + s : s; if (cur.length > 140) { paras.push(cur); cur = ''; } });
+      if (cur) paras.push(cur);
+      document.getElementById('text').innerHTML = paras.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') || '<p>Good morning, Mountaineers!</p>';
+    }).withFailureHandler(function (e) { document.getElementById('text').innerHTML = '<p>Could not load: ' + esc(e && e.message) + '</p>'; }).clashAnnouncePage();
+  }
+  document.getElementById('copy').onclick = function () {
+    var b = this;
+    try { navigator.clipboard.writeText(raw).then(function () { b.textContent = 'Copied ✓'; }); } catch (e) { b.textContent = 'Select the text to copy'; }
+  };
+  document.getElementById('print').onclick = function () { window.print(); };
+  document.getElementById('again').onclick = load;
+  load();
+})();
+</script>
+</body>
+</html>
+<!-- file-stamp: ed03b14ce7 -->

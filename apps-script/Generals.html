@@ -103,7 +103,8 @@
       '</div>' +
       (st && st.frozen && window.thawHtml ? window.thawHtml(st.frozen, { hq: true }) : '') + // thaw goals and, for a Fun Freeze, cash out (Pop.html)
       (window.avalancheHtml ? window.avalancheHtml(st && st.avalanche, true) : '') + // the last-place comeback (38_Avalanche.gs)
-      (tags ? '<div class="hq-tags">' + tags + '</div>' : '') + '</div>';
+      (tags ? '<div class="hq-tags">' + tags + '</div>' : '') + '</div>' +
+      (d.todo && d.todo.length ? '<div class="ms-card"><div class="ms-h">This week\'s rally moves</div>' + d.todo.map(function (t) { return '<div style="display:flex;gap:10px;padding:8px 0;border-top:1px solid rgba(127,127,127,.25)"><span style="font-size:20px">' + esc(t.icon) + '</span><span>' + esc(t.text) + '</span></div>'; }).join('') + '</div>' : '');
     var tabs = [['roster', '👥 Roster & sign-ups'], ['mayhem', '⚡ Mayhem checklist'], ['hype', '📣 Hype script'], ['meeting', '🎤 Squad meeting'], ['service', '🤝 Service project'], ['nominate', '📝 Nominate & letters'], ['shirts', '👕 Shirt designs']];
     tabs.splice(1, 0, ['game', '🎲 Game']);
     var waiting = d.checkins ? d.checkins.waiting : 0;
@@ -466,4 +467,4 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script>
-<!-- file-stamp: 8d459e4402 -->
+<!-- file-stamp: 0c08b22833 -->

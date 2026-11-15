@@ -344,7 +344,7 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
     }).join('');
     var badges = (D.me.badges || []).map(function (b) { return '<span class="ms-badge">' + esc(b) + '</span>'; }).join('') || '<span class="me-sub">Your first badge is one Trait Dough bill away.</span>';
     var stamps = D.passport ? D.passport.stamps.map(function (s) { return '<span class="me-pill ' + (s.done ? '' : 'alt') + '" style="text-transform:none;letter-spacing:0;font-family:inherit">' + (s.done ? '✓ ' : '') + esc(s.label) + '</span>'; }).join(' ') : '';
-    return creatureCard() + '<section class="me-card"><h2>You and your squad</h2><p class="me-sub">Your numbers next to the ' + esc(title(D.me.squad)) + ' Squad\'s average. Only you see your own.</p><div class="me-metrics">' + metrics + '</div></section>' +
+    return '<div id="meExtra"></div>' + creatureCard() + '<section class="me-card"><h2>You and your squad</h2><p class="me-sub">Your numbers next to the ' + esc(title(D.me.squad)) + ' Squad\'s average. Only you see your own.</p><div class="me-metrics">' + metrics + '</div></section>' +
       '<section class="me-card"><h2>Your ' + esc(animal()) + '\'s gear</h2><p class="me-sub">Gear comes from what you do: bills, summits, shout-outs, streaks, tickets. Tap gear you\'ve earned to wear it (up to ' + c.gearMax + ', wearing ' + worn + ').</p><div class="me-gear-grid">' + gear + '</div><p class="me-sub" id="gearMsg" style="margin-top:8px"></p></section>' +
       '<section class="me-card"><h2>Badges and passport</h2><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">' + badges + '</div>' + stamps + '</section>';
   }
@@ -481,6 +481,7 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
           $('arcMsg').textContent = '';
           var stage = $('arcStage');
           stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (AR.look) Arcade.look(AR.look);
           Arcade.play(game, stage, D.me.squad, function (score) {
             run.apply(null, ['clashArcadeFinish', s.play, score].concat(who())).then(function (a) { AR = a; render(); })
               .catch(function (e) { AR = null; render(); alert(msg(e)); });
@@ -490,8 +491,35 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
     });
   }
 
+  // ── Weather today + the 8th grade send-off (50_Weather.gs, 52_Legacy.gs) ──
+  var SO = null, soLoading = false;
+  function drawExtra() {
+    var box = $('meExtra');
+    if (!box || !SO) return;
+    var out = '';
+    if (SO.weather) out += '<section class="me-card" style="border-color:#7dd3fc"><h2>🌨️ ' + esc(SO.weather.name) + '</h2><p class="me-sub">' + esc(SO.weather.message) + '</p></section>';
+    if (SO.write) out += '<section class="me-card"><h2>✉️ Advice for next year\'s 7th graders</h2><p class="me-sub">What do you wish you knew in 7th grade? Staff pick some to share with next year\'s 7th graders, never with your name.</p>' +
+      '<textarea id="soText" rows="3" maxlength="280" style="width:100%;box-sizing:border-box;border-radius:10px;padding:10px;font:inherit">' + esc(SO.mine) + '</textarea>' +
+      '<button class="btn btn-gold craft-press" id="soSave" style="margin-top:8px">' + (SO.mine ? 'Update my advice' : 'Send my advice') + '</button> <span class="me-sub" id="soMsg"></span></section>';
+    if (SO.show && SO.show.length) out += '<section class="me-card"><h2>✉️ From last year\'s 8th graders</h2>' + SO.show.map(function (a) { return '<p style="margin:10px 0 2px">“' + esc(a.advice) + '”</p><p class="me-sub" style="margin:0">an 8th grader, ' + esc(title(a.squad)) + ' Squad</p>'; }).join('') + '</section>';
+    box.innerHTML = out;
+    var b = $('soSave');
+    if (b) b.onclick = function () {
+      b.disabled = true; $('soMsg').textContent = 'Saving…';
+      run.apply(null, ['clashSendoffSave', $('soText').value].concat(who())).then(function (d) { SO = d; drawExtra(); var m = $('soMsg'); if (m) m.textContent = 'Saved. Thank you!'; })
+        .catch(function (e) { b.disabled = false; $('soMsg').textContent = msg(e); });
+    };
+  }
+  function loadExtra() {
+    if (SO) { drawExtra(); return; }
+    if (soLoading) return;
+    soLoading = true;
+    run.apply(null, ['clashSendoff'].concat(who())).then(function (d) { SO = d; soLoading = false; drawExtra(); }).catch(function () { soLoading = false; });
+  }
+
   function wire() {
     wireArcade();
+    if (tab === 'me') loadExtra();
     // Sample student: "Another squad" steps to the next squad's sample (same staff sign-in).
     var pa = $('pvAnother');
     if (pa) pa.onclick = function (ev) { ev.preventDefault(); var sq = ['BLACK', 'GOLD', 'GREY', 'PURPLE']; preview.id = 'sample-' + sq[(sq.indexOf(D.me.squad) + 1) % 4]; load(); };
@@ -549,4 +577,4 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 </script>
 </body>
 </html>
-<!-- file-stamp: ff805792fb -->
+<!-- file-stamp: e6eeebc95a -->

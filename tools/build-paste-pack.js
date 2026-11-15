@@ -6,7 +6,7 @@ const path = require('path');
 const dir = path.join(__dirname, '..', 'apps-script');
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 // Files made since the last full paste (they need + in the editor first).
-const NEW = ['00_Version.gs', '34_SheetEditor.gs', '35_SiteContent.gs', '36_TV.gs', '37_Season.gs', '38_Avalanche.gs', '39_VirtualDough.gs', '40_Service.gs', '41_Morning.gs', '42_Family.gs', '43_Rollover.gs', '44_Reveal.gs', '45_SelfCheck.gs', '46_Plinko.gs', '47_Families.gs', '48_Arcade.gs', '49_TabOrder.gs', 'Plinko.html', 'FamilyDoor.html', 'Arcade.html', 'Reveal.html',
+const NEW = ['00_Version.gs', '34_SheetEditor.gs', '35_SiteContent.gs', '36_TV.gs', '37_Season.gs', '38_Avalanche.gs', '39_VirtualDough.gs', '40_Service.gs', '41_Morning.gs', '42_Family.gs', '43_Rollover.gs', '44_Reveal.gs', '45_SelfCheck.gs', '46_Plinko.gs', '47_Families.gs', '48_Arcade.gs', '49_TabOrder.gs', '50_Weather.gs', '51_Staff.gs', '52_Legacy.gs', '53_FamilyMore.gs', 'Plinko.html', 'FamilyDoor.html', 'Arcade.html', 'Announce.html', 'Hall.html', 'Reveal.html',
   'SheetEditor.html', 'Dough.html', 'Family.html', 'Morning.html', 'ServiceAdmin.html'];
 const files = fs.readdirSync(dir).filter(f => /\.(gs|html)$/.test(f)).sort((a, b) => (a.endsWith('.gs') ? 0 : 1) - (b.endsWith('.gs') ? 0 : 1) || a.localeCompare(b));
 const built = new Date().toISOString().slice(0, 16).replace('T', ' ');

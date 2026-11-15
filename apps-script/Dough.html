@@ -79,6 +79,7 @@
     var other = ['BLACK', 'GOLD', 'GREY', 'PURPLE'].filter(function (s) { return s !== S.me.squad; }).map(title).join(', ');
     main('<div class="card"><div class="who"><span>Signed in as <b>' + esc(S.me.name) + '</b> (' + title(S.me.squad) + ')</span><button class="link" id="out">Sign out</button></div>' +
       '<div class="hint" style="margin-top:4px"><span id="left">' + S.me.left + '</span> of ' + S.me.max + ' bills left today · you can give to ' + other + ' students</div>' +
+      '<div id="reach" class="hint" style="margin-top:8px"></div>' +
       '<label for="q">Student</label><input id="q" type="search" placeholder="Type a name or 800 number" autocomplete="off"><div class="list" id="res"></div>' +
       '<label for="tr">Trait they showed</label><select id="tr"><option value="">Pick a trait</option>' + S.start.traits.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('') + '</select>' +
       '<label for="wh">What they did</label><textarea id="wh" maxlength="300" placeholder="Helped a classmate who was stuck without being asked."></textarea>' +
@@ -96,6 +97,14 @@
         }).catch(function (e) { if (/sign in/i.test(e && e.message)) { S.me = null; sessionStorage.removeItem('dough-me'); signIn(); } });
       }, 250);
     };
+    run('clashDoughReach', S.me.token).then(function (r) {
+      var box = document.getElementById('reach');
+      if (!box) return;
+      box.innerHTML = '<b>Your bills this month:</b> ' + Object.keys(r.bySquad).map(function (s) { return title(s) + ' ' + r.bySquad[s]; }).join(' · ') + ' (' + r.students + ' student' + (r.students === 1 ? '' : 's') + ')' +
+        (r.suggest.length ? '<div style="margin-top:6px">Haven\'t had Virtual Dough this month in ' + title(r.low) + ':</div><div class="list">' + r.suggest.map(function (s) {
+          return '<button class="stu" data-id="' + esc(s.id) + '" data-name="' + esc(s.name) + '"><span>' + esc(s.name) + ' <small>gr ' + esc(s.grade) + (s.quiet ? ' · quiet lately' : '') + '</small></span><span class="sq ' + s.squad + '">' + title(s.squad) + '</span></button>';
+        }).join('') + '</div>' : '');
+    }).catch(function () {});
     document.getElementById('tr').onchange = check;
     document.getElementById('wh').oninput = check;
   }
@@ -137,4 +146,4 @@
 </script>
 </body>
 </html>
-<!-- file-stamp: 79de2e13ce -->
+<!-- file-stamp: 84cb1f636a -->

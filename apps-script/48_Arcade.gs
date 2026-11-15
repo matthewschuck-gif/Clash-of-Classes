@@ -73,7 +73,7 @@ function clashArcade(asId, adminToken) {
     mine.forEach(function (p) { const g = String(p['Game']); best[g] = Math.max(best[g] || 0, Number(p['Score']) || 0); });
     return JSON.stringify({ on: true, wallet: arcadeWallet_(id), rules: arcadeTokenRules_(), maxPoints: settingNum_('ARCADE_MAX_POINTS', 3),
       games: Object.keys(ARCADE_GAMES_).map(function (k) { const g = ARCADE_GAMES_[k]; return { key: k, name: g.name, blurb: g.blurb, per: g.per, best: best[k] || 0 }; }),
-      board: arcadeBoard_(), sample: id === SAMPLE_ID_ });
+      board: arcadeBoard_(), sample: id === SAMPLE_ID_, look: seasonLook_() });
   });
 }
 
@@ -139,4 +139,4 @@ function maybePayArcade_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_48_Arcade = '69627447cd';
+var FILE_STAMP_48_Arcade = 'bb0b2180b0';

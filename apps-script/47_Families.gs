@@ -211,7 +211,7 @@ function maybePayFamilyPoints_() {
 
 /** What the family page shows (only the pieces that are on). */
 function familyExtras_() {
-  return { challenge: familyChallenge_(), shoutouts: familyOn_('FAMILY_SHOUTOUTS'), pulse: familyPulse_(), traits: (function () { try { return doughTraits_(); } catch (e) { return []; } })() };
+  return { challenge: familyChallenge_(), shoutouts: familyOn_('FAMILY_SHOUTOUTS'), pulse: familyPulse_(), colors: (function () { try { return colorsDayNext_(); } catch (e) { return null; } })(), pick: (function () { try { return familyPick_(); } catch (e) { return null; } })(), traits: (function () { try { return doughTraits_(); } catch (e) { return []; } })() };
 }
 
 function serveFamilyDoor_() {
@@ -220,7 +220,7 @@ function serveFamilyDoor_() {
 }
 
 // ── The switches (Admin › ✅ Service): each family piece on or off by itself ──
-const FAMILY_SWITCHES_ = [['FAMILY_CHALLENGE', 'Weekly family challenge'], ['FAMILY_SHOUTOUTS', 'Family shout-outs'], ['FAMILY_PULSE', 'Family Pulse question'], ['FAMILY_CHECKIN', 'Family Night check-in']];
+const FAMILY_SWITCHES_ = [['FAMILY_CHALLENGE', 'Weekly family challenge'], ['FAMILY_SHOUTOUTS', 'Family shout-outs'], ['FAMILY_PULSE', 'Family Pulse question'], ['FAMILY_CHECKIN', 'Family Night check-in'], ['FAMILY_COLORS', 'Squad Colors Day'], ['FAMILY_PICK', 'Family Pick of the Month']];
 function clashFamilySwitches(token) {
   requireAdmin_(token);
   return JSON.stringify(FAMILY_SWITCHES_.map(function (s) { return { key: s[0], label: s[1], on: familyOn_(s[0]) }; }));
@@ -233,4 +233,4 @@ function clashFamilySwitch(token, key, on) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_47_Families = '7397d88a21';
+var FILE_STAMP_47_Families = 'f66d1aa28f';

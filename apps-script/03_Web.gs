@@ -30,6 +30,8 @@ function serveSite_(e) {
   if (e && e.parameter && (e.parameter.page === 'morning' || e.parameter.tv === 'morning')) return serveMorning_(); // Morning Clash (41_Morning.gs)
   if (e && e.parameter && e.parameter.page === 'family') return serveFamily_();
   if (e && e.parameter && e.parameter.page === 'familydoor') return serveFamilyDoor_(); // Family Night check-in (47_Families.gs)
+  if (e && e.parameter && e.parameter.page === 'announce') return serveAnnounce_(); // the morning announcement, big (51_Staff.gs)
+  if (e && e.parameter && e.parameter.page === 'hall') return serveHall_(); // the Hall of Fame (52_Legacy.gs)
   if (e && e.parameter && e.parameter.page === 'plinko') return servePlinko_(); // the Plinko board (46_Plinko.gs)
   if (e && e.parameter && e.parameter.page === 'reveal') return serveReveal_(); // the Clash Bash reveal + award certificates (44_Reveal.gs) // the monthly family update (42_Family.gs)
   if (e && e.parameter && e.parameter.page === 'guides') return serveGuides_(); // one-page role guides from Settings (33_Guides.gs)
@@ -67,6 +69,7 @@ function publicLoad_(raw) {
     try { res.value.siteTraits = siteTraits_(); res.value.siteWheel = siteWheel_(); } catch (e) { /* the page keeps its built-in traits and wheel */ }
     try { res.value.tv = tvSettings_(); } catch (e) { /* the TV keeps its defaults */ } // 36_TV.gs
     try { res.value.season = seasonInfo_(); res.value.spotlight = spotlightPublic_(4); } catch (e) { /* none */ } // 37, 41
+    try { res.value.extras = homeExtras_(); } catch (e) { /* none */ } // 50: weather, expeditions, colors day, hall
     if (!raw && Array.isArray(res.value.events)) res.value.events = res.value.events.map(publicEvent_);
   }
   return res;
@@ -155,6 +158,7 @@ function backgroundTick() {
   try { maybeDoughNudge_(); } catch (e) { noteError_('dough nudge', e); } // 39_VirtualDough.gs, Fridays
   try { maybePayFamilyPoints_(); } catch (e) { noteError_('family points', e); } // 47_Families.gs, daily
   try { maybePayArcade_(); } catch (e) { noteError_('arcade', e); } // 48_Arcade.gs, daily
+  try { maybeDailyExtras_(); } catch (e) { noteError_('daily extras', e); } // 50: weather, expeditions, colors day, Family Pick
   try { cachedPublicLoad_(true); cachedGame_(true); } catch (e) { noteError_('warm cache', e); }
 }
 
@@ -387,6 +391,9 @@ function onOpen() {
     .addItem('Group and color the tabs', 'menuOrganizeTabs_')
     .addSeparator()
     .addItem('Clash Bash reveal show + award certificates', 'menuOpenReveal_')
+    .addItem('Add this year to the Hall of Fame', 'menuHallCapture_')
+    .addItem('Friday wrap-up: preview', 'menuPreviewWrap_')
+    .addItem('Friday wrap-up: send', 'menuSendWrap_')
     .addItem('New school year: preview (nothing changes)', 'menuRolloverPreview_')
     .addItem('New school year: archive and roll over…', 'menuRollover_')
     .addItem('Today\'s morning announcement', 'menuAnnouncement_')
@@ -416,4 +423,4 @@ function menuOpenSite_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_03_Web = '274930f6b0';
+var FILE_STAMP_03_Web = '72b4ec7067';

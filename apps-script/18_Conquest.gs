@@ -428,6 +428,7 @@ function mapPayload_(events, zones) {
     wings: heldWings_(zones), grid: mapGrid_(zones), rules: Object.keys(rules).map(function (k) { return rules[k]; }),
     battles: recentBattles_(5), style: String(getSetting_('MAP_STYLE') || 'puzzle').toLowerCase(),
     claimDays: Number(getSetting_('CLAIM_DAYS')) || 14,
+    look: (function () { try { return seasonLook_(); } catch (e) { return ''; } })(), // 52_Legacy.gs
   };
 }
 
@@ -761,4 +762,4 @@ function setupMapGuideTab_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_18_Conquest = 'ac119df6db';
+var FILE_STAMP_18_Conquest = 'd333e39a0e';

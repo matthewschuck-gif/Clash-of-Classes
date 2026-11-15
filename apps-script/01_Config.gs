@@ -97,6 +97,9 @@ function setupSpreadsheet() {
   ensureAvalancheTab_(); ensureDoughTabs_(); ensureServiceTab_(); ensureSpotlightTab_(); // 38, 39, 40, 41
   ensurePlinkoTabs_(); // Plinko Slots + Plinko Drops (46_Plinko.gs)
   ensureArcadeTab_(); // Arcade Plays (48_Arcade.gs)
+  ensureWeatherTabs_(); // Weather Days + Expeditions (50_Weather.gs)
+  ensureLegacyTabs_(); // Hall of Fame + Send-off Advice (52_Legacy.gs)
+  ensureFamilyMoreTabs_(); // Squad Colors Days + Family Pick (53_FamilyMore.gs)
   ensureFamilyTabs_(); // the family pieces (47_Families.gs), each OFF until turned on
   ensureFreezeTab_();
   ensureDuelTab_();
@@ -223,6 +226,15 @@ const DEFAULT_SETTINGS = [
   ['FAMILY_CHECKIN', 'OFF', 'Families: ON = staff check families in at Family Night / Squad Night (clashofclasses.org/?page=familydoor); each family adds FAMILY_CHECKIN_POINTS.'],
   ['FAMILY_PULSE_POINTS', '1', 'Families: squad points for each family that answers the Family Pulse (paid once a day).'],
   ['FAMILY_CHECKIN_POINTS', '2', 'Families: squad points for each family checked in at an event (paid once a day).'],
+  ['SEASON_LOOK', 'AUTO', 'The map and Arcade look: AUTO (winter Dec-Feb, spring Mar-Jun, fall Sep-Nov), WINTER, SPRING, FALL or OFF.'],
+  ['QUIET_DAYS', '21', 'Quiet Climbers: days with nothing earned before a student shows on the staff list (Admin › System, Friday wrap-up).'],
+  ['WRAP_EMAILS', '', 'Friday wrap-up: who gets it (commas). Blank = STATE_EMAILS / DIGEST_EMAILS. You preview and send it from Admin › System; it never sends by itself.'],
+  ['SENDOFF_WRITE', 'OFF', '8th grade send-off: ON = 8th graders write one piece of advice on My Climb (Send-off Advice tab; tick Show to share it).'],
+  ['SENDOFF_SHOW', 'OFF', '8th grade send-off: ON = 7th graders see the ticked advice on My Climb (no names).'],
+  ['FAMILY_COLORS', 'OFF', 'Families: ON = the next Squad Colors Day (Squad Colors Days tab) shows on the family update, home page and announcement.'],
+  ['COLORS_DAY_POINTS', '25', 'Squad Colors Day: points for the squad with the most colors (when the row\'s Points is blank). Ties share.'],
+  ['FAMILY_PICK', 'OFF', 'Families: ON = Family Pick of the Month on the family update (Family Pick tab).'],
+  ['FAMILY_PICK_POINTS', '1', 'Family Pick: squad points for each family that votes (paid once a day).'],
   ['ARCADE', 'ON', 'Arcade on My Climb: ON = students play Summit Dash, Dough Catch and Peak Stack for squad points. OFF hides it.'],
   ['ARCADE_DAILY', '3', 'Arcade: plays a day per student (free play included).'],
   ['ARCADE_FREE_DAILY', '1', 'Arcade: free plays a day per student before tokens are needed.'],
@@ -465,4 +477,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = '20cfc56e43';
+var FILE_STAMP_01_Config = 'e87207a648';

@@ -65,13 +65,19 @@ const SHEET_TABS_ = [
   ['Family Challenges', 'Families', 'The weekly family challenge (FAMILY_CHALLENGE ON): the newest shown row whose Week Of has started.', {}],
   ['Family Pulse', 'Families', 'A question for families (FAMILY_PULSE ON): Choices like Yes | No; From / Through dates (blank = open).', {}],
   ['Plinko Slots', 'Game', 'The Plinko prizes, left to right (one more slot than PLINKO_ROWS). Kind: points, mystery (Value like 5|10|25|50) or nothing. The middle slots come up most; the edges are rare.', { 'Kind': ['points', 'mystery', 'nothing'] }],
+  ['Weather Days', 'Points', 'Days when points count extra. Counts = event types (blank = all); Multiplier 2 = double. The extra is added the day after it ends (Paid fills in).', {}],
+  ['Expeditions', 'Points', 'Races: the FIRST squad to reach Goal wins Reward. Counts = event types (blank = all); Measure Points or Entries. Winner fills in by itself.', { 'Measure': ['Points', 'Entries'] }],
+  ['Squad Colors Days', 'Families', 'Squad Colors Day dates (FAMILY_COLORS ON). After the day type how many wore colors under each squad; the top squad gets Points.', {}],
+  ['Family Pick', 'Families', 'Family Pick of the Month (FAMILY_PICK ON): Month like 2026-12, Choices like A | B | C. Winner fills in after the month.', {}],
+  ['Hall of Fame', 'Game', 'Every year\'s champion and award winners (rollover adds them). Untick Show to hide; add old years by hand. Public at ?page=hall.', {}],
+  ['Send-off Advice', 'Students', '8th grade advice for next year\'s 7th graders (SENDOFF_WRITE / SENDOFF_SHOW). Tick Show on the ones to share; never shown with a name.', {}],
   ['Arcade Plays', 'Game', 'Every Arcade game on My Climb. Points add up once a day as one Arcade row per squad (Paid fills in). Delete a row to undo a play.', { 'Game': ['dash', 'catch', 'stack'] }],
   ['Plinko Drops', 'Game', 'Drops squads have earned (a row each). Add one here or with + Give a drop on the board; Used fills in when it drops.', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
   ['Dough Teachers', 'Points', 'Teachers who can give Virtual Trait Dough: tick Active, their squad, and their password (e.g. their room number).', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
 ];
 const SHEET_HIDDEN_ = ['app_data', 'How To Use This Sheet', 'How The Map Works', 'How My Climb Works'];
 const SHEET_PRIVATE_ = ['Students', 'Student Board', 'Poll Votes', 'Event Check-ins', 'Redemptions', 'Shirt Votes', 'Shirt Orders', 'Squad Night', 'Sign-ups',
-  'Nominations', 'General Letters', 'Virtual Dough', 'Service Submissions', 'Family Shout-outs', 'Family Pulse Answers', 'Family Check-ins', 'MLC Roster', 'Boost Ledger', 'Student Tickets', 'Avatars', 'Color Squads', 'Homeroom Points', 'Frost Log', 'Admin Edits', 'Usage', 'Weekly Digest Log', 'Squad Hand', 'Streak Banks'];
+  'Nominations', 'General Letters', 'Virtual Dough', 'Service Submissions', 'Family Shout-outs', 'Family Pulse Answers', 'Family Check-ins', 'MLC Roster', 'Boost Ledger', 'Student Tickets', 'Avatars', 'Color Squads', 'Homeroom Points', 'Family Pick Votes', 'Send-off Advice', 'Arcade Plays', 'Frost Log', 'Admin Edits', 'Usage', 'Weekly Digest Log', 'Squad Hand', 'Streak Banks'];
 const SHEET_EDIT_LOG_ = 'Admin Edits';
 
 function sheetTabInfo_(name) {
@@ -220,4 +226,4 @@ function clashSheetAction(token, name) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_34_SheetEditor = '85ad849d11';
+var FILE_STAMP_34_SheetEditor = '2eb2e41599';

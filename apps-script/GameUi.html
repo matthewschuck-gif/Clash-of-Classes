@@ -18,6 +18,14 @@
 .gb svg { display: block; width: 100%; height: auto; }
 .gb .zone { transition: filter .25s; cursor: default; }
 .gb .zone:hover { filter: brightness(1.15); }
+/* Season look (Settings › SEASON_LOOK): a light drift over the map */
+.gb[class*="gb-look-"]::after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .55; background-size: 180px 180px; animation: gbDrift 14s linear infinite; }
+.gb-look-winter::after { background-image: radial-gradient(2px 2px at 20px 30px, #fff, transparent), radial-gradient(3px 3px at 90px 120px, #fff, transparent), radial-gradient(2px 2px at 150px 60px, #fff, transparent), radial-gradient(2px 2px at 60px 160px, #fff, transparent); }
+.gb-look-spring::after { background-image: radial-gradient(3px 2px at 30px 40px, #ffb7d5, transparent), radial-gradient(3px 2px at 120px 100px, #ffd1e3, transparent), radial-gradient(2px 3px at 70px 150px, #ffc4dc, transparent); }
+.gb-look-fall::after { background-image: radial-gradient(3px 2px at 30px 40px, #f59e0b, transparent), radial-gradient(3px 3px at 120px 100px, #ea580c, transparent), radial-gradient(2px 3px at 70px 150px, #fbbf24, transparent); }
+.gb-look-tag { position: absolute; top: 8px; right: 10px; font-size: 18px; pointer-events: none; z-index: 1; }
+@keyframes gbDrift { from { background-position: 0 0; } to { background-position: 40px 180px; } }
+@media (prefers-reduced-motion: reduce) { .gb[class*="gb-look-"]::after { animation: none; } }
 .gb-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; font-size: 13px; }
 .gb-legend span { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.06); color: var(--text2, #d6c2ff); }
 .gb-legend i { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
@@ -314,7 +322,8 @@ body.light-mode .gb-rules summary { color: #7a5c00; }
           (r.defense ? ', the holder has a ' + r.defense + '% edge' : '') + (r.border ? (r.far != null ? ', ' + r.far + '% from farther away' : ', next door only') : '') + ')</span>' : '') +
         '<em>' + esc(r.zones.join(' · ')) + '</em></div>';
     }).join('') + '</details>' : '';
-    return '<div class="gb' + (building ? ' gb-building' : '') + '"><svg viewBox="' + (-cell / 4) + ' ' + (-cell / 4) + ' ' + (W + cell / 2) + ' ' + (H + cell / 2) + '" role="img" aria-label="Clash territory map">' +
+    var look = map.look === 'winter' || map.look === 'spring' || map.look === 'fall' ? map.look : '';
+    return '<div class="gb' + (building ? ' gb-building' : '') + (look ? ' gb-look-' + look : '') + '">' + (look ? '<span class="gb-look-tag" aria-hidden="true">' + { winter: '❄️', spring: '🌸', fall: '🍂' }[look] + '</span>' : '') + '<svg viewBox="' + (-cell / 4) + ' ' + (-cell / 4) + ' ' + (W + cell / 2) + ' ' + (H + cell / 2) + '" role="img" aria-label="Clash territory map">' +
       '<defs><pattern id="gbTopo" width="160" height="80" patternUnits="userSpaceOnUse"><path d="M0 60 Q40 40 80 56 T160 50" fill="none" stroke="#bb8ef5" stroke-opacity=".12" stroke-width="1.5"/></pattern>' +
       '<pattern id="gbTiles" width="' + cell + '" height="' + cell + '" patternUnits="userSpaceOnUse"><path d="M' + cell + ' 0 V' + cell + ' H0" fill="none" stroke="#bb8ef5" stroke-opacity=".06"/></pattern></defs>' +
       '<rect x="' + (-cell / 4) + '" y="' + (-cell / 4) + '" width="' + (W + cell / 2) + '" height="' + (H + cell / 2) + '" fill="#170b29" class="gb-bg"/><rect width="' + W + '" height="' + H + '" fill="url(#' + (building ? 'gbTiles' : 'gbTopo') + ')"/>' + slab + zones + '</svg></div>' +
@@ -380,4 +389,4 @@ body.light-mode .gb-rules summary { color: #7a5c00; }
   window.GameUi = { mascot: mascot, character: character, board: board, monster: monster, LOOK: LOOK, SQ: SQ_LIGHT };
 })();
 </script>
-<!-- file-stamp: ce74c6e485 -->
+<!-- file-stamp: 19e62550ff -->

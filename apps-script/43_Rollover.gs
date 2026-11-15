@@ -19,7 +19,7 @@
 const ROLLOVER_CLEAR_ = ['events', 'Daily Polls', 'Poll Votes', 'Poll Insights', 'You Said We Did', 'Squad Monthly', 'Zone Overrides', 'Map Battles',
   'Point Freezes', 'Frost Log', 'Avalanche', 'Virtual Dough', 'Service Submissions', 'Squad Spotlight', 'Event Check-ins', 'Sign-ups', 'Homeroom Points',
   'Nominations', 'General Letters', 'Shirt Designs', 'Shirt Votes', 'Shirt Orders', 'Squad Night', 'Boost Ledger', 'Student Tickets', 'Squad Hand',
-  'Streak Banks', 'Redemptions', 'Usage', 'Admin Edits', 'Weekly Digest Log', 'Points Balance', 'Student Board', 'Squad Board'];
+  'Streak Banks', 'Redemptions', 'Usage', 'Admin Edits', 'Weekly Digest Log', 'Points Balance', 'Student Board', 'Squad Board', 'Arcade Plays', 'Family Pick Votes'];
 
 function schoolYearLabel_(ymd) {
   const y = Number(ymd.slice(0, 4)), m = Number(ymd.slice(5, 7));
@@ -46,6 +46,8 @@ function rolloverYear_(confirm) {
   if (!copy || !copy.getId()) throw new Error('The archive copy could not be made, so nothing was cleared.');
   setSettingValue_('LAST_ARCHIVE', copy.getUrl());
   lines.push('Archive: ' + plan.archive + ' (link on Settings › LAST_ARCHIVE)');
+  // 1b. The Hall of Fame keeps this year's champion and awards (52_Legacy.gs).
+  try { const n = hallCapture_(); lines.push(n ? 'Hall of Fame: added ' + n + ' rows for this year' : 'Hall of Fame: this year was already there'); } catch (e) { lines.push('Hall of Fame not updated: ' + e.message); }
   // 2. The year's records.
   plan.tabs.forEach(function (t) {
     const sh = ss.getSheetByName(t.tab);
@@ -66,7 +68,7 @@ function rolloverYear_(confirm) {
     const sh = ss.getSheetByName(tab), c = sh ? headerCol_(sh, col) : 0;
     if (sh && c && sh.getLastRow() > 1) sh.getRange(2, c, sh.getLastRow() - 1, 1).setValue(value);
   };
-  blank('Map Zones', 'Holder', ''); blank('Map Zones', 'Since', ''); blank('Mayhem Checklist', 'Done', false); blank('Poll Ideas', 'Used On', '');
+  blank('Map Zones', 'Holder', ''); blank('Map Zones', 'Since', ''); blank('Mayhem Checklist', 'Done', false); blank('Poll Ideas', 'Used On', ''); blank('Expeditions', 'Winner', ''); blank('Expeditions', 'Won On', '');
   blank('Lore Chapters', 'Unlocked', ''); blank('Engine Powers', 'Unlocked', ''); blank('Opponents', 'Status', ''); blank('Round Goals', 'Status', '');
   blank('Challenges', 'Awarded', ''); blank('Squad Duels', 'Status', '');
   lines.push('Map holders cleared, checklists unticked, Poll Ideas ready again');
@@ -96,4 +98,4 @@ function menuRollover_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_43_Rollover = '6ef62c4495';
+var FILE_STAMP_43_Rollover = '4ec1802133';

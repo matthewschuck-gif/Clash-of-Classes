@@ -14,7 +14,13 @@
 </style>
 <script>
 (function () {
-  var W = 480, H = 320, current = null;
+  var W = 480, H = 320, current = null, LOOK = 'winter';
+  var LOOKS = {
+    winter: { top: '#1b1036', bottom: '#5b3591', far: '#3b2468', near: '#2c1a50', ground: '#eef3ff', mark: '#c9d4ea', fleck: 'rgba(255,255,255,.7)' },
+    spring: { top: '#2b5c9e', bottom: '#9ad0f5', far: '#4f8a5b', near: '#3c6e47', ground: '#bfe3a1', mark: '#9ccc7c', fleck: 'rgba(255,190,220,.85)' },
+    fall: { top: '#3d1f4f', bottom: '#e0884a', far: '#7a3b2e', near: '#5a2a24', ground: '#e9d3b0', mark: '#cfae7d', fleck: 'rgba(245,158,11,.85)' },
+  };
+  function P() { return LOOKS[LOOK] || LOOKS.winter; }
   var SQ = { BLACK: '#2b2b2b', GOLD: '#ffcc00', GREY: '#9aa3ad', PURPLE: '#7b3fbf' };
 
   function setup(host, hint) {
@@ -53,10 +59,10 @@
 
   function sky(cx, off) {
     var g = cx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#1b1036'); g.addColorStop(1, '#5b3591');
+    g.addColorStop(0, P().top); g.addColorStop(1, P().bottom);
     cx.fillStyle = g; cx.fillRect(0, 0, W, H);
-    ridge(cx, off * 0.15, 210, 120, 90, '#3b2468');
-    ridge(cx, off * 0.4, 250, 80, 60, '#2c1a50');
+    ridge(cx, off * 0.15, 210, 120, 90, P().far);
+    ridge(cx, off * 0.4, 250, 80, 60, P().near);
   }
   function ridge(cx, off, base, amp, step, color) {
     cx.fillStyle = color; cx.beginPath(); cx.moveTo(0, H);
@@ -132,10 +138,10 @@
         },
         draw: function () {
           sky(cx, dist);
-          cx.fillStyle = 'rgba(255,255,255,.7)';
+          cx.fillStyle = P().fleck;
           flakes.forEach(function (f) { var fx = ((f[0] - dist * 0.6 * f[2]) % W + W) % W, fy = (f[1] + dist * 0.2 * f[2]) % H; cx.fillRect(fx, fy, 2, 2); });
-          cx.fillStyle = '#eef3ff'; cx.fillRect(0, G, W, H - G);
-          cx.fillStyle = '#c9d4ea'; for (var m = -((dist * 1) % 40); m < W; m += 40) cx.fillRect(m, G + 10, 18, 3);
+          cx.fillStyle = P().ground; cx.fillRect(0, G, W, H - G);
+          cx.fillStyle = P().mark; for (var m = -((dist * 1) % 40); m < W; m += 40) cx.fillRect(m, G + 10, 18, 3);
           rocks.forEach(function (r) {
             cx.fillStyle = '#6f6a7d'; cx.beginPath(); cx.moveTo(r.x, G); cx.lineTo(r.x + r.w * 0.2, G - r.h); cx.lineTo(r.x + r.w * 0.75, G - r.h * 0.9); cx.lineTo(r.x + r.w, G); cx.closePath(); cx.fill();
             cx.fillStyle = '#fff'; cx.fillRect(r.x + r.w * 0.2, G - r.h, r.w * 0.45, 3);
@@ -187,7 +193,7 @@
           cx.save();
           if (shake) cx.translate((Math.random() - 0.5) * 8, 0);
           sky(cx, 0);
-          cx.fillStyle = '#eef3ff'; cx.fillRect(-10, H - 26, W + 20, 30);
+          cx.fillStyle = P().ground; cx.fillRect(-10, H - 26, W + 20, 30);
           items.forEach(function (it) {
             cx.save(); cx.translate(it.x, it.y);
             if (it.kind === 'snow') { cx.fillStyle = '#fff'; cx.beginPath(); cx.arc(0, 0, 11, 0, Math.PI * 2); cx.fill(); cx.fillStyle = '#cfe0ff'; cx.beginPath(); cx.arc(-3, -3, 4, 0, Math.PI * 2); cx.fill(); }
@@ -221,7 +227,7 @@
       return {
         title: 'Peak Stack',
         input: function (type, k) {
-          if (!(type === 'tap' || (type === 'down' && (k === ' ' || k === 'Spacebar' || k === 'Enter' || k === 'ArrowUp' || k === 'w')))) return;
+          if (!cur || !(type === 'tap' || (type === 'down' && (k === ' ' || k === 'Spacebar' || k === 'Enter' || k === 'ArrowUp' || k === 'w')))) return;
           var top = tower[tower.length - 1], l = Math.max(cur.x, top.x), r = Math.min(cur.x + cur.w, top.x + top.w);
           if (r - l <= 0) { falls.push({ x: cur.x, w: cur.w, y: tower.length, vy: 0 }); cur = null; return; }
           if (Math.abs(cur.x - top.x) < 4) { l = top.x; r = top.x + top.w; flash = 0.5; msg = 'Perfect!'; }
@@ -242,7 +248,7 @@
         draw: function () {
           sky(cx, cam * 0.5);
           var floor = H - 24 + cam;
-          cx.fillStyle = '#2c1a50'; cx.fillRect(0, floor, W, H);
+          cx.fillStyle = P().near; cx.fillRect(0, floor, W, H);
           tower.forEach(function (b, i) { cx.fillStyle = color(i); cx.fillRect(b.x, floor - (i + 1) * BH, b.w, BH - 2); });
           falls.forEach(function (f) { cx.fillStyle = 'rgba(200,190,220,.8)'; cx.fillRect(f.x, floor - (f.y + 1) * BH, f.w, BH - 2); });
           if (cur) { cx.fillStyle = color(tower.length); cx.fillRect(cur.x, floor - (tower.length + 1) * BH, cur.w, BH - 2); }
@@ -260,6 +266,7 @@
   };
 
   window.Arcade = {
+    look: function (l) { if (LOOKS[l]) LOOK = l; },
     play: function (key, host, squad, onDone) {
       if (current) current.stop();
       var g = GAMES[key];
@@ -271,4 +278,4 @@
   };
 })();
 </script>
-<!-- file-stamp: efdfaa0412 -->
+<!-- file-stamp: 66b9139f40 -->
