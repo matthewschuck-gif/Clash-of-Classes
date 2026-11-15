@@ -57,7 +57,8 @@ function doughTraits_() {
 
 /** The sign-in screen: teacher names only (never squads or passwords). */
 function clashDoughStart() {
-  return JSON.stringify({ teachers: doughTeachers_().map(function (t) { return t.name; }).sort(), points: doughPoints_(), traits: doughTraits_() });
+  return JSON.stringify({ teachers: doughTeachers_().map(function (t) { return t.name; }).sort(), points: doughPoints_(), traits: doughTraits_(),
+    shoutouts: (function () { try { return settingOn_('SHOUTOUTS', 'ON'); } catch (e) { return false; } })() }); // 56_Shoutouts.gs
 }
 
 function doughSession_(token) {
@@ -201,4 +202,4 @@ function maybeDoughNudge_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_39_VirtualDough = 'a4af1802a4';
+var FILE_STAMP_39_VirtualDough = '6b48d03bc1';

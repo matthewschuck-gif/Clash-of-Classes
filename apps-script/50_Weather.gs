@@ -17,7 +17,7 @@
 const WEATHER_HEADERS_ = ['Show', 'Date', 'Through', 'Name', 'Counts', 'Multiplier', 'Message', 'Paid'];
 const EXPEDITION_HEADERS_ = ['Show', 'Expedition', 'What To Do', 'Counts', 'Measure', 'Goal', 'Start', 'End', 'Reward', 'Winner', 'Won On'];
 // Bonus rows never count toward a weather day, an expedition or a challenge.
-const EXTRA_BONUS_TYPES_ = ['weather', 'expedition', 'colors_day', 'arcade', 'challenge_bonus', 'duel_bonus'];
+const EXTRA_BONUS_TYPES_ = ['weather', 'expedition', 'colors_day', 'arcade', 'challenge_bonus', 'duel_bonus', 'helping_hands', 'squad_goal'];
 
 function ensureWeatherTabs_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -129,6 +129,7 @@ function maybeDailyExtras_() {
   try { payExpeditions_(); } catch (e) { noteError_('expeditions', e); }
   try { payColorsDays_(); } catch (e) { noteError_('colors day', e); }
   try { payFamilyPick_(); } catch (e) { noteError_('family pick', e); }
+  dailyLeagues_(); // 57_Leagues.gs: Helping Hands, squad goals, planned events, Rivalry Week, Team League
 }
 
 /** What the home page, My Climb and the TV show about weather, expeditions and colors days. */
@@ -138,6 +139,11 @@ function homeExtras_() {
   try { out.expeditions = expeditionsPublic_(); } catch (e) { out.expeditions = []; }
   try { out.colors = colorsDayNext_(); } catch (e) { out.colors = null; }
   try { out.hall = hallYears_().length > 0; } catch (e) { out.hall = false; }
+  try { out.hands = helpingHandsNow_(); } catch (e) { out.hands = null; } // 54_Rally.gs
+  try { out.banners = squadBanners_(); } catch (e) { out.banners = null; }
+  try { out.shoutouts = shoutoutsPublic_(6); } catch (e) { out.shoutouts = []; } // 56_Shoutouts.gs
+  try { out.planned = plannedSoon_(); } catch (e) { out.planned = []; }
+  try { out.rivalry = rivalryNow_(); } catch (e) { out.rivalry = null; } // 57_Leagues.gs
   return out;
 }
 
@@ -153,9 +159,15 @@ function announceExtras_() {
     if (e.progress[lead] > 0) lines.push('Expedition ' + e.title + ': ' + titleSquad_(lead) + ' leads with ' + e.progress[lead] + ' of ' + e.goal + '.');
   });
   if (x.colors && (x.colors.date === today || x.colors.date === ymdShift_(today, 1))) lines.push((x.colors.date === today ? 'Today' : 'Tomorrow') + ' is ' + x.colors.name + '. Wear your squad colors!');
+  if (x.hands && x.hands.squads.length && new Date(today + 'T12:00:00Z').getUTCDay() === 1) lines.push('Helping Hands this week: ' + x.hands.squads.map(titleSquad_).join(' and ') + '\'s points count ' + x.hands.mult + ' times. Every point matters!');
+  (x.planned || []).forEach(function (p) { if (p.date === today || p.date === ymdShift_(today, 1)) lines.push((p.date === today ? 'Today' : 'Tomorrow') + ': ' + p.name + '. ' + p.what); });
+  if (x.rivalry) (x.rivalry.live || []).forEach(function (r) { const a = r.squads[0], b = r.squads[1]; if (a && b) lines.push(r.title + ': ' + titleSquad_(a) + ' ' + r.scores[a] + ', ' + titleSquad_(b) + ' ' + r.scores[b] + '.'); });
+  const so = (x.shoutouts || []).filter(function (s) { return s.date >= ymdShift_(today, -1); })[0];
+  if (so) lines.push('Shout-out to ' + so.who + ' from ' + so.from + ': ' + so.message);
+  try { if (today.slice(8) <= '03') { const ym = monthBefore_(today.slice(0, 7)), won = sheetRows_('Team League').filter(function (r) { return monthKey_(r['Month']) === ym && SQUAD_KEYS_.indexOf(squadOf_(r['Squad'])) > -1; }); if (won.length) lines.push('Team League winners for last month: ' + won.map(function (r) { return 'Team ' + r['Team'] + ' in ' + titleSquad_(squadOf_(r['Squad'])); }).join(', ') + '!'); } } catch (e) { /* none */ }
   try { const sp = spotlightPublic_(1)[0]; if (sp && sp.week >= mondayOf_(today)) lines.push('Squad Spotlight: ' + sp.who + ' from ' + titleSquad_(sp.squad) + '. ' + sp.story); } catch (e) { /* none */ }
   return lines;
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_50_Weather = '91a7b6283f';
+var FILE_STAMP_50_Weather = '7fb56ba6da';

@@ -2,7 +2,9 @@
  * Clash of Classes -- Apps Script backend
  * File 17: the student roster, kept in this Sheet (tab Students).
  *
- *   800# | First Name | Last Name | Grade | Email | Squad
+ *   800# | First Name | Last Name | Grade | Email | Squad | Team
+ *   Team (M, O, U, N, T or S) is for the Team League (57_Leagues.gs): type it, or the import copies
+ *   a Team column from the district roster. It's kept for every 800# on a new import.
  *
  * Clash of Classes › Import student roster copies 800#, email, first and last name and grade
  * from the district roster Sheet (Settings › ROSTER_SHEET, its link or ID). It runs inside your
@@ -17,12 +19,17 @@
  */
 
 const ROSTER_TAB_ = 'Students';
-const ROSTER_HEADERS_ = ['800#', 'First Name', 'Last Name', 'Grade', 'Email', 'Squad'];
+const ROSTER_HEADERS_ = ['800#', 'First Name', 'Last Name', 'Grade', 'Email', 'Squad', 'Team'];
 
 function ensureRosterTab_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sh = ss.getSheetByName(ROSTER_TAB_);
-  if (sh) return sh;
+  if (sh) {
+    // Older tabs: add the Team column.
+    const h = sh.getRange(1, 1, 1, Math.max(1, sh.getLastColumn())).getValues()[0].map(function (x) { return String(x).trim(); });
+    if (h.indexOf('Team') === -1 && h[5] === 'Squad' && !h[6]) sh.getRange(1, 7).setValue('Team');
+    return sh;
+  }
   sh = ss.insertSheet(ROSTER_TAB_);
   sh.getRange(1, 1, 1, ROSTER_HEADERS_.length).setValues([ROSTER_HEADERS_]).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
   sh.setFrozenRows(1);
@@ -45,19 +52,21 @@ function importRoster_() {
   const src = SpreadsheetApp.openById(id).getSheets()[0].getDataRange().getValues();
   const h = src[0].map(function (x) { return String(x).trim().toLowerCase(); });
   const col = function (words) { for (let i = 0; i < h.length; i++) if (words.some(function (w) { return h[i].indexOf(w) > -1; })) return i; return -1; };
-  const cId = col(['800', 'student number', 'student id']), cEmail = col(['email']), cFirst = col(['first']), cLast = col(['last']), cGrade = col(['grade']), cSquad = col(['squad']);
+  const cId = col(['800', 'student number', 'student id']), cEmail = col(['email']), cFirst = col(['first']), cLast = col(['last']), cGrade = col(['grade']), cSquad = col(['squad']), cTeam = col(['team']);
   if (cId === -1) throw new Error('The roster Sheet needs an "800 Number" column.');
   const sh = ensureRosterTab_();
   // Squads we already know: this tab first, then Climb-er's Student Board.
   const known = {};
   sheetRows_(getSetting_('STUDENT_BOARD_TAB') || 'Student Board').forEach(function (r) { const s = squadOf_(r['Squad']); if (SQUAD_KEYS_.indexOf(s) > -1) known[id800_(r['800#'])] = s; });
-  sheetRows_(ROSTER_TAB_).forEach(function (r) { const s = squadOf_(r['Squad']); if (SQUAD_KEYS_.indexOf(s) > -1) known[id800_(r['800#'])] = s; });
+  const teams = {};
+  sheetRows_(ROSTER_TAB_).forEach(function (r) { const s = squadOf_(r['Squad']); if (SQUAD_KEYS_.indexOf(s) > -1) known[id800_(r['800#'])] = s; if (String(r['Team'] || '').trim()) teams[id800_(r['800#'])] = String(r['Team']).trim(); });
   const pattern = studentEmailPattern_();
   const rows = src.slice(1).filter(function (r) { return id800_(r[cId]); }).map(function (r) {
     const sid = id800_(r[cId]);
     const squad = cSquad > -1 && SQUAD_KEYS_.indexOf(squadOf_(r[cSquad])) > -1 ? squadOf_(r[cSquad]) : (known[sid] || '');
     const email = cEmail > -1 && String(r[cEmail]).trim() ? String(r[cEmail]).trim().toLowerCase() : (pattern ? pattern.replace('{800}', sid) : '');
-    return [sid, cFirst > -1 ? String(r[cFirst]).trim() : '', cLast > -1 ? String(r[cLast]).trim() : '', cGrade > -1 ? String(r[cGrade]).trim() : '', email, squad];
+    const team = cTeam > -1 && String(r[cTeam]).trim() ? String(r[cTeam]).trim().toUpperCase().replace(/^TEAM\s+/, '') : (teams[sid] || '');
+    return [sid, cFirst > -1 ? String(r[cFirst]).trim() : '', cLast > -1 ? String(r[cLast]).trim() : '', cGrade > -1 ? String(r[cGrade]).trim() : '', email, squad, team];
   });
   if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, ROSTER_HEADERS_.length).clearContent();
   if (rows.length) sh.getRange(2, 1, rows.length, ROSTER_HEADERS_.length).setValues(rows);
@@ -101,4 +110,4 @@ function importStudentRoster() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_17_Roster = '096c622a70';
+var FILE_STAMP_17_Roster = 'ae5623afe4';

@@ -389,4 +389,72 @@ body.light-mode .gb-rules summary { color: #7a5c00; }
   window.GameUi = { mascot: mascot, character: character, board: board, monster: monster, LOOK: LOOK, SQ: SQ_LIGHT };
 })();
 </script>
-<!-- file-stamp: 19e62550ff -->
+<script>
+/* GameUi.rally: squad banners, the weekly squad goal and Helping Hands (54_Rally.gs), shared by
+   the site, Generals HQ and My Climb. banner(b), goal(g, canSet), bannerForm(f), hands(h, squad),
+   wire(root, onGoal, onBanner). */
+(function () {
+  var HEX = { BLACK: '#2b2b2b', GOLD: '#b58900', GREY: '#5f6b77', PURPLE: '#6d34b0' };
+  var W = 'rgba(255,255,255,.17)';
+  var PAT = {
+    peaks: 'linear-gradient(135deg,' + W + ' 25%,transparent 25%) 0 0/26px 26px,linear-gradient(225deg,' + W + ' 25%,transparent 25%) 0 0/26px 26px',
+    stripes: 'repeating-linear-gradient(45deg,' + W + ' 0 10px,transparent 10px 22px)',
+    stars: 'radial-gradient(rgba(255,255,255,.4) 1.6px,transparent 2.2px) 0 0/18px 18px',
+    waves: 'radial-gradient(circle at 50% 100%,transparent 9px,' + W + ' 10px,transparent 13px) 0 0/26px 15px',
+    chevrons: 'linear-gradient(135deg,' + W + ' 25%,transparent 25%) -13px 0/26px 26px,linear-gradient(45deg,' + W + ' 25%,transparent 25%) 0 0/26px 26px'
+  };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function title(s) { s = String(s || ''); return s.charAt(0) + s.slice(1).toLowerCase(); }
+  function banner(b, small) {
+    if (!b || !b.motto) return '';
+    var bg = (PAT[b.pattern] || PAT.peaks) + ',' + (HEX[b.squad] || '#490e6f');
+    return '<div class="gb-banner" style="background:' + bg + ';color:#fff;border-radius:14px;padding:' + (small ? '10px 14px' : '16px 18px') + ';display:flex;gap:14px;align-items:center;box-shadow:inset 0 -4px 0 rgba(0,0,0,.18)">' +
+      '<span style="font-size:' + (small ? '26px' : '38px') + ';line-height:1">' + esc(b.icon) + '</span><span><span style="display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.85">' + esc(title(b.squad)) + ' Squad</span>' +
+      '<span style="display:block;font-family:Georgia,serif;font-weight:800;font-size:' + (small ? '17px' : '22px') + '">' + esc(b.motto) + '</span></span></div>';
+  }
+  function hands(h, squad) {
+    if (!h || !h.squads || !h.squads.length) return '';
+    var mine = squad && h.squads.indexOf(squad) > -1;
+    return '<div class="gb-hands" style="border:1.5px dashed #f59e0b;border-radius:12px;padding:10px 14px;margin:10px 0">🫶 <b>Helping Hands' + (mine ? ' is yours this week' : '') + ':</b> ' +
+      (mine ? 'every point ' + esc(title(squad)) + ' earns counts ' + h.mult + ' times until Sunday. Make it count!' : h.squads.map(title).join(' and ') + '’s points count ' + h.mult + ' times this week.') + '</div>';
+  }
+  function goal(g, canSet) {
+    if (!g) return '';
+    var out = '';
+    if (g.goal) {
+      var pct = g.goal.target ? Math.min(100, Math.round(100 * g.goal.progress / g.goal.target)) : 0;
+      out += '<div style="margin:6px 0"><b>' + g.goal.target.toLocaleString() + ' ' + esc(g.goal.label) + '</b> by Sunday' + (g.goal.note ? ' · ' + esc(g.goal.note) : '') +
+        '<div style="height:12px;border-radius:99px;background:rgba(127,127,127,.25);overflow:hidden;margin-top:6px"><div style="height:100%;width:' + pct + '%;background:#16a34a"></div></div>' +
+        '<div style="font-size:13px;opacity:.8;margin-top:4px">' + g.goal.progress.toLocaleString() + ' so far' + (pct >= 100 ? ' · Goal hit! +' + g.bonus + ' points on Monday 🎉' : '') + (g.goal.by ? ' · set by ' + esc(g.goal.by) : '') + '</div></div>';
+    } else out += '<p style="margin:6px 0;opacity:.85">No goal yet this week.' + (canSet ? '' : ' Your Generals and captains set it Monday to Wednesday.') + '</p>';
+    if (canSet && g.open) {
+      out += '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px"><select id="rgMeasure" style="padding:8px;border-radius:8px">' +
+        Object.keys(g.measures).map(function (m) { return '<option value="' + m + '"' + (g.goal && g.goal.measure === m ? ' selected' : '') + '>' + esc(g.measures[m]) + ' (last week ' + g.beat[m] + ')</option>'; }).join('') +
+        '</select><input id="rgTarget" type="number" min="1" placeholder="Goal" style="width:90px;padding:8px;border-radius:8px" value="' + (g.goal ? g.goal.target : '') + '">' +
+        '<input id="rgNote" maxlength="120" placeholder="How (optional)" style="flex:1;min-width:140px;padding:8px;border-radius:8px" value="' + esc(g.goal ? g.goal.note : '') + '">' +
+        '<button class="btn btn-gold craft-press" id="rgSave">' + (g.goal ? 'Change goal' : 'Set goal') + '</button></div>' +
+        '<div style="font-size:12px;opacity:.75;margin-top:4px">It has to beat last week. Hit it by Sunday for +' + g.bonus + ' squad points.</div>';
+    } else if (canSet) out += '<div style="font-size:12px;opacity:.75">Goals are set Monday to Wednesday.</div>';
+    return out;
+  }
+  function bannerForm(f) {
+    if (!f) return '';
+    var cur = f.waiting || f.live || {};
+    return (f.live ? banner(f.live) : '<p style="opacity:.85;margin:4px 0">No banner yet. Pick a motto, a pattern and an icon; staff put it up.</p>') +
+      (f.waiting ? '<div style="margin-top:10px;font-size:13px;opacity:.85">⏳ Waiting for staff:</div>' + banner(f.waiting, true) : '') +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px"><input id="rbMotto" maxlength="60" placeholder="Squad motto" style="flex:1;min-width:180px;padding:8px;border-radius:8px" value="' + esc(cur.motto || '') + '">' +
+      '<select id="rbPattern" style="padding:8px;border-radius:8px">' + f.patterns.map(function (p) { return '<option' + (cur.pattern === p ? ' selected' : '') + '>' + p + '</option>'; }).join('') + '</select>' +
+      '<select id="rbIcon" style="padding:8px;border-radius:8px;font-size:18px">' + f.icons.map(function (i) { return '<option' + (cur.icon === i ? ' selected' : '') + '>' + i + '</option>'; }).join('') + '</select>' +
+      '<button class="btn btn-gold craft-press" id="rbSave">Send to staff</button></div>';
+  }
+  function wire(root, onGoal, onBanner) {
+    root = root || document;
+    var g = root.querySelector('#rgSave'), b = root.querySelector('#rbSave');
+    if (g && onGoal) g.onclick = function () { g.disabled = true; onGoal(root.querySelector('#rgMeasure').value, root.querySelector('#rgTarget').value, root.querySelector('#rgNote').value, function () { g.disabled = false; }); };
+    if (b && onBanner) b.onclick = function () { b.disabled = true; onBanner(root.querySelector('#rbMotto').value, root.querySelector('#rbPattern').value, root.querySelector('#rbIcon').value, function () { b.disabled = false; }); };
+  }
+  window.GameUi = window.GameUi || {};
+  window.GameUi.rally = { banner: banner, hands: hands, goal: goal, bannerForm: bannerForm, wire: wire, HEX: HEX };
+})();
+</script>
+<!-- file-stamp: 0a5f42b131 -->

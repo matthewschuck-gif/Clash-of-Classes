@@ -2629,6 +2629,190 @@ test('Squad Colors Day and Family Pick: each hidden until switched on; colors pa
   assert.ok(page.extras.colors && page.extras.pick.total === 1 && !/Ann Lee|8001111/.test(JSON.stringify(page)));
 });
 
+test('Helping Hands: last week\'s lowest squad gets 1.25x the next week, paid once', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureRallyTabs_();
+  w.todayYmd_ = () => '2026-11-10'; // a Tuesday
+  const ev = w.book.getSheetByName('events');
+  // Last week (Nov 2-8): Gold lowest. A weather bonus never counts.
+  ev.rows.push(['', 'a', 'event', '2026-11-04', '', '', 30, 10, 20, 40], ['', 'wx', 'weather', '2026-11-04', '', '', '', 99, '', '']);
+  assert.deepStrictEqual(J(w.helpingHandsNow_()).squads, ['GOLD']);
+  assert.strictEqual(w.book.getSheetByName('Helping Hands').rows.length, 1, 'only the daily job writes it');
+  // The week before (Oct 26 - Nov 1) Gold had Helping Hands and earned 40.
+  w.book.getSheetByName('Helping Hands').rows.push(['2026-10-26', 'GOLD', 5, '', '', '']);
+  ev.rows.push(['', 'b', 'event', '2026-10-28', '', '', '', 40, '', '']);
+  w.payHelpingHands_(); w.payHelpingHands_();
+  const hh = events(w).filter(r => r[2] === 'helping_hands');
+  assert.ok(hh.length === 1 && hh[0][7] === 10, 'a quarter extra, once');
+  assert.ok(w.book.getSheetByName('Helping Hands').rows.some(r => r[0] === '2026-11-09' && r[1] === 'GOLD'), 'this week recorded');
+  // A tie for last shares it; nobody scoring gives it to no one.
+  w.todayYmd_ = () => '2026-12-08';
+  assert.deepStrictEqual(J(w.helpingHandsNow_()).squads, []);
+  w.setSettingValue_('HELPING_HANDS', 'OFF');
+  assert.strictEqual(w.payHelpingHands_(), 0);
+});
+
+test('squad goals: Generals and captains set one a week that beats last week; the bonus comes the Monday after', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureGeneralsTabs_(); w.ensurePollTabs_(); w.ensureArcadeTab_(); w.ensureRallyTabs_();
+  addStudentTabs(w);
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  w.book.getSheetByName('MLC Roster').rows.push(['8001234', 'Ann L.', 'Gold', 'Hype Captain', ''], ['8005678', 'Bo K.', 'Grey', '', '']);
+  w.todayYmd_ = () => '2026-11-10';
+  const ev = w.book.getSheetByName('events');
+  ev.rows.push(['', 'svc', 'service', '2026-11-03', '', '', '', 6, '', '']);
+  const g0 = J(w.squadGoalFor_('GOLD'));
+  assert.strictEqual(g0.beat.service, 6);
+  assert.throws(() => w.clashMeGoal('service', 6, '', '8001234', 'T'), /at least 7/);
+  assert.throws(() => w.clashMeGoal('service', 9, '', '8005678', 'T'), /Only Generals and captains/);
+  let me = JSON.parse(w.clashMeGoal('service', 10, 'Food drive', '8001234', 'T'));
+  assert.deepStrictEqual([me.goal.goal.target, me.goal.goal.progress, me.leader.role], [10, 0, 'Hype Captain']);
+  w.clashMeGoal('service', 12, 'Food drive', '8001234', 'T');
+  assert.strictEqual(w.book.getSheetByName('Squad Goals').rows.length, 2, 'one goal a week, changed in place');
+  w.todayYmd_ = () => '2026-11-12'; // Thursday: closed
+  assert.throws(() => w.setSquadGoal_('GOLD', 'x', 'service', 20, ''), /Monday to Wednesday/);
+  ev.rows.push(['', 'svc', 'service', '2026-11-12', '', '', '', 12, '', '']);
+  w.todayYmd_ = () => '2026-11-16';
+  w.paySquadGoals_(); w.paySquadGoals_();
+  const sg = events(w).filter(r => r[2] === 'squad_goal');
+  assert.ok(sg.length === 1 && sg[0][7] === 15);
+  assert.ok(/hit/.test(w.book.getSheetByName('Squad Goals').rows[1][7]));
+});
+
+test('squad banners need a staff yes; shout-outs from the Dough page show first name + last initial once approved', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureGeneralsTabs_(); w.ensureDoughTabs_(); w.ensureRallyTabs_(); w.ensureShoutoutTabs_();
+  addStudentTabs(w);
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  w.book.insertSheet('Students').rows = [['800#', 'First Name', 'Last Name', 'Grade', 'Email', 'Squad'], ['8001234', 'Ann', 'Lee', '7', '', 'Gold']];
+  assert.throws(() => w.saveBanner_('GOLD', 'Gia', 'Hi', 'peaks', '🦅'), /3 to 60/);
+  w.saveBanner_('GOLD', 'Gia', 'Climb as one', 'peaks', '🦅');
+  assert.strictEqual(J(w.squadBanners_()).GOLD, null, 'not until approved');
+  w.saveBanner_('GOLD', 'Gia', 'Climb together', 'waves', '🔥');
+  let ap = JSON.parse(w.clashApprovals('T'));
+  assert.deepStrictEqual([ap.banners.length, ap.banners[0].motto], [1, 'Climb together'], 'a new idea replaces the waiting one');
+  w.clashApprove('T', 'banner', ap.banners[0].row, true);
+  assert.deepStrictEqual(J(w.squadBanners_()).GOLD, { squad: 'GOLD', motto: 'Climb together', pattern: 'waves', icon: '🔥' });
+  // Shout-out
+  w.book.getSheetByName('Dough Teachers').rows.push([true, 'Ms. T', 'GREY', '74', '']);
+  const tok = JSON.parse(w.clashDoughSignIn('Ms. T', '74')).token;
+  assert.throws(() => w.clashShoutoutPost(tok, '8001234', 'Nice'), /sentence/);
+  assert.ok(JSON.parse(w.clashShoutoutPost(tok, '8001234', 'Helped a new student find every class today.')).waiting);
+  assert.strictEqual(J(w.shoutoutsPublic_()).length, 0);
+  ap = JSON.parse(w.clashApprovals('T'));
+  assert.strictEqual(ap.shoutouts[0].who, 'Ann L.');
+  w.clashApprove('T', 'shoutout', ap.shoutouts[0].row, true);
+  const pub = J(w.shoutoutsPublic_());
+  assert.deepStrictEqual([pub[0].who, pub[0].from, pub[0].squad], ['Ann L.', 'Ms. T', 'GOLD']);
+  assert.ok(!/Lee|8001234/.test(JSON.stringify(pub)));
+  assert.strictEqual(J(w.myShoutouts_('8001234')).length, 1);
+  assert.ok(J(w.homeExtras_()).shoutouts.length === 1);
+});
+
+test('planned events show the week before and post their points once after the day', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureShoutoutTabs_(); w.ensureWeatherTabs_(); w.ensureSpotlightTab_();
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  const today = w.todayYmd_();
+  const pe = w.book.getSheetByName('Planned Events');
+  pe.rows.push([true, w.ymdShift_(today, 1), 'Tug of War', 'Gym, 7th period', 'event', '', '', '', '', ''],
+    [true, w.ymdShift_(today, -1), 'Trivia', 'Auditorium', '', 20, 10, '', 5, ''],
+    [true, w.ymdShift_(today, -2), 'Relay', '', '', '', '', '', '', '']);
+  assert.deepStrictEqual(J(w.plannedSoon_()).map(p => p.name), ['Tug of War']);
+  assert.ok(/Tomorrow: Tug of War/.test(w.announcementScript_()));
+  w.postPlannedEvents_(); w.postPlannedEvents_();
+  const tr = events(w).filter(r => r[1] === 'Trivia');
+  assert.ok(tr.length === 1 && tr[0][2] === 'event' && tr[0][6] === 20 && tr[0][8] === '');
+  const p = JSON.parse(w.clashPlanned('T'));
+  assert.deepStrictEqual(p.toScore.map(x => x.name), ['Relay']);
+  w.clashPlannedPost('T', p.toScore[0].row, JSON.stringify({ BLACK: 0, GOLD: 15, GREY: 5, PURPLE: 0 }));
+  assert.strictEqual(events(w).filter(r => r[1] === 'Relay')[0][7], 15);
+  assert.throws(() => w.clashPlannedPost('T', p.toScore[0].row, '{}'), /Already posted/);
+});
+
+test('Rivalry Week pairs squads by the standings and pays the winners even with duel bonuses off', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureDuelTab_(); w.ensureLegacyTabs_(); w.ensureWeatherTabs_(); w.ensureSpotlightTab_();
+  w.todayYmd_ = () => '2026-11-10';
+  const ev = w.book.getSheetByName('events');
+  ev.rows.push(['', 'x', 'event', '2026-10-01', '', '', 100, 300, 200, 50]);
+  assert.deepStrictEqual(J(w.startRivalryWeek_('close')), ['Gold vs Grey', 'Black vs Purple']);
+  assert.throws(() => w.startRivalryWeek_('close'), /already set/);
+  ev.rows.push(['', 'y', 'event', '2026-11-11', '', '', 5, 10, 30, 8]);
+  let r = J(w.rivalryNow_());
+  assert.deepStrictEqual([r.live.length, r.live[0].scores.GREY, r.live[0].scores.GOLD], [2, 30, 10]);
+  assert.ok(/Rivalry Week: Gold vs Grey: Gold 10, Grey 30/.test(w.announcementScript_()));
+  w.todayYmd_ = () => '2026-11-14';
+  assert.strictEqual(String(w.getSetting_('DUEL_BONUSES') || 'OFF').toUpperCase() === 'ON', false);
+  w.awardRivalries_(); w.awardRivalries_();
+  const won = events(w).filter(r => r[2] === 'duel_bonus');
+  assert.deepStrictEqual(won.map(r => r[1]), ['Squad Duel: Rivalry Week: Gold vs Grey', 'Squad Duel: Rivalry Week: Black vs Purple']);
+  assert.deepStrictEqual([won[0][8], won[1][9]], [30, 30]);
+  assert.deepStrictEqual(J(w.rivalryTrophies_()), { BLACK: 0, GOLD: 0, GREY: 1, PURPLE: 1 });
+});
+
+test('Team League: inside each squad the team groups race on how many students did something; winners recorded once', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureDoughTabs_(); w.ensureArcadeTab_(); w.ensurePollTabs_(); w.ensureServiceTab_(); w.ensureLeagueTabs_();
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  const st = w.book.insertSheet('Students');
+  st.rows = [['800#', 'First Name', 'Last Name', 'Grade', 'Email', 'Squad', 'Team']];
+  ['1', '2', '3'].forEach(n => st.rows.push(['800100' + n, 'M' + n, 'X', '7', '', 'Gold', 'M']));
+  ['4', '5', '6', '7'].forEach(n => st.rows.push(['800100' + n, 'O' + n, 'X', '7', '', 'Gold', 'Team O']));
+  st.rows.push(['8001008', 'U', 'X', '7', '', 'Gold', 'U']);
+  w.todayYmd_ = () => '2026-11-02';
+  w.book.getSheetByName('Virtual Dough').rows.push(['2026-10-05 09:00', 'Ms. T', 'GREY', '8001001', 'M1 X', 'GOLD', 'Grit', '', 1],
+    ['2026-10-06 09:00', 'Ms. T', 'GREY', '8001004', 'O4 X', 'GOLD', 'Grit', '', 1], ['2026-10-06 09:00', 'Ms. T', 'GREY', '8001008', 'U X', 'GOLD', 'Grit', '', 1]);
+  w.book.getSheetByName('Arcade Plays').rows.push(['2026-10-07 10:00', '8001002', 'M2 X', 'GOLD', 'dash', 10, 1, false, '']);
+  const L = J(w.teamLeague_('2026-10-01', '2026-10-31'));
+  assert.deepStrictEqual(L.squads.GOLD.map(g => [g.team, g.pct, g.ranked]), [['M', 67, true], ['O', 25, true], ['U', 100, false]]);
+  assert.deepStrictEqual(L.leaders.GOLD, ['M'], 'a group under TEAM_MIN is not ranked');
+  w.book.getSheetByName('Team Teachers').rows[1][2] = 'Mr. Ray';
+  assert.strictEqual(J(w.teamLeague_('2026-10-01', '2026-10-31')).squads.GOLD[0].teacher, 'Mr. Ray');
+  assert.ok(w.recordTeamLeague_() >= 1);
+  assert.strictEqual(w.recordTeamLeague_(), 0, 'once a month');
+  assert.ok(w.book.getSheetByName('Team League').rows.some(r => r[0] === '2026-10' && r[1] === 'GOLD' && r[2] === 'M'));
+  const grid = JSON.parse(w.clashTeamLeague('T'));
+  assert.strictEqual(grid.month, '2026-11');
+});
+
+test('badges come from the tabs, cost nothing, and only the student sees them; the recap shows the quarter', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensureDoughTabs_(); w.ensureArcadeTab_(); w.ensurePollTabs_(); w.ensureServiceTab_(); w.ensureGeneralsTabs_();
+  w.ensureRallyTabs_(); w.ensureShoutoutTabs_(); w.ensureLeagueTabs_(); w.ensureWeatherTabs_(); w.ensureLegacyTabs_(); w.ensureSpotlightTab_();
+  addStudentTabs(w);
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  const today = w.todayYmd_();
+  w.book.getSheetByName('Arcade Plays').rows.push([today + ' 10:00', '8005678', 'Bo K.', 'GREY', 'dash', 1200, 3, false, '']);
+  w.book.getSheetByName('Weather Days').rows.push([true, today, '', 'Snow Day', '', 2, '', '']);
+  const b = J(w.badgesFor_('8005678', 'GREY'));
+  const got = b.filter(x => x.earned).map(x => x.id);
+  assert.ok(got.indexOf('arcade1') > -1 && got.indexOf('arcadeTop') > -1 && got.indexOf('weather') > -1);
+  assert.ok(got.indexOf('dough1') === -1 && got.indexOf('votes10') === -1);
+  const me = JSON.parse(w.clashMeExtras('8005678', 'T'));
+  assert.strictEqual(me.squad, 'GREY');
+  assert.ok(me.badges.length >= 15 && me.leader === null);
+  w.setSettingValue_('BADGES', 'OFF');
+  assert.strictEqual(JSON.parse(w.clashMeExtras('8005678', 'T')).badges.length, 0);
+  // Recap: blank QUARTER_STARTS = the last 9 weeks; set = quarter by number.
+  let rc = JSON.parse(w.clashRecap());
+  assert.strictEqual(rc.window.label, 'The last 9 weeks');
+  w.setSettingValue_('QUARTER_STARTS', '2026-08-26, 2026-11-02, 2027-01-25');
+  rc = JSON.parse(w.clashRecap(1));
+  assert.deepStrictEqual([rc.window.from, rc.window.to, rc.order[0], rc.totals.GOLD], ['2026-08-26', '2026-11-01', 'BLACK', 5]);
+  assert.ok(!/8005678|Bo K/.test(JSON.stringify(rc)));
+});
+
+test('the Students tab gains a Team column without losing anything', () => {
+  const w = world();
+  w.ensureSettings_();
+  const st = w.book.insertSheet('Students');
+  st.rows = [['800#', 'First Name', 'Last Name', 'Grade', 'Email', 'Squad'], ['8001234', 'Ann', 'Lee', '7', '', 'Gold']];
+  w.ensureRosterTab_();
+  assert.deepStrictEqual(st.rows[0].slice(5), ['Squad', 'Team']);
+  assert.strictEqual(st.rows[1][5], 'Gold');
+});
+
 test('Redemption: a Trailback Summit on the private Redemptions tab gives the student a Summit Climber badge and 25 LRG points; the feed labels it', () => {
   const w = world();
   w.ensureSettings_();

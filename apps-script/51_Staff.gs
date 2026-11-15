@@ -33,16 +33,9 @@ function quietClimbers_() {
 }
 
 // ── Captains' to-do (Generals HQ) ──
-function squadSizes_() {
-  const n = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
-  sheetRows_('Students').forEach(function (r) { const s = squadOf_(r['Squad']); if (n[s] !== undefined) n[s]++; });
-  if (!SQUAD_KEYS_.some(function (s) { return n[s]; })) boardRows_().forEach(function (r) { const s = squadOf_(r['Squad']); if (n[s] !== undefined) n[s]++; });
-  return n;
-}
-
-/** Up to three suggestions: [{ icon, text }]. */
+/** Up to three suggestions: [{ icon, text }]. Squad sizes: squadSizes_ (18_Conquest.gs). */
 function captainTodo_(squad) {
-  const out = [], today = todayYmd_(), mon = mondayOf_(today), size = squadSizes_();
+  const out = [], today = todayYmd_(), mon = mondayOf_(today), size = squadSizes_(today.slice(0, 7));
   // Today's weather first: it's the easiest rally.
   try { const w = weatherNow_().now; if (w) out.push({ icon: '🌨️', text: 'It\'s ' + w.name + ' today: ' + w.message + ' Get the word out at lunch.' }); } catch (e) { /* none */ }
   // Poll turnout this week.
@@ -185,4 +178,4 @@ function serveAnnounce_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_51_Staff = 'c574f91833';
+var FILE_STAMP_51_Staff = '988bd1265a';

@@ -73,11 +73,18 @@ const SHEET_TABS_ = [
   ['Send-off Advice', 'Students', '8th grade advice for next year\'s 7th graders (SENDOFF_WRITE / SENDOFF_SHOW). Tick Show on the ones to share; never shown with a name.', {}],
   ['Arcade Plays', 'Game', 'Every Arcade game on My Climb. Points add up once a day as one Arcade row per squad (Paid fills in). Delete a row to undo a play.', { 'Game': ['dash', 'catch', 'stack'] }],
   ['Plinko Drops', 'Game', 'Drops squads have earned (a row each). Add one here or with + Give a drop on the board; Used fills in when it drops.', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
+  ['Helping Hands', 'Points', 'Written by itself: the squad with the fewest points last week gets HELPING_HANDS_MULT this week. Earned, Bonus and Paid fill in the Monday after.', {}],
+  ['Squad Goals', 'Points', 'Weekly goals Generals and captains set (Monday to Wednesday). Result, Bonus and Paid fill in the Monday after. Fix a Target here if you need to.', { 'Measure': ['points', 'service', 'dough', 'votes', 'arcade'] }],
+  ['Squad Banners', 'Game', 'Mottos and banners from Generals and captains. Tick Approved to put one up (the newest approved shows).', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
+  ['Staff Shout-outs', 'Students', 'Shout-outs teachers write on the Virtual Trait Dough page. Tick Approved to show one (first name + last initial).', {}],
+  ['Planned Events', 'Events', 'Plan a Clash event: tick Show, Date, Event, What Happens. After the day, type each squad\'s points and it posts once (Posted fills in).', {}],
+  ['Team League', 'Students', 'Each month\'s Team League winner in every squad (written on the 1st).', {}],
+  ['Team Teachers', 'Students', 'Each team group\'s teacher, by squad (shown on My Climb and Generals HQ).', {}],
   ['Dough Teachers', 'Points', 'Teachers who can give Virtual Trait Dough: tick Active, their squad, and their password (e.g. their room number).', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
 ];
 const SHEET_HIDDEN_ = ['app_data', 'How To Use This Sheet', 'How The Map Works', 'How My Climb Works'];
 const SHEET_PRIVATE_ = ['Students', 'Student Board', 'Poll Votes', 'Event Check-ins', 'Redemptions', 'Shirt Votes', 'Shirt Orders', 'Squad Night', 'Sign-ups',
-  'Nominations', 'General Letters', 'Virtual Dough', 'Service Submissions', 'Family Shout-outs', 'Family Pulse Answers', 'Family Check-ins', 'MLC Roster', 'Boost Ledger', 'Student Tickets', 'Avatars', 'Color Squads', 'Homeroom Points', 'Family Pick Votes', 'Send-off Advice', 'Arcade Plays', 'Frost Log', 'Admin Edits', 'Usage', 'Weekly Digest Log', 'Squad Hand', 'Streak Banks'];
+  'Nominations', 'General Letters', 'Virtual Dough', 'Service Submissions', 'Family Shout-outs', 'Family Pulse Answers', 'Family Check-ins', 'MLC Roster', 'Boost Ledger', 'Student Tickets', 'Avatars', 'Color Squads', 'Homeroom Points', 'Family Pick Votes', 'Send-off Advice', 'Staff Shout-outs', 'Arcade Plays', 'Frost Log', 'Admin Edits', 'Usage', 'Weekly Digest Log', 'Squad Hand', 'Streak Banks'];
 const SHEET_EDIT_LOG_ = 'Admin Edits';
 
 function sheetTabInfo_(name) {
@@ -226,4 +233,4 @@ function clashSheetAction(token, name) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_34_SheetEditor = '2eb2e41599';
+var FILE_STAMP_34_SheetEditor = '8b14f3e496';

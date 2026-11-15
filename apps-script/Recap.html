@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root { --bg: #fffdf8; --ink: #1b1036; --muted: #6b5f80; --line: #e6dff0; --card: #ffffff; --brand: #490e6f;
+    --BLACK: #2b2b2b; --GOLD: #b58900; --GREY: #5f6b77; --PURPLE: #6d34b0; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #140a24; --ink: #f4efff; --muted: #b8a9d0; --line: #2e1f47; --card: #1d1033; --brand: #d6b8ff;
+    --BLACK: #d0d4da; --GOLD: #ffd84d; --GREY: #b8c2cc; --PURPLE: #c8a2ff; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 28px 16px 60px; }
+  .kick { font-family: 'DM Mono', monospace; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-family: Georgia, serif; color: var(--brand); margin: 6px 0 4px; font-size: clamp(30px, 5vw, 52px); }
+  .sub { color: var(--muted); margin: 0 0 18px; }
+  .qs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .qs a { padding: 6px 12px; border-radius: 99px; border: 1.5px solid var(--brand); color: var(--brand); text-decoration: none; font-weight: 700; font-size: 14px; }
+  .qs a.on { background: var(--brand); color: var(--bg); }
+  .win { border-radius: 18px; padding: 22px; margin-bottom: 16px; border: 2px solid var(--line); background: var(--card); }
+  .win .big { font-family: Georgia, serif; font-size: clamp(30px, 5vw, 46px); font-weight: 800; margin: 4px 0; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .card { border: 1px solid var(--line); background: var(--card); border-radius: 16px; padding: 16px 18px; }
+  .card h2 { margin: 0 0 8px; font-size: 18px; }
+  .row { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 17px; }
+  .bar { height: 14px; border-radius: 99px; background: var(--line); overflow: hidden; margin: 4px 0 10px; }
+  .bar i { display: block; height: 100%; }
+  .stat { font-size: 34px; font-weight: 800; font-family: Georgia, serif; }
+  .muted { color: var(--muted); }
+  .empty { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <div class="kick">Clash of Classes · Ephrata Middle School</div>
+  <h1 id="h">📊 Quarter recap</h1>
+  <p class="sub" id="sub">Loading…</p>
+  <div class="qs" id="qs"></div>
+  <div id="out"></div>
+</main>
+<script>
+(function () {
+  var SQ = ['BLACK', 'GOLD', 'GREY', 'PURPLE'];
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function title(s) { s = String(s || ''); return s.charAt(0) + s.slice(1).toLowerCase(); }
+  function day(ymd) { return new Date(ymd + 'T12:00:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric' }); }
+  function names(list) { return list.map(function (s) { return '<b style="color:var(--' + s + ')">' + title(s) + '</b>'; }).join(' + '); }
+  var q = (location.search.match(/[?&]q=(\d)/) || [])[1] || '';
+  function draw(d) {
+    var w = d.window, top = d.order[0], max = Math.max(1, d.totals[top]);
+    document.getElementById('h').textContent = w.q ? '📊 ' + w.label + ' recap' : '📊 Recap: the last 9 weeks';
+    document.getElementById('sub').textContent = day(w.from) + ' to ' + day(w.to) + (w.q && !w.done ? ' (so far)' : '');
+    var qs = '';
+    for (var i = 1; i <= w.quarters; i++) qs += '<a href="?page=recap&q=' + i + '" class="' + (i === w.q ? 'on' : '') + '">Quarter ' + i + '</a>';
+    document.getElementById('qs').innerHTML = qs;
+    var out = '<div class="win"><div class="kick">' + (!w.q ? 'Most points in these 9 weeks' : w.done ? 'Winner of the quarter' : 'Leading the quarter') + '</div><div class="big" style="color:var(--' + top + ')">🏆 ' + title(top) + ' Squad</div>' +
+      (d.banners && d.banners[top] ? '<div class="muted" style="font-size:18px">' + esc(d.banners[top].icon) + ' “' + esc(d.banners[top].motto) + '”</div>' : '') +
+      '<div style="margin-top:14px">' + d.order.map(function (s, i) {
+        return '<div class="row" style="border:0;padding:2px 0"><span>' + (i + 1) + '. ' + title(s) + '</span><span>' + d.totals[s].toLocaleString() + '</span></div><div class="bar"><i style="width:' + Math.round(100 * Math.max(0, d.totals[s]) / max) + '%;background:var(--' + s + ')"></i></div>';
+      }).join('') + '</div></div>';
+    var cards = [];
+    if (d.best) cards.push('<div class="card"><h2>🔥 Best week</h2><div class="stat" style="color:var(--' + d.best.squad + ')">' + d.best.pts.toLocaleString() + '</div><div class="muted">' + title(d.best.squad) + ', the week of ' + day(d.best.week) + '</div></div>');
+    cards.push('<div class="card"><h2>🙌 By the numbers</h2>' + [['Trait Dough bills', d.dough], ['Service projects', d.service], ['Arcade games', d.arcade], ['Staff shout-outs', d.shoutouts], ['Squad goals hit', d.goals], ['Helping Hands weeks', d.hands]]
+      .map(function (x) { return '<div class="row"><span>' + x[0] + '</span><b>' + Number(x[1] || 0).toLocaleString() + '</b></div>'; }).join('') + '</div>');
+    if (d.expeditions.length) cards.push('<div class="card"><h2>🧭 Expeditions</h2>' + d.expeditions.map(function (x) { return '<div class="row"><span>' + esc(x.title) + '</span><span>' + names(x.winners) + '</span></div>'; }).join('') + '</div>');
+    if (d.rivalries.length) cards.push('<div class="card"><h2>⚔️ Rivalry Weeks</h2>' + d.rivalries.map(function (x) { return '<div class="row"><span>' + esc(x.title.replace(/^Rivalry Week:\s*/i, '')) + '</span><span>' + names(x.winners) + '</span></div>'; }).join('') + '</div>');
+    if (d.team.length) cards.push('<div class="card"><h2>🏁 Team League winners</h2>' + d.team.map(function (t) { return '<div class="row"><span>' + esc(t.month) + '</span><span>Team ' + esc(t.team) + ' in ' + names([t.squad]) + ' (' + t.pct + '%)</span></div>'; }).join('') + '</div>');
+    if (d.weather.length) cards.push('<div class="card"><h2>🌨️ Weather Days</h2>' + d.weather.map(function (n) { return '<div class="row"><span>' + esc(n) + '</span></div>'; }).join('') + '</div>');
+    if (d.spotlight.length) cards.push('<div class="card"><h2>⭐ Squad Spotlight</h2>' + d.spotlight.map(function (p) { return '<div class="row"><span>' + esc(p.who) + '</span>' + names([p.squad]) + '</div>'; }).join('') + '</div>');
+    document.getElementById('out').innerHTML = out + '<div class="grid">' + cards.join('') + '</div>';
+  }
+  google.script.run.withSuccessHandler(function (t) { draw(JSON.parse(t)); })
+    .withFailureHandler(function (e) { document.getElementById('sub').textContent = 'Could not load: ' + (e && e.message); }).clashRecap(q);
+})();
+</script>
+</body>
+</html>
+<!-- file-stamp: 7888254671 -->

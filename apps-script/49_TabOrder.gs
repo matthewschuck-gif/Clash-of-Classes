@@ -14,12 +14,12 @@
 
 const TAB_GROUPS_ = [
   ['Start here', '#cc0000', ['How To Use This Sheet', 'Settings']],
-  ['Every week', '#34a853', ['Daily Polls', 'Poll Ideas', 'You Said We Did', 'Service Submissions', 'Family Shout-outs', 'Squad Spotlight', 'Weather Days', 'Expeditions', 'Squad Colors Days', 'Family Pick', 'Send-off Advice', 'Plinko Drops',
+  ['Every week', '#34a853', ['Daily Polls', 'Poll Ideas', 'You Said We Did', 'Service Submissions', 'Family Shout-outs', 'Squad Spotlight', 'Weather Days', 'Expeditions', 'Squad Colors Days', 'Family Pick', 'Send-off Advice', 'Plinko Drops', 'Staff Shout-outs', 'Squad Banners', 'Planned Events', 'Squad Goals',
     'Frost Log', 'Sign-up Events', 'Year Plan', 'Family Challenges', 'Family Pulse']],
   ['Points & map', '#8e44ad', ['events', 'Squad Monthly', 'Zone Overrides', 'Map Zones', 'Conquest Rules', 'Map Battles', 'Point Freezes', 'Freeze Lines',
-    'Avalanche', 'Virtual Dough', 'Dough Teachers', 'Challenges', 'Squad Duels', 'Homeroom Points', 'Homeroom Forms']],
+    'Avalanche', 'Virtual Dough', 'Dough Teachers', 'Challenges', 'Squad Duels', 'Helping Hands', 'Homeroom Points', 'Homeroom Forms']],
   ['Students & families', '#4a86e8', ['Students', 'Student Board', 'Squad Board', 'MLC Roster', 'Event Check-ins', 'Sign-ups', 'Nominations', 'General Letters',
-    'Family Pulse Answers', 'Family Check-ins', 'Family Pick Votes']],
+    'Family Pulse Answers', 'Family Check-ins', 'Family Pick Votes', 'Team League', 'Team Teachers']],
   ['Game & pages', '#ff9900', ['Plinko Slots', 'Hall of Fame', 'Wheel Slices', 'LRG Traits', 'Opponents', 'Round Goals', 'Engine Powers', 'Chance Cards', 'Evolution Boosts', 'Perks',
     'Destination Tickets', 'Lore Chapters', 'Squad Themes', 'Event Pages', 'Event Rows', 'Mindset Links', 'Tutorial Steps', 'School Calendar', 'Mayhem Checklist', 'Shirt Designs']],
   ['Written for you', '#999999', ['Poll Insights', 'Points Balance', 'How The Map Works', 'How My Climb Works', 'Admin Edits', 'Weekly Digest Log', 'Usage',
@@ -52,4 +52,4 @@ function menuOrganizeTabs_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_49_TabOrder = 'bf2a141dc8';
+var FILE_STAMP_49_TabOrder = '630c13296c';

@@ -10,7 +10,7 @@ const read = f => fs.readFileSync(path.join(dir, f), 'utf8');
 function build(page) {
   // ?page=me → My Climb (Me.html), signed in as the sample student Ann L.
   // ?page=pollboard → the live Poll Board with a sample School Pulse poll running today.
-  const STANDALONE = { frost: 'FrostPage', pollboard: 'PollBoard', dough: 'Dough', morning: 'Morning', family: 'Family', guides: 'Guides', reveal: 'Reveal', plinko: 'Plinko', announce: 'Announce', hall: 'Hall' };
+  const STANDALONE = { frost: 'FrostPage', pollboard: 'PollBoard', dough: 'Dough', morning: 'Morning', family: 'Family', guides: 'Guides', reveal: 'Reveal', plinko: 'Plinko', announce: 'Announce', hall: 'Hall', recap: 'Recap' };
   let html = (STANDALONE[page] && page !== 'frost' && page !== 'pollboard' ? read(STANDALONE[page] + '.html') : page === 'frost' ? read('FrostPage.html') : page === 'pollboard' ? read('PollBoard.html') : page === 'me' ? read('Me.html').replace(/<? if (shield) { ?>|<? } ?>/g, '').replace('<?= shield ?>', '/shield.png') : read('Index.html'))
     .replace(/<\?!= include\('([A-Za-z]+)'\); \?>/g, (m, f) => read(f + '.html'))
     .replace('<?!= config ?>', JSON.stringify({ pollMs: 5000 })).replace('<?!= boot ?>', 'null');
@@ -97,6 +97,26 @@ getSheet_('events').appendRow([104, 'Paper Chain Challenge', 'mayhem_week', '202
 getSheet_('events').appendRow([105, 'Penny Tower Race', 'mayhem_week', '2026-10-31', '', '', 2, 0, 4, 1]);
 ensureGameTabs_(); ensureMeTabs_(); ensureTourTab_(); ensureMindsetLinksTab_(); ensureYearPlanTab_(); ensureHomeroomTabs_();
 setSettingValue_('MY_CLIMB_HOURS', '00:00-23:59'); setSettingValue_('MY_CLIMB_SCHOOL_DAYS', 'OFF'); // preview only: always open
+// 54-57 samples (made-up students): teams, a Dough teacher (password preview), banners, a shout-out, a planned event,
+// last week's points (Gold lowest → Helping Hands), Rivalry Week.
+(function () {
+  var t = todayYmd_(), mon = mondayOf_(t);
+  ensureRosterTab_(); ensureDoughTabs_(); ensureArcadeTab_(); ensureRallyTabs_(); ensureShoutoutTabs_(); ensureLeagueTabs_();
+  [['8001234', 'Ann', 'Lee', '7', 'Gold', 'M'], ['8005678', 'Bo', 'Kim', '8', 'Grey', 'O'], ['8009999', 'Gus', 'Tate', '7', 'Gold', 'M'], ['8001111', 'Cy', 'Day', '7', 'Gold', 'M'],
+   ['8002222', 'Di', 'Fox', '7', 'Gold', 'O'], ['8003333', 'Ed', 'Gray', '8', 'Gold', 'O'], ['8004444', 'Flo', 'Hart', '8', 'Gold', 'O']].forEach(function (s) {
+    getSheet_('Students').appendRow([s[0], s[1], s[2], s[3], '', s[4].toUpperCase(), s[5]]); });
+  getSheet_('Dough Teachers').appendRow([true, 'Ms. Preview', 'GREY', 'preview', '']);
+  getSheet_('Virtual Dough').appendRow([t, 'Ms. Preview', 'GREY', '8001234', 'Ann Lee', 'GOLD', 'Grit', 'Kept going', 3]);
+  getSheet_('Virtual Dough').appendRow([t, 'Ms. Preview', 'GREY', '8009999', 'Gus Tate', 'GOLD', 'Kindness', 'Helped out', 1]);
+  getSheet_('Arcade Plays').appendRow([t, '8001234', 'Ann L.', 'GOLD', 'dash', 1300, 3, true, '']);
+  getSheet_('Team Teachers').rows[1][2] = 'Mr. Ray'; getSheet_('Team Teachers').rows[2][2] = 'Ms. Oak';
+  getSheet_('Squad Banners').appendRow([t, 'GOLD', 'Shine on every trail', 'peaks', '🦅', 'Ann L.', true]);
+  getSheet_('Squad Banners').appendRow([t, 'PURPLE', 'Curious minds climb higher', 'stars', '🧭', 'preview', true]);
+  getSheet_('Staff Shout-outs').appendRow([t, 'Ms. Preview', '8001234', 'Ann Lee', 'GOLD', 'Helped a new student find every class on day one.', true]);
+  getSheet_('Planned Events').appendRow([true, ymdShift_(t, 2), 'Hallway Tug of War', 'Gym, 7th period. Two from each homeroom.', 'event', '', '', '', '', '']);
+  getSheet_('events').appendRow([106, 'Hallway cleanup', 'event', ymdShift_(mon, -3), '', '', 20, 12, 30, 25]);
+  try { startRivalryWeek_('close'); } catch (e) { /* weekend */ }
+})();
 getSheet_('Opponents').rows.forEach(function (r, i) { if (i && r[3] === 'Shady') r[0] = true; });
 (function () { var t = todayYmd_(); getSheet_('events').appendRow([106, 'Daily Poll', 'daily_poll', t, '', '', 2, 6, 3, 1]); getSheet_('events').appendRow([107, 'Mindset summits', 'mountaineer_mindset', t, '', '', 4, 1, 2, 6]); getSheet_('events').appendRow([108, 'Trait Dough: Ann L.', 'trait_dough', t, '', '', 0, 9, 3, 2]); })();
 getSheet_('Squad Hand').appendRow(['GOLD', 'Flip Three', 'flip_three', 0, todayYmd_(), 'Held', '']);
@@ -126,7 +146,7 @@ const out = path.join(__dirname, 'preview.html');
 fs.writeFileSync(out, build());
 http.createServer((req, res) => {
   if (req.url === '/shield.png') { res.writeHead(200, { 'Content-Type': 'image/png' }); return res.end(fs.readFileSync(path.join(__dirname, '..', 'assets', 'shield-2026-27.png'))); }
-  fs.writeFileSync(out, build((req.url.match(/page=(dough|morning|family|guides|reveal|plinko|announce|hall)/) || [])[1] || (/tv=morning/.test(req.url) ? 'morning' : '') || (/page=frost/.test(req.url) ? 'frost' : /page=pollboard/.test(req.url) ? 'pollboard' : '') || (/page=me/.test(req.url) ? 'me' : '')));
+  fs.writeFileSync(out, build((req.url.match(/page=(dough|morning|family|guides|reveal|plinko|announce|hall|recap)/) || [])[1] || (/tv=morning/.test(req.url) ? 'morning' : '') || (/page=frost/.test(req.url) ? 'frost' : /page=pollboard/.test(req.url) ? 'pollboard' : '') || (/page=me/.test(req.url) ? 'me' : '')));
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
   res.end(fs.readFileSync(out));
 }).listen(Number(process.env.PORT) || 3041, () => console.log('Preview on http://localhost:' + (Number(process.env.PORT) || 3041)));

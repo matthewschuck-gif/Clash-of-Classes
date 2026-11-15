@@ -38,6 +38,9 @@ function hallCapture_() {
   const totals = squadTotals_(), order = SQUAD_KEYS_.slice().sort(function (a, b) { return totals[b] - totals[a]; });
   const rows = [[true, year, 'Clash Bash Champion', titleSquad_(order[0]) + ' Squad', order[0], (totals[order[0]] || 0).toLocaleString() + ' points']];
   (yearAwards_(win) || []).forEach(function (a) { rows.push([true, year, a.title, shortName_(a.who), a.squad || '', a.detail || '']); });
+  // Each squad's motto and the Rivalry Week trophies (54_Rally.gs, 57_Leagues.gs).
+  try { const b = squadBanners_(); SQUAD_KEYS_.forEach(function (s) { if (b[s]) rows.push([true, year, titleSquad_(s) + ' Squad motto', b[s].icon + ' \u201c' + b[s].motto + '\u201d', s, '']); }); } catch (e) { /* none */ }
+  try { const t = rivalryTrophies_(); SQUAD_KEYS_.forEach(function (s) { if (t[s]) rows.push([true, year, 'Rivalry Week trophies', titleSquad_(s) + ' Squad', s, t[s] + ' win' + (t[s] === 1 ? '' : 's')]); }); } catch (e) { /* none */ }
   const sh = getSheet_('Hall of Fame');
   sh.getRange(sh.getLastRow() + 1, 1, rows.length, HALL_HEADERS_.length).setValues(rows);
   return rows.length;
@@ -47,7 +50,8 @@ function hallYears_() {
   const by = {};
   sheetRows_('Hall of Fame').filter(function (r) { return ticked_(r['Show']) && String(r['Year'] || '').trim() && String(r['Award'] || '').trim(); }).forEach(function (r) {
     const y = String(r['Year']).trim();
-    (by[y] = by[y] || []).push({ award: String(r['Award']).trim(), who: shortName_(r['Who']), squad: squadOf_(r['Squad']), detail: String(r['Detail'] || '').trim() });
+    const keep = /motto|trophies|team league/i.test(String(r['Award'])) || /squad$/i.test(String(r['Who']).trim());
+    (by[y] = by[y] || []).push({ award: String(r['Award']).trim(), who: keep ? String(r['Who']).trim() : shortName_(r['Who']), squad: squadOf_(r['Squad']), detail: String(r['Detail'] || '').trim() });
   });
   return Object.keys(by).sort().reverse().map(function (y) {
     const champ = by[y].filter(function (a) { return /champion/i.test(a.award) && SQUAD_KEYS_.indexOf(a.squad) > -1; })[0];
@@ -124,4 +128,4 @@ function seasonLook_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_52_Legacy = '6b14863e67';
+var FILE_STAMP_52_Legacy = '4bdbddf8eb';

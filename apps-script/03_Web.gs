@@ -32,6 +32,7 @@ function serveSite_(e) {
   if (e && e.parameter && e.parameter.page === 'familydoor') return serveFamilyDoor_(); // Family Night check-in (47_Families.gs)
   if (e && e.parameter && e.parameter.page === 'announce') return serveAnnounce_(); // the morning announcement, big (51_Staff.gs)
   if (e && e.parameter && e.parameter.page === 'hall') return serveHall_(); // the Hall of Fame (52_Legacy.gs)
+  if (e && e.parameter && e.parameter.page === 'recap') return serveRecap_(); // the quarter recap (57_Leagues.gs)
   if (e && e.parameter && e.parameter.page === 'plinko') return servePlinko_(); // the Plinko board (46_Plinko.gs)
   if (e && e.parameter && e.parameter.page === 'reveal') return serveReveal_(); // the Clash Bash reveal + award certificates (44_Reveal.gs) // the monthly family update (42_Family.gs)
   if (e && e.parameter && e.parameter.page === 'guides') return serveGuides_(); // one-page role guides from Settings (33_Guides.gs)
@@ -392,6 +393,7 @@ function onOpen() {
     .addSeparator()
     .addItem('Clash Bash reveal show + award certificates', 'menuOpenReveal_')
     .addItem('Add this year to the Hall of Fame', 'menuHallCapture_')
+    .addItem('Start Rivalry Week (1st vs 2nd, 3rd vs 4th)', 'menuStartRivalry_')
     .addItem('Friday wrap-up: preview', 'menuPreviewWrap_')
     .addItem('Friday wrap-up: send', 'menuSendWrap_')
     .addItem('New school year: preview (nothing changes)', 'menuRolloverPreview_')
@@ -423,4 +425,4 @@ function menuOpenSite_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_03_Web = '72b4ec7067';
+var FILE_STAMP_03_Web = 'e040621a0e';

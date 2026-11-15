@@ -16,7 +16,7 @@
  */
 
 const DUEL_HEADERS_ = ['Show', 'Title', 'Start', 'End', 'Measure', 'Event Types', 'Squads', 'Bonus Points', 'Status', 'Results'];
-const BONUS_TYPES_ = ['challenge_bonus', 'duel_bonus', 'weather', 'expedition', 'colors_day', 'arcade'];
+const BONUS_TYPES_ = ['challenge_bonus', 'duel_bonus', 'weather', 'expedition', 'colors_day', 'arcade', 'helping_hands', 'squad_goal'];
 
 function ensureDuelTab_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -83,6 +83,11 @@ function clashDuels() {
 /** After a duel's End: the winner(s) get the bonus once. Returns what was sent. */
 function awardDuels() {
   if (String(getSetting_('DUEL_BONUSES')).toUpperCase() !== 'ON') return ['DUEL_BONUSES is OFF.'];
+  return awardDuelRows_(function () { return true; });
+}
+
+// Awards the ended duels that pass the filter (Rivalry Week uses this even with DUEL_BONUSES OFF, 57_Leagues.gs).
+function awardDuelRows_(only) {
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
@@ -90,7 +95,7 @@ function awardDuels() {
     const sheet = getSheetSafe_('Squad Duels');
     const statusCol = DUEL_HEADERS_.indexOf('Status') + 1;
     duelProgress_().forEach(function (d) {
-      if (!d.done || d.awarded || !d.bonus) return;
+      if (!d.done || d.awarded || !d.bonus || !only(d)) return;
       const results = d.squads.map(function (s) { return s + ' ' + d.scores[s]; }).join(', ');
       if (!d.leaders.length) {
         sheet.getRange(d.row, statusCol, 1, 2).setValues([['Awarded ' + todayYmd_() + ' (no one scored)', results]]);
@@ -124,4 +129,4 @@ function menuTurnOffDuels_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_08_Duels = 'e3f35fadac';
+var FILE_STAMP_08_Duels = '36d3ccbf5a';

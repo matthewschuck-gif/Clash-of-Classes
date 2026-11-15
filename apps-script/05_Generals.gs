@@ -215,6 +215,7 @@ function clashGeneralsHq(token) {
     nominateFor: nominateFor_(), // Settings › NOMINATE_FOR (11_MayhemWeek.gs)
     captainTally: captainTally_(squad),
     todo: (function () { try { return captainTodo_(squad); } catch (e) { return []; } })(), // 51_Staff.gs: three rally moves
+    rally: (function () { try { return hqRally_(squad); } catch (e) { return null; } })(), // 57_Leagues.gs: goal, banner, Helping Hands, Team League
     designs: hqDesigns_(squad), // 12_ShirtDesigns.gs
     shirtVoting: String(getSetting_('SHIRT_VOTING')).toUpperCase() === 'ON',
     signupLimit: Number(getSetting_('SIGNUP_LIMIT')) || 0,
@@ -304,4 +305,4 @@ function clashGeneralsService(token, progress) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_05_Generals = 'f270f4ce24';
+var FILE_STAMP_05_Generals = 'a584de3631';

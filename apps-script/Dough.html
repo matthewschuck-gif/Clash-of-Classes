@@ -26,6 +26,9 @@
   .list { margin-top:8px; display:grid; gap:6px; }
   .stu { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:#fffdf8; text-align:left; width:100%; }
   .stu.on { border-color:var(--green); background:var(--green-lt); }
+  .sst { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:#fffdf8; text-align:left; width:100%; color:var(--ink); }
+  .sst.on { border-color:var(--gold); background:#fff6d6; }
+  .sst small { color:var(--mute); }
   .stu small { color:var(--mute); }
   .sq { font-size:12px; font-weight:800; padding:2px 8px; border-radius:999px; background:#eee; }
   .sq.BLACK { background:#1f2430; color:#fff; } .sq.GOLD { background:#ffe100; color:#2a1a00; } .sq.GREY { background:#99a8bb; color:#12081f; } .sq.PURPLE { background:#7c3aed; color:#fff; }
@@ -84,7 +87,26 @@
       '<label for="tr">Trait they showed</label><select id="tr"><option value="">Pick a trait</option>' + S.start.traits.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('') + '</select>' +
       '<label for="wh">What they did</label><textarea id="wh" maxlength="300" placeholder="Helped a classmate who was stuck without being asked."></textarea>' +
       '<label>Points</label><div class="pts">' + S.start.points.map(function (p) { return '<button data-p="' + p + '">' + p + '</button>'; }).join('') + '</div>' +
-      '<button class="go" id="give" disabled>💵 Give Trait Dough</button><div class="err" id="e2"></div></div>');
+      '<button class="go" id="give" disabled>💵 Give Trait Dough</button><div class="err" id="e2"></div></div>' +
+      (S.start.shoutouts ? '<div class="card"><h2 style="margin:0 0 4px">⭐ Write a shout-out</h2><div class="hint">Any student, any squad. No points: a thank-you that shows on the home page and their My Climb once staff approve it (first name + last initial).</div>' +
+        '<label for="sq">Student</label><input id="sq" type="search" placeholder="Type a name or 800 number" autocomplete="off"><div class="list" id="sres"></div>' +
+        '<label for="smsg">Shout-out</label><textarea id="smsg" maxlength="160" placeholder="Stayed after class to help clean up the science lab."></textarea>' +
+        '<button class="go" id="shout" disabled>⭐ Send shout-out</button><div class="err" id="e3"></div></div>' : ''));
+    var stimer = null, sq = document.getElementById('sq');
+    if (sq) {
+      sq.oninput = function () {
+        clearTimeout(stimer); S.shoutTo = null; checkShout();
+        stimer = setTimeout(function () {
+          if (sq.value.trim().length < 2) { document.getElementById('sres').innerHTML = ''; return; }
+          run('clashShoutoutFind', S.me.token, sq.value).then(function (list) {
+            document.getElementById('sres').innerHTML = list.map(function (s) {
+              return '<button class="sst" data-id="' + esc(s.id) + '" data-name="' + esc(s.name) + '"><span>' + esc(s.name) + ' <small>gr ' + esc(s.grade) + '</small></span><span class="sq ' + s.squad + '">' + title(s.squad) + '</span></button>';
+            }).join('') || '<div class="hint">No student matches.</div>';
+          }).catch(function () {});
+        }, 250);
+      };
+      document.getElementById('smsg').oninput = checkShout;
+    }
     var timer;
     document.getElementById('q').oninput = function () {
       var q = this.value; clearTimeout(timer); S.picked = null; check();
@@ -108,6 +130,10 @@
     document.getElementById('tr').onchange = check;
     document.getElementById('wh').oninput = check;
   }
+  function checkShout() {
+    var b = document.getElementById('shout');
+    if (b) b.disabled = !(S.shoutTo && document.getElementById('smsg').value.trim().length >= 10);
+  }
   function check() {
     var b = document.getElementById('give');
     if (b) b.disabled = !(S.picked && S.points && document.getElementById('tr').value && document.getElementById('wh').value.trim().length >= 8);
@@ -117,6 +143,23 @@
     var t = e.target.closest && e.target.closest('button');
     if (!t) return;
     if (t.id === 'out') { S.me = null; sessionStorage.removeItem('dough-me'); signIn(); return; }
+    if (t.classList.contains('sst')) {
+      Array.prototype.forEach.call(document.querySelectorAll('.sst'), function (x) { x.classList.toggle('on', x === t); });
+      S.shoutTo = { id: t.getAttribute('data-id'), name: t.getAttribute('data-name') }; checkShout(); return;
+    }
+    if (t.id === 'shout') {
+      t.disabled = true; msg('e3', '');
+      run('clashShoutoutPost', S.me.token, S.shoutTo.id, document.getElementById('smsg').value).then(function (r) {
+        document.getElementById('smsg').value = ''; S.shoutTo = null;
+        Array.prototype.forEach.call(document.querySelectorAll('.sst'), function (x) { x.classList.remove('on'); });
+        msg('e3', r.waiting ? '✓ Sent to ' + 'staff. It shows once they approve it.' : '✓ Sent and showing.');
+        document.getElementById('e3').style.color = 'var(--green)';
+      }).catch(function (err) {
+        if (/sign in/i.test(err && err.message)) { S.me = null; sessionStorage.removeItem('dough-me'); signIn(); return; }
+        t.disabled = false; document.getElementById('e3').style.color = ''; msg('e3', err && err.message);
+      });
+      return;
+    }
     if (t.classList.contains('stu')) {
       Array.prototype.forEach.call(document.querySelectorAll('.stu'), function (x) { x.classList.toggle('on', x === t); });
       S.picked = { id: t.getAttribute('data-id'), name: t.getAttribute('data-name') }; check(); return;
@@ -146,4 +189,4 @@
 </script>
 </body>
 </html>
-<!-- file-stamp: 84cb1f636a -->
+<!-- file-stamp: 6e79b3240b -->

@@ -100,6 +100,9 @@ function setupSpreadsheet() {
   ensureWeatherTabs_(); // Weather Days + Expeditions (50_Weather.gs)
   ensureLegacyTabs_(); // Hall of Fame + Send-off Advice (52_Legacy.gs)
   ensureFamilyMoreTabs_(); // Squad Colors Days + Family Pick (53_FamilyMore.gs)
+  ensureRallyTabs_(); // Helping Hands + Squad Goals + Squad Banners (54_Rally.gs)
+  ensureShoutoutTabs_(); // Staff Shout-outs + Planned Events (56_Shoutouts.gs)
+  ensureLeagueTabs_(); // Team League + Team Teachers (57_Leagues.gs)
   ensureFamilyTabs_(); // the family pieces (47_Families.gs), each OFF until turned on
   ensureFreezeTab_();
   ensureDuelTab_();
@@ -234,6 +237,21 @@ const DEFAULT_SETTINGS = [
   ['FAMILY_COLORS', 'OFF', 'Families: ON = the next Squad Colors Day (Squad Colors Days tab) shows on the family update, home page and announcement.'],
   ['COLORS_DAY_POINTS', '25', 'Squad Colors Day: points for the squad with the most colors (when the row\'s Points is blank). Ties share.'],
   ['FAMILY_PICK', 'OFF', 'Families: ON = Family Pick of the Month on the family update (Family Pick tab).'],
+  ['HELPING_HANDS', 'ON', 'Helping Hands: ON = the squad with the fewest points last week gets its points counted HELPING_HANDS_MULT times this week (added the Monday after).'],
+  ['HELPING_HANDS_MULT', '1.25', 'Helping Hands: how many times the points count (1.25 = a quarter extra).'],
+  ['SQUAD_GOALS', 'ON', 'Squad goals: ON = Generals (HQ) and captains (My Climb) set one weekly goal, Monday to Wednesday, that beats last week.'],
+  ['SQUAD_GOAL_BONUS', '15', 'Squad goals: bonus points when a squad hits its weekly goal (added the Monday after).'],
+  ['BADGES', 'ON', 'Badges on My Climb: ON = students see the milestones they\'ve earned (no points).'],
+  ['SHOUTOUTS', 'ON', 'Staff shout-outs: ON = teachers write a one-line shout-out on the Virtual Trait Dough page; it shows once approved (Admin › System).'],
+  ['SHOUTOUT_AUTO_APPROVE', 'OFF', 'Staff shout-outs: ON = they show straight away, no approval needed.'],
+  ['SHOUTOUT_DAYS', '14', 'Staff shout-outs: days one stays on the home page.'],
+  ['SHOUTOUTS_PER_DAY', '10', 'Staff shout-outs: how many one teacher can write in a day.'],
+  ['RIVALRY', 'ON', 'Rivalry Week: ON = Admin › System (or the menu) can start a week of head-to-head duels; winners get RIVALRY_BONUS and a trophy.'],
+  ['RIVALRY_BONUS', '30', 'Rivalry Week: points for each duel\'s winner.'],
+  ['TEAM_LEAGUE', 'ON', 'Team League: ON = inside each squad, the team groups (Students tab › Team) race on how many students did something this month.'],
+  ['TEAM_NAMES', 'M, O, U, N, T, S', 'Team League: the team names, as typed in the Students tab\'s Team column.'],
+  ['TEAM_MIN', '3', 'Team League: a group needs this many students to be ranked.'],
+  ['QUARTER_STARTS', '', 'Quarter recap (/recap): the first day of each quarter, like 2026-08-26, 2026-11-02, 2027-01-25, 2027-04-05. Blank = the last 9 weeks.'],
   ['FAMILY_PICK_POINTS', '1', 'Family Pick: squad points for each family that votes (paid once a day).'],
   ['ARCADE', 'ON', 'Arcade on My Climb: ON = students play Summit Dash, Dough Catch and Peak Stack for squad points. OFF hides it.'],
   ['ARCADE_DAILY', '3', 'Arcade: plays a day per student (free play included).'],
@@ -477,4 +495,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = 'e87207a648';
+var FILE_STAMP_01_Config = 'cea5253fc7';

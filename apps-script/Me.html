@@ -208,6 +208,7 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
   function track(t) { if (tracked[t]) return; tracked[t] = 1; try { google.script.run.clashTrack('me-' + t); } catch (e) {} }
   function load() {
     track('me');
+    SO = null; XT = null; // a previewed student's own extras, not the last one's
     run.apply(null, ['clashMe'].concat(who())).then(function (d) { D = d; look = Object.assign({}, BLANK, d.look || {}); if (window.popSkin) popSkin(d.me.squad); render(); var evolving = !D.preview && maybeEvolve();
       if (window.CliffTour && D.tour) CliffTour.init(D.tour, { noAuto: evolving || D.preview, delay: 1200, go: function (name) { if (tab !== name) { tab = name; render(); } } }); })
       .catch(function (e) {
@@ -493,16 +494,50 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 
   // ── Weather today + the 8th grade send-off (50_Weather.gs, 52_Legacy.gs) ──
   var SO = null, soLoading = false;
+  // ── Badges, shout-outs, Helping Hands, the banner, the Team League, squad goals (54-57) ──
+  var XT = null, xtLoading = false;
+  function xtHtml() {
+    if (!XT) return '';
+    var R = window.GameUi && GameUi.rally, out = '';
+    if (R) out += R.hands(XT.hands, XT.squad);
+    if (R && XT.banner) out += '<section class="me-card" style="padding:0;overflow:hidden;border:0">' + R.banner(XT.banner) + '</section>';
+    if (R && XT.goal && (XT.goal.goal || XT.leader)) out += '<section class="me-card"><h2>🎯 ' + esc(title(XT.squad)) + '\'s goal this week</h2>' + R.goal(XT.goal, !!XT.leader) + '<span class="me-sub" id="xtMsg"></span></section>';
+    if (R && XT.leader && XT.leader.banner) out += '<section class="me-card"><h2>🚩 Squad banner</h2><p class="me-sub">As a ' + esc(XT.leader.role) + ', you can suggest the squad\'s motto and banner. Staff put it up.</p>' + R.bannerForm(XT.leader.banner) + '</section>';
+    if (XT.team) {
+      var t = XT.team;
+      out += '<section class="me-card"><h2>🏁 Team ' + esc(t.team) + ' in ' + esc(title(XT.squad)) + '</h2><p class="me-sub">' + (t.teacher ? esc(t.teacher) + '\'s group. ' : '') + t.active + ' of ' + t.size + ' of you did something this month (' + t.pct + '%).' +
+        (t.place ? ' That\'s ' + ['1st', '2nd', '3rd', '4th', '5th', '6th'][t.place - 1] + ' of ' + t.of + ' team groups in your squad.' : '') + (t.leaders && t.leaders.indexOf(t.team) > -1 ? ' 🚩 You\'re leading!' : '') + '</p>' +
+        '<div style="height:12px;border-radius:99px;background:rgba(127,127,127,.25);overflow:hidden"><div style="height:100%;width:' + t.pct + '%;background:var(--gold, #ffcc00)"></div></div></section>';
+    }
+    if (XT.shoutouts && XT.shoutouts.length) out += '<section class="me-card"><h2>⭐ Shout-outs for you</h2>' + XT.shoutouts.map(function (s) { return '<p style="margin:10px 0 2px">“' + esc(s.message) + '”</p><p class="me-sub" style="margin:0">' + esc(s.from) + '</p>'; }).join('') + '</section>';
+    if (XT.badges && XT.badges.length) {
+      var n = XT.badges.filter(function (b) { return b.earned; }).length;
+      out += '<section class="me-card"><h2>🎖️ My badges <span class="me-sub">' + n + ' of ' + XT.badges.length + '</span></h2><p class="me-sub">Milestones on the climb. They\'re for you: no points, just bragging rights.</p>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px">' + XT.badges.map(function (b) {
+          return '<div title="' + esc(b.how) + '" style="border:1px solid rgba(127,127,127,.3);border-radius:12px;padding:10px;text-align:center;' + (b.earned ? '' : 'opacity:.38;filter:grayscale(1)') + '"><div style="font-size:28px">' + esc(b.icon) + '</div><div style="font-weight:700;font-size:14px">' + esc(b.name) + '</div><div class="me-sub" style="font-size:12px">' + (b.earned ? 'Earned' : esc(b.how)) + '</div></div>';
+        }).join('') + '</div></section>';
+    }
+    return out;
+  }
+  function wireXt() {
+    if (!XT || !window.GameUi || !GameUi.rally) return;
+    var say = function (t) { var m = $('xtMsg'); if (m) m.textContent = t; };
+    GameUi.rally.wire($('meExtra'),
+      function (m, t, n, done) { run.apply(null, ['clashMeGoal', m, t, n].concat(who())).then(function (d) { XT = d; drawExtra(); say('Goal set!'); }).catch(function (e) { done(); alert(msg(e)); }); },
+      function (mo, p, i, done) { run.apply(null, ['clashMeBanner', mo, p, i].concat(who())).then(function (d) { XT = d; drawExtra(); }).catch(function (e) { done(); alert(msg(e)); }); });
+  }
   function drawExtra() {
     var box = $('meExtra');
-    if (!box || !SO) return;
-    var out = '';
+    if (!box || (!SO && !XT)) return;
+    var out = xtHtml();
+    SO = SO || {};
     if (SO.weather) out += '<section class="me-card" style="border-color:#7dd3fc"><h2>🌨️ ' + esc(SO.weather.name) + '</h2><p class="me-sub">' + esc(SO.weather.message) + '</p></section>';
     if (SO.write) out += '<section class="me-card"><h2>✉️ Advice for next year\'s 7th graders</h2><p class="me-sub">What do you wish you knew in 7th grade? Staff pick some to share with next year\'s 7th graders, never with your name.</p>' +
       '<textarea id="soText" rows="3" maxlength="280" style="width:100%;box-sizing:border-box;border-radius:10px;padding:10px;font:inherit">' + esc(SO.mine) + '</textarea>' +
       '<button class="btn btn-gold craft-press" id="soSave" style="margin-top:8px">' + (SO.mine ? 'Update my advice' : 'Send my advice') + '</button> <span class="me-sub" id="soMsg"></span></section>';
     if (SO.show && SO.show.length) out += '<section class="me-card"><h2>✉️ From last year\'s 8th graders</h2>' + SO.show.map(function (a) { return '<p style="margin:10px 0 2px">“' + esc(a.advice) + '”</p><p class="me-sub" style="margin:0">an 8th grader, ' + esc(title(a.squad)) + ' Squad</p>'; }).join('') + '</section>';
     box.innerHTML = out;
+    wireXt();
     var b = $('soSave');
     if (b) b.onclick = function () {
       b.disabled = true; $('soMsg').textContent = 'Saving…';
@@ -511,10 +546,16 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
     };
   }
   function loadExtra() {
-    if (SO) { drawExtra(); return; }
-    if (soLoading) return;
-    soLoading = true;
-    run.apply(null, ['clashSendoff'].concat(who())).then(function (d) { SO = d; soLoading = false; drawExtra(); }).catch(function () { soLoading = false; });
+    if (SO && XT) { drawExtra(); return; }
+    if (!SO && !soLoading) {
+      soLoading = true;
+      run.apply(null, ['clashSendoff'].concat(who())).then(function (d) { SO = d; soLoading = false; drawExtra(); }).catch(function () { soLoading = false; });
+    }
+    if (!XT && !xtLoading) {
+      xtLoading = true;
+      run.apply(null, ['clashMeExtras'].concat(who())).then(function (d) { XT = d; xtLoading = false; drawExtra(); }).catch(function () { xtLoading = false; });
+    }
+    drawExtra();
   }
 
   function wire() {
@@ -577,4 +618,4 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 </script>
 </body>
 </html>
-<!-- file-stamp: e6eeebc95a -->
+<!-- file-stamp: f91e8488a3 -->
