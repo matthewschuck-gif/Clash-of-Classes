@@ -1,0 +1,274 @@
+<style>
+.arc-wrap { position: relative; max-width: 560px; margin: 12px auto 0; }
+.arc-wrap canvas { width: 100%; display: block; border-radius: 14px; touch-action: none; outline: none; background: #1b1036; cursor: pointer; }
+.arc-wrap canvas:focus-visible { box-shadow: 0 0 0 3px var(--pop-gold, #ffe100); }
+.arc-hud { display: flex; justify-content: space-between; gap: 8px; font-family: 'DM Mono', monospace; font-size: 13px; margin: 6px 2px 0; opacity: .8; }
+.arc-games { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: 10px; }
+.arc-g { border: 1px solid rgba(127, 127, 127, .35); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.arc-g h3 { margin: 0; font-size: 16px; }
+.arc-g .btn { margin-top: auto; }
+.arc-wallet { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 2px; }
+.arc-board { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.arc-board ol { margin: 4px 0 0 20px; padding: 0; font-size: 14px; }
+.arc-result { border-left: 4px solid var(--pop-gold, #ffe100); padding: 8px 12px; margin-top: 10px; }
+</style>
+<script>
+(function () {
+  var W = 480, H = 320, current = null;
+  var SQ = { BLACK: '#2b2b2b', GOLD: '#ffcc00', GREY: '#9aa3ad', PURPLE: '#7b3fbf' };
+
+  function setup(host, hint) {
+    host.innerHTML = '<div class="arc-wrap"><canvas tabindex="0" aria-label="Arcade game. ' + hint + '"></canvas><div class="arc-hud"><span class="arc-s">Score 0</span><span>' + hint + '</span></div></div>';
+    var cv = host.querySelector('canvas'), dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = W * dpr; cv.height = H * dpr;
+    var cx = cv.getContext('2d'); cx.scale(dpr, dpr);
+    try { cv.focus({ preventScroll: true }); } catch (e) { cv.focus(); }
+    return { cv: cv, cx: cx, hud: host.querySelector('.arc-s') };
+  }
+
+  function loop(cv, step) {
+    var last = null, stop = false;
+    function f(t) {
+      if (stop) return;
+      if (!document.body.contains(cv)) { stop = true; return; }
+      if (last === null) last = t;
+      var dt = Math.min(0.05, (t - last) / 1000); last = t;
+      if (step(dt) === false) { stop = true; return; }
+      requestAnimationFrame(f);
+    }
+    requestAnimationFrame(f);
+    return function () { stop = true; };
+  }
+
+  // Keys and taps, in game coordinates.
+  function input(cv, on) {
+    function pos(e) { var r = cv.getBoundingClientRect(); return (e.clientX - r.left) * W / r.width; }
+    cv.addEventListener('keydown', function (e) {
+      if ([' ', 'Spacebar', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Enter', 'w', 'a', 'd'].indexOf(e.key) > -1) { e.preventDefault(); on('down', e.key); }
+    });
+    cv.addEventListener('keyup', function (e) { on('up', e.key); });
+    cv.addEventListener('pointerdown', function (e) { e.preventDefault(); cv.focus(); on('tap', pos(e)); });
+    cv.addEventListener('pointermove', function (e) { on('move', pos(e)); });
+  }
+
+  function sky(cx, off) {
+    var g = cx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#1b1036'); g.addColorStop(1, '#5b3591');
+    cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+    ridge(cx, off * 0.15, 210, 120, 90, '#3b2468');
+    ridge(cx, off * 0.4, 250, 80, 60, '#2c1a50');
+  }
+  function ridge(cx, off, base, amp, step, color) {
+    cx.fillStyle = color; cx.beginPath(); cx.moveTo(0, H);
+    var i0 = Math.floor(off / step) - 1;
+    for (var i = i0; i < i0 + Math.ceil(W / step) + 3; i++) {
+      var peak = Math.abs(i) % 2 === 0;
+      cx.lineTo(i * step - off, base - (peak ? amp * (0.55 + 0.45 * Math.abs(Math.sin(i * 12.9898))) : amp * 0.15));
+    }
+    cx.lineTo(W, H); cx.closePath(); cx.fill();
+  }
+  function say(cx, s, x, y, size, color, align) {
+    cx.font = '700 ' + size + 'px system-ui, sans-serif'; cx.fillStyle = color || '#fff'; cx.textAlign = align || 'center'; cx.textBaseline = 'middle';
+    cx.fillText(s, x, y);
+  }
+  function card(cx, title, sub) {
+    cx.fillStyle = 'rgba(10, 5, 25, .62)'; cx.fillRect(0, 0, W, H);
+    say(cx, title, W / 2, H / 2 - 18, 30, '#ffe100');
+    say(cx, sub, W / 2, H / 2 + 20, 16, '#fff');
+  }
+  function climber(cx, x, y, color, lean) {
+    cx.save(); cx.translate(x, y); cx.rotate(lean || 0);
+    cx.fillStyle = color; cx.fillRect(-11, -30, 22, 22);
+    cx.fillStyle = '#ffe1c4'; cx.beginPath(); cx.arc(0, -36, 8, 0, Math.PI * 2); cx.fill();
+    cx.fillStyle = '#c0392b'; cx.fillRect(-9, -46, 18, 5);
+    cx.fillStyle = '#3a2a1a'; cx.fillRect(-10, -8, 7, 8); cx.fillRect(3, -8, 7, 8);
+    cx.restore();
+  }
+
+  // Shared flow: tap to start, play, game over, then done(score).
+  function game(host, hint, make) {
+    var g = setup(host, hint), cx = g.cx, state = 'ready', score = 0, done = null, t = 0;
+    var api = make(cx);
+    function setScore(s) { score = Math.max(0, Math.floor(s)); g.hud.textContent = 'Score ' + score; }
+    input(g.cv, function (type, k) {
+      if (state === 'ready' && (type === 'tap' || type === 'down')) { state = 'play'; if (api.start) api.start(); return; }
+      if (state === 'play') api.input(type, k);
+    });
+    var stop = loop(g.cv, function (dt) {
+      t += dt;
+      if (state === 'play') { var r = api.step(dt, setScore); if (r === 'over') { state = 'over'; t = 0; } }
+      api.draw(state);
+      if (state === 'ready') card(cx, api.title, 'Tap or press Space to start');
+      if (state === 'over') { card(cx, 'Score ' + score, 'Saving your score…'); if (t > 1.1 && done) { var d = done; done = null; d(score); return false; } }
+    });
+    return { stop: stop, then: function (fn) { done = fn; } };
+  }
+
+  // ── Summit Dash: jump the rocks; the trail speeds up ──
+  function dash(squad) {
+    return function (cx) {
+      var G = H - 52, px = 74, y = G, vy = 0, rocks = [], speed = 220, dist = 0, next = 1.2, lean = 0, flakes = [];
+      for (var i = 0; i < 40; i++) flakes.push([Math.random() * W, Math.random() * H, 0.5 + Math.random()]);
+      function jump() { if (y >= G - 0.5) { vy = -600; } }
+      return {
+        title: 'Summit Dash',
+        input: function (type, k) { if (type === 'tap' || (type === 'down' && k !== 'ArrowLeft' && k !== 'ArrowRight' && k !== 'a' && k !== 'd')) jump(); },
+        step: function (dt, setScore) {
+          speed += 9 * dt; dist += speed * dt; setScore(dist / 10);
+          vy += 1700 * dt; y = Math.min(G, y + vy * dt); if (y >= G) vy = 0;
+          lean = y < G ? -0.15 : Math.sin(dist / 18) * 0.06;
+          next -= dt;
+          if (next <= 0) {
+            var h = 18 + Math.random() * 24, w = 18 + Math.random() * 18;
+            rocks.push({ x: W + 20, w: w, h: h });
+            if (speed > 300 && Math.random() < 0.3) rocks.push({ x: W + 20 + w + 6, w: 16, h: 16 + Math.random() * 10 });
+            next = (0.85 + Math.random() * 0.9) * 240 / speed + 0.25;
+          }
+          for (var j = rocks.length - 1; j >= 0; j--) {
+            var r = rocks[j]; r.x -= speed * dt;
+            if (r.x + r.w < -20) { rocks.splice(j, 1); continue; }
+            if (px + 9 > r.x + 4 && px - 9 < r.x + r.w - 4 && y > G - r.h + 4) return 'over';
+          }
+        },
+        draw: function () {
+          sky(cx, dist);
+          cx.fillStyle = 'rgba(255,255,255,.7)';
+          flakes.forEach(function (f) { var fx = ((f[0] - dist * 0.6 * f[2]) % W + W) % W, fy = (f[1] + dist * 0.2 * f[2]) % H; cx.fillRect(fx, fy, 2, 2); });
+          cx.fillStyle = '#eef3ff'; cx.fillRect(0, G, W, H - G);
+          cx.fillStyle = '#c9d4ea'; for (var m = -((dist * 1) % 40); m < W; m += 40) cx.fillRect(m, G + 10, 18, 3);
+          rocks.forEach(function (r) {
+            cx.fillStyle = '#6f6a7d'; cx.beginPath(); cx.moveTo(r.x, G); cx.lineTo(r.x + r.w * 0.2, G - r.h); cx.lineTo(r.x + r.w * 0.75, G - r.h * 0.9); cx.lineTo(r.x + r.w, G); cx.closePath(); cx.fill();
+            cx.fillStyle = '#fff'; cx.fillRect(r.x + r.w * 0.2, G - r.h, r.w * 0.45, 3);
+          });
+          climber(cx, px, y, SQ[squad] || '#ffcc00', lean);
+        },
+      };
+    };
+  }
+
+  // ── Dough Catch: catch Trait Dough, dodge snowballs, 45 seconds ──
+  function catcher(squad) {
+    return function (cx) {
+      var T = 45, left = T, bx = W / 2, target = null, keys = {}, items = [], next = 0.4, pts = 0, pops = [], shake = 0;
+      return {
+        title: 'Dough Catch',
+        input: function (type, k) {
+          if (type === 'move' || type === 'tap') target = k;
+          if (type === 'down') { keys[k] = 1; target = null; }
+          if (type === 'up') delete keys[k];
+        },
+        step: function (dt, setScore) {
+          left -= dt; if (left <= 0) { left = 0; return 'over'; }
+          var dir = (keys.ArrowRight || keys.d ? 1 : 0) - (keys.ArrowLeft || keys.a ? 1 : 0);
+          if (dir) bx += dir * 440 * dt; else if (target !== null) bx += Math.max(-520 * dt, Math.min(520 * dt, target - bx));
+          bx = Math.max(38, Math.min(W - 38, bx));
+          var late = 1 - left / T;
+          next -= dt;
+          if (next <= 0) {
+            var roll = Math.random(), kind = roll < 0.08 ? 'gold' : roll < 0.08 + 0.22 + late * 0.14 ? 'snow' : 'bill';
+            items.push({ x: 20 + Math.random() * (W - 40), y: -16, vy: 120 + late * 140 + Math.random() * 60, kind: kind, spin: Math.random() * 6 });
+            next = 0.55 - late * 0.22;
+          }
+          for (var i = items.length - 1; i >= 0; i--) {
+            var it = items[i]; it.y += it.vy * dt; it.spin += dt * 3;
+            if (it.y > H - 52 && it.y < H - 30 && Math.abs(it.x - bx) < 40) {
+              var add = it.kind === 'gold' ? 25 : it.kind === 'snow' ? -15 : 10;
+              pts = Math.max(0, pts + add); if (add < 0) shake = 0.25;
+              pops.push({ x: it.x, y: H - 70, s: (add > 0 ? '+' : '') + add, t: 0.8, bad: add < 0 });
+              items.splice(i, 1); continue;
+            }
+            if (it.y > H + 20) items.splice(i, 1);
+          }
+          pops.forEach(function (p) { p.t -= dt; p.y -= 40 * dt; }); pops = pops.filter(function (p) { return p.t > 0; });
+          shake = Math.max(0, shake - dt);
+          setScore(pts);
+        },
+        draw: function () {
+          cx.save();
+          if (shake) cx.translate((Math.random() - 0.5) * 8, 0);
+          sky(cx, 0);
+          cx.fillStyle = '#eef3ff'; cx.fillRect(-10, H - 26, W + 20, 30);
+          items.forEach(function (it) {
+            cx.save(); cx.translate(it.x, it.y);
+            if (it.kind === 'snow') { cx.fillStyle = '#fff'; cx.beginPath(); cx.arc(0, 0, 11, 0, Math.PI * 2); cx.fill(); cx.fillStyle = '#cfe0ff'; cx.beginPath(); cx.arc(-3, -3, 4, 0, Math.PI * 2); cx.fill(); }
+            else {
+              cx.rotate(Math.sin(it.spin) * 0.35);
+              cx.fillStyle = it.kind === 'gold' ? '#ffe100' : '#7bd389'; cx.fillRect(-15, -9, 30, 18);
+              cx.strokeStyle = 'rgba(0,0,0,.35)'; cx.lineWidth = 2; cx.strokeRect(-12, -6, 24, 12);
+              say(cx, it.kind === 'gold' ? '★' : 'D', 0, 1, 11, '#1b1036');
+            }
+            cx.restore();
+          });
+          cx.fillStyle = SQ[squad] || '#ffcc00'; cx.fillRect(bx - 38, H - 46, 76, 18);
+          cx.fillStyle = 'rgba(255,255,255,.35)'; cx.fillRect(bx - 38, H - 46, 76, 4);
+          cx.fillStyle = '#3a2a1a'; cx.fillRect(bx - 34, H - 28, 6, 4); cx.fillRect(bx + 28, H - 28, 6, 4);
+          pops.forEach(function (p) { say(cx, p.s, p.x, p.y, 18, p.bad ? '#ff8a8a' : '#ffe100'); });
+          say(cx, Math.ceil(left) + 's', W - 14, 18, 16, '#fff', 'right');
+          cx.restore();
+        },
+      };
+    };
+  }
+
+  // ── Peak Stack: drop each block on the one below ──
+  function stack(squad) {
+    return function (cx) {
+      var BH = 20, base = { x: W / 2 - 100, w: 200 }, tower = [base], cur = null, cam = 0, falls = [], flash = 0, msg = '';
+      var palette = ['#4a3a6a', '#5b4a7f', '#6f5f8f', '#8a7da3', '#a79fbd', '#c7c2d8', '#e4e2ee', '#ffffff'];
+      function color(i) { return i > 0 && i % 10 === 0 ? (SQ[squad] || '#ffcc00') : palette[Math.min(palette.length - 1, Math.floor(i / 3))]; }
+      function spawn() { var top = tower[tower.length - 1], n = tower.length; cur = { x: n % 2 ? -top.w : W, w: top.w, dir: n % 2 ? 1 : -1, sp: 150 + n * 9 }; }
+      spawn();
+      return {
+        title: 'Peak Stack',
+        input: function (type, k) {
+          if (!(type === 'tap' || (type === 'down' && (k === ' ' || k === 'Spacebar' || k === 'Enter' || k === 'ArrowUp' || k === 'w')))) return;
+          var top = tower[tower.length - 1], l = Math.max(cur.x, top.x), r = Math.min(cur.x + cur.w, top.x + top.w);
+          if (r - l <= 0) { falls.push({ x: cur.x, w: cur.w, y: tower.length, vy: 0 }); cur = null; return; }
+          if (Math.abs(cur.x - top.x) < 4) { l = top.x; r = top.x + top.w; flash = 0.5; msg = 'Perfect!'; }
+          else { falls.push({ x: cur.x < top.x ? cur.x : r, w: cur.w - (r - l), y: tower.length, vy: 0 }); msg = ''; }
+          tower.push({ x: l, w: r - l }); spawn();
+        },
+        step: function (dt, setScore) {
+          setScore(tower.length - 1);
+          falls.forEach(function (f) { f.vy += 30 * dt; f.y -= f.vy * dt; });
+          falls = falls.filter(function (f) { return f.y > -40; });
+          flash = Math.max(0, flash - dt);
+          var want = Math.max(0, (tower.length - 9) * BH); cam += (want - cam) * Math.min(1, dt * 5);
+          if (!cur) return falls.length ? undefined : 'over';
+          cur.x += cur.dir * cur.sp * dt;
+          if (cur.x < -cur.w * 0.6) { cur.x = -cur.w * 0.6; cur.dir = 1; }
+          if (cur.x > W - cur.w * 0.4) { cur.x = W - cur.w * 0.4; cur.dir = -1; }
+        },
+        draw: function () {
+          sky(cx, cam * 0.5);
+          var floor = H - 24 + cam;
+          cx.fillStyle = '#2c1a50'; cx.fillRect(0, floor, W, H);
+          tower.forEach(function (b, i) { cx.fillStyle = color(i); cx.fillRect(b.x, floor - (i + 1) * BH, b.w, BH - 2); });
+          falls.forEach(function (f) { cx.fillStyle = 'rgba(200,190,220,.8)'; cx.fillRect(f.x, floor - (f.y + 1) * BH, f.w, BH - 2); });
+          if (cur) { cx.fillStyle = color(tower.length); cx.fillRect(cur.x, floor - (tower.length + 1) * BH, cur.w, BH - 2); }
+          if (flash) say(cx, msg, W / 2, 40, 22, 'rgba(255,225,0,' + Math.min(1, flash * 2) + ')');
+          say(cx, (tower.length - 1) + ' high', 14, 18, 16, '#fff', 'left');
+        },
+      };
+    };
+  }
+
+  var GAMES = {
+    dash: { make: dash, hint: 'Space or tap to jump' },
+    catch: { make: catcher, hint: 'Arrow keys or drag to move' },
+    stack: { make: stack, hint: 'Space or tap to drop' },
+  };
+
+  window.Arcade = {
+    play: function (key, host, squad, onDone) {
+      if (current) current.stop();
+      var g = GAMES[key];
+      if (!g) return;
+      current = game(host, g.hint, g.make(squad));
+      current.then(function (score) { current = null; onDone(score); });
+    },
+    stop: function () { if (current) { current.stop(); current = null; } },
+  };
+})();
+</script>
+<!-- file-stamp: efdfaa0412 -->

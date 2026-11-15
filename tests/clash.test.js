@@ -2458,6 +2458,51 @@ test('tabs grouped, colored and ordered (Start here first, system tabs last); fa
   assert.throws(() => w.clashFamilySwitch('T', 'SEASON_END', true), /Unknown switch/);
 });
 
+test('arcade: tokens from Trait Dough, one free play, daily limit, impossible scores count 0, points paid once a day per squad', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureServiceTab_(); w.ensureDoughTabs_(); w.ensureArcadeTab_();
+  addStudentTabs(w);
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  const cache = w.CacheService.getScriptCache();
+  const age = (play, sec) => { const p = JSON.parse(cache.get('arc-' + play)); p.at -= sec * 1000; cache.put('arc-' + play, JSON.stringify(p)); };
+  const start = (id, g) => JSON.parse(w.clashArcadeStart(g, id, 'T')).play;
+  // Ann has 12 paper bills = 12 tokens; Bo has none, only the free play.
+  let a = JSON.parse(w.clashArcade('8001234', 'T'));
+  assert.deepStrictEqual([a.on, a.wallet.tokens, a.wallet.freeLeft, a.games.length], [true, 12, 1, 3]);
+  // A real Summit Dash: 1300 in 30 seconds = 3 points (capped at ARCADE_MAX_POINTS 3).
+  let p = start('8001234', 'dash'); age(p, 30);
+  a = JSON.parse(w.clashArcadeFinish(p, 1300, '8001234', 'T'));
+  assert.deepStrictEqual([a.result.kept, a.result.points, a.wallet.freeLeft, a.wallet.tokens], [true, 3, 0, 12], 'free play first');
+  // Too fast to be real: kept as 0, still uses a token.
+  p = start('8001234', 'catch'); age(p, 5);
+  a = JSON.parse(w.clashArcadeFinish(p, 900, '8001234', 'T'));
+  assert.deepStrictEqual([a.result.kept, a.result.points, a.wallet.tokens], [false, 0, 11]);
+  p = start('8001234', 'stack'); age(p, 20);
+  a = JSON.parse(w.clashArcadeFinish(p, 13, '8001234', 'T'));
+  assert.strictEqual(a.result.points, 2);
+  assert.throws(() => start('8001234', 'dash'), /3 plays for today/);
+  assert.throws(() => w.clashArcadeFinish(p, 13, '8001234', 'T'), /timed out/, 'a play ends once');
+  // Bo: free play, then no tokens.
+  p = start('8005678', 'dash'); age(p, 10); w.clashArcadeFinish(p, 450, '8005678', 'T');
+  assert.throws(() => start('8005678', 'dash'), /No tokens/);
+  // Someone else can't finish your game.
+  w.setSettingValue_('ARCADE_DAILY', '9');
+  p = start('8001234', 'dash');
+  assert.throws(() => w.clashArcadeFinish(p, 10, '8005678', 'T'), /someone else/);
+  // Board this week, best first; names hidden unless LEADERBOARD_NAMES is ON.
+  a = JSON.parse(w.clashArcade('8001234', 'T'));
+  assert.deepStrictEqual(a.board.dash.map(x => [x.squad, x.score, x.who]), [['GOLD', 1300, ''], ['GREY', 450, '']]);
+  // Paid once a day: Gold 3 + 2 = 5, Bo's 450 earns 1 for Grey.
+  w.payArcade_(); w.payArcade_();
+  const rows = events(w).filter(r => r[2] === 'arcade');
+  assert.strictEqual(rows.length, 1);
+  assert.deepStrictEqual([rows[0][7], rows[0][8]], [5, 1]);
+  // OFF hides it.
+  w.setSettingValue_('ARCADE', 'OFF');
+  assert.strictEqual(JSON.parse(w.clashArcade('8001234', 'T')).on, false);
+  assert.throws(() => start('8001234', 'dash'), /closed/);
+});
+
 test('Redemption: a Trailback Summit on the private Redemptions tab gives the student a Summit Climber badge and 25 LRG points; the feed labels it', () => {
   const w = world();
   w.ensureSettings_();

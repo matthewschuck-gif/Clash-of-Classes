@@ -8,6 +8,7 @@
 <?!= include('Styles'); ?>
 <?!= include('Pop'); ?>
 <?!= include('GameUi'); ?>
+<?!= include('Arcade'); ?>
 <?!= include('CliffTour'); ?>
 <style>
 /* ── My Climb: one student's own dashboard (16_Me.gs). Dark purple site, squad skin once loaded. ── */
@@ -311,7 +312,7 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
     var first = String(me.name || '').split(' ')[0];
     var standing = st.place ? '<b>' + title(st.squad) + '</b> is in <b>' + ['1st', '2nd', '3rd', '4th'][st.place - 1] + ' place</b>' +
       (st.place > 1 ? ', ' + st.behindBy.toLocaleString() + ' behind ' + title(st.ahead) + '.' : ', ' + st.leadBy.toLocaleString() + ' ahead.') : '';
-    var tabs = [['me', 'Me'], ['tickets', 'Tickets'], ['squad', 'My Squad'], ['map', 'Map'], ['game', 'Game']];
+    var tabs = [['me', 'Me'], ['tickets', 'Tickets'], ['squad', 'My Squad'], ['map', 'Map'], ['game', 'Game'], ['arcade', 'Arcade']];
     $('me').innerHTML = (D.sample ? '<div class="me-card" style="border-color:#fbbf24">Sample student on ' + esc(me.squad.charAt(0) + me.squad.slice(1).toLowerCase()) + ' with made-up numbers. Look around every tab; nothing you change here is saved. <a href="#" id="pvAnother">Another squad</a></div>'
       : D.preview ? '<div class="me-card" style="border-color:#fbbf24">Staff preview of ' + esc(me.name) + '. Changing their creature, picking a boost or keeping tickets here changes their real account.</div>' : '') +
       '<section class="me-hero craft-lit craft-motes" style="' + sceneCss() + '"><div class="me-mascot">' + creatureImg(0, true) + '</div><div>' +
@@ -319,8 +320,8 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
       (D.roles || []).map(function (r) { return '<span class="me-pill alt">' + esc(r) + '</span>'; }).join('') + '</div><div class="me-standing">' + standing + '</div></div>' +
       '<div class="me-say"><b>' + esc(cliffName()) + '</b>' + esc(cliffLine()) + '</div><img class="me-cliff" src="' + esc(D.cliff.image) + '" alt="' + esc(cliffName()) + ', the Mountaineer"></section>' +
       '<nav class="me-tabs" role="tablist">' + tabs.map(function (t) { return '<button class="me-tab craft-press" role="tab" data-t="' + t[0] + '" aria-selected="' + (tab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</nav>' +
-      '<div id="meBody">' + ({ me: meTab, tickets: ticketsTab, squad: squadTab, map: mapTab, game: gameTab }[tab])() + '</div>';
-    document.querySelectorAll('.me-tab').forEach(function (b) { b.onclick = function () { tab = b.getAttribute('data-t'); track(tab); render(); }; });
+      '<div id="meBody">' + ({ me: meTab, tickets: ticketsTab, squad: squadTab, map: mapTab, game: gameTab, arcade: arcadeTab }[tab])() + '</div>';
+    document.querySelectorAll('.me-tab').forEach(function (b) { b.onclick = function () { if (window.Arcade) Arcade.stop(); tab = b.getAttribute('data-t'); track(tab); render(); }; });
     wire();
   }
 
@@ -441,7 +442,56 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
     return out || '<section class="me-card"><p class="me-sub">Nothing running right now. Check back soon.</p></section>';
   }
 
+  // ── Arcade: short games for squad points (48_Arcade.gs, Arcade.html) ──
+  var AR = null, arcLoading = false;
+  function arcadeTab() {
+    if (!AR) {
+      if (!arcLoading) {
+        arcLoading = true;
+        run.apply(null, ['clashArcade'].concat(who())).then(function (a) { AR = a; arcLoading = false; if (tab === 'arcade') render(); })
+          .catch(function (e) { AR = { on: false, err: msg(e) }; arcLoading = false; if (tab === 'arcade') render(); });
+      }
+      return '<section class="me-card"><p class="me-sub">Opening the Arcade…</p></section>';
+    }
+    if (!AR.on) return '<section class="me-card"><h2>🕹️ Arcade</h2><p class="me-sub">' + esc(AR.err || 'The Arcade is closed right now. Check back soon.') + '</p></section>';
+    var w = AR.wallet, r = AR.rules, res = AR.result, can = AR.sample || (w.playsToday < w.daily && (w.freeLeft > 0 || w.tokens > 0));
+    var names = {}; AR.games.forEach(function (g) { names[g.key] = g.name; });
+    var out = '<section class="me-card"><h2>🕹️ Arcade</h2><p class="me-sub">Play for the ' + esc(title(D.me.squad)) + ' Squad. Each game can add up to ' + AR.maxPoints + ' squad point' + (AR.maxPoints === 1 ? '' : 's') + ', counted once a day.</p>' +
+      '<div class="arc-wallet"><span class="me-pill">🪙 ' + w.tokens + ' token' + (w.tokens === 1 ? '' : 's') + '</span><span class="me-pill alt">' + (w.freeLeft ? w.freeLeft + ' free play today' : 'Free play used') + '</span><span class="me-pill alt">' + w.playsToday + ' of ' + w.daily + ' plays today</span></div>' +
+      '<p class="me-sub">Earn tokens: ' + r.dough + ' per Trait Dough bill, ' + r.service + ' per approved service' + (r.votes ? ', 1 for every ' + r.votes + ' poll votes' : '') + '.</p>' +
+      (res ? '<div class="arc-result" role="status"><b>' + esc(names[res.game] || '') + ': ' + res.score.toLocaleString() + '</b> · ' + (res.kept ? (res.points ? '+' + res.points + ' for ' + esc(title(D.me.squad)) + ' (added tonight)' : 'Keep going! A bigger score earns squad points.') : 'That score didn\'t count. Play a full game.') + '</div>' : '') +
+      '<div id="arcStage"></div><p class="me-sub" id="arcMsg"></p><div class="arc-games">';
+    out += AR.games.map(function (g) {
+      return '<div class="arc-g"><h3>' + esc(g.name) + '</h3><span class="me-sub">' + esc(g.blurb) + '</span><span class="me-sub">' + g.per + ' = 1 squad point' + (g.best ? ' · Your best: ' + g.best.toLocaleString() : '') + '</span>' +
+        '<button class="btn btn-gold craft-press" data-arcade="' + esc(g.key) + '"' + (can ? '' : ' disabled') + '>' + (can ? 'Play' : 'No plays left') + '</button></div>';
+    }).join('') + '</div></section>';
+    var board = AR.games.map(function (g) {
+      var rows = (AR.board[g.key] || []).map(function (b) { return '<li>' + (b.who ? esc(b.who) + ' · ' : '') + esc(title(b.squad)) + ' · ' + b.score.toLocaleString() + '</li>'; }).join('');
+      return '<div><b>' + esc(g.name) + '</b>' + (rows ? '<ol>' + rows + '</ol>' : '<p class="me-sub">No scores yet this week.</p>') + '</div>';
+    }).join('');
+    return out + '<section class="me-card"><h2>This week\'s best</h2><div class="arc-board">' + board + '</div></section>';
+  }
+  function wireArcade() {
+    document.querySelectorAll('[data-arcade]').forEach(function (b) {
+      b.onclick = function () {
+        var game = b.getAttribute('data-arcade');
+        document.querySelectorAll('[data-arcade]').forEach(function (x) { x.disabled = true; });
+        $('arcMsg').textContent = 'Starting…';
+        run.apply(null, ['clashArcadeStart', game].concat(who())).then(function (s) {
+          $('arcMsg').textContent = '';
+          var stage = $('arcStage');
+          stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          Arcade.play(game, stage, D.me.squad, function (score) {
+            run.apply(null, ['clashArcadeFinish', s.play, score].concat(who())).then(function (a) { AR = a; render(); })
+              .catch(function (e) { AR = null; render(); alert(msg(e)); });
+          });
+        }).catch(function (e) { $('arcMsg').textContent = msg(e); document.querySelectorAll('[data-arcade]').forEach(function (x) { x.disabled = false; }); });
+      };
+    });
+  }
+
   function wire() {
+    wireArcade();
     // Sample student: "Another squad" steps to the next squad's sample (same staff sign-in).
     var pa = $('pvAnother');
     if (pa) pa.onclick = function (ev) { ev.preventDefault(); var sq = ['BLACK', 'GOLD', 'GREY', 'PURPLE']; preview.id = 'sample-' + sq[(sq.indexOf(D.me.squad) + 1) % 4]; load(); };
@@ -499,4 +549,4 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 </script>
 </body>
 </html>
-<!-- file-stamp: f2cdadb797 -->
+<!-- file-stamp: ff805792fb -->

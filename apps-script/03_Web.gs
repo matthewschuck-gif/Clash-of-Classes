@@ -154,6 +154,7 @@ function backgroundTick() {
   try { maybeSuggestSpotlights_(); } catch (e) { noteError_('spotlight', e); } // 41_Morning.gs, Mondays
   try { maybeDoughNudge_(); } catch (e) { noteError_('dough nudge', e); } // 39_VirtualDough.gs, Fridays
   try { maybePayFamilyPoints_(); } catch (e) { noteError_('family points', e); } // 47_Families.gs, daily
+  try { maybePayArcade_(); } catch (e) { noteError_('arcade', e); } // 48_Arcade.gs, daily
   try { cachedPublicLoad_(true); cachedGame_(true); } catch (e) { noteError_('warm cache', e); }
 }
 
@@ -415,4 +416,4 @@ function menuOpenSite_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_03_Web = '4bc16ab09c';
+var FILE_STAMP_03_Web = '274930f6b0';

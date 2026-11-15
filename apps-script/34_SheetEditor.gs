@@ -65,6 +65,7 @@ const SHEET_TABS_ = [
   ['Family Challenges', 'Families', 'The weekly family challenge (FAMILY_CHALLENGE ON): the newest shown row whose Week Of has started.', {}],
   ['Family Pulse', 'Families', 'A question for families (FAMILY_PULSE ON): Choices like Yes | No; From / Through dates (blank = open).', {}],
   ['Plinko Slots', 'Game', 'The Plinko prizes, left to right (one more slot than PLINKO_ROWS). Kind: points, mystery (Value like 5|10|25|50) or nothing. The middle slots come up most; the edges are rare.', { 'Kind': ['points', 'mystery', 'nothing'] }],
+  ['Arcade Plays', 'Game', 'Every Arcade game on My Climb. Points add up once a day as one Arcade row per squad (Paid fills in). Delete a row to undo a play.', { 'Game': ['dash', 'catch', 'stack'] }],
   ['Plinko Drops', 'Game', 'Drops squads have earned (a row each). Add one here or with + Give a drop on the board; Used fills in when it drops.', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
   ['Dough Teachers', 'Points', 'Teachers who can give Virtual Trait Dough: tick Active, their squad, and their password (e.g. their room number).', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
 ];
@@ -219,4 +220,4 @@ function clashSheetAction(token, name) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_34_SheetEditor = 'e8163343b7';
+var FILE_STAMP_34_SheetEditor = '85ad849d11';

@@ -96,6 +96,7 @@ function setupSpreadsheet() {
   ensureSiteContentTabs_(); // LRG Traits + Wheel Slices (35_SiteContent.gs)
   ensureAvalancheTab_(); ensureDoughTabs_(); ensureServiceTab_(); ensureSpotlightTab_(); // 38, 39, 40, 41
   ensurePlinkoTabs_(); // Plinko Slots + Plinko Drops (46_Plinko.gs)
+  ensureArcadeTab_(); // Arcade Plays (48_Arcade.gs)
   ensureFamilyTabs_(); // the family pieces (47_Families.gs), each OFF until turned on
   ensureFreezeTab_();
   ensureDuelTab_();
@@ -222,6 +223,11 @@ const DEFAULT_SETTINGS = [
   ['FAMILY_CHECKIN', 'OFF', 'Families: ON = staff check families in at Family Night / Squad Night (clashofclasses.org/?page=familydoor); each family adds FAMILY_CHECKIN_POINTS.'],
   ['FAMILY_PULSE_POINTS', '1', 'Families: squad points for each family that answers the Family Pulse (paid once a day).'],
   ['FAMILY_CHECKIN_POINTS', '2', 'Families: squad points for each family checked in at an event (paid once a day).'],
+  ['ARCADE', 'ON', 'Arcade on My Climb: ON = students play Summit Dash, Dough Catch and Peak Stack for squad points. OFF hides it.'],
+  ['ARCADE_DAILY', '3', 'Arcade: plays a day per student (free play included).'],
+  ['ARCADE_FREE_DAILY', '1', 'Arcade: free plays a day per student before tokens are needed.'],
+  ['ARCADE_TOKENS', 'dough=1, service=2, family=2, votes=5', 'Arcade tokens: dough = tokens per Trait Dough bill, service / family = per approved one, votes = poll votes for 1 token.'],
+  ['ARCADE_MAX_POINTS', '3', 'Arcade: most squad points one play can earn (paid once a day, one Arcade row per squad).'],
   ['PLINKO_ROWS', '8', 'Plinko: rows of pegs (4 to 12). The Plinko Slots tab needs one more slot than rows.'],
   ['TV_SECONDS', '9', 'TV (clashofclasses.org/?tv=1): seconds each slide stays up.'],
   ['TV_SLIDES', 'all', 'TV: which slides run. all, or a list of: standings, podium, categories, metrics, challenges, feed, summit, map, opponent, pulse, polls.'],
@@ -459,4 +465,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = '911c610a8b';
+var FILE_STAMP_01_Config = '20cfc56e43';

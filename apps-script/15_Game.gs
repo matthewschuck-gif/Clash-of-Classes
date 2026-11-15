@@ -30,7 +30,7 @@
  *   the Month"; an older Monsters tab is renamed, and the code still calls it monster inside.)
  */
 
-const GAME_TYPES_ = ['territory', 'chance', 'streak_bank', 'round_goal', 'engine', 'monster', 'destination_ticket', 'freeze_thaw', 'evolution_boost', 'mp_bonus', 'avalanche'];
+const GAME_TYPES_ = ['territory', 'chance', 'streak_bank', 'round_goal', 'engine', 'monster', 'destination_ticket', 'freeze_thaw', 'evolution_boost', 'mp_bonus', 'avalanche', 'arcade'];
 const MAP_HEADERS_ = ['Show', 'Zone', 'Wing', 'Summit', 'Claimed By', 'Weekly Points', 'X', 'Y', 'W', 'H', 'Holder', 'Since', 'Conquer By', 'Borders', 'Multiplier', 'Locked'];
 const CARD_HEADERS_ = ['Show', 'Card', 'Text', 'Effect', 'Value', 'Copies'];
 const HAND_HEADERS_ = ['Squad', 'Card', 'Effect', 'Value', 'Drawn', 'Status', 'Note'];
@@ -577,4 +577,4 @@ function hqGame_(squad) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_15_Game = '98aeffb5f3';
+var FILE_STAMP_15_Game = '203832644f';
