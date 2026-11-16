@@ -509,7 +509,7 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
         (t.place ? ' That\'s ' + ['1st', '2nd', '3rd', '4th', '5th', '6th'][t.place - 1] + ' of ' + t.of + ' team groups in your squad.' : '') + (t.leaders && t.leaders.indexOf(t.team) > -1 ? ' 🚩 You\'re leading!' : '') + '</p>' +
         '<div style="height:12px;border-radius:99px;background:rgba(127,127,127,.25);overflow:hidden"><div style="height:100%;width:' + t.pct + '%;background:var(--gold, #ffcc00)"></div></div></section>';
     }
-    if (XT.shoutouts && XT.shoutouts.length) out += '<section class="me-card"><h2>⭐ Shout-outs for you</h2>' + XT.shoutouts.map(function (s) { return '<p style="margin:10px 0 2px">“' + esc(s.message) + '”</p><p class="me-sub" style="margin:0">' + esc(s.from) + '</p>'; }).join('') + '</section>';
+    if (XT.shoutouts && XT.shoutouts.length) out += '<section class="me-card"><h2>⭐ Shout-outs for you</h2>' + XT.shoutouts.map(function (s) { return '<p style="margin:10px 0 2px">' + (s.mir ? '🤝 ' : '') + '“' + esc(s.message) + '”</p><p class="me-sub" style="margin:0">' + esc(s.from) + '</p>'; }).join('') + '</section>';
     if (XT.badges && XT.badges.length) {
       var n = XT.badges.filter(function (b) { return b.earned; }).length;
       out += '<section class="me-card"><h2>🎖️ My badges <span class="me-sub">' + n + ' of ' + XT.badges.length + '</span></h2><p class="me-sub">Milestones on the climb. They\'re for you: no points, just bragging rights.</p>' +
@@ -618,4 +618,4 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 </script>
 </body>
 </html>
-<!-- file-stamp: f91e8488a3 -->
+<!-- file-stamp: abba9a366a -->

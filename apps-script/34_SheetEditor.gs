@@ -83,7 +83,7 @@ const SHEET_TABS_ = [
   ['Dough Teachers', 'Points', 'Teachers who can give Virtual Trait Dough: tick Active, their squad, and their password (e.g. their room number).', { 'Squad': ['BLACK', 'GOLD', 'GREY', 'PURPLE'] }],
 ];
 const SHEET_HIDDEN_ = ['app_data', 'How To Use This Sheet', 'How The Map Works', 'How My Climb Works'];
-const SHEET_PRIVATE_ = ['Students', 'Student Board', 'Poll Votes', 'Event Check-ins', 'Redemptions', 'Shirt Votes', 'Shirt Orders', 'Squad Night', 'Sign-ups',
+const SHEET_PRIVATE_ = ['Students', 'Student Board', 'Poll Votes', 'Event Check-ins', 'Redemptions', 'Make It Right', 'Shirt Votes', 'Shirt Orders', 'Squad Night', 'Sign-ups',
   'Nominations', 'General Letters', 'Virtual Dough', 'Service Submissions', 'Family Shout-outs', 'Family Pulse Answers', 'Family Check-ins', 'MLC Roster', 'Boost Ledger', 'Student Tickets', 'Avatars', 'Color Squads', 'Homeroom Points', 'Family Pick Votes', 'Send-off Advice', 'Staff Shout-outs', 'Arcade Plays', 'Frost Log', 'Admin Edits', 'Usage', 'Weekly Digest Log', 'Squad Hand', 'Streak Banks'];
 const SHEET_EDIT_LOG_ = 'Admin Edits';
 
@@ -233,4 +233,4 @@ function clashSheetAction(token, name) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_34_SheetEditor = '8b14f3e496';
+var FILE_STAMP_34_SheetEditor = '06739a6d7b';

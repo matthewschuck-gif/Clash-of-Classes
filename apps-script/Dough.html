@@ -91,6 +91,7 @@
       (S.start.shoutouts ? '<div class="card"><h2 style="margin:0 0 4px">⭐ Write a shout-out</h2><div class="hint">Any student, any squad. No points: a thank-you that shows on the home page and their My Climb once staff approve it (first name + last initial).</div>' +
         '<label for="sq">Student</label><input id="sq" type="search" placeholder="Type a name or 800 number" autocomplete="off"><div class="list" id="sres"></div>' +
         '<label for="smsg">Shout-out</label><textarea id="smsg" maxlength="160" placeholder="Stayed after class to help clean up the science lab."></textarea>' +
+        '<label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="smir" style="width:auto"> 🤝 This is about making something right (a repaired relationship)</label>' +
         '<button class="go" id="shout" disabled>⭐ Send shout-out</button><div class="err" id="e3"></div></div>' : ''));
     var stimer = null, sq = document.getElementById('sq');
     if (sq) {
@@ -149,8 +150,9 @@
     }
     if (t.id === 'shout') {
       t.disabled = true; msg('e3', '');
-      run('clashShoutoutPost', S.me.token, S.shoutTo.id, document.getElementById('smsg').value).then(function (r) {
+      run('clashShoutoutPost', S.me.token, S.shoutTo.id, document.getElementById('smsg').value, !!(document.getElementById('smir') || {}).checked).then(function (r) {
         document.getElementById('smsg').value = ''; S.shoutTo = null;
+        if (document.getElementById('smir')) document.getElementById('smir').checked = false;
         Array.prototype.forEach.call(document.querySelectorAll('.sst'), function (x) { x.classList.remove('on'); });
         msg('e3', r.waiting ? '✓ Sent to ' + 'staff. It shows once they approve it.' : '✓ Sent and showing.');
         document.getElementById('e3').style.color = 'var(--green)';
@@ -189,4 +191,4 @@
 </script>
 </body>
 </html>
-<!-- file-stamp: 6e79b3240b -->
+<!-- file-stamp: 9953375d7d -->

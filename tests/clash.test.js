@@ -1973,7 +1973,7 @@ test('insights: points balance flags, You said we did, State of the Squads email
   let scan = J(w.privacyScan_());
   assert.ok(scan.length >= 15);
   assert.deepStrictEqual(scan.filter(x => x.findings.length), [], JSON.stringify(scan.filter(x => x.findings.length)));
-  ev.rows.push([6, 'Shout-out for Ann Lee 8001111', 'shout_out', ago(1), '', '', 0, 1, 0, 0]);
+  ev.rows.push([6, 'Shout-out for Ann Lee 8001111', 'shout_out', w.mondayOf_(today), '', '', 0, 1, 0, 0]);
   scan = J(w.privacyScan_());
   const hit = scan.filter(x => x.findings.length);
   assert.deepStrictEqual(hit.map(x => x.surface), ['Site data', 'TV feed', 'This Week'], 'a full name typed into an event name is caught');
@@ -2830,6 +2830,31 @@ test('Redemption: a Trailback Summit on the private Redemptions tab gives the st
   w.book.getSheetByName('events').rows.push([501, 'Redemption: a Gold climber reached the Summit', 'redemption', w.todayYmd_(), 'Trailback Summit', '', '', 75, '', '']);
   const feed = JSON.parse(w.clashTvFeed());
   assert.ok(feed.latest.some(e => e.label === '🏔️ Redemption' && /Gold climber/.test(e.name)));
+});
+
+test('Make it Right: a finished Logical Consequence (private Make It Right tab) gives a badge only the student sees; the feed labels the squad points; a shout-out can be tagged "made it right"', () => {
+  const w = world();
+  w.ensureSettings_();
+  w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade', 'Badges'], ['8001111', 'Ann L.', 'Gold', '7', '']];
+  assert.ok(!JSON.parse(w.clashMyPage('8001111')).me.badges.includes('🤝 Made It Right'));
+  w.book.insertSheet('Make It Right').rows = [['800#', 'Squad', 'Date', 'Points', 'Entry ID'], ['8001111', 'GOLD', '2027-01-20', 2, 'EMS-1']];
+  const me = JSON.parse(w.clashMyPage('8001111')).me;
+  assert.strictEqual(me.makeItRight, 1);
+  assert.ok(me.badges.includes('🤝 Made It Right'));
+  assert.ok(/SHEET_PRIVATE_ = \[[^\]]*'Make It Right'/.test(require('fs').readFileSync(require('path').join(__dirname, '..', 'apps-script', '34_SheetEditor.gs'), 'utf8')), 'a private tab');
+  w.book.getSheetByName('events').rows.push([502, 'Make it Right: a Gold climber finished a restorative task', 'make_it_right', w.todayYmd_(), 'Logical Consequence', '', '', 2, '', '']);
+  assert.ok(JSON.parse(w.clashTvFeed()).latest.some(e => e.label === '🤝 Make it Right'));
+  // The shout-out tag (an older tab gets the new column on setup).
+  w.ensureShoutoutTabs_();
+  w.book.insertSheet('Students').rows = [['800#', 'First Name', 'Last Name', 'Grade', 'Email', 'Squad'], ['8001111', 'Ann', 'Lee', '7', '', 'Gold']];
+  w.setSettingValue_('SHOUTOUT_AUTO_APPROVE', 'ON'); w.ensureDoughTabs_();
+  w.book.getSheetByName('Dough Teachers').rows.push([true, 'Ms. T', 'GREY', '74', '']);
+  const tok = JSON.parse(w.clashDoughSignIn('Ms. T', '74')).token;
+  w.clashShoutoutPost(tok, '8001111', 'Apologized to the sub and helped her set up all week.', true);
+  w.clashShoutoutPost(tok, '8001111', 'Helped a new student find every class today.', false);
+  const pub = J(w.shoutoutsPublic_());
+  assert.deepStrictEqual(pub.map(p => p.mir), [false, true]);
+  assert.strictEqual(J(w.myShoutouts_('8001111')).filter(s => s.mir).length, 1);
 });
 
 console.log('\n' + passed + ' tests passed');

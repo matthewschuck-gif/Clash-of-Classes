@@ -18,13 +18,18 @@
  *   as a normal event (Type, blank = event). Posted fills in.
  */
 
-const SHOUT_HEADERS_ = ['When', 'From', '800#', 'Student', 'Squad', 'Message', 'Approved'];
+const SHOUT_HEADERS_ = ['When', 'From', '800#', 'Student', 'Squad', 'Message', 'Approved', 'Made It Right'];
 const PLANNED_HEADERS_ = ['Show', 'Date', 'Event', 'What Happens', 'Type', 'BLACK', 'GOLD', 'GREY', 'PURPLE', 'Posted'];
 
 function ensureShoutoutTabs_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   [['Staff Shout-outs', SHOUT_HEADERS_], ['Planned Events', PLANNED_HEADERS_]].forEach(function (t) {
-    if (ss.getSheetByName(t[0])) return;
+    const have = ss.getSheetByName(t[0]);
+    if (have) { // an older tab: add any missing header at the end (e.g. Made It Right)
+      const h = have.getRange(1, 1, 1, Math.max(1, have.getLastColumn())).getValues()[0].map(function (x) { return String(x).trim(); });
+      t[1].forEach(function (k) { if (h.indexOf(k) === -1) { h.push(k); have.getRange(1, h.length).setValue(k).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff'); } });
+      return;
+    }
     const sh = ss.insertSheet(t[0]);
     sh.getRange(1, 1, 1, t[1].length).setValues([t[1]]).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
     sh.setFrozenRows(1);
@@ -45,7 +50,7 @@ function clashShoutoutFind(token, query) {
   }));
 }
 
-function clashShoutoutPost(token, id, message) {
+function clashShoutoutPost(token, id, message, madeItRight) {
   if (!settingOn_('SHOUTOUTS', 'ON')) throw new Error('Shout-outs are off right now.');
   const me = doughSession_(token), sid = id800_(id);
   message = String(message || '').replace(/\s+/g, ' ').trim();
@@ -59,8 +64,13 @@ function clashShoutoutPost(token, id, message) {
   const mineToday = sheetRows_('Staff Shout-outs').filter(function (r) { return String(r['From']) === me.name && String(r['When']).slice(0, 10) === today; }).length;
   if (mineToday >= settingNum_('SHOUTOUTS_PER_DAY', 10)) throw new Error('That\'s today\'s shout-outs. More tomorrow!');
   const name = s['First Name'] ? String(s['First Name']).trim() + ' ' + String(s['Last Name'] || '').trim() : String(s['Name'] || '');
-  getSheet_('Staff Shout-outs').appendRow([Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'), me.name, sid, name.trim(),
-    squadOf_(s['Squad']), message, settingOn_('SHOUTOUT_AUTO_APPROVE', 'OFF')]);
+  const tab = getSheet_('Staff Shout-outs');
+  const head = tab.getRange(1, 1, 1, Math.max(1, tab.getLastColumn())).getValues()[0].map(function (x) { return String(x).trim(); });
+  const row = [Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'), me.name, sid, name.trim(),
+    squadOf_(s['Squad']), message, settingOn_('SHOUTOUT_AUTO_APPROVE', 'OFF')];
+  const mirCol = head.indexOf('Made It Right');
+  if (mirCol > -1) { while (row.length < mirCol) row.push(''); row[mirCol] = !!madeItRight; }
+  tab.appendRow(row);
   return JSON.stringify({ ok: true, waiting: !settingOn_('SHOUTOUT_AUTO_APPROVE', 'OFF') });
 }
 
@@ -69,14 +79,14 @@ function shoutoutsPublic_(limit) {
   if (!settingOn_('SHOUTOUTS', 'ON')) return [];
   const since = ymdShift_(todayYmd_(), -settingNum_('SHOUTOUT_DAYS', 14));
   return sheetRows_('Staff Shout-outs').filter(function (r) { return ticked_(r['Approved']) && String(r['When']).slice(0, 10) >= since && String(r['Message'] || '').trim(); })
-    .map(function (r) { return { who: shortName_(r['Student']), squad: squadOf_(r['Squad']), from: String(r['From'] || ''), message: String(r['Message']).trim(), date: String(r['When']).slice(0, 10) }; })
+    .map(function (r) { return { who: shortName_(r['Student']), squad: squadOf_(r['Squad']), from: String(r['From'] || ''), message: String(r['Message']).trim(), date: String(r['When']).slice(0, 10), mir: ticked_(r['Made It Right']) }; })
     .reverse().slice(0, limit || 6);
 }
 
 /** One student's approved shout-outs (My Climb). */
 function myShoutouts_(id) {
   return sheetRows_('Staff Shout-outs').filter(function (r) { return id800_(r['800#']) === id && ticked_(r['Approved']); })
-    .map(function (r) { return { from: String(r['From'] || ''), message: String(r['Message'] || ''), date: String(r['When']).slice(0, 10) }; }).reverse().slice(0, 5);
+    .map(function (r) { return { from: String(r['From'] || ''), message: String(r['Message'] || ''), date: String(r['When']).slice(0, 10), mir: ticked_(r['Made It Right']) }; }).reverse().slice(0, 5);
 }
 
 // ── Event planner ──
@@ -138,4 +148,4 @@ function clashPlannedPost(token, row, ptsJson) {
 var FILE_STAMP_56_Shoutouts = '';
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_56_Shoutouts = 'a57689a8e2';
+var FILE_STAMP_56_Shoutouts = 'f39ff8ae13';

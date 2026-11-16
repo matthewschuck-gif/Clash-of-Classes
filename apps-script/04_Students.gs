@@ -84,6 +84,9 @@ function clashMyPage(id) {
   // student sees, and LRG points toward their creature (19_Evolve.gs).
   me.redemption = redemptionsFor_(want);
   if (me.redemption && me.badges.indexOf(REDEMPTION_BADGE_) === -1) me.badges.push(REDEMPTION_BADGE_);
+  // A finished Logical Consequence (the private Make It Right tab, written by the Accountability Log).
+  me.makeItRight = makeItRightFor_(want);
+  if (me.makeItRight && me.badges.indexOf(MAKE_IT_RIGHT_BADGE_) === -1) me.badges.push(MAKE_IT_RIGHT_BADGE_);
   const totals = squadTotals_();
   return JSON.stringify({
     me: me,
@@ -126,6 +129,16 @@ function passportFor_(id, me) {
 // a student reaches the Summit of a Trailback plan. The squad's points are a separate 'redemption'
 // row on the events tab (named only if the student chose to be).
 const REDEMPTION_BADGE_ = '🏔️ Summit Climber';
+
+// ── MAKE IT RIGHT (finished Logical Consequences) ─────────────────────
+// The Make It Right tab (800# | Squad | Date | Points | Entry ID) is private: the Accountability Log
+// adds a row when a Logical Consequence is marked Served. The squad's points are a separate,
+// anonymous 'make_it_right' row on the events tab. The badge shows only to the student.
+const MAKE_IT_RIGHT_BADGE_ = '🤝 Made It Right';
+function makeItRightFor_(id) {
+  const want = id800_(id);
+  return want ? sheetRows_('Make It Right').filter(function (r) { return id800_(r['800#']) === want; }).length : 0;
+}
 function redemptionsFor_(id) {
   const want = id800_(id);
   return want ? sheetRows_('Redemptions').filter(function (r) { return id800_(r['800#']) === want; }).length : 0;
@@ -259,7 +272,7 @@ function clashTvFeed() {
   const latest = readEventsTab_().slice().sort(function (a, b) {
     return String(b.date).localeCompare(String(a.date)) || (Number(b.id) - Number(a.id));
   }).slice(0, 8).map(function (e) {
-    return { name: publicEvent_(e).name, label: labels[e.type] || ({ redemption: '🏔️ Redemption', duel_bonus: '⚔️ Squad Duel', mayhem_week: '🏔️ Mayhem Week', shirt_sales: '👕 Shirt Sales', squad_night: '🌙 Squad Night' })[e.type] || '', date: e.date, pts: e.pts };
+    return { name: publicEvent_(e).name, label: labels[e.type] || ({ redemption: '🏔️ Redemption', make_it_right: '🤝 Make it Right', duel_bonus: '⚔️ Squad Duel', mayhem_week: '🏔️ Mayhem Week', shirt_sales: '👕 Shirt Sales', squad_night: '🌙 Squad Night' })[e.type] || '', date: e.date, pts: e.pts };
   });
   const out = { latest: latest, stars: [], lore: recentLoreUnlocks_(), duels: JSON.parse(clashDuels()) };
   try { out.frost = frostMeter_(); } catch (e) { out.frost = null; }
@@ -292,4 +305,4 @@ function parsePairsSetting_(key) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_04_Students = '4f92075cfc';
+var FILE_STAMP_04_Students = '63c5e8f276';
