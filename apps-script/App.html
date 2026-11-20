@@ -757,7 +757,7 @@ function goTo(id){
   else if(id==='arcade')    { if(window.renderSiteArcade) window.renderSiteArcade(); }
   else if(id==='squads')      renderSquads();
   else if(id==='gallery')     renderGallery();
-  else if(id==='tracker'){ renderStrip(); renderTable(); renderMetrics(); renderTimeline(); renderSnapshots(); renderPoll(); renderCatChart(); renderSeasonCal(); }
+  else if(id==='tracker'){ renderStrip(); renderTable(); renderMetrics(); renderTimeline(); renderSnapshots(); renderPoll(); renderCatChart(); renderSeasonCal(); renderTrackerRecap(); }
   else if(id==='home'){ renderMini(); renderHomeText(); renderTraitPillar(); renderCountdown(); renderAnnouncement(); renderHeroStrip(); }
   else if(id==='staff'){ renderStaffLinks(); }
   else if(id==='spin'){ renderSpinPage(); }
@@ -1850,6 +1850,43 @@ function renderStrip(){
       <div class="strip-sq-lbl">Total Points</div>${freezeTag(sq)}
       <div class="strip-sq-bar" style="width:${Math.round(grand(sq)/mx*100)}%"></div>
     </div>`).join('');
+}
+
+// Tracker › Quarter recap (57_Leagues.gs clashRecap): the quarter in the site's own look, with a
+// button per quarter. The standalone /recap page stays for the TV and the Admin links.
+var _recapQ='', _recapCache={};
+function renderTrackerRecap(q){
+  var box=document.getElementById('trackerRecap'); if(!box||!window.gasRun_) return;
+  if(q!==undefined) _recapQ=String(q);
+  var esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  var T=s=>s.charAt(0)+s.slice(1).toLowerCase(), day=y=>new Date(y+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'});
+  var nm=list=>list.map(s=>'<b style="color:'+(SQ_HEX[s]||'inherit')+'">'+T(s)+'</b>').join(' + ');
+  var head='<div style="font-family:Fraunces,serif;font-size:20px;font-weight:700;margin-bottom:2px">📊 Quarter recap</div>';
+  var draw=function(d){
+    var w=d.window, top=d.order[0], max=Math.max(1,d.totals[top]), qs='';
+    for(var i=1;i<=w.quarters;i++) qs+='<button class="btn btn-sm'+(i===w.q?' btn-gold':'')+'" data-recap-q="'+i+'">Quarter '+i+'</button>';
+    var card=(h,body)=>'<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px"><div style="font-weight:800;margin-bottom:6px">'+h+'</div>'+body+'</div>';
+    var row=(a,b)=>'<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px solid var(--border);font-size:14px"><span>'+a+'</span><span style="text-align:right">'+b+'</span></div>';
+    var cards=[];
+    if(d.best) cards.push(card('🔥 Best week','<div style="font-family:Fraunces,serif;font-size:30px;font-weight:800;color:'+SQ_HEX[d.best.squad]+'">'+d.best.pts.toLocaleString()+'</div><div style="color:var(--text3);font-size:13px">'+T(d.best.squad)+', the week of '+day(d.best.week)+'</div>'));
+    cards.push(card('🙌 By the numbers',[['Trait Dough bills',d.dough],['Service projects',d.service],['Arcade games',d.arcade],['Staff shout-outs',d.shoutouts],['Squad goals hit',d.goals],['Helping Hands weeks',d.hands]].map(x=>row(x[0],'<b>'+Number(x[1]||0).toLocaleString()+'</b>')).join('')));
+    if(d.expeditions.length) cards.push(card('🧭 Expeditions',d.expeditions.map(x=>row(esc(x.title),nm(x.winners))).join('')));
+    if(d.rivalries.length) cards.push(card('⚔️ Rivalry Weeks',d.rivalries.map(x=>row(esc(x.title.replace(/^Rivalry Week:\s*/i,'')),nm(x.winners))).join('')));
+    if(d.team.length) cards.push(card('🏁 Team League',d.team.map(t=>row(esc(t.month),'Team '+esc(t.team)+' in '+nm([t.squad])+' ('+t.pct+'%)')).join('')));
+    if(d.spotlight.length) cards.push(card('⭐ Squad Spotlight',d.spotlight.map(p=>row(esc(p.who),nm([p.squad]))).join('')));
+    box.innerHTML=head+'<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px">'+(w.q?esc(w.label)+' · ':'The last 9 weeks · ')+day(w.from)+' to '+day(w.to)+(w.q&&!w.done?' (so far)':'')+'</div>'+
+      (qs?'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">'+qs+'</div>':'')+
+      '<div style="background:var(--surface);border:1px solid var(--border);border-left:5px solid '+SQ_HEX[top]+';border-radius:12px;padding:16px 18px;margin-bottom:12px">'+
+      '<div style="color:var(--text3);font-size:12px;text-transform:uppercase;letter-spacing:.1em">'+(!w.q?'Most points in these 9 weeks':w.done?'Winner of the quarter':'Leading the quarter')+'</div>'+
+      '<div style="font-family:Fraunces,serif;font-size:26px;font-weight:800;color:'+SQ_HEX[top]+';margin:2px 0 8px">🏆 '+T(top)+' Squad</div>'+
+      d.order.map((s,i)=>'<div style="display:grid;grid-template-columns:80px minmax(0,1fr) 70px;gap:10px;align-items:center;font-size:14px;padding:3px 0"><span>'+(i+1)+'. '+T(s)+'</span><span style="height:10px;border-radius:99px;background:var(--surface2);overflow:hidden"><i style="display:block;height:100%;width:'+Math.round(100*Math.max(0,d.totals[s])/max)+'%;background:'+SQ_HEX[s]+'"></i></span><span style="text-align:right;font-weight:700">'+d.totals[s].toLocaleString()+'</span></div>').join('')+'</div>'+
+      '<div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))">'+cards.join('')+'</div>';
+    box.querySelectorAll('[data-recap-q]').forEach(b=>{ b.onclick=()=>renderTrackerRecap(b.getAttribute('data-recap-q')); });
+  };
+  if(_recapCache[_recapQ]){ draw(_recapCache[_recapQ]); return; }
+  if(!box.innerHTML) box.innerHTML=head+'<div style="color:var(--text3);font-size:13px">Loading the quarter…</div>';
+  var want=_recapQ;
+  window.gasRun_('clashRecap',want).then(d=>{ _recapCache[want]=d; if(want===_recapQ) draw(d); }).catch(()=>{ box.innerHTML=''; });
 }
 
 // Tracker events in collapsible weeks (Monday to Sunday), newest first, like the Follow-Up dashboard.
@@ -3117,7 +3154,6 @@ function renderSeasonBanner(){
   }).join('');
   var exCard=ex?'<div style="margin-top:14px;padding:12px 14px;border-radius:12px;border:1px solid var(--border)"><div style="font-weight:800;margin-bottom:4px">Expeditions: first squad there wins</div>'+ex+'</div>':'';
   var hall=x.hall?'<div style="margin-top:10px;font-size:14px"><a href="?page=hall" target="_top">🏛️ Hall of Fame: every year\'s champions</a></div>':'';
-  hall+='<div style="margin-top:6px;font-size:14px"><a href="?page=recap" target="_top">📊 Quarter recap: the big moments so far</a></div>';
   // 54-57: Helping Hands, Rivalry Week, coming up, shout-outs, squad banners.
   var R=window.GameUi&&GameUi.rally;
   var hands=R?R.hands(x.hands,''):'';
@@ -5828,4 +5864,4 @@ window.__moduleReady=true;
 // Now that all functions are live, re-render whatever page the user navigated to
 goTo(window.__currentPage || currentPage);
 </script>
-<!-- file-stamp: 9a96e94904 -->
+<!-- file-stamp: f68d3e7e3b -->
