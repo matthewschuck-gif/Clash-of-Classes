@@ -81,6 +81,8 @@ function world(opts) {
   const src = fs.readdirSync(dir).filter(f => f.endsWith('.gs')).sort().map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
   vm.runInContext(src, ctx);
   ctx.book = book; ctx.props = props;
+  if (!opts.pollApproval) ctx.pollApprovalOn_ = () => false; // older tests pay polls straight away; the approval flow has its own test
+  if (!opts.weeklyMap) ctx.mapWeekly_ = () => false; // older map tests judge the monthly way; the weekly turn has its own test
   return ctx;
 }
 
@@ -361,6 +363,7 @@ test('Daily Polls: one vote per 800#, results after voting, points for voters an
   // Score yesterday's trivia: put two votes on it (as if cast yesterday).
   const votes = w.book.getSheetByName('Poll Votes');
   votes.rows.push(['3', day(-1), '8001234', 'GOLD', '4', ''], ['3', day(-1), '8005678', 'GREY', '3', '']);
+  w.setSettingValue_('POLL_APPROVAL', 'OFF'); // the old way: points go straight out (the approval way has its own test)
   assert.deepStrictEqual(J(w.awardDailyPolls()), ['DAILY_POLL_POINTS is OFF.']);
   w.setSettingValue_('DAILY_POLL_POINTS', 'ON');
   assert.deepStrictEqual(J(w.awardDailyPolls()), ['How many squads?: BLACK +0, GOLD +3, GREY +1, PURPLE +0'], 'today\'s poll waits until tomorrow');
@@ -376,7 +379,7 @@ test('Daily Polls: one vote per 800#, results after voting, points for voters an
 });
 
 test('Pulse: open several days, live results right after a vote, no winner, a point per voter, by-grade results, live screen without 800#s, ideas bank', () => {
-  const w = world();
+  const w = world({ pollApproval: true });
   addStudentTabs(w); // Ann L. 8001234 Gold 7th, Bo K. 8005678 Grey 8th
   w.ensureSettings_(); w.ensurePollTabs_();
   const day = n => w.Utilities.formatDate(new Date(Date.now() + n * 86400000));
@@ -405,8 +408,23 @@ test('Pulse: open several days, live results right after a vote, no winner, a po
   assert.deepStrictEqual(J(w.awardDailyPolls()), []);
   polls.rows[1][10] = day(-1);
   assert.throws(() => w.clashPollVote('2', '8001234', 'Lunch'), /closed/);
-  assert.deepStrictEqual(J(w.awardDailyPolls()), ['Best time for extra help?: BLACK +0, GOLD +1, GREY +1, PURPLE +0']);
+  assert.deepStrictEqual(J(w.awardDailyPolls()), ['Waiting for a yes: Best time for extra help?: BLACK +0, GOLD +1, GREY +1, PURPLE +0']);
   assert.ok(/by grade: 7th \(Before school 0, Lunch 1, After school 0\); 8th/.test(polls.rows[1][9]), polls.rows[1][9]);
+  // POLL_APPROVAL (on by default): nothing on the events tab and nothing on the map until staff say yes.
+  assert.ok(/^Waiting for approval/.test(polls.rows[1][8]));
+  assert.ok(!events(w).some(r => r[2] === 'daily_poll'));
+  const lastWk = J(w.lastWeekBounds_(w.todayYmd_()));
+  assert.deepStrictEqual(J(w.measureScores_('poll_votes', day(-30), day(0), [], false, false)), { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 }, 'unapproved votes do not count for the map');
+  assert.deepStrictEqual(J(w.awardDailyPolls()), [], 'queued once');
+  const t = login(w, 'oldpw');
+  let ap = JSON.parse(w.clashApprovals(t));
+  assert.strictEqual(ap.polls.length, 1);
+  assert.deepStrictEqual([ap.polls[0].votes, ap.polls[0].pts.GOLD, ap.polls[0].pts.GREY], [2, 1, 1]);
+  ap = JSON.parse(w.clashApprove(t, 'poll', ap.polls[0].row, true));
+  assert.strictEqual(ap.polls.length, 0);
+  assert.ok(/^Awarded/.test(polls.rows[1][8]));
+  assert.deepStrictEqual(J(w.measureScores_('poll_votes', day(-30), day(0), [], false, false)), { BLACK: 0, GOLD: 1, GREY: 1, PURPLE: 0 }, 'approved votes count for the map');
+  assert.ok(lastWk[0] < lastWk[1]);
   const ev = events(w).find(r => r[2] === 'daily_poll');
   assert.ok(/^Pulse: /.test(ev[1]) && !/winner/.test(ev[4]));
   assert.ok(/Our last Pulse question/.test(w.pollAnnouncement_()));
@@ -1089,6 +1107,7 @@ test('conquest: rules from the Sheet, Risk borders + defense edge, staff pick, e
 test('monthly zones: last calendar month, highest/lowest numbers from Squad Monthly (Climb-er), per 100, waits for every squad, Multiplier pays, staff challenge, menu', () => {
   const w = world();
   w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_();
+  w.setSettingValue_('POLL_APPROVAL', 'OFF'); // votes typed straight onto Poll Votes count here
   const lm = w.monthBounds_(-1), ym = lm[0].slice(0, 7), mid = lm[0].slice(0, 8) + '15', thisMonth = w.todayYmd_();
   const ev = w.book.getSheetByName('events'), mz = w.book.getSheetByName('Map Zones');
   // A fresh setup seeds the monthly set: every building zone points at its monthly rule.
@@ -2024,7 +2043,7 @@ test('Admin › Sheet: every tab (student data grouped as private, app_data neve
   polls.rows.push([true, '2026-11-20', 'Trivia', '2+2?', '3 | 4', '4', 1, 1, '', '', ''], [false, '2026-11-21', 'This or That', 'Cats or dogs?', 'Cats | Dogs', '', 1, 1, '', '', '']);
   let d = JSON.parse(w.clashSheetLoad('T', 'Daily Polls'));
   assert.deepStrictEqual(d.headers.slice(0, 4), ['Show', 'Date', 'Kind', 'Question']);
-  assert.deepStrictEqual(d.rows.map(r => r.status.split(' ')[0]), [w.todayYmd_() < '2026-11-20' ? 'Opens' : 'Closed', 'Hidden'], 'each poll row says what it does on the site');
+  assert.deepStrictEqual(d.rows.map(r => r.status.split(' ')[0]), [w.todayYmd_() < '2026-11-20' ? 'Opens' : w.todayYmd_() === '2026-11-20' ? 'LIVE' : 'Closed', 'Hidden'], 'each poll row says what it does on the site');
   assert.strictEqual(d.rows.length, 2);
   assert.strictEqual(d.bools[0], true, 'Show is a checkbox column');
   assert.ok(d.choices.Kind.includes('Pulse'));
@@ -2855,6 +2874,88 @@ test('Make it Right: a finished Logical Consequence (private Make It Right tab) 
   const pub = J(w.shoutoutsPublic_());
   assert.deepStrictEqual(pub.map(p => p.mir), [false, true]);
   assert.strictEqual(J(w.myShoutouts_('8001111')).filter(s => s.mir).length, 1);
+});
+
+
+test('Cairn shout-outs: approved ones pay the writer\'s squad once, one events row per squad per day, no names; waiting ones wait; OFF and CAIRN_FROM', () => {
+  const w = world();
+  w.ensureSettings_(); addStudentTabs(w); // Ann 8001234 Gold, Bo 8005678 Grey
+  const H = ['Timestamp', 'Shoutout For', 'What They Did', 'Category', 'Trait', 'Nominator Grade', 'Nominator Squad', 'Nominator 800#', 'Submitted By', 'Status'];
+  const cairn = { rows: [H,
+    [new Date('2026-11-18T14:00:00Z'), 'Pat Q.', 'Helped me pick up my books', 'LRG Trait', 'Collaboration', '7', 'Gold', '8001234', '', 'Posted to Ticker'],
+    [new Date('2026-11-18T15:00:00Z'), 'Mr. Dean', 'Stayed after to help', 'LRG Trait', 'Communication', '7', 'Gold', '8001234', '', 'Posted to Ticker'],
+    [new Date('2026-11-19T15:00:00Z'), 'Cy R.', 'Included a new kid at lunch', 'Mountaineer Peaks', 'Be Personable', '8', '', '8005678', '', 'Posted to Ticker'],
+    [new Date('2026-11-19T16:00:00Z'), 'Dee', 'Not reviewed yet', 'LRG Trait', 'Collaboration', '8', 'Grey', '8005678', '', 'New']] };
+  const sheet = { getLastRow: () => cairn.rows.length, getDataRange: () => ({ getValues: () => cairn.rows.map(r => r.slice()) }) };
+  w.SpreadsheetApp.openById = id => { assert.strictEqual(id, '1VUDvmkqG6F7-1PQWWc3_FWQxGz6bj_tBRdi4UuAWqP0'); return { getSheetByName: n => n === 'Cairn Shoutouts' ? sheet : null }; };
+  const line = w.payCairns_();
+  assert.ok(/Gold \+4 \(2026-11-18\)/.test(line) && /Grey \+2 \(2026-11-19\)/.test(line), line);
+  const rows = events(w).filter(r => r[2] === 'cairn');
+  assert.deepStrictEqual(rows.map(r => [r[1], r[3], r[7], r[8]]), [['Cairn shout-outs: Gold (2)', '2026-11-18', 4, ''], ['Cairn shout-outs: Grey (1)', '2026-11-19', '', 2]], 'squad from Nominator Squad, else the 800#');
+  assert.ok(!JSON.stringify(rows).includes('Pat') && !JSON.stringify(rows).includes('books'), 'no names or text on the events tab');
+  assert.ok(/No new approved Cairns\. 1 waiting/.test(w.payCairns_()), 'never twice; the unreviewed one waits');
+  cairn.rows[4][9] = 'Posted to Ticker';
+  w.payCairns_();
+  assert.strictEqual(events(w).filter(r => r[2] === 'cairn').length, 3, 'paid once staff post it');
+  assert.strictEqual(w.book.getSheetByName('Cairn Points').rows.length, 5, 'one ledger row per Cairn');
+  w.setSettingValue_('CAIRN_EVENTS', 'OFF');
+  assert.strictEqual(w.payCairns_(), 'CAIRN_EVENTS is OFF.');
+});
+
+test('weekly map: every area judged on last week; holders only move in the Monday 7:00 turn, once a week; monthly-only numbers use the newest month', () => {
+  const w = world({ weeklyMap: true });
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_();
+  assert.strictEqual(w.mapWeekly_(), true, 'weekly is the default');
+  const lw = J(w.lastWeekBounds_(w.todayYmd_()));
+  assert.strictEqual(new Date(lw[0] + 'T12:00:00Z').getUTCDay(), 1, 'starts on a Monday');
+  assert.strictEqual(w.ymdShift_(lw[0], 6), lw[1]);
+  const mz = w.book.getSheetByName('Map Zones'), H = mz.rows[0];
+  const full = mz.rows.find(r => r[H.indexOf('Conquer By')] === 'Full Climb');
+  assert.ok(full, 'a Full Climb area');
+  const zoneName = full[H.indexOf('Zone')];
+  full[H.indexOf('Holder')] = '';
+  const ev = w.book.getSheetByName('events');
+  ev.rows.push(['', 'Last week', 'event', w.ymdShift_(lw[0], 2), '', '', '', '', 50, '']); // GREY last week
+  ev.rows.push(['', 'This week', 'event', w.todayYmd_(), '', '', '', 90, '', '']);           // GOLD this week: doesn't count yet
+  let z = J(w.mapZones_(null, true)).find(x => x.zone === zoneName);
+  assert.strictEqual(z.holder, '', 'between turns nothing moves');
+  assert.strictEqual(z.window, 'week of ' + lw[0]);
+  assert.strictEqual(z.score.GREY, 50); assert.strictEqual(z.score.GOLD, 0);
+  const line = w.weeklyMapTurn_(false);
+  assert.ok(new RegExp(zoneName + ' → Grey').test(line), line);
+  z = J(w.mapZones_(null, false)).find(x => x.zone === zoneName);
+  assert.strictEqual(z.holder, 'GREY');
+  assert.ok(/already turned/.test(w.weeklyMapTurn_(false)), 'once a week');
+  // A monthly-only number (attendance) uses the newest month on file.
+  const sm = w.book.getSheetByName('Squad Monthly'), SH = sm.rows[0];
+  ['BLACK', 'GOLD', 'GREY', 'PURPLE'].forEach((s, i) => { const r = SH.map(() => ''); r[0] = '2026-09'; r[1] = s; r[SH.indexOf('attendance')] = 90 + i; sm.rows.push(r); });
+  const sc = J(w.measureScores_('attendance', lw[0], lw[1], [], false, false, true));
+  assert.deepStrictEqual(sc, { BLACK: 90, GOLD: 91, GREY: 92, PURPLE: 93 });
+  w.setSettingValue_('MAP_CYCLE', 'monthly');
+  assert.ok(/monthly/.test(w.weeklyMapTurn_(true)));
+});
+
+test('Arcade on the main site: by 800# on the Student Board, the same wallet and plays as My Climb, ARCADE_ON_SITE OFF', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureServiceTab_(); w.ensureDoughTabs_(); w.ensureArcadeTab_();
+  addStudentTabs(w);
+  w.climbOpen_ = () => true;
+  assert.throws(() => w.clashSiteArcade('12'), /800 number/);
+  assert.throws(() => w.clashSiteArcade('8009999'), /isn't on the list/);
+  let a = JSON.parse(w.clashSiteArcade('800-1234'));
+  assert.deepStrictEqual([a.on, a.squad, a.wallet.tokens, a.wallet.freeLeft], [true, 'GOLD', 12, 1]);
+  const play = JSON.parse(w.clashSiteArcadeStart('dash', '8001234')).play;
+  const cache = w.CacheService.getScriptCache(), p = JSON.parse(cache.get('arc-' + play)); p.at -= 30000; cache.put('arc-' + play, JSON.stringify(p));
+  assert.throws(() => w.clashSiteArcadeFinish(play, 1300, '8005678'), /someone else/);
+  const p2 = JSON.parse(w.clashSiteArcadeStart('dash', '8001234')).play; const q = JSON.parse(cache.get('arc-' + p2)); q.at -= 30000; cache.put('arc-' + p2, JSON.stringify(q));
+  a = JSON.parse(w.clashSiteArcadeFinish(p2, 1300, '8001234'));
+  assert.deepStrictEqual([a.result.kept, a.result.points, a.squad], [true, 3, 'GOLD']);
+  assert.strictEqual(w.book.getSheetByName('Arcade Plays').rows.length, 2, 'one play on the same tab My Climb uses');
+  w.climbOpen_ = () => false;
+  assert.throws(() => w.clashSiteArcade('8001234'), /school days/);
+  w.climbOpen_ = () => true;
+  w.setSettingValue_('ARCADE_ON_SITE', 'OFF');
+  assert.throws(() => w.clashSiteArcade('8001234'), /My Climb/);
 });
 
 console.log('\n' + passed + ' tests passed');

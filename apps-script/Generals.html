@@ -166,7 +166,7 @@
     }
     if (g.streak) {
       out += '<div class="ms-card"><div class="ms-h">🔥 Hot Streak: ' + g.streak.length + ' day' + (g.streak.length === 1 ? '' : 's') + '</div>' +
-        '<p class="ms-small">Days in a row your squad had the most Daily Poll voters. Ride it for more, or bank it now. If another squad tops a day first, it cools off (no points are ever lost).' + (g.streak.shields ? ' A Steady Footing card is protecting it.' : '') + '</p>' +
+        '<p class="ms-small">Days in a row your squad had the most Pulse voters. Ride it for more, or bank it now. If another squad tops a day first, it cools off (no points are ever lost).' + (g.streak.shields ? ' A Steady Footing card is protecting it.' : '') + '</p>' +
         (g.streak.bank ? '<p><button class="btn btn-gold" id="gBank">Bank it: +' + g.streak.bank + '</button></p>' : '<p class="ms-small">Two days in a row starts a streak you can bank.</p>') + '</div>';
     }
     if (g.engine && g.engine.length) {
@@ -483,4 +483,4 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script>
-<!-- file-stamp: c023c2ad71 -->
+<!-- file-stamp: 6ff012da70 -->

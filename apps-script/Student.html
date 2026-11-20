@@ -466,7 +466,7 @@
       var pollTv = polls.today.map(function (p) {
         if (p.kind === 'Pulse') return ''; // the Pulse gets its own live slide
         return '<div class="ch-card"><div class="ch-title">🗳️ Today\'s ' + pollLabel(p) + ': ' + esc(p.question) + '</div>' +
-          '<div class="ch-desc">' + p.choices.map(esc).join(' or ') + '? Vote on clashofclasses.org with your 800#. Every vote = a squad point!</div></div>';
+          '<div class="ch-desc">' + p.choices.map(esc).join(' or ') + '? Vote on clashofclasses.org with your 800#. Every vote counts for your squad once staff approve it!</div></div>';
       }).join('');
       ch.innerHTML = pollTv + (active.length ? active.slice(0, 3).map(function (c) { return challengeCard(c); }).join('')
         : (pollTv ? '' : '<div class="ch-card"><div class="ch-title">🏁 No challenge running right now</div></div>'));
@@ -503,22 +503,23 @@
 
   // ── Daily Polls (06_Polls.gs): vote with your 800#, results after you vote ──
   var polls = { today: [], last: null };
-  function pollLabel(p) { return p.kind === 'Trivia' ? 'trivia' : p.kind === 'Pulse' ? 'Pulse' : p.kind === 'Check-in' ? (p.kindLabel || 'Check-in') : 'This or That'; }
+  // Every poll is part of the Pulse; the kind is just the kind of question.
+  function pollLabel(p) { return p.kind === 'Check-in' ? (p.kindLabel || 'Check-in') : 'The Pulse' + (p.kind === 'Trivia' ? ' · Trivia' : p.kind === 'Pulse' ? '' : ' · This or That'); }
   function pollCard(p) {
     var showCounts = p.counts && (p.voted || p.closed);
     var total = Math.max(1, Object.keys(p.counts || {}).reduce(function (n, k) { return n + p.counts[k]; }, 0));
-    var icon = p.kind === 'Check-in' ? '✋ ' : p.kind === 'Pulse' ? '📊 ' : '🗳️ ';
-    var head = '<div class="ch-title">' + icon + (p.kind === 'Trivia' ? 'Trivia' : pollLabel(p)) + (p.closed ? ' · results' : '') + '</div><div class="ch-desc">' + esc(p.question) + '</div>';
+    var icon = p.kind === 'Check-in' ? '✋ ' : '📊 ';
+    var head = '<div class="ch-title">' + icon + pollLabel(p) + (p.closed ? ' · results' : '') + '</div><div class="ch-desc">' + esc(p.question) + '</div>';
     if (p.kind === 'Check-in') {
       if (!p.voted && !p.closed) return '<div class="ch-card">' + head + '<div class="ms-form"><button class="btn btn-purple poll-choice" data-poll="' + esc(p.id) + '" data-choice="' + esc(p.choices[0]) + '">' + esc(p.choices[0]) + '</button></div>' +
-        '<div class="ms-small" style="margin-top:8px">Check in with your 800#: every check-in earns your squad a point and counts toward the map.</div><div class="ms-err poll-err"></div></div>';
+        '<div class="ms-small" style="margin-top:8px">Check in with your 800#: every check-in earns your squad points (staff approve them) and counts toward the map.</div><div class="ms-err poll-err"></div></div>';
       return '<div class="ch-card">' + head + '<div class="ms-small">' + (p.voted ? '✅ You\'re checked in! ' : '') + p.total + (p.total === 1 ? ' student' : ' students') + ' checked in.</div></div>';
     }
     if (p.kind === 'Pulse') {
       if (!showCounts && !p.closed) {
         return '<div class="ch-card" style="border-color:#38bdf8">' + head + '<div class="ms-form">' + p.choices.map(function (c) {
           return '<button class="btn btn-purple poll-choice" data-poll="' + esc(p.id) + '" data-choice="' + esc(c) + '">' + esc(c) + '</button>';
-        }).join(' ') + '</div><div class="ms-small" style="margin-top:8px">No right answer: EMS wants to know what you think. Every answer earns your squad a point' +
+        }).join(' ') + '</div><div class="ms-small" style="margin-top:8px">No right answer: EMS wants to know what you think. Every answer earns your squad points once staff approve them, and counts toward the map' +
           (p.through && p.through > p.date ? ' (open through ' + esc(p.through.slice(5).replace('-', '/')) + ')' : '') + '.</div><div class="ms-err poll-err"></div></div>';
       }
       return '<div class="ch-card" style="border-color:#38bdf8">' + head + pulseBars(p.choices, p.counts || {}, p.total) +
@@ -528,7 +529,7 @@
     if (!showCounts && !p.closed) {
       return '<div class="ch-card">' + head + '<div class="ms-form">' + p.choices.map(function (c) {
         return '<button class="btn btn-purple poll-choice" data-poll="' + esc(p.id) + '" data-choice="' + esc(c) + '">' + esc(c) + '</button>';
-      }).join(' ') + '</div><div class="ms-small" style="margin-top:8px">Vote with your 800#: every vote earns your squad a point' +
+      }).join(' ') + '</div><div class="ms-small" style="margin-top:8px">Vote with your 800#: every vote earns your squad points once staff approve them' +
         (p.kind === 'Trivia' ? ', and a right answer earns one more.' : p.kind === 'Pulse' ? '. Your answer helps the school plan.' : ', and picking the winning side earns one more.') + '</div><div class="ms-err poll-err"></div></div>';
     }
     return '<div class="ch-card">' + head + p.choices.map(function (c) {
@@ -569,7 +570,7 @@
       : mine && mine.voted ? '<div class="ms-small" style="margin-bottom:10px">You said <b>' + esc(mine.voted) + '</b>. Thanks!</div>' : '';
     return '<div class="' + (opts.tv ? '' : 'ch-card') + '" data-pulse="' + esc(p.id) + '"><span class="pulse-tag">' + (p.closed ? 'Pulse · results' : 'Pulse · live') + '</span>' +
       '<div class="pulse-q">' + esc(p.question) + '</div>' + vote + pulseBars(p.choices, p.counts, p.total) + pulseRace(p.turnout) +
-      '<div class="pulse-total">' + p.total + (p.total === 1 ? ' answer' : ' answers') + (p.closed ? '' : ' so far · ' + (opts.tv ? 'answer at clashofclasses.org with your 800#' : 'open through ' + esc(String(p.through).slice(5).replace('-', '/'))) + ' · every answer = a squad point') + '</div></div>';
+      '<div class="pulse-total">' + p.total + (p.total === 1 ? ' answer' : ' answers') + (p.closed ? '' : ' so far · ' + (opts.tv ? 'answer at clashofclasses.org with your 800#' : 'open through ' + esc(String(p.through).slice(5).replace('-', '/'))) + ' · answers earn squad points once staff approve') + '</div></div>';
   }
   var pulseData = null, pulseTimer = null;
   function drawPulsePage() {
@@ -636,7 +637,7 @@
       var tag = '<span class="pulse-tag" style="background:#ffe100"><span class="live-dot" style="display:inline-block;margin-right:6px"></span>Live · ' + esc(tvPollTag(p)) + (polls.length > 1 ? ' · ' + (tvPolls.i % polls.length + 1) + ' of ' + polls.length : '') + '</span>';
       var body = p.kind === 'Check-in' ? '<div class="tvp-big">' + p.total + '</div><div class="tvp-sub">' + (p.total === 1 ? 'student has' : 'students have') + ' checked in</div>'
         : !p.counts ? '<div class="tvp-big">' + p.total + '</div><div class="tvp-sub">' + (p.total === 1 ? 'answer' : 'answers') + ' in. The right answer is revealed tomorrow!</div>'
-        : pulseBars(p.choices, p.counts || {}, p.total) + '<div class="tvp-sub" style="margin-top:10px">' + p.total + (p.total === 1 ? ' vote' : ' votes') + ' · every vote is a squad point</div>';
+        : pulseBars(p.choices, p.counts || {}, p.total) + '<div class="tvp-sub" style="margin-top:10px">' + p.total + (p.total === 1 ? ' vote' : ' votes') + ' · votes earn squad points once staff approve</div>';
       var race = '<div class="tvp-race">' + ['BLACK', 'GOLD', 'GREY', 'PURPLE'].map(function (s) {
         return '<div><b style="color:' + ({ BLACK: '#1f2430', GOLD: '#a16207', GREY: '#5f6f86', PURPLE: '#6d28d9' }[s] || 'inherit') + '">' + title(s) + '</b>' + (p.turnout[s] || 0) + (p.per100 ? ' per 100' : ' votes') + '</div>';
       }).join('') + '</div>';
@@ -711,17 +712,21 @@
   // A poll that is not open yet: what it asks and the day it opens.
   function dayName(ymd) { var d = new Date(String(ymd) + 'T12:00:00'); return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d.getDay()] + ' ' + (d.getMonth() + 1) + '/' + d.getDate(); }
   function nextCard(p) {
-    return '<div class="ch-card" style="opacity:.85"><div class="ch-title">📅 ' + (p.kind === 'Pulse' ? 'Pulse' : esc(p.kindLabel || p.kind)) + ' · opens ' + esc(dayName(p.date)) + '</div>' +
+    return '<div class="ch-card" style="opacity:.85"><div class="ch-title">📅 ' + esc(pollLabel(p)) + ' · opens ' + esc(dayName(p.date)) + '</div>' +
       '<div class="ch-desc">' + esc(p.question) + '</div>' + (p.choices && p.choices.length > 1 ? '<div class="ms-small" style="margin-top:6px">' + p.choices.map(esc).join(' · ') + '</div>' : '') +
-      '<div class="ms-small" style="margin-top:6px">Answer with your 800# on ' + esc(dayName(p.date)) + ': every answer is a squad point.</div></div>';
+      '<div class="ms-small" style="margin-top:6px">Answer with your 800# on ' + esc(dayName(p.date)) + ': answers earn squad points once staff approve them.</div></div>';
   }
   function renderPolls() {
     var html = polls.today.map(pollCard).join('') + (polls.next || []).map(nextCard).join('') + (polls.last ? pollCard(polls.last) : '');
+    // The home page: one Pulse box, with how it works and the way to the live screen.
+    var homeHead = '<div class="pulse-home-head" style="display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline;justify-content:space-between;margin-bottom:8px">' +
+      '<div><div style="font-weight:800;font-size:20px">📊 The Pulse</div><div class="ms-small">Answer with your 800#. Staff approve the points, then every answer counts for your squad and for the map (the Auditorium).</div></div>' +
+      '<a href="#" class="pulse-open" style="color:#38bdf8;font-weight:700;white-space:nowrap">Open the live Pulse →</a></div>';
     ['dailyPollSection', 'myPollSection'].forEach(function (id) {
       var el = document.getElementById(id);
       if (!el) return;
       el.style.display = html ? 'block' : 'none';
-      el.innerHTML = html;
+      el.innerHTML = html && id === 'dailyPollSection' ? homeHead + html : html;
       growBars(el);
     });
   }
@@ -760,4 +765,4 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script>
-<!-- file-stamp: 4227d7b9da -->
+<!-- file-stamp: 27669ae4c4 -->

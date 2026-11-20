@@ -121,6 +121,8 @@ function setupSpreadsheet() {
   ensureYearPlanTab_(); // 24_YearPlan.gs
   ensureHomeroomTabs_(); // 25_Homerooms.gs
   installBackgroundTick_(); // 03_Web.gs: claims, thaws and a warm cache every 5 minutes
+  installWeeklyMapTrigger_(); // 59_MapWeek.gs: the map turns Mondays at 7:00
+  try { ensureCairnTab_(); ensurePollPointsTab_(); } catch (e) { console.warn('Cairn / Poll Points tabs: ' + e.message); } // 58, 06
   setupHelpTab_();
   setupMapGuideTab_(); // 18_Conquest.gs
   setupClimbGuideTab_(); // 19_Evolve.gs
@@ -144,11 +146,11 @@ const DEFAULT_SETTINGS = [
   ['TV_SHOW_NAMES', 'ON', 'ON = the hallway TV shows a "Badge leaders" slide with first name + last initial. OFF = no student names on the TV.'],
   ['GENERALS_CODE', '', 'The code Squad Generals type with their 800# to open Generals HQ (Role = General on the MLC Roster tab). Blank = Generals HQ is closed. Change it any time.'],
   ['DAILY_POLL_POINTS', 'OFF', 'ON = after each Daily Poll day, squads get points for every student who voted (plus more for the winning side or right trivia answer). Turn on with Clash of Classes › Turn on daily poll points.'],
-  ['POLL_VOTES_PER_10MIN', '1500', 'Most Daily Poll votes the site takes in 10 minutes (stops someone flooding it).'],
+  ['POLL_VOTES_PER_10MIN', '1500', 'Most Pulse votes the site takes in 10 minutes (stops someone flooding it).'],
   ['FRESH_START', '', 'A date (yyyy-mm-dd). That morning every freeze that began before it ends; a Fun Freeze cashes out the tier it reached. For the January restart. Set it with Clash of Classes › Fresh start: end every freeze on a date.'],
   ['CHECKIN_DAYS', '1', 'Squad event check-in stays open this many days after the event (for students who forgot). Generals can add anyone later in Generals HQ.'],
   ['PULSE_DAYS', '3', 'How many school days a Pulse question stays open when Clash of Classes › Add the next Pulse question schedules it from the Poll Ideas tab.'],
-  ['EVENT_LABELS', 'trait_dough=💵 Trait Dough, mountaineer_mindset=⛰️ Mindset, trail_journal=🏔️ Trail Journal, trailback_panel=🧭 Trailback Panel, star_growth=📈 STAR Growth, camp_mountaineer=⛺ Camp Mountaineer, daily_poll=🗳️ Daily Poll, challenge_bonus=🏁 Challenge, duel_bonus=⚔️ Squad Duel, mayhem_week=🏔️ Mayhem Week, shirt_sales=👕 Shirt Sales, squad_night=🌙 Squad Night, community_bonus=🎯 Bonus, squad_move=🏃 Move, squad_make=🎨 Make, squad_talk=🎤 Talk, staff_challenge=🧑‍🏫 Staff Challenge, pride_day=🦁 Pride Day', 'Event type = how it is labelled on the TV feed and My Squad.'],
+  ['EVENT_LABELS', 'trait_dough=💵 Trait Dough, mountaineer_mindset=⛰️ Mindset, trail_journal=🏔️ Trail Journal, trailback_panel=🧭 Trailback Panel, star_growth=📈 STAR Growth, camp_mountaineer=⛺ Camp Mountaineer, daily_poll=📊 Pulse, challenge_bonus=🏁 Challenge, duel_bonus=⚔️ Squad Duel, mayhem_week=🏔️ Mayhem Week, shirt_sales=👕 Shirt Sales, squad_night=🌙 Squad Night, community_bonus=🎯 Bonus, squad_move=🏃 Move, squad_make=🎨 Make, squad_talk=🎤 Talk, staff_challenge=🧑‍🏫 Staff Challenge, pride_day=🦁 Pride Day', 'Event type = how it is labelled on the TV feed and My Squad.'],
   ['PRIVATE_EVENT_TYPES', 'trail_journal, trailback_panel, camp_mountaineer', 'Event types that are about behavior or support: the public site and TV show only their label, never a student name or note. Staff signed in as admin still see the full rows.'],
   ['DUEL_BONUSES', 'OFF', 'ON = the day after each Squad Duel ends, the winning squad(s) get its Bonus Points (checked hourly). Turn on with Clash of Classes › Turn on Squad Duel bonuses.'],
   ['PASSPORT_STAMPS', 'bills=🍞 Turn in Trait Dough; mindset=⛰️ Reach a Mindset summit; star=📈 Grow on STAR; shoutouts=🙌 Get a shout-out; ambassador=🤝 Be a Camp buddy; polls=🗳️ Vote in Daily Polls; events=🎟️ Sign up for a squad event', 'Trail Passport stamps on My Squad: key=label; … Keys: bills, mindset, star, shoutouts, ambassador, polls, events. Remove one to drop that stamp. All stamps = 🧭 Trail Passport complete.'],
@@ -237,6 +239,15 @@ const DEFAULT_SETTINGS = [
   ['FAMILY_COLORS', 'OFF', 'Families: ON = the next Squad Colors Day (Squad Colors Days tab) shows on the family update, home page and announcement.'],
   ['COLORS_DAY_POINTS', '25', 'Squad Colors Day: points for the squad with the most colors (when the row\'s Points is blank). Ties share.'],
   ['FAMILY_PICK', 'OFF', 'Families: ON = Family Pick of the Month on the family update (Family Pick tab).'],
+  ['CAIRN_EVENTS', 'ON', 'Cairn shout-outs (58_Cairns.gs): ON = every Cairn staff posted to the ticker gives CAIRN_POINTS to the squad of the student who wrote it, as one events row per squad per day (checked every hour). OFF = no Cairn points.'],
+  ['CAIRN_POINTS', '2', 'Cairn shout-outs: squad points for each approved Cairn.'],
+  ['CAIRN_SHEET', '1VUDvmkqG6F7-1PQWWc3_FWQxGz6bj_tBRdi4UuAWqP0', 'Cairn shout-outs: the Sheet the Cairn form writes to (link or ID; the incident report Sheet).'],
+  ['CAIRN_TAB', 'Cairn Shoutouts', 'Cairn shout-outs: the tab on that Sheet.'],
+  ['CAIRN_APPROVED', 'posted, approved', 'Cairn shout-outs: words in its Status that mean staff said yes ("Posted to Ticker"). Blank = every Cairn counts.'],
+  ['CAIRN_FROM', '', 'Cairn shout-outs: only Cairns on or after this date count (yyyy-mm-dd). Blank = all of them.'],
+  ['POLL_APPROVAL', 'ON', 'The Pulse (every poll): ON = when a poll closes, its squad points wait on the Poll Points tab until staff say yes (Admin › System › Waiting for a yes, or tick Approved). Only approved polls count toward the map. OFF = points go out by themselves (when DAILY_POLL_POINTS is ON).'],
+  ['MAP_CYCLE', 'weekly', 'The map (59_MapWeek.gs): weekly = every area is judged on last week and changes hands only on Mondays at 7:00 AM. monthly = the old way (each rule\'s own window, any time).'],
+  ['ARCADE_ON_SITE', 'ON', 'Arcade on the main site (clashofclasses.org › Arcade): ON = students play with their 800#, the same plays, tokens and points as My Climb. OFF = My Climb only.'],
   ['HELPING_HANDS', 'ON', 'Helping Hands: ON = the squad with the fewest points last week gets its points counted HELPING_HANDS_MULT times this week (added the Monday after).'],
   ['HELPING_HANDS_MULT', '1.25', 'Helping Hands: how many times the points count (1.25 = a quarter extra).'],
   ['SQUAD_GOALS', 'ON', 'Squad goals: ON = Generals (HQ) and captains (My Climb) set one weekly goal, Monday to Wednesday, that beats last week.'],
@@ -495,4 +506,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = 'cea5253fc7';
+var FILE_STAMP_01_Config = '19355f4b45';

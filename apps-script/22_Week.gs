@@ -173,7 +173,7 @@ function announcementScript_() {
   } catch (e) { /* no Opponent */ }
   try {
     const st = hotStreaks_(), hot = SQUAD_KEYS_.filter(function (s) { return st[s] && st[s].length >= 2; });
-    hot.forEach(function (s) { parts.push(titleSquad_(s) + ' is on a ' + st[s].length + '-day Hot Streak in the Daily Poll!'); });
+    hot.forEach(function (s) { parts.push(titleSquad_(s) + ' is on a ' + st[s].length + '-day Hot Streak in the Pulse!'); });
   } catch (e) { /* no streaks */ }
   const ev = evolvedSince_(lastSchoolDay_(y)), evN = SQUAD_KEYS_.reduce(function (n, s) { return n + ev[s]; }, 0);
   if (evN) parts.push(evN + ' creature' + (evN === 1 ? '' : 's') + ' evolved on My Climb. Keep earning LRG points!');
@@ -427,4 +427,4 @@ function clashVersion(token) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_22_Week = '927ad5a4da';
+var FILE_STAMP_22_Week = 'cd8564cc94';

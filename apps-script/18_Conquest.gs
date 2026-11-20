@@ -62,7 +62,7 @@ const BUILDING_RULES_ = [
   [true, 'Full Climb', 'Every point your squad earned last month counts.', 'most points', '*', 'last month', false, 0, '', false],
   [true, 'Move · Make · Talk', 'Clash squad events last month: every member a General confirmed took part, plus the points the squad earned in Move, Make and Talk events.', 'highest number', 'event_participants, squad_event_points', 'last month', false, 0, '', false],
   [true, 'Clean Cafeteria', 'The fewest LRRs and lunch detentions per 100 students last month.', 'lowest number', 'lrr_ld', 'last month', false, 0, '', true],
-  [true, 'Wheel & Poll Turnout', 'The most Daily Poll and Pulse votes plus wheel spins last month.', 'highest number', 'poll_votes, wheel', 'last month', false, 0, '', false],
+  [true, 'Wheel & Poll Turnout', 'The most Pulse votes (approved polls) plus wheel spins last month.', 'highest number', 'poll_votes, wheel', 'last month', false, 0, '', false],
   [true, 'Attendance', 'The highest attendance rate last month.', 'highest number', 'attendance', 'last month', false, 0, '', false],
   [true, 'Shout-out Storm', 'The most shout-outs last month.', 'highest number', 'shout_outs', 'last month', false, 0, '', false],
   [true, 'Growth Grind', 'The most STAR growth and Mountaineer Mindset summit points last month.', 'most points', 'star_growth, mountaineer_mindset', 'last month', false, 0, '', false],
@@ -194,9 +194,11 @@ function mapGrid_(zones) {
 }
 
 // Every shown zone with its holder, worked out from its rule. write = save captures to the Sheet.
-function mapZones_(events, write) {
+function mapZones_(events, write, opts) {
   const claimDays = Math.max(1, Number(getSetting_('CLAIM_DAYS')) || 14);
   const today = todayYmd_();
+  const weekly = mapWeekly_(), turn = !weekly || !!(opts && opts.turn);
+  const lastWeek = weekly ? lastWeekBounds_(today) : null;
   events = events || readEventsTab_();
   const sheet = write ? getSheetSafe_('Map Zones') : null;
   const rules = conquestRules_();
@@ -223,22 +225,24 @@ function mapZones_(events, write) {
   const hCol = sheet ? headerCol_(sheet, 'Holder') : 0, sCol = sheet ? headerCol_(sheet, 'Since') : 0;
   const lastMonth = monthBounds_(-1);
   zones.forEach(function (z) {
-    const from = z.month ? lastMonth[0] : z.thisMonth ? today.slice(0, 8) + '01' : ymdShift_(today, -z.days + 1), to = z.month ? lastMonth[1] : today;
+    let from = z.month ? lastMonth[0] : z.thisMonth ? today.slice(0, 8) + '01' : ymdShift_(today, -z.days + 1), to = z.month ? lastMonth[1] : today;
     z.window = z.month ? lastMonth[0].slice(0, 7) : '';
-    if (MEASURE_METHODS_.indexOf(z.method) > -1) z.score = measureScores_(z.claimedBy, from, to, events, z.per100, z.low);
+    if (weekly) { from = lastWeek[0]; to = lastWeek[1]; z.window = 'week of ' + from; z.weekly = true; }
+    if (MEASURE_METHODS_.indexOf(z.method) > -1) z.score = measureScores_(z.claimedBy, from, to, events, z.per100, z.low, weekly);
     else {
       const tally = pointsBy_(events, from, to, eventMatcher_(z.claimedBy));
       z.score = z.method === 'most entries' ? tally.rows : tally.points;
       if (z.per100) z.score = per100_(z.score, from.slice(0, 7));
     }
     // Staff overrides for the month this zone is judged on (Zone Overrides tab / Admin › Map).
-    z.judged = z.month ? z.window : today.slice(0, 7);
+    z.judged = weekly ? from.slice(0, 7) : z.month ? z.window : today.slice(0, 7);
     z.computed = Object.assign({}, z.score);
     z.overridden = [];
     const ov = overrides[z.judged + '|' + z.zone.toLowerCase()] || {};
     Object.keys(ov).forEach(function (s) { z.score[s] = ov[s]; z.overridden.push(s); });
     z.neighbors = nb[z.zone];
     if (z.method === 'staff pick' || z.locked) return; // staff decide; nothing moves on its own
+    if (!turn) return; // weekly cycle: holders only change in the Monday 7:00 turn
     // Highest/lowest number: nothing changes until every squad has a number for the month.
     if (SQUAD_KEYS_.some(function (s) { return z.score[s] === null || z.score[s] === undefined; })) return;
     const low = z.low;
@@ -356,13 +360,24 @@ function checkInsBy_(from, to, spec) {
 // A squad's number for the month from a list of measures (added together). null = no number yet.
 // Each measure: its Squad Monthly column; poll_votes = Poll Votes rows; attendance = a finalized
 // month (Admin › Metrics); for highest-number rules only, how many events rows match its name.
-function measureScores_(spec, from, to, events, per100, low) {
-  const ym = from.slice(0, 7), monthly = squadMonthly_(ym);
+function measureScores_(spec, from, to, events, per100, low, weekly) {
+  let ym = from.slice(0, 7), monthly = squadMonthly_(ym);
   const out = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
   const add = function (s, v) { if (out[s] !== null) out[s] = v === null || v === undefined ? null : out[s] + v; };
   const names = listOf_(spec).map(measureKey_);
   if (!names.length) return { BLACK: null, GOLD: null, GREY: null, PURPLE: null };
   names.forEach(function (n) {
+    // Weekly: the Cafeteria's LRRs + LDs are counted for the week itself (27_FollowUpStats.gs).
+    if (weekly && n === 'lrr_ld') {
+      const wk = weeklyLrrCounts_(from, to);
+      if (wk) { SQUAD_KEYS_.forEach(function (s) { add(s, wk[s]); }); return; }
+    }
+    // Weekly: a number that only comes monthly (attendance, grades, interventions...) uses the newest
+    // month on file, so it changes hands when new numbers arrive.
+    if (weekly && !SQUAD_KEYS_.some(function (s) { return monthly[s] && monthly[s][n] !== undefined; })) {
+      const newer = newestMonthlyWith_(n, ym);
+      if (newer) { SQUAD_KEYS_.forEach(function (s) { add(s, newer.monthly[s] ? newer.monthly[s][n] : null); }); return; }
+    }
     if (SQUAD_KEYS_.some(function (s) { return monthly[s] && monthly[s][n] !== undefined; })) {
       SQUAD_KEYS_.forEach(function (s) { add(s, monthly[s] ? monthly[s][n] : null); });
       return;
@@ -381,7 +396,8 @@ function measureScores_(spec, from, to, events, per100, low) {
     }
     if (n === 'poll_votes') {
       const c = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
-      sheetRows_('Poll Votes').forEach(function (v) { const d = String(v['Date'] || v['At'] || '').slice(0, 10), s = squadOf_(v['Squad']); if (d >= from && d <= to && c[s] !== undefined) c[s]++; });
+      const counted = mapCountedPolls_(); // 06_Polls.gs: only approved polls (POLL_APPROVAL), else every poll
+      sheetRows_('Poll Votes').forEach(function (v) { const d = String(v['Date'] || v['At'] || '').slice(0, 10), s = squadOf_(v['Squad']); if (d >= from && d <= to && c[s] !== undefined && (!counted || counted[String(v['Poll'])])) c[s]++; });
       SQUAD_KEYS_.forEach(function (s) { add(s, c[s]); });
       return;
     }
@@ -762,4 +778,4 @@ function setupMapGuideTab_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_18_Conquest = 'd333e39a0e';
+var FILE_STAMP_18_Conquest = '912825ddec';

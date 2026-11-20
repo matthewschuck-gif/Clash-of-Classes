@@ -414,9 +414,21 @@ body.light-mode .gb-rules summary { color: #7a5c00; }
   }
   function hands(h, squad) {
     if (!h || !h.squads || !h.squads.length) return '';
-    var mine = squad && h.squads.indexOf(squad) > -1;
-    return '<div class="gb-hands" style="border:1.5px dashed #f59e0b;border-radius:12px;padding:10px 14px;margin:10px 0">🫶 <b>Helping Hands' + (mine ? ' is yours this week' : '') + ':</b> ' +
-      (mine ? 'every point ' + esc(title(squad)) + ' earns counts ' + h.mult + ' times until Sunday. Make it count!' : h.squads.map(title).join(' and ') + '’s points count ' + h.mult + ' times this week.') + '</div>';
+    var mine = squad && h.squads.indexOf(squad) > -1, who = h.squads.map(title).join(' and ');
+    var pct = Math.round((h.mult - 1) * 100), col = HEX[h.squads[0]] || '#490e6f';
+    var sun = '';
+    if (h.week) { var d = new Date(String(h.week) + 'T12:00:00'); d.setDate(d.getDate() + 6); sun = (d.getMonth() + 1) + '/' + d.getDate(); }
+    var chips = h.squads.map(function (s) { return '<span style="display:inline-block;padding:3px 12px;border-radius:999px;background:' + (HEX[s] || '#490e6f') + ';color:#fff;font-weight:800;font-size:14px;margin:0 6px 4px 0">' + esc(title(s)) + '</span>'; }).join('');
+    // A card that explains itself: what it is, who has it, why, and until when.
+    return '<div class="gb-hands" style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;align-items:center;border-radius:14px;padding:14px 16px;margin:12px 0;' +
+      'background:linear-gradient(90deg,' + col + '22,transparent 70%);border:1.5px solid ' + col + ';border-left-width:6px">' +
+      '<div style="grid-row:span 2;text-align:center;min-width:64px"><div style="font-size:30px;line-height:1">🫶</div><div style="font-family:Georgia,serif;font-weight:800;font-size:22px">×' + h.mult + '</div></div>' +
+      '<div><div style="font-weight:800;font-size:17px">Helping Hands' + (mine ? ' is yours this week!' : ' this week') + '</div>' +
+      '<div style="margin-top:4px">' + chips + (sun ? '<span style="font-size:13px;opacity:.8">Monday through Sunday ' + esc(sun) + '</span>' : '') + '</div></div>' +
+      '<div style="font-size:14px;line-height:1.5">' +
+      (mine ? 'Your squad earned the fewest points last week, so every point ' + esc(title(squad)) + ' earns this week is worth ' + pct + '% more. The extra is added next Monday. Make it count!'
+        : 'The squad with the fewest points last week gets a lift: every point ' + esc(who) + ' earns this week is worth ' + pct + '% more (added next Monday). It keeps the race close, so a squad that falls behind can always climb back.') +
+      '</div></div>';
   }
   function goal(g, canSet) {
     if (!g) return '';
@@ -457,4 +469,4 @@ body.light-mode .gb-rules summary { color: #7a5c00; }
   window.GameUi.rally = { banner: banner, hands: hands, goal: goal, bannerForm: bannerForm, wire: wire, HEX: HEX };
 })();
 </script>
-<!-- file-stamp: 0a5f42b131 -->
+<!-- file-stamp: 19fc32c99e -->

@@ -202,7 +202,7 @@ function clashPulseLive() {
     });
     return { id: p.id, question: p.question, choices: p.choices, counts: p.counts, total: p.total, through: p.through, closed: p.through < today, turnout: turnout };
   };
-  const pulses = pollsWithVotes_().filter(function (p) { return p.show && p.kind === 'Pulse' && p.question && p.choices.length >= 2; });
+  const pulses = pollsWithVotes_().filter(function (p) { return p.show && p.kind !== 'Check-in' && p.question && p.choices.length >= 2; }); // every poll is part of the Pulse
   return JSON.stringify({
     live: pulses.filter(function (p) { return pollOpenOn_(p, today); }).map(shape),
     recent: pulses.filter(function (p) { return p.through < today; }).sort(function (a, b) { return b.through.localeCompare(a.through); }).slice(0, 3).map(shape),
@@ -242,17 +242,81 @@ function clashPollVote(pollId, id, choice) {
   return clashDailyPolls(sid);
 }
 
-/** After a poll closes: one daily_poll event with each squad's points. Returns what was sent. */
+// ── POLL POINTS WAIT FOR A YES (POLL_APPROVAL ON, the default) ──
+// Every poll is part of the Pulse. When one closes, its squad points go on the Poll Points tab
+// (Poll | Question | Closed | Votes | BLACK | GOLD | GREY | PURPLE | Approved | Sent) and the
+// poll's Status says "Waiting for approval". Staff say yes in Admin › System (or tick Approved);
+// then one "Pulse:" events row goes out (type daily_poll) and the poll says "Awarded". Only
+// approved polls' votes count toward the map (the Auditorium's poll turnout). No = "Declined".
+const POLL_POINT_HEADERS_ = ['Poll', 'Question', 'Closed', 'Votes', 'BLACK', 'GOLD', 'GREY', 'PURPLE', 'Approved', 'Sent'];
+function pollApprovalOn_() { return String(getSetting_('POLL_APPROVAL') || 'ON').toUpperCase() !== 'OFF'; }
+function ensurePollPointsTab_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName('Poll Points');
+  if (sh) return sh;
+  sh = ss.insertSheet('Poll Points');
+  sh.getRange(1, 1, 1, POLL_POINT_HEADERS_.length).setValues([POLL_POINT_HEADERS_]).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
+  sh.setFrozenRows(1);
+  return sh;
+}
+function pollPointsWaiting_() {
+  return sheetRows_('Poll Points').filter(function (r) { return !String(r['Sent'] || '').trim() && !/^declined/i.test(String(r['Approved'] || '')); });
+}
+/** Sends every approved Poll Points row once. Returns lines. */
+function sendApprovedPollPoints_() {
+  const lines = [], polls = getSheetSafe_('Daily Polls'), statusCol = POLL_HEADERS_.indexOf('Status') + 1;
+  const sh = getSheetSafe_('Poll Points');
+  if (!sh) return lines;
+  const sentCol = POLL_POINT_HEADERS_.indexOf('Sent') + 1;
+  sheetRows_('Poll Points').forEach(function (r) {
+    if (String(r['Sent'] || '').trim() || !ticked_(r['Approved'])) return;
+    const pts = {};
+    SQUAD_KEYS_.forEach(function (s) { pts[s] = Number(r[s]) || 0; });
+    getSheet_(TABS.EVENTS).appendRow(['', 'Pulse: ' + String(r['Question'] || ''), 'daily_poll', asYmd_(r['Closed']).slice(0, 10) || todayYmd_(),
+      (Number(r['Votes']) || 0) + ' votes (approved)', '', pts.BLACK || '', pts.GOLD || '', pts.GREY || '', pts.PURPLE || '']);
+    sh.getRange(r._row, sentCol).setValue(todayYmd_());
+    if (polls && Number(r['Poll'])) polls.getRange(Number(r['Poll']), statusCol).setValue('Awarded ' + todayYmd_());
+    lines.push(String(r['Question']) + ': ' + SQUAD_KEYS_.map(function (s) { return s + ' +' + pts[s]; }).join(', '));
+  });
+  return lines;
+}
+/** Admin › System yes / no on one Poll Points row. */
+function decidePollPoints_(row, yes) {
+  const sh = ensurePollPointsTab_(), r = sheetRows_('Poll Points').filter(function (x) { return x._row === Number(row); })[0];
+  if (!r) throw new Error('That poll row moved. Refresh and try again.');
+  sh.getRange(r._row, POLL_POINT_HEADERS_.indexOf('Approved') + 1).setValue(yes ? true : 'Declined');
+  if (yes) sendApprovedPollPoints_();
+  else { const polls = getSheetSafe_('Daily Polls'); if (polls && Number(r['Poll'])) polls.getRange(Number(r['Poll']), POLL_HEADERS_.indexOf('Status') + 1).setValue('Declined ' + todayYmd_()); }
+}
+// The polls whose votes count for the map: approved ones (every poll when POLL_APPROVAL is OFF).
+function mapCountedPolls_() {
+  if (!pollApprovalOn_()) return null;
+  const ok = {};
+  sheetRows_('Daily Polls').forEach(function (p) { if (/^awarded/i.test(String(p['Status'] || ''))) ok[String(p._row)] = true; });
+  return ok;
+}
+// Hourly from backgroundTick (POLL_APPROVAL ON): closed polls go on Poll Points, ticked ones go out.
+function maybeQueuePolls_() {
+  if (!pollApprovalOn_()) return;
+  const props = PropertiesService.getScriptProperties(), hour = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH');
+  if (props.getProperty('poll-queue-run') === hour) return;
+  props.setProperty('poll-queue-run', hour);
+  awardDailyPolls();
+}
+
+/** After a poll closes: its squad points wait for a yes (POLL_APPROVAL), or go straight out. Returns lines. */
 function awardDailyPolls() {
-  if (String(getSetting_('DAILY_POLL_POINTS')).toUpperCase() !== 'ON') return ['DAILY_POLL_POINTS is OFF.'];
+  const approval = pollApprovalOn_();
+  if (!approval && String(getSetting_('DAILY_POLL_POINTS')).toUpperCase() !== 'ON') return ['DAILY_POLL_POINTS is OFF.'];
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
     const lines = [];
     const sheet = getSheet_('Daily Polls');
     const statusCol = POLL_HEADERS_.indexOf('Status') + 1;
+    if (approval) { ensurePollPointsTab_(); sendApprovedPollPoints_().forEach(function (l) { lines.push('Sent (approved) ' + l); }); }
     pollsWithVotes_().forEach(function (p) {
-      if (!p.show || /^awarded/i.test(p.status) || p.through >= todayYmd_() || !p.total) return;
+      if (!p.show || /^(awarded|waiting|declined)/i.test(p.status) || p.through >= todayYmd_() || !p.total) return;
       const winners = pollWinners_(p);
       const pts = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
       p.votes.forEach(function (v) {
@@ -260,7 +324,8 @@ function awardDailyPolls() {
         if (pts[s] === undefined) return;
         pts[s] += p.partPts + (winners.indexOf(String(v['Choice'])) > -1 ? p.winPts : 0);
       });
-      getSheet_(TABS.EVENTS).appendRow(['', (p.kind === 'Pulse' ? 'Pulse: ' : 'Daily Poll: ') + p.question, 'daily_poll', p.through,
+      if (approval) getSheet_('Poll Points').appendRow([p.row, p.question, p.through, p.total, pts.BLACK, pts.GOLD, pts.GREY, pts.PURPLE, false, '']);
+      else getSheet_(TABS.EVENTS).appendRow(['', 'Pulse: ' + p.question, 'daily_poll', p.through,
         p.total + ' votes' + (p.kind === 'Pulse' ? '' : '; winner: ' + (winners.join(' / ') || 'none')), '', pts.BLACK || '', pts.GOLD || '', pts.GREY || '', pts.PURPLE || '']);
       let results = p.choices.map(function (c) { return c + ' ' + (p.counts[c] || 0); }).join(', ');
       if (p.kind === 'Pulse') {
@@ -268,8 +333,8 @@ function awardDailyPolls() {
           return (g === '?' ? 'no grade' : g + 'th') + ' (' + p.choices.map(function (c) { return c + ' ' + (p.byGrade[g][c] || 0); }).join(', ') + ')';
         }).join('; ');
       }
-      sheet.getRange(p.row, statusCol, 1, 2).setValues([['Awarded ' + todayYmd_(), results + ' · ' + SQUAD_KEYS_.map(function (s) { return s + ' +' + pts[s]; }).join(' ')]]);
-      lines.push(p.question + ': ' + SQUAD_KEYS_.map(function (s) { return s + ' +' + pts[s]; }).join(', '));
+      sheet.getRange(p.row, statusCol, 1, 2).setValues([[(approval ? 'Waiting for approval ' : 'Awarded ') + todayYmd_(), results + ' · ' + SQUAD_KEYS_.map(function (s) { return s + ' +' + pts[s]; }).join(' ')]]);
+      lines.push((approval ? 'Waiting for a yes: ' : '') + p.question + ': ' + SQUAD_KEYS_.map(function (s) { return s + ' +' + pts[s]; }).join(', '));
     });
     if (lines.length) try { writePollInsights_(); } catch (e) { console.warn('Poll Insights: ' + e.message); }
     return lines;
@@ -364,4 +429,4 @@ function menuTurnOffPolls_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_06_Polls = '79191e6a01';
+var FILE_STAMP_06_Polls = '05ea9935f1';

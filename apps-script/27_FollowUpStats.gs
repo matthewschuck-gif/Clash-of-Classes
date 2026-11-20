@@ -73,12 +73,13 @@ function openRows_(idOrUrl, tabName) {
 function pick_(row, re) { const k = Object.keys(row).filter(function (h) { return re.test(h); })[0]; return k ? row[k] : ''; }
 
 /** { month, counts: {BLACK..}, lrr, ld, unmatched } for one month (default last month). */
-function followUpLrrCounts_(month) {
+// range = [from, to] (yyyy-mm-dd) counts those days instead of a month (the weekly map, 59_MapWeek.gs).
+function followUpLrrCounts_(month, range) {
   month = month || lastMonthWindow_(todayYmd_()).month;
   const look = squadLookup_(), seen = {}, counts = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
   const out = { month: month, counts: counts, lrr: 0, ld: 0, unmatched: 0 };
   const add = function (id, nameKey, day, kind) {
-    if (String(day).slice(0, 7) !== month) return;
+    if (range ? !(String(day).slice(0, 10) >= range[0] && String(day).slice(0, 10) <= range[1]) : String(day).slice(0, 7) !== month) return;
     out[kind]++;
     const s = (id && look.byId[id]) || (nameKey && look.byName[nameKey]) || '';
     if (!s) { out.unmatched++; return; }
@@ -150,4 +151,4 @@ function menuFollowUpStats_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_27_FollowUpStats = '0e204ffcbb';
+var FILE_STAMP_27_FollowUpStats = '5eb3f175a6';

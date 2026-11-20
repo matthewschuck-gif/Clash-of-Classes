@@ -82,6 +82,7 @@
         <button class="btn btn-gold" onclick="goTo('tracker')">📊 Live Tracker</button>
         <button class="btn btn-purple" onclick="goTo('trait')">⭐ This Month's Trait</button>
         <button class="btn" onclick="goTo('squads')">👥 Meet the Squads</button>
+        <button class="btn" onclick="goTo('arcade')">🕹️ Arcade</button>
       </div>
     </div>
     <div id="heroScoreStrip" class="hero-score-strip"></div>
@@ -115,6 +116,8 @@
   <div id="duelSection" style="display:none;margin-top:20px"></div>
   <div id="mayhemHomeBoard" style="display:none;margin-top:20px"></div>
   <div id="dailyPollSection" style="display:none;margin-top:20px"></div>
+  <!-- ARCADE (SiteArcade.html): the mini games, by 800# -->
+  <div class="sa-card home-arcade" style="margin-top:20px"><div><div style="font-weight:800;font-size:20px">🕹️ The Arcade</div><div class="sa-sub">Summit Dash, Dough Catch and Peak Stack. Play with your 800# and add points for your squad.</div></div><button class="btn btn-gold" onclick="goTo('arcade')">Play</button></div>
   <div id="checkinSection" style="display:none;margin-top:12px"></div>
 
   <!-- TRAIT SPOTLIGHT -->
@@ -1351,11 +1354,20 @@
   <div id="homeroomsBody"></div>
 </div>
 
+<!-- ARCADE (48_Arcade.gs + SiteArcade.html): the same games as My Climb, by 800# -->
+<div class="page" id="page-arcade">
+  <div class="page-hero">
+    <h1 class="page-title">The <span>Arcade</span></h1>
+    <div class="page-subtitle">Short games for squad points. One free play every school day, more with tokens.</div>
+  </div>
+  <div id="siteArcadeBody"></div>
+</div>
+
 <!-- PULSE (06_Polls.gs): questions the school learns from, live results like a Menti screen -->
 <div class="page" id="page-pulse">
   <div class="page-hero">
     <h1 class="page-title">The <span>Pulse</span></h1>
-    <div class="page-subtitle">Quick questions EMS wants your answer to. No right answers. Answer with your 800#, watch the results move live, and every answer earns your squad a point.</div>
+    <div class="page-subtitle">Quick questions EMS wants your answer to. No right answers. Every poll lives here. Answer with your 800# and watch the results move live. Staff approve the points, then every answer counts for your squad and for the map.</div>
   </div>
   <div id="pulseBody"></div>
 </div>
@@ -2395,6 +2407,8 @@ document.addEventListener('click', function (ev) {
 <?!= include('App'); ?>
 <?!= include('Widgets'); ?>
 <?!= include('Student'); ?>
+<?!= include('Arcade'); ?>
+<?!= include('SiteArcade'); ?>
 <?!= include('Generals'); ?>
 <?!= include('MapEditor'); ?>
 <?!= include('SheetEditor'); ?>
@@ -2427,4 +2441,4 @@ document.addEventListener('click', function (ev) {
 
 </body>
 </html>
-<!-- file-stamp: df43be0163 -->
+<!-- file-stamp: 782c840768 -->

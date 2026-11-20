@@ -160,6 +160,9 @@ function backgroundTick() {
   try { maybePayFamilyPoints_(); } catch (e) { noteError_('family points', e); } // 47_Families.gs, daily
   try { maybePayArcade_(); } catch (e) { noteError_('arcade', e); } // 48_Arcade.gs, daily
   try { maybeDailyExtras_(); } catch (e) { noteError_('daily extras', e); } // 50: weather, expeditions, colors day, Family Pick
+  try { maybePayCairns_(); } catch (e) { noteError_('cairn points', e); } // 58_Cairns.gs, hourly
+  try { maybeQueuePolls_(); } catch (e) { noteError_('pulse points', e); } // 06_Polls.gs, hourly: closed polls wait for a yes
+  try { maybeWeeklyMapTurn_(); } catch (e) { noteError_('weekly map', e); } // 59_MapWeek.gs: Mondays from 7:00 if the trigger missed it
   try { cachedPublicLoad_(true); cachedGame_(true); } catch (e) { noteError_('warm cache', e); }
 }
 
@@ -377,6 +380,8 @@ function onOpen() {
     .addItem('Use the building map (replaces Map Zones)', 'menuBuildingMap_')
     .addItem('Use the monthly zone rules (keeps the map)', 'menuMonthlyRules_')
     .addItem('Count LRRs + LDs for the Cafeteria now (from Follow-Up sheets)', 'menuFollowUpStats_')
+    .addItem('Turn the map now (judges last week)', 'menuWeeklyMapTurn_')
+    .addItem('Pay approved Cairn shout-outs now', 'menuPayCairns_')
     .addSeparator()
     .addItem('Run the frost check now (last month)', 'menuFrostCheck_')
     .addItem('Freeze & Thaw: read-aloud script', 'menuFrostAnnouncement_')
@@ -425,4 +430,4 @@ function menuOpenSite_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_03_Web = 'e040621a0e';
+var FILE_STAMP_03_Web = 'e8fbb5b40c';

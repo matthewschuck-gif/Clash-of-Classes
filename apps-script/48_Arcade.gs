@@ -68,21 +68,29 @@ function arcadeBoard_() {
 function clashArcade(asId, adminToken) {
   return withSample_(asId, function () {
     if (!arcadeOn_()) return JSON.stringify({ on: false });
-    const id = meId_(asId, adminToken);
+    return arcadeView_(meId_(asId, adminToken));
+  });
+}
+// The Arcade for one student (My Climb and the main site share it).
+function arcadeView_(id) {
+  {
     const mine = sheetRows_('Arcade Plays').filter(function (p) { return id800_(p['800#']) === id; }), best = {};
     mine.forEach(function (p) { const g = String(p['Game']); best[g] = Math.max(best[g] || 0, Number(p['Score']) || 0); });
     return JSON.stringify({ on: true, wallet: arcadeWallet_(id), rules: arcadeTokenRules_(), maxPoints: settingNum_('ARCADE_MAX_POINTS', 3),
       games: Object.keys(ARCADE_GAMES_).map(function (k) { const g = ARCADE_GAMES_[k]; return { key: k, name: g.name, blurb: g.blurb, per: g.per, best: best[k] || 0 }; }),
       board: arcadeBoard_(), sample: id === SAMPLE_ID_, look: seasonLook_() });
-  });
+  }
 }
 
 /** Starts a play: uses the free play first, then a token. Returns { play }. */
 function clashArcadeStart(game, asId, adminToken) {
-  return withSample_(asId, function () {
+  return withSample_(asId, function () { return arcadeStart_(game, meId_(asId, adminToken)); });
+}
+function arcadeStart_(game, id) {
+  {
     if (!arcadeOn_()) throw new Error('The Arcade is closed right now.');
     if (!ARCADE_GAMES_[game]) throw new Error('Pick a game.');
-    const id = meId_(asId, adminToken), w = arcadeWallet_(id);
+    const w = arcadeWallet_(id);
     if (id !== SAMPLE_ID_) {
       if (w.playsToday >= w.daily) throw new Error('That\'s all ' + w.daily + ' plays for today. Come back tomorrow!');
       if (!w.freeLeft && !w.tokens) throw new Error('No tokens yet. Earn them with Trait Dough, service and poll votes.');
@@ -90,13 +98,43 @@ function clashArcadeStart(game, asId, adminToken) {
     const play = Utilities.getUuid().replace(/-/g, '');
     CacheService.getScriptCache().put('arc-' + play, JSON.stringify({ id: id, game: game, at: Date.now(), free: w.freeLeft > 0 }), 1200);
     return JSON.stringify({ play: play });
-  });
+  }
+}
+
+// ── The Arcade on the main site (ARCADE_ON_SITE): the same plays, tokens and points, by 800# ──
+// Like the Pulse, a student types their 800# (it must be on the Student Board). Open the same
+// hours as My Climb (MY_CLIMB_HOURS, school days). Lookups are capped like My Squad's.
+function siteArcadeId_(id) {
+  if (String(getSetting_('ARCADE_ON_SITE') || 'ON').toUpperCase() === 'OFF') throw new Error('The Arcade is on My Climb. Sign in there to play.');
+  if (!arcadeOn_()) throw new Error('The Arcade is closed right now. Check back soon.');
+  const cache = CacheService.getScriptCache(), used = Number(cache.get('arc-site-calls')) || 0;
+  if (used >= (Number(getSetting_('POLL_VOTES_PER_10MIN')) || 1500)) throw new Error('The Arcade is busy right now! Try again in a minute.');
+  cache.put('arc-site-calls', String(used + 1), 600);
+  const sid = id800_(id);
+  if (sid.length < 5) throw new Error('Type your 800 number.');
+  if (!climbOpen_()) throw new Error('The Arcade is open ' + String(getSetting_('MY_CLIMB_HOURS') || '07:00-16:00').replace('-', ' to ') + ' on school days. See you on the trail!');
+  const me = boardRows_().filter(function (r) { return id800_(r['800#']) === sid; })[0];
+  if (!me) throw new Error('That 800 number isn\'t on the list. Check it, or ask your homeroom teacher.');
+  return { id: sid, squad: squadOf_(me['Squad']) };
+}
+function withSquad_(text, squad) { const o = JSON.parse(text); o.squad = squad; return JSON.stringify(o); }
+function clashSiteArcade(id) {
+  const me = siteArcadeId_(id);
+  return withSquad_(arcadeView_(me.id), me.squad);
+}
+function clashSiteArcadeStart(game, id) { return arcadeStart_(game, siteArcadeId_(id).id); }
+function clashSiteArcadeFinish(play, score, id) {
+  const me = siteArcadeId_(id);
+  return withSquad_(arcadeFinish_(play, score, me.id), me.squad);
 }
 
 /** Ends a play with its score. Returns the Arcade tab with { result: { score, points, kept } }. */
 function clashArcadeFinish(play, score, asId, adminToken) {
-  return withSample_(asId, function () {
-    const id = meId_(asId, adminToken), cache = CacheService.getScriptCache();
+  return withSample_(asId, function () { return arcadeFinish_(play, score, meId_(asId, adminToken)); });
+}
+function arcadeFinish_(play, score, id) {
+  {
+    const cache = CacheService.getScriptCache();
     const raw = cache.get('arc-' + play);
     if (!raw) throw new Error('That game timed out. Start a new one.');
     const p = JSON.parse(raw), g = ARCADE_GAMES_[p.game];
@@ -111,10 +149,10 @@ function clashArcadeFinish(play, score, asId, adminToken) {
       const b = boardRows_().filter(function (r) { return id800_(r['800#']) === id; })[0] || {};
       getSheet_('Arcade Plays').appendRow([Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'), id, String(b['Name'] || ''), squadOf_(b['Squad']), p.game, kept ? score : 0, points, !!p.free, '']);
     }
-    const out = JSON.parse(clashArcade(asId, adminToken));
+    const out = JSON.parse(arcadeView_(id));
     out.result = { game: p.game, score: score, points: points, kept: kept };
     return JSON.stringify(out);
-  });
+  }
 }
 
 // Once a day: the day's arcade points, one row per squad.
@@ -139,4 +177,4 @@ function maybePayArcade_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_48_Arcade = 'bb0b2180b0';
+var FILE_STAMP_48_Arcade = 'cf5a90d3a8';

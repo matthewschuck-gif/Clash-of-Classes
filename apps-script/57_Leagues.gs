@@ -241,11 +241,17 @@ function clashApprovals(token) {
   return JSON.stringify({
     shoutouts: sheetRows_('Staff Shout-outs').filter(waiting).map(function (r) { return { row: r._row, when: String(r['When']), from: String(r['From']), who: shortName_(r['Student']), squad: squadOf_(r['Squad']), message: String(r['Message']) }; }),
     banners: sheetRows_('Squad Banners').filter(waiting).map(function (r) { const b = bannerOf_(r); b.row = r._row; b.by = String(r['By'] || ''); return b; }),
+    // Closed Pulse polls whose squad points wait for a yes (06_Polls.gs, POLL_APPROVAL).
+    polls: pollPointsWaiting_().filter(function (r) { return !ticked_(r['Approved']); }).map(function (r) {
+      const pts = {}; SQUAD_KEYS_.forEach(function (s) { pts[s] = Number(r[s]) || 0; });
+      return { row: r._row, question: String(r['Question'] || ''), closed: asYmd_(r['Closed']).slice(0, 10), votes: Number(r['Votes']) || 0, pts: pts };
+    }),
   });
 }
 
 function clashApprove(token, kind, row, yes) {
   requireAdmin_(token);
+  if (kind === 'poll') { decidePollPoints_(row, yes); return clashApprovals(token); }
   const tab = kind === 'banner' ? 'Squad Banners' : 'Staff Shout-outs', headers = kind === 'banner' ? BANNER_HEADERS_ : SHOUT_HEADERS_;
   const r = sheetRows_(tab).filter(function (x) { return x._row === Number(row); })[0];
   if (!r) throw new Error('That row moved. Refresh and try again.');
@@ -316,4 +322,4 @@ function dailyLeagues_() {
 var FILE_STAMP_57_Leagues = '';
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_57_Leagues = '8df3ea28cc';
+var FILE_STAMP_57_Leagues = '01fad88adf';
