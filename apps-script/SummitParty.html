@@ -4,58 +4,121 @@
 <base target="_top">
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=DM+Mono:wght@500&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=DM+Mono:wght@500&family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
 <style>
-  :root { --bg:#12081f; --panel:#1d1033; --line:#38255a; --ink:#f6f0ff; --mute:#b9a6d8; --gold:#ffe100; --purple:#490e6f;
-    --BLACK:#e9e3f5; --GOLD:#ffd23f; --GREY:#9aa5b8; --PURPLE:#b583ff; --hop:300ms; }
+  /* Summit Party board. Clash brand: purple #490e6f, gold #ffe100, Fraunces display (the Clash brand face). */
+  :root { --bg:#14091f; --panel:#1f1133; --line:#3a2659; --ink:#f7f2ff; --mute:#bfaee0; --gold:#ffe100; --purple:#490e6f;
+    --t-start:#ffd23f; --t-trail:#38a3ff; --t-rock:#ff5a4f; --t-cairn:#a66bff; --t-spring:#2fcf7a; --hop:320ms; }
   @media (prefers-reduced-motion: reduce) { :root { --hop:0ms; } }
   * { box-sizing:border-box; }
   html, body { margin:0; min-height:100%; background:var(--bg); color:var(--ink); font-family:'DM Sans',system-ui,sans-serif; }
-  body { background: radial-gradient(1200px 700px at 30% -10%, #3b1a66 0%, transparent 60%), var(--bg); }
-  .wrap { min-height:100vh; display:grid; grid-template-columns: minmax(0,1fr) minmax(270px, 25%); gap:2vw; padding:2.2vh 2.2vw; }
-  @media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } }
-  .head { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:1vh; }
-  .head h1 { margin:0; font-family:Fraunces,Georgia,serif; font-weight:900; font-size:clamp(28px,3.6vw,60px); letter-spacing:-.02em; }
-  .head span { font-family:'DM Mono',monospace; color:var(--gold); letter-spacing:.14em; text-transform:uppercase; font-size:clamp(11px,1vw,16px); }
-  .boardbox { position:relative; width:100%; aspect-ratio: 16 / 10; max-height:82vh; border-radius:22px; overflow:hidden;
-    background: linear-gradient(180deg, #1b2b4a 0%, #243a3a 55%, #1d2c22 100%); border:1px solid var(--line); }
-  svg.board { position:absolute; inset:0; width:100%; height:100%; }
-  .token { position:absolute; width:4.2%; aspect-ratio:1; margin:-2.1% 0 0 -2.1%; border-radius:50%; display:grid; place-items:center;
-    font-family:Fraunces,serif; font-weight:900; font-size:clamp(11px,1.4vw,22px); color:#12081f; border:3px solid #12081f;
-    box-shadow:0 6px 14px #0008; transition: left var(--hop) cubic-bezier(.3,1.4,.5,1), top var(--hop) cubic-bezier(.3,1.4,.5,1), transform .2s; z-index:3; }
-  .token.turn { transform: scale(1.22); box-shadow:0 0 0 4px var(--gold), 0 8px 18px #000a; }
-  .flag { position:absolute; font-size:clamp(20px,2.6vw,42px); margin:-2.6% 0 0 -.6%; z-index:2; filter: drop-shadow(0 4px 6px #000a); transition: left .6s, top .6s; }
-  .banner { position:absolute; left:50%; top:46%; transform:translate(-50%,-50%) scale(.7); opacity:0; pointer-events:none; text-align:center; z-index:5;
-    font-family:Fraunces,serif; font-weight:900; font-size:clamp(30px,5vw,88px); text-shadow:0 6px 30px #000c; transition: transform .4s cubic-bezier(.2,1.5,.4,1), opacity .3s; max-width:90%; }
+  body { background: radial-gradient(1200px 700px at 28% -12%, #3b1a66 0%, transparent 62%), var(--bg); }
+  .wrap { min-height:100dvh; display:grid; grid-template-columns: minmax(0,1fr) minmax(280px, 24%); gap:1.8vw; padding:2vh 2vw; align-items:start; }
+  @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; padding:16px; } }
+  .head { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:1.6vh; }
+  .head h1 { margin:0; font-family:Fraunces,Georgia,serif; font-weight:900; font-size:clamp(28px,3.4vw,58px); letter-spacing:-.02em; line-height:1.05; }
+  .head .code { margin-left:auto; display:flex; align-items:center; gap:10px; background:var(--panel); border:2px solid var(--gold); border-radius:16px; padding:6px 14px; }
+  .head .code span { font-family:'DM Mono',monospace; font-size:clamp(10px,.85vw,13px); color:var(--mute); line-height:1.2; }
+  .head .code b { font-family:'DM Mono',monospace; font-weight:500; font-size:clamp(26px,2.8vw,48px); letter-spacing:.18em; color:var(--gold); }
+
+  /* ── The board (shared) ── */
+  .table { display:grid; place-items:center; padding:14px; }
+  .board { position:relative; width:100%; border-radius:26px; overflow:hidden; box-shadow: 0 0 0 10px #2a173f, 0 0 0 14px #6b3fa0, 0 30px 60px -10px #000c; }
+  .board.trail { aspect-ratio: 16 / 10; max-height:80vh; }
+  .board.square { aspect-ratio: 1 / 1; width:min(100%, 80vh); }
+  .scenery { position:absolute; inset:0; width:100%; height:100%; }
+  .tile { position:absolute; transform:translate(-50%,-50%); display:grid; place-items:center; z-index:2; }
+  .tile i { line-height:1; }
+  .pieces { position:absolute; inset:0; z-index:4; pointer-events:none; }
+
+  /* ── Mountain trail (Candyland style) ── */
+  .trail .tile { width:6.6%; aspect-ratio:1; border-radius:22%; border:.35vw solid #fff; box-shadow: 0 .45vw 0 #0005, inset 0 -.5vw 0 #0002; color:#fff; }
+  .trail .tile i { font-size:clamp(14px,2.2vw,38px); filter: drop-shadow(0 2px 0 #0003); }
+  .trail .tile .n { position:absolute; top:-.45em; left:-.35em; font:800 clamp(9px,.85vw,14px)/1 'DM Sans',sans-serif; background:#fff; color:#2a173f; border-radius:999px; padding:.2em .45em; }
+  .trail .tile.start { width:9.5%; border-radius:26%; color:#5e4500; }
+  .trail .tile.start .lab { position:absolute; top:-1.9em; white-space:nowrap; font:800 clamp(10px,1vw,17px)/1 'DM Sans',sans-serif; color:#fff; text-shadow:0 2px 0 #0008; letter-spacing:.06em; }
+  .trail .tile.short { width:5.4%; border-style:dashed; }
+  .trail .shield { position:absolute; left:50%; top:54%; width:17%; transform:translate(-50%,-50%); filter: drop-shadow(0 10px 18px #0009); z-index:1; }
+
+  /* ── Square board (Monopoly style) ── */
+  .board.square { background:#dff1e6; }
+  .square .tile { background:#fbfdf9; color:#1c2a22; border:2px solid #23402f; border-radius:6px; overflow:hidden; text-align:center; }
+  .square .tile .band { position:absolute; left:0; right:0; top:0; height:24%; }
+  .square .tile .body { position:relative; display:grid; place-items:center; gap:.15em; padding-top:18%; }
+  .square .tile i { font-size:clamp(14px,2.3vw,34px); }
+  .square .tile .lab { font:800 clamp(7px,.8vw,13px)/1.05 'DM Sans',sans-serif; text-transform:uppercase; letter-spacing:.02em; }
+  .square .tile .n { position:absolute; bottom:3%; right:6%; font:700 clamp(7px,.7vw,11px)/1 'DM Mono',monospace; color:#4c6b58; }
+  .square .tile.edge-b, .square .tile.edge-t { width:16.4%; height:18%; }
+  /* Top row reads upright: easier on a projector than real board-game upside-down text. */
+  .square .tile.edge-t .band { top:auto; bottom:0; }
+  .square .tile.edge-l, .square .tile.edge-r { width:18%; height:16.4%; }
+  .square .tile.edge-l .band { top:0; bottom:0; left:auto; right:0; width:24%; height:auto; }
+  .square .tile.edge-r .band { top:0; bottom:0; right:auto; left:0; width:24%; height:auto; }
+  .square .tile.edge-l .body, .square .tile.edge-r .body { padding-top:0; }
+  .square .tile.corner { width:18%; height:18%; }
+  .square .tile.corner .band { height:100%; opacity:.22; }
+  .square .tile.corner .body { padding-top:0; }
+  .square .tile.corner i { font-size:clamp(20px,3.6vw,56px); }
+  .square .tile.corner .lab { font-size:clamp(9px,1.05vw,17px); }
+  .square .tile.short { width:9%; height:9%; border-radius:50%; border-style:dashed; }
+  .square .tile.short .band, .square .tile.short .lab { display:none; }
+  .square .tile.short .body { padding-top:0; }
+  .square .middle { position:absolute; inset:30%; display:grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto minmax(0,1fr) auto; gap:4% 6%; place-items:center; z-index:1; }
+  .square .middle .title { grid-column: 1 / -1; font-family:Fraunces,serif; font-weight:900; color:var(--purple); font-size:clamp(18px,2.6vw,44px); transform:rotate(-6deg); letter-spacing:-.02em; text-align:center; line-height:1; }
+  .square .middle img { grid-column: 1 / -1; height:100%; min-height:0; max-width:70%; object-fit:contain; filter: drop-shadow(0 8px 14px #0005); }
+  .deck { width:92%; aspect-ratio: 5 / 3.2; border-radius:10px; display:grid; place-items:center; text-align:center; color:#fff; font:800 clamp(9px,1vw,17px)/1.15 'DM Sans',sans-serif; box-shadow: 4px 4px 0 #fff, 7px 7px 0 #0003, 8px 8px 0 #fff, 11px 11px 0 #0003; }
+  .deck i { display:block; font-size:clamp(14px,1.9vw,32px); margin-bottom:4%; }
+  .deck.cairn { background:var(--t-cairn); transform:rotate(-12deg); }
+  .deck.fork { background:var(--t-spring); transform:rotate(10deg); }
+
+  /* ── Pieces: each squad's evolved My Climb creature on a pawn base ── */
+  .piece { position:absolute; width:7.6%; aspect-ratio:1; margin:-5.6% 0 0 -3.8%; transition: left var(--hop) cubic-bezier(.34,1.56,.64,1), top var(--hop) cubic-bezier(.34,1.56,.64,1); }
+  .square .piece { width:8.6%; margin:-6.2% 0 0 -4.3%; }
+  .piece .face { position:absolute; inset:0; border-radius:50%; border:.3vw solid var(--ring); background:var(--base) var(--focus, center 15%) / 240% no-repeat; box-shadow: 0 .5vw 0 var(--baseDark), 0 1vw 1.4vw #0009; display:grid; place-items:center; color:#fff; font:900 clamp(12px,1.6vw,26px) Fraunces,serif; }
+  .piece.turn .face { animation: bob 1.2s ease-in-out infinite; box-shadow: 0 0 0 .3vw var(--gold), 0 .5vw 0 var(--baseDark), 0 1vw 1.4vw #0009; }
+  @keyframes bob { 50% { transform: translateY(-14%); } }
+  @media (prefers-reduced-motion: reduce) { .piece.turn .face { animation:none; } }
+  .flag { position:absolute; z-index:3; font-size:clamp(22px,3vw,48px); color:var(--gold); margin:-3.4% 0 0 -.6%; filter: drop-shadow(0 3px 0 #000a); transition: left .6s, top .6s; }
+
+  .banner { position:absolute; left:50%; top:46%; transform:translate(-50%,-50%) scale(.7); opacity:0; pointer-events:none; text-align:center; z-index:6;
+    font-family:Fraunces,serif; font-weight:900; font-size:clamp(30px,5vw,86px); color:#fff; text-shadow:0 6px 30px #000c; transition: transform .4s cubic-bezier(.2,1.5,.4,1), opacity .3s; width:86%; }
   .banner.on { opacity:1; transform:translate(-50%,-50%) scale(1); }
-  .banner small { display:block; font-family:'DM Sans',sans-serif; font-weight:700; font-size:.3em; color:#fff; margin-top:.4em; }
+  .banner small { display:block; font-family:'DM Sans',sans-serif; font-weight:700; font-size:.3em; margin-top:.4em; color:#fff; }
+  .banner .blogo { display:block; width:max-content; margin:0 auto .2em; padding:.12em .28em; border-radius:.22em; box-shadow:0 6px 24px #0008; }
+  .banner .blogo img { display:block; height:1.4em; }
   .closed { display:grid; place-items:center; min-height:60vh; text-align:center; color:var(--mute); font-size:20px; }
+
+  /* ── Side panel ── */
   .side { display:flex; flex-direction:column; gap:1.4vh; }
   .card { background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:14px 16px; }
   .card h3 { margin:0 0 8px; font-family:'DM Mono',monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--mute); font-weight:500; }
-  .round { font-family:Fraunces,serif; font-weight:900; font-size:clamp(22px,2.2vw,38px); }
-  .turnline { font-size:clamp(15px,1.3vw,21px); margin-top:4px; }
-  .sq { display:grid; grid-template-columns: 14px 1fr auto auto; gap:10px; align-items:center; padding:8px 0; border-top:1px solid var(--line); font-size:clamp(15px,1.3vw,21px); }
+  .round { font-family:Fraunces,serif; font-weight:900; font-size:clamp(22px,2.1vw,36px); }
+  .turnline { font-size:clamp(15px,1.25vw,20px); margin-top:4px; line-height:1.35; }
+  .auto { color:var(--mute); font-size:.85em; }
+  .sq { display:grid; grid-template-columns: clamp(40px,3.4vw,58px) 1fr auto auto; gap:10px; align-items:center; padding:7px 0; border-top:1px solid var(--line); font-size:clamp(15px,1.25vw,21px); }
   .sq:first-of-type { border-top:0; }
-  .sq i { width:14px; height:14px; border-radius:50%; }
-  .sq b { font-weight:700; }
-  .sq .f { font-family:Fraunces,serif; font-weight:900; color:var(--gold); }
-  .sq .c { font-family:'DM Mono',monospace; color:var(--mute); min-width:5ch; text-align:right; }
+  .logo { aspect-ratio:1; border-radius:12px; display:grid; place-items:center; padding:4px; }
+  .logo img { width:100%; height:100%; object-fit:contain; }
+  .sq b { font-weight:800; }
+  .sq .f { font-family:Fraunces,serif; font-weight:900; color:var(--gold); display:flex; align-items:center; gap:3px; }
+  .sq .c { font-family:'DM Mono',monospace; color:var(--mute); min-width:4.5ch; text-align:right; }
   .log div { font-size:14px; color:var(--mute); padding:4px 0; border-top:1px solid #ffffff10; }
   .log div:first-child { color:var(--ink); border-top:0; }
-  .legend { display:flex; flex-wrap:wrap; gap:6px 12px; font-size:12.5px; color:var(--mute); }
-  .legend span::before { content:''; display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px; background:var(--c); }
-  button { font:inherit; font-weight:700; cursor:pointer; border:0; border-radius:999px; padding:9px 15px; }
-  .gold { background:var(--gold); color:#1a0b2e; } .ghost { background:#ffffff1a; color:var(--ink); }
-  button:disabled { opacity:.4; cursor:default; }
-  .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; align-items:center; }
-  input { font:inherit; padding:8px 10px; border-radius:10px; border:1px solid var(--line); background:#0d0618; color:var(--ink); width:100%; }
-  input[data-pw] { -webkit-text-security:disc; }
-  .msg { font-size:13px; color:#fca5a5; min-height:1em; margin-top:6px; }
+  .legend { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:13px; color:var(--mute); margin-top:12px; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .legend i { width:20px; height:20px; border-radius:6px; display:inline-grid; place-items:center; color:#fff; font-size:13px; }
   .join { font-size:14px; color:var(--mute); line-height:1.5; }
   .join b { color:var(--ink); font-family:'DM Mono',monospace; }
-  .code { font-family:'DM Mono',monospace; font-weight:500; font-size:clamp(34px,4.2vw,70px); letter-spacing:.18em; color:var(--gold); line-height:1; margin:4px 0 6px; }
-  .auto { color:var(--mute); font-size:.85em; }
+  button { font:inherit; font-weight:700; cursor:pointer; border:0; border-radius:999px; padding:9px 15px; }
+  .gold { background:var(--gold); color:#1a0b2e; } .ghost { background:#ffffff1a; color:var(--ink); }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity:.4; cursor:default; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; align-items:end; }
+  input, select { font:inherit; padding:8px 10px; border-radius:10px; border:1px solid var(--line); background:#0d0618; color:var(--ink); }
+  input[data-pw] { width:100%; -webkit-text-security:disc; }
+  label.field { font-size:13px; color:var(--mute); display:grid; gap:4px; }
+  .msg { font-size:13px; color:#fca5a5; min-height:1em; margin-top:6px; }
   .confetti { position:fixed; top:-20px; width:10px; height:16px; border-radius:3px; pointer-events:none; animation:fall linear forwards; z-index:9; }
   @keyframes fall { to { transform:translateY(110vh) rotate(720deg); } }
   @media (prefers-reduced-motion: reduce) { .confetti { display:none; } }
@@ -64,88 +127,136 @@
 <body>
 <div class="wrap">
   <main>
-    <div class="head"><h1>Summit Party</h1><span>Clash of Classes · Together We Climb</span></div>
-    <div class="boardbox" id="box">
-      <svg class="board" id="svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="The Summit Party trail around the mountain"></svg>
-      <div class="banner" id="banner"></div>
-    </div>
-    <div class="legend" id="legend" style="margin-top:10px"></div>
+    <div class="head"><h1>Summit Party</h1><div class="code"><span>GAME<br>CODE</span><b id="codeBig">····</b></div></div>
+    <div class="table"><div class="board trail" id="box"><div class="banner" id="banner"></div><div class="pieces" id="pieces"></div></div></div>
+    <div class="legend" id="legend"></div>
   </main>
   <aside class="side">
     <div class="card"><div class="round" id="round">Summit Party</div><div class="turnline" id="turnline"></div></div>
     <div class="card"><h3>Flags and coins</h3><div id="standings"></div></div>
     <div class="card log"><h3>On the trail</h3><div id="log"></div></div>
-    <div class="card"><h3>Game code</h3><div class="code" id="codeBig">····</div><div class="join">On one Chromebook per squad, open <b id="joinLink"></b>, type this code and your 800#. On your squad's turn, tap Roll.</div></div>
+    <div class="card"><h3>Play on a Chromebook</h3><div class="join">One Chromebook per squad: open <b>clashofclasses.org/?page=summit-play</b>, type the game code and your 800#. On your squad's turn, tap Roll.</div></div>
     <div class="card" id="staff"></div>
   </aside>
 </div>
 <script>
 (function () {
-  var COLORS = { BLACK: '#e9e3f5', GOLD: '#ffd23f', GREY: '#9aa5b8', PURPLE: '#b583ff' };
-  var TYPE = { start: '#ffe100', trail: '#5aa9ff', rock: '#ff6b6b', cairn: '#c084fc', spring: '#4ade80' };
-  var S = null, seq = 0, token = '', busy = false, tokens = {}, flagEl = null, drawn = false, code = '';
-  try { code = sessionStorage.getItem('summit-code') || ''; } catch (e) {}
-  try { token = sessionStorage.getItem('summit-admin') || ''; } catch (e) {}
+  var SQ = ['BLACK', 'GOLD', 'GREY', 'PURPLE'];
+  var RING = { BLACK: '#e9e3f5', GOLD: '#ffd23f', GREY: '#aab3c2', PURPLE: '#c79bff' };
+  var BASE = { BLACK: '#2b2633', GOLD: '#a87b00', GREY: '#5d6673', PURPLE: '#5b1a86' };
+  var BASEDARK = { BLACK: '#141118', GOLD: '#5e4500', GREY: '#353b44', PURPLE: '#2f0c47' };
+  // Where each creature's face sits in its My Climb picture, so the round piece shows the face.
+  var FOCUS = { BLACK: '47% 11%', GOLD: '72% 2%', GREY: '77% 11%', PURPLE: '69% 0%' };
+  var ICON = { start: 'ph-tent', trail: 'ph-coins', rock: 'ph-mountains', cairn: 'ph-cards', spring: 'ph-drop' };
+  var LABEL = { start: 'Base Camp', trail: 'Trail +3', rock: 'Rockslide -3', cairn: 'Cairn card', spring: 'Spring +2' };
+  var S = null, seq = 0, token = '', busy = false, pieces = {}, flagEl = null, drawnLayout = '', drawnCode = '', code = '', LOGOS = {};
+  try { code = sessionStorage.getItem('summit-code') || ''; token = sessionStorage.getItem('summit-admin') || ''; } catch (e) {}
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function title(s) { s = String(s || ''); return s.charAt(0) + s.slice(1).toLowerCase(); }
   function run(fn) { var a = Array.prototype.slice.call(arguments, 1); return new Promise(function (ok, no) { var r = google.script.run.withSuccessHandler(function (t) { ok(JSON.parse(t)); }).withFailureHandler(no); r[fn].apply(r, a); }); }
   function msgOf(e) { return String(e && e.message || e).replace(/^Exception:\s{0,}/, ''); }
   var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function logo(s, cls) { return LOGOS[s] ? '<span class="' + (cls || 'logo') + '" style="background:' + BASE[s] + '"><img src="' + LOGOS[s] + '" alt="' + esc(title(s)) + ' Squad logo"></span>' : ''; }
 
-  function drawBoard(b) {
-    var svg = $('svg'), h = '';
-    // The mountain behind the trail.
-    h += '<polygon points="22,92 50,6 78,92" fill="#2f3f5f" opacity=".55"/><polygon points="40,40 50,6 60,40 55,36 50,42 45,35" fill="#e8eefc" opacity=".8"/>';
-    h += '<polygon points="4,96 26,48 46,96" fill="#2a3a3a" opacity=".6"/><polygon points="58,96 80,44 98,96" fill="#2a3a3a" opacity=".6"/>';
-    b.forEach(function (n) { n.next.forEach(function (to) { var m = b[to]; h += '<line x1="' + n.x + '" y1="' + n.y + '" x2="' + m.x + '" y2="' + m.y + '" stroke="#f6efe0" stroke-opacity=".55" stroke-width=".9" stroke-dasharray="' + (n.path || m.path ? '1.4 1.2' : 'none') + '" stroke-linecap="round"/>'; }); });
-    b.forEach(function (n) {
-      h += '<ellipse cx="' + n.x + '" cy="' + n.y + '" rx="2.3" ry="3.6" fill="' + (TYPE[n.type] || '#888') + '" stroke="#12081f" stroke-width=".5"/>';
-      if (n.type === 'start') h += '<text x="' + n.x + '" y="' + (n.y + 7.5) + '" text-anchor="middle" font-size="2.6" fill="#ffe100" font-family="DM Mono">BASE CAMP</text>';
-      if (n.next.length > 1) h += '<text x="' + n.x + '" y="' + (n.y - 5) + '" text-anchor="middle" font-size="2.2" fill="#fff" font-family="DM Mono">FORK</text>';
-    });
-    svg.innerHTML = h;
-    var legend = ''; Object.keys(TYPE).forEach(function (k) { legend += '<span style="--c:' + TYPE[k] + '">' + esc(S.spaces[k] || k) + '</span>'; });
-    $('legend').innerHTML = legend + '<span style="--c:transparent">🚩 Summit Flag: pass it with ' + S.flagCost + ' coins to plant one</span>';
-    drawn = true;
+  // ── Drawing the board ──
+  function trailScenery(b) {
+    var ring = b.filter(function (n) { return !n.path; }), d = 'M' + ring.concat([ring[0]]).map(function (n) { return n.x + ' ' + n.y; }).join(' L');
+    var h = '<svg class="scenery" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' +
+      '<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c4f8f"/><stop offset=".5" stop-color="#6a9bd4"/><stop offset=".5" stop-color="#4a9a62"/><stop offset="1" stop-color="#2f6f45"/></linearGradient></defs>' +
+      '<rect width="100" height="100" fill="url(#sky)"/>' +
+      '<polygon points="4,60 28,22 46,58" fill="#46638f"/><polygon points="56,58 74,20 97,60" fill="#46638f"/>' +
+      '<polygon points="22,88 50,3 78,88" fill="#6b7fa8"/><polygon points="41,30 50,3 59,30 55,26 51,32 46,25" fill="#f4f7ff"/>' +
+      '<ellipse cx="79" cy="51" rx="9" ry="5" fill="#5fc3e8" stroke="#d8f4ff" stroke-width=".5"/>';
+    for (var i = 0; i < 30; i++) { var x = (i * 37 + 7) % 100, y = 64 + ((i * 53) % 32); if (x > 24 && x < 76 && y < 86) continue; h += '<polygon points="' + x + ',' + (y - 4.5) + ' ' + (x - 2) + ',' + y + ' ' + (x + 2) + ',' + y + '" fill="#1f5a36"/>'; }
+    h += '<path d="' + d + '" fill="none" stroke="#f6e7b8" stroke-width="7.6" stroke-linejoin="round" stroke-linecap="round"/>' +
+      '<path d="' + d + '" fill="none" stroke="#c9a352" stroke-width="7.6" stroke-dasharray=".5 2.4" stroke-linejoin="round" opacity=".55"/>';
+    b.forEach(function (n) { n.next.forEach(function (to) { var m = b[to]; if (!n.path && !m.path) return; h += '<line x1="' + n.x + '" y1="' + n.y + '" x2="' + m.x + '" y2="' + m.y + '" stroke="#8a5a2b" stroke-width="1.7" stroke-dasharray="1.2 .9" stroke-linecap="round"/>'; }); });
+    return h + '</svg>';
+  }
+  function edgeOf(n) {
+    if (n.path) return 'short';
+    if ([0, 5, 10, 15].indexOf(n.id) > -1) return 'corner';
+    return n.id < 5 ? 'edge-b' : n.id < 10 ? 'edge-l' : n.id < 15 ? 'edge-t' : 'edge-r';
+  }
+  function drawBoard() {
+    var b = S.board, box = $('box'), layout = S.layout || 'trail', h = '';
+    box.className = 'board ' + layout;
+    box.querySelectorAll('.tile, .scenery, .shield, .middle').forEach(function (el) { el.remove(); });
+    if (layout === 'trail') {
+      h += trailScenery(b);
+      if (S.art && S.art.shield) h += '<img class="shield" src="' + esc(S.art.shield) + '" alt="Clash of Classes 2026-2027 shield">';
+      b.forEach(function (n) {
+        var tilt = n.type === 'start' ? 0 : (n.id % 2 ? 5 : -5);
+        h += '<div class="tile ' + n.type + (n.path ? ' short' : '') + '" style="left:' + n.x + '%;top:' + n.y + '%;background:var(--t-' + n.type + ');transform:translate(-50%,-50%) rotate(' + tilt + 'deg)" title="' + esc(S.spaces[n.type] || n.type) + '">' +
+          '<i class="ph-fill ' + ICON[n.type] + '"></i>' + (n.type === 'start' ? '<span class="lab">BASE CAMP</span>' : n.path ? '' : '<span class="n">' + n.id + '</span>') + '</div>';
+      });
+    } else {
+      var lines = '';
+      b.forEach(function (n) { n.next.forEach(function (to) { var m = b[to]; if (n.path || m.path) lines += '<line x1="' + n.x + '" y1="' + n.y + '" x2="' + m.x + '" y2="' + m.y + '" stroke="#23402f" stroke-width=".7" stroke-dasharray="1.4 1"/>'; }); });
+      h += '<svg class="scenery" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="z-index:1">' + lines + '</svg>';
+      h += '<div class="middle"><div class="title">Summit Party</div>' + (S.art && S.art.shield ? '<img src="' + esc(S.art.shield) + '" alt="Clash of Classes 2026-2027 shield">' : '<span></span>') +
+        '<div class="deck cairn"><div><i class="ph-fill ph-cards"></i>CAIRN<br>CARDS</div></div><div class="deck fork"><div><i class="ph-fill ph-signpost"></i>TRAIL<br>FORKS</div></div></div>';
+      b.forEach(function (n) {
+        h += '<div class="tile ' + edgeOf(n) + (n.path ? ' short' : '') + '" style="left:' + n.x + '%;top:' + n.y + '%" title="' + esc(S.spaces[n.type] || n.type) + '">' +
+          '<span class="band" style="background:var(--t-' + n.type + ')"></span><span class="body"><i class="ph-fill ' + ICON[n.type] + '" style="color:' + (n.type === 'start' ? '#a87b00' : 'var(--t-' + n.type + ')') + '"></i><span class="lab">' + (n.id === 0 ? 'Base Camp<br>pass it: +2' : esc(LABEL[n.type])) + '</span></span>' + (n.path || n.id === 0 ? '' : '<span class="n">' + n.id + '</span>') + '</div>';
+      });
+    }
+    box.insertAdjacentHTML('afterbegin', h);
+    Object.keys(pieces).forEach(function (s) { pieces[s].remove(); }); pieces = {};
+    if (flagEl) { flagEl.remove(); flagEl = null; }
+    $('legend').innerHTML = ['trail', 'rock', 'cairn', 'spring', 'start'].map(function (k) { return '<span><i class="ph-fill ' + ICON[k] + '" style="background:var(--t-' + k + ')"></i>' + esc(S.spaces[k] || k) + '</span>'; }).join('') +
+      '<span><i class="ph-fill ph-flag-pennant" style="background:#3a2659;color:var(--gold)"></i>Summit Flag: pass it with ' + S.flagCost + ' coins to plant one</span>';
+    drawnLayout = layout; drawnCode = S.game ? S.game.code : '';
   }
   function spot(nodeId, squad) {
-    var n = S.board[nodeId], i = ['BLACK', 'GOLD', 'GREY', 'PURPLE'].indexOf(squad);
-    return { x: n.x + (i % 2 ? 1.6 : -1.6), y: n.y + (i < 2 ? -1.8 : 1.8) };
+    var n = S.board[nodeId], i = SQ.indexOf(squad), d = S.layout === 'square' ? 3 : 2.6;
+    return { x: n.x + (i % 2 ? d : -d), y: n.y + (i < 2 ? -d * .9 : d * .9) };
   }
   function place(squad, nodeId) {
-    var t = tokens[squad];
-    if (!t) { t = document.createElement('div'); t.className = 'token'; t.style.background = COLORS[squad]; t.textContent = squad.charAt(0) + (squad === 'GREY' ? 'r' : ''); t.title = title(squad); $('box').appendChild(t); tokens[squad] = t; }
+    var t = pieces[squad];
+    if (!t) {
+      t = document.createElement('div'); t.className = 'piece';
+      t.style.setProperty('--ring', RING[squad]); t.style.setProperty('--base', BASE[squad]); t.style.setProperty('--baseDark', BASEDARK[squad]); t.style.setProperty('--focus', FOCUS[squad]);
+      var face = document.createElement('div'); face.className = 'face';
+      var art = S.art && S.art.pieces && S.art.pieces[squad];
+      if (art) face.style.backgroundImage = 'url("' + art + '")'; else face.textContent = squad.charAt(0);
+      t.appendChild(face); t.title = title(squad) + ' Squad'; $('pieces').appendChild(t); pieces[squad] = t;
+    }
     var p = spot(nodeId, squad); t.style.left = p.x + '%'; t.style.top = p.y + '%';
   }
   function placeFlag(nodeId) {
-    if (!flagEl) { flagEl = document.createElement('div'); flagEl.className = 'flag'; flagEl.textContent = '🚩'; $('box').appendChild(flagEl); }
+    if (!flagEl) { flagEl = document.createElement('i'); flagEl.className = 'flag ph-fill ph-flag-pennant'; flagEl.title = 'Summit Flag'; $('pieces').appendChild(flagEl); }
     var n = S.board[nodeId]; flagEl.style.left = n.x + '%'; flagEl.style.top = n.y + '%';
   }
-  function banner(big, small, color) {
-    var b = $('banner'); b.innerHTML = esc(big) + (small ? '<small>' + esc(small) + '</small>' : ''); b.style.color = color || '#fff';
-    b.classList.add('on'); clearTimeout(b._t); b._t = setTimeout(function () { b.classList.remove('on'); }, 2200);
+  function banner(big, small, squad) {
+    var b = $('banner');
+    b.innerHTML = (squad ? logo(squad, 'blogo') : '') + esc(big) + (small ? '<small>' + esc(small) + '</small>' : '');
+    b.style.color = squad ? RING[squad] : '#fff';
+    b.classList.add('on'); clearTimeout(b._t); b._t = setTimeout(function () { b.classList.remove('on'); }, 2400);
   }
   function confetti(color) {
     if (calm) return;
-    for (var i = 0; i < 60; i++) { var c = document.createElement('div'); c.className = 'confetti'; c.style.left = Math.random() * 100 + 'vw'; c.style.background = i % 3 ? color : '#ffe100'; c.style.animationDuration = (1.6 + Math.random() * 1.4) + 's'; document.body.appendChild(c); setTimeout(function (n) { return function () { n.remove(); }; }(c), 3200); }
+    for (var i = 0; i < 70; i++) { var c = document.createElement('div'); c.className = 'confetti'; c.style.left = Math.random() * 100 + 'vw'; c.style.background = i % 3 ? color : '#ffe100'; c.style.animationDuration = (1.6 + Math.random() * 1.4) + 's'; document.body.appendChild(c); setTimeout(function (n) { return function () { n.remove(); }; }(c), 3200); }
   }
+
+  // ── Side panel ──
   function side() {
     var g = S.game;
     if (!g) { $('round').textContent = 'No game yet'; $('turnline').textContent = 'Staff: sign in below and start one.'; $('standings').innerHTML = ''; $('log').innerHTML = ''; return; }
     var places = Object.keys(g.squads).sort(function (a, b) { return (g.squads[b].flags - g.squads[a].flags) || (g.squads[b].coins - g.squads[a].coins); });
     $('round').textContent = g.status === 'playing' ? 'Round ' + Math.min(g.round, g.rounds) + ' of ' + g.rounds : g.status === 'ended' ? 'Final' : 'Stopped';
     var now = g.order[g.turn];
-    $('turnline').innerHTML = g.status !== 'playing' ? (g.places ? '🏆 <b style="color:' + COLORS[g.places[0]] + '">' + esc(title(g.places[0])) + '</b> wins the Summit Party!' : '')
-      : (g.pending ? '<b style="color:' + COLORS[g.pending.squad] + '">' + esc(title(g.pending.squad)) + '</b> is picking a path…' : 'Your turn: <b style="color:' + COLORS[now] + '">' + esc(title(now)) + '</b>. Roll on your Chromebook.') + ' <span class="auto" id="auto"></span>';
-    $('standings').innerHTML = places.map(function (s) { var q = g.squads[s]; return '<div class="sq"><i style="background:' + COLORS[s] + '"></i><b>' + esc(title(s)) + '</b><span class="f">🚩 ' + q.flags + '</span><span class="c">' + q.coins + ' ¢</span></div>'; }).join('');
+    $('turnline').innerHTML = g.status !== 'playing' ? (g.places ? '<b style="color:' + RING[g.places[0]] + '">' + esc(title(g.places[0])) + '</b> wins the Summit Party!' : '')
+      : (g.pending ? '<b style="color:' + RING[g.pending.squad] + '">' + esc(title(g.pending.squad)) + '</b> is picking a path.' : 'Your turn: <b style="color:' + RING[now] + '">' + esc(title(now)) + '</b>. Roll on your Chromebook.') + ' <span class="auto" id="auto"></span>';
+    $('standings').innerHTML = places.map(function (s) { var q = g.squads[s]; return '<div class="sq">' + (logo(s) || '<span class="logo" style="background:' + BASE[s] + '"></span>') + '<b style="color:' + RING[s] + '">' + esc(title(s)) + '</b><span class="f"><i class="ph-fill ph-flag-pennant"></i>' + q.flags + '</span><span class="c">' + q.coins + ' c</span></div>'; }).join('');
     $('log').innerHTML = (g.log || []).map(function (t) { return '<div>' + esc(t) + '</div>'; }).join('');
-    Object.keys(tokens).forEach(function (s) { tokens[s].classList.toggle('turn', g.status === 'playing' && s === (g.pending ? g.pending.squad : now)); });
+    Object.keys(pieces).forEach(function (s) { pieces[s].classList.toggle('turn', g.status === 'playing' && s === (g.pending ? g.pending.squad : now)); });
   }
   function staff() {
     var el = $('staff');
     if (!token) {
-      el.innerHTML = '<h3>Staff</h3><input type="text" data-pw id="pw" placeholder="Admin password" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore>' +
+      el.innerHTML = '<h3>Staff</h3><label class="field">Admin password<input type="text" data-pw id="pw" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore></label>' +
         '<div class="row"><button class="ghost" id="signin">Sign in</button><button class="ghost" id="gsignin">Sign in with my school account</button></div><div class="msg" id="smsg"></div>';
       var go = function (pw) { run.apply(null, pw ? ['clashLogin', pw] : ['clashSummitSignIn']).then(function (r) { token = r.token; try { sessionStorage.setItem('summit-admin', token); } catch (e) {} staff(); }).catch(function (e) { $('smsg').textContent = msgOf(e); }); };
       $('signin').onclick = function () { go($('pw').value); };
@@ -153,58 +264,61 @@
       return;
     }
     var playing = S.game && S.game.status === 'playing';
-    el.innerHTML = '<h3>Staff</h3><div class="row"><label style="font-size:14px">Rounds <input id="rounds" type="number" min="1" max="30" value="' + (S.rounds || 8) + '" style="width:5em"></label><button class="gold" id="start">' + (playing ? 'Start over' : 'Start a game') + '</button></div>' +
-      '<div class="row"><button class="ghost" id="skip"' + (playing ? '' : ' disabled') + '>Skip this turn</button><button class="ghost" id="finish"' + (playing ? '' : ' disabled') + '>End and score it</button><button class="ghost" id="stop"' + (playing ? '' : ' disabled') + '>Stop, no points</button></div><div class="msg" id="smsg"></div>';
+    el.innerHTML = '<h3>Staff</h3><div class="row"><label class="field">Rounds<input id="rounds" type="number" min="1" max="30" value="' + (S.rounds || 8) + '" style="width:5em"></label>' +
+      '<label class="field">Board<select id="layout"><option value="trail"' + (S.layout !== 'square' ? ' selected' : '') + '>Mountain trail</option><option value="square"' + (S.layout === 'square' ? ' selected' : '') + '>Square board</option></select></label>' +
+      '<button class="gold" id="start">' + (playing ? 'New game' : 'Start a game') + '</button></div>' +
+      '<div class="row"><button class="ghost" id="skip"' + (playing ? '' : ' disabled') + '>Skip this turn</button><button class="ghost" id="finish"' + (playing ? '' : ' disabled') + '>End and score</button><button class="ghost" id="stop"' + (playing ? '' : ' disabled') + '>Stop, no points</button></div><div class="msg" id="smsg"></div>';
     var act = function (p) { p.then(function (v) { take(v); }).catch(function (e) { if (/sign in|password|session/i.test(msgOf(e))) { token = ''; try { sessionStorage.removeItem('summit-admin'); } catch (x) {} staff(); } $('smsg').textContent = msgOf(e); }); };
     $('start').onclick = function () {
-      var rounds = Number($('rounds').value) || 8;
+      var rounds = Number($('rounds').value) || 8, layout = $('layout').value;
       if (playing && !confirm('Stop this game (no points) and start a new one?')) return;
-      act((playing ? run('clashSummitEnd', token, code, false) : Promise.resolve()).then(function () { return run('clashSummitStart', token, rounds); }));
+      act((playing ? run('clashSummitEnd', token, code, false) : Promise.resolve()).then(function () { return run('clashSummitStart', token, rounds, layout); }));
     };
     $('skip').onclick = function () { act(run('clashSummitSkip', token, code)); };
     $('finish').onclick = function () { if (confirm('End now and score it? The points wait for a yes in Admin.')) act(run('clashSummitEnd', token, code, true)); };
     $('stop').onclick = function () { if (confirm('Stop the game with no points?')) act(run('clashSummitEnd', token, code, false)); };
   }
-  // A new state: animate the last move hop by hop, then update the side.
+
+  // ── A new state: animate the last move hop by hop, then update the side ──
   function take(v) {
     if (!v || v.same) return;
     if (!v.on) { document.querySelector('.wrap').innerHTML = '<div class="closed">Summit Party is closed right now.</div>'; return; }
-    var prev = S && S.game, first = !S;
+    var prev = S && S.game;
     S = v; seq = v.game ? v.game.seq : 0;
-    if (!drawn) drawBoard(S.board);
-    var g = S.game;
-    $('joinLink').textContent = 'clashofclasses.org/?page=summit-play';
+    var g = S.game, fresh = drawnLayout !== (S.layout || 'trail') || drawnCode !== (g ? g.code : '');
+    if (fresh) drawBoard();
     if (g && g.code !== code) { code = g.code; try { sessionStorage.setItem('summit-code', code); } catch (e) {} }
     $('codeBig').textContent = g ? g.code : '····';
     if (!g) { side(); staff(); return; }
-    var L = g.last || { path: [] }, moved = !first && prev && prev.id === g.id && L.squad && L.path.length;
+    var L = g.last || { path: [] }, moved = !fresh && prev && prev.id === g.id && L.squad && L.path.length;
     Object.keys(g.squads).forEach(function (s) { if (!(moved && s === L.squad)) place(s, g.squads[s].pos); });
-    if (!moved) { if (L.squad && tokens[L.squad]) place(L.squad, g.squads[L.squad].pos); placeFlag(g.flagAt); side(); staff(); return; }
+    if (!moved) { placeFlag(g.flagAt); side(); staff(); return; }
     busy = true;
-    if (L.roll && (!prev.pending || prev.pending.squad !== L.squad)) banner(String(L.roll), title(L.squad) + ' rolled' + (L.boost ? ' (' + L.die + ' + ' + L.boost + ')' : ''), COLORS[L.squad]);
+    if (L.roll && (!prev.pending || prev.pending.squad !== L.squad)) banner(String(L.roll), title(L.squad) + ' rolled' + (L.boost ? ' (' + L.die + ' + ' + L.boost + ')' : '') + (L.auto ? ' (auto-roll)' : ''), L.squad);
+    if (!pieces[L.squad]) place(L.squad, L.from || 0);
     var already = prev.pending && prev.pending.squad === L.squad ? prev.last.path.length : 0;
-    var hops = L.path.slice(already), i = 0, hop = calm ? 0 : 320;
+    var hops = L.path.slice(already), i = 0, hop = calm ? 0 : 340;
     (function step() {
       if (i < hops.length) { place(L.squad, hops[i++]); setTimeout(step, hop); return; }
       placeFlag(g.flagAt);
-      if (L.flag) { banner('🚩 Summit Flag!', title(L.flag) + ' planted a flag', COLORS[L.flag]); confetti(COLORS[L.flag]); }
-      else if (L.card) banner('Trail card', L.card, '#c084fc');
-      if (g.status === 'ended' && g.places) setTimeout(function () { banner('🏆 ' + title(g.places[0]) + ' wins!', 'The points wait for a staff yes', COLORS[g.places[0]]); confetti(COLORS[g.places[0]]); }, 1200);
+      if (L.flag) { banner('Summit Flag!', title(L.flag) + ' planted a flag', L.flag); confetti(RING[L.flag]); }
+      else if (L.card) banner('Cairn card', L.card, '');
+      if (g.status === 'ended' && g.places) setTimeout(function () { banner(title(g.places[0]) + ' wins!', 'The points wait for a staff yes', g.places[0]); confetti(RING[g.places[0]]); }, 1200);
       side(); staff(); busy = false;
     })();
   }
-  function poll() { if (busy) return; run('clashSummitState', code, seq).then(take).catch(function () {}); }
-  // The auto-roll countdown under whose turn it is.
+  function poll() { if (busy) return; run('clashSummitState', code, seq).then(take).catch(function (e) { busy = false; if (window.console) console.warn('Summit Party: ' + msgOf(e)); }); }
   setInterval(function () {
     var a = $('auto'), g = S && S.game;
     if (!a || !g || g.status !== 'playing' || !(S.autoRoll > 0)) { if (a) a.textContent = ''; return; }
     var left = Math.max(0, S.autoRoll - Math.floor((Date.now() - Number(g.turnAt || 0)) / 1000));
-    a.textContent = left ? '(auto-roll in ' + left + 's)' : '(auto-rolling…)';
+    a.textContent = left ? '(auto-roll in ' + left + 's)' : '(auto-rolling)';
   }, 1000);
+  run('clashSquadLogos').then(function (l) { LOGOS = l || {}; if (S) side(); }).catch(function () {});
   run('clashSummitState', code, 0).then(take).catch(function (e) { document.querySelector('.wrap').innerHTML = '<div class="closed">' + esc(msgOf(e)) + '</div>'; });
   setInterval(poll, 1500);
 })();
 </script>
 </body>
 </html>
-<!-- file-stamp: 33247b27dd -->
+<!-- file-stamp: 139a81c438 -->

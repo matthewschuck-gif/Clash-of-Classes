@@ -29,6 +29,10 @@
   .stats div { font-family:Fraunces,serif; font-weight:900; font-size:34px; color:var(--gold); }
   .stats span { display:block; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.12em; color:var(--mute); font-weight:500; }
   .wait { font-size:18px; margin-top:8px; }
+  .who { display:flex; justify-content:center; align-items:center; gap:14px; margin-bottom:10px; }
+  .slogo { width:96px; height:96px; border-radius:22px; display:grid; place-items:center; padding:8px; box-shadow:0 8px 20px #0007; }
+  .slogo img { width:100%; height:100%; object-fit:contain; }
+  .spiece { width:96px; height:96px; border-radius:50%; border:4px solid; background:#1d1033 no-repeat; background-size:240%; box-shadow:0 8px 20px #0007; }
   .msg { color:#fca5a5; min-height:1.2em; margin-top:10px; font-size:15px; }
   .small { font-size:13px; color:var(--mute); margin-top:14px; }
   .small a { color:var(--mute); }
@@ -43,6 +47,10 @@
 <script>
 (function () {
   var COLORS = { BLACK: '#e9e3f5', GOLD: '#ffd23f', GREY: '#9aa5b8', PURPLE: '#b583ff' };
+  var BASE = { BLACK: '#2b2633', GOLD: '#a87b00', GREY: '#5d6673', PURPLE: '#5b1a86' };
+  var FOCUS = { BLACK: '47% 11%', GOLD: '72% 2%', GREY: '77% 11%', PURPLE: '69% 0%' };
+  var LOGOS = {};
+  run('clashSquadLogos').then(function (l) { LOGOS = l || {}; if (S) draw(); }).catch(function () {});
   var me = '', squad = '', S = null, seq = 0, acting = false, code = '';
   try { me = localStorage.getItem('clash-my-800') || ''; code = sessionStorage.getItem('summit-code') || ''; } catch (e) {}
   function $(id) { return document.getElementById(id); }
@@ -74,10 +82,13 @@
   }
   function draw() {
     var g = S.game, mine = g && g.squads[squad], el = $('app');
-    var head = '<div class="card"><div style="font-family:Fraunces,serif;font-weight:900;font-size:26px;color:var(--sq)">' + esc(title(squad)) + ' Squad</div>' +
+    var art = S.art && S.art.pieces && S.art.pieces[squad];
+    var head = '<div class="card"><div class="who">' + (LOGOS[squad] ? '<span class="slogo" style="background:' + BASE[squad] + '"><img src="' + LOGOS[squad] + '" alt="' + esc(title(squad)) + ' Squad logo"></span>' : '') +
+      (art ? '<span class="spiece" style="background-image:url(&quot;' + art + '&quot;);background-position:' + FOCUS[squad] + ';border-color:var(--sq)" role="img" aria-label="Your squad piece"></span>' : '') + '</div>' +
+      '<div style="font-family:Fraunces,serif;font-weight:900;font-size:26px;color:var(--sq)">' + esc(title(squad)) + ' Squad</div>' +
       (mine ? '<div class="stats"><div>' + mine.flags + '<span>FLAGS</span></div><div>' + mine.coins + '<span>COINS</span></div>' + (mine.boost ? '<div>+' + mine.boost + '<span>NEXT ROLL</span></div>' : '') + '</div>' : '');
     if (!g || g.status !== 'playing') {
-      el.innerHTML = head + '<p class="wait">' + (g && g.places ? '🏆 ' + esc(title(g.places[0])) + ' won the last game.' : 'Waiting for a game to start.') + '</p><p class="sub">Watch the big screen.</p></div>' + foot();
+      el.innerHTML = head + '<p class="wait">' + (g && g.places ? esc(title(g.places[0])) + ' won the last game.' : 'Waiting for a game to start.') + '</p><p class="sub">Watch the big screen.</p></div>' + foot();
       wireFoot(); return;
     }
     var now = g.order[g.turn], pend = g.pending, myTurn = now === squad && !pend, myPick = pend && pend.squad === squad;
@@ -106,4 +117,4 @@
 </script>
 </body>
 </html>
-<!-- file-stamp: 50e443f9db -->
+<!-- file-stamp: b586d30cfe -->

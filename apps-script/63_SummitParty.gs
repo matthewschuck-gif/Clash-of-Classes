@@ -1,72 +1,124 @@
 /**
  * Clash of Classes -- Apps Script backend
- * File 63: Summit Party, the squad board game.
+ * File 63: Summit Party, the squad party board game.
  *
- * GAME CODES: every game gets a 4-letter code, shown big on its board, so several can run at once
- * (classrooms during PASS, the cafeteria, an assembly). Chromebooks type the code with their 800#.
- * With only one game going, the code can be left out. AUTO-ROLL: a squad that has not rolled for
- * SUMMIT_PARTY_AUTO_ROLL seconds (30) gets an automatic roll (Main Trail at forks); 0 = off.
- * WHO RUNS A GAME: any staff member on the Staff Access tab (any role) signs in on the board with
- * their school account (open the board on the staff link), or anyone with the admin password.
+ * HOW A GAME GOES (a party board game, in Clash's own art and names):
+ *   - The board is on one big screen: clashofclasses.org/?page=summit (SummitParty.html). Each squad
+ *     plays from one Chromebook: ?page=summit-play (SummitPlay.html), game code + an 800#.
+ *   - On its turn a squad may use one item, then hits the dice block; its creature hops space by
+ *     space. Blue spaces +3 coins, red -3, "?" = one of Cliff's trail events, item spaces hand out an
+ *     item, Opponent spaces bring out Shady, the Tardy Troll or the Litter Beast, the Avalanche shakes
+ *     up two squads. Passing the Camp Store lets a squad buy an item. Passing the Summit Flag with
+ *     SUMMIT_PARTY_FLAG_COST coins (20) plants a flag, and the flag moves.
+ *   - After every squad has moved, everyone plays a minigame: most rounds a 20-second game on all
+ *     four Chromebooks at once (Tap Rally, Quick Draw, Trail Memory), scored automatically; every
+ *     third round a live Move, Make or Talk challenge (Summit Live Challenges tab) and staff tap the
+ *     winner. Minigame coins: 10 / 5 / 3 (live: winner 10, the rest 2).
+ *   - The FINAL CLIMB (last 3 rounds): the squad in last place gets 10 coins, blue and red spaces count
+ *     double. At the end, bonus flags: Minigame Champ, Coin Keeper (most coins at once), Trail Explorer
+ *     (most "?" spaces). Most flags wins; coins break ties. Cliff narrates everything.
  *
- * The board shows on one big screen: clashofclasses.org/?page=summit (SummitParty.html). Each squad
- * plays from its own Chromebook: ?page=summit-play (SummitPlay.html), where a student types an
- * 800# (checked on the Student Board). On their squad's turn they roll; at a fork they pick a path.
+ * GAME CODES: several games at once; each board shows its code. AUTO-ROLL after
+ * SUMMIT_PARTY_AUTO_ROLL seconds (30) keeps a drop-in game moving. Any staff member on Staff Access
+ * (any role) runs a game from the board.
  *
- * The game: four squads race around a mountain trail. Trail spaces give coins, rockslides take
- * them, cairns draw a trail card, springs add 2 to the next roll. One space holds the Summit Flag:
- * pass it (or land on it) with SUMMIT_PARTY_FLAG_COST coins and your squad plants a flag; then
- * the flag moves. After SUMMIT_PARTY_ROUNDS rounds the most flags wins (coins break ties).
+ * Squad points: SUMMIT_PARTY_POINTS by place (25,15,10,5) wait for a yes in Admin › System, like
+ * every Clash point. The live game lives in Script Properties, so a roll never touches the Sheet.
  *
- * Squad points: SUMMIT_PARTY_POINTS by place (25,15,10,5) go to the Summit Party Points tab and
- * wait for a yes in Admin › System › Waiting for a yes, like every Clash point. 0 = no points.
- *
- * Staff run it from the screen: sign in (the admin password, or "Sign in with my school account"
- * on the staff link), then Start a game, Skip a turn (a squad not there), or End the game.
- *
- * The live game is kept in Script Properties (and the cache), not the Sheet, so a roll never
- * touches the Clash Sheet (whose edits reset the public site's cache). The Summit Games tab gets
- * one row when a game starts and its result when it ends.
- *
- * Switches: SUMMIT_PARTY (OFF until you turn it on: the pages say it is closed and every call is
- * refused), SUMMIT_PARTY_POINTS (0 = no squad points).
+ * Switches: SUMMIT_PARTY (OFF until turned on), SUMMIT_PARTY_POINTS (0 = no points),
+ * SUMMIT_PARTY_LIVE (live challenges every third round), SUMMIT_PARTY_ITEMS (items and the Camp
+ * Store), SUMMIT_PARTY_BONUS (bonus flags), SUMMIT_PARTY_AUTO_ROLL (0 = off).
  */
 
 const SP_GAME_HEADERS_ = ['Game', 'Status', 'Started', 'Ended', 'Rounds', 'Started By', 'Result'];
 const SP_POINT_HEADERS_ = ['Game', 'Ended', 'Result', 'BLACK', 'GOLD', 'GREY', 'PURPLE', 'Approved', 'Sent'];
-const SP_SPACES_ = { start: 'Base Camp', trail: 'Trail (+3 coins)', rock: 'Rockslide (-3 coins)', cairn: 'Cairn (draw a trail card)', spring: 'Spring (+2 on your next roll)' };
+const SP_LIVE_HEADERS_ = ['Show', 'Kind', 'Challenge', 'How to play'];
+const SP_SPACES_ = { start: 'Base Camp (pass it: +3)', blue: 'Blue space (+3 coins)', red: 'Red space (-3 coins)', event: '? Trail event',
+  item: 'Item space', villain: 'Opponent space', avalanche: 'Avalanche (shake-up)', shop: 'Camp Store (buy an item)' };
+const SP_ITEMS_ = {
+  double: { name: 'Double Dice', price: 10, text: 'Roll two dice this turn.' },
+  compass: { name: 'Golden Compass', price: 8, text: 'Pick exactly how far you move (1 to 6).' },
+  paws: { name: 'Sticky Paws', price: 12, text: 'Take up to 10 coins from the coin leader.' },
+  zipline: { name: 'Zipline', price: 6, text: 'Swap places with a random squad.' },
+};
 
-// The board: a loop of 20 spaces around the mountain, two forks with a shortcut each.
-// x, y are percent of the board. next = where you can go from here (two = a fork).
-function spBoard_() {
-  const ring = ['start', 'trail', 'cairn', 'trail', 'trail', 'rock', 'trail', 'spring', 'trail', 'cairn',
-    'trail', 'rock', 'trail', 'trail', 'cairn', 'trail', 'spring', 'trail', 'rock', 'trail'];
-  const nodes = ring.map(function (type, i) {
-    const a = Math.PI / 2 + (i / ring.length) * Math.PI * 2; // base camp at the bottom, going clockwise
-    return { id: i, type: type, x: Math.round((50 + 42 * Math.cos(a)) * 10) / 10, y: Math.round((52 + 38 * Math.sin(a)) * 10) / 10, next: [(i + 1) % ring.length] };
+// THE BOARD: a 32-space loop around the mountain with two forks (each a shortcut). The game uses
+// id, type, next and path; x and y (percent) place the spaces for the chosen look:
+//   trail  = the mountain island (16:10 board), round spaces along a winding trail
+//   square = a square board with Base Camp in a corner
+const SP_RING_ = ['start', 'blue', 'blue', 'event', 'blue', 'red', 'blue', 'item', 'blue', 'blue', 'villain', 'blue', 'event', 'shop', 'blue', 'red',
+  'blue', 'avalanche', 'blue', 'item', 'blue', 'red', 'blue', 'event', 'blue', 'villain', 'blue', 'item', 'red', 'blue', 'event', 'red'];
+const SP_SHORTCUTS_ = [
+  { from: 8, to: 13, types: ['red', 'event', 'blue'], name: 'Ridge Shortcut' },
+  { from: 20, to: 25, types: ['red', 'item'], name: 'Lake Shortcut' },
+];
+function spRingXY_(layout, i, n) {
+  if (layout === 'square') {
+    const side = n / 4, step = 82 / side, k = i % side, s = Math.floor(i / side);
+    const p = s === 0 ? [91 - k * step, 91] : s === 1 ? [9, 91 - k * step] : s === 2 ? [9 + k * step, 9] : [91, 9 + k * step];
+    return [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10];
+  }
+  const t = Math.PI / 2 + (i / n) * Math.PI * 2; // Base Camp at the bottom, going clockwise up the left side
+  const x = 50 + 42 * Math.cos(t) + 3.5 * Math.sin(3 * t), y = 51 + 38 * Math.sin(t) + 3 * Math.cos(2 * t);
+  return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
+}
+function spLayoutOf_(layout) {
+  const ok = function (l) { return l === 'trail' || l === 'square'; };
+  if (ok(layout)) return layout;
+  const d = String(getSetting_('SUMMIT_PARTY_BOARD') || '').toLowerCase();
+  return ok(d) ? d : 'trail';
+}
+function spBoard_(layout) {
+  layout = spLayoutOf_(layout);
+  const n = SP_RING_.length;
+  const nodes = SP_RING_.map(function (type, i) { const p = spRingXY_(layout, i, n); return { id: i, type: type, x: p[0], y: p[1], next: [(i + 1) % n] }; });
+  SP_SHORTCUTS_.forEach(function (sc) {
+    const a = nodes[sc.from], b = nodes[sc.to], first = nodes.length;
+    sc.types.forEach(function (type, k) {
+      const f = (k + 1) / (sc.types.length + 1);
+      // A straight line between the two ends, pulled toward the middle of the board.
+      let x = a.x + (b.x - a.x) * f, y = a.y + (b.y - a.y) * f;
+      const pull = layout === 'square' ? 0.16 : 0.3;
+      x += (50 - x) * pull * Math.sin(Math.PI * f); y += (50 - y) * pull * Math.sin(Math.PI * f);
+      nodes.push({ id: first + k, type: type, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, next: [k === sc.types.length - 1 ? sc.to : first + k + 1], path: sc.name });
+    });
+    a.next = [a.next[0], first];
   });
-  // Fork 1 at space 4: Ridge Shortcut (20, 21) straight to 8, steep and rocky.
-  nodes[4].next = [5, 20];
-  nodes.push({ id: 20, type: 'rock', x: 31, y: 44, next: [21], path: 'Ridge Shortcut' });
-  nodes.push({ id: 21, type: 'cairn', x: 37, y: 30, next: [8], path: 'Ridge Shortcut' });
-  // Fork 2 at space 13: Lake Shortcut (22, 23) straight to 17.
-  nodes[13].next = [14, 22];
-  nodes.push({ id: 22, type: 'cairn', x: 66, y: 56, next: [23], path: 'Lake Shortcut' });
-  nodes.push({ id: 23, type: 'rock', x: 60, y: 70, next: [17], path: 'Lake Shortcut' });
   return nodes;
 }
 
-const SP_CARDS_ = [
-  { text: 'Trail mix stash! +5 coins.', fn: function (g, s) { g.squads[s].coins += 5; } },
-  { text: 'Tailwind: +2 on your next roll.', fn: function (g, s) { g.squads[s].boost = 2; } },
-  { text: 'Summit snacks for everyone: every squad +2 coins.', fn: function (g) { SQUAD_KEYS_.forEach(function (k) { if (g.squads[k]) g.squads[k].coins += 2; }); } },
-  { text: 'Lost the map: -2 coins.', fn: function (g, s) { g.squads[s].coins = Math.max(0, g.squads[s].coins - 2); } },
-  { text: 'Rope team: the leader shares 3 coins with you.', fn: function (g, s) {
-    const lead = spPlaces_(g)[0];
-    if (lead && lead !== s) { const n = Math.min(3, g.squads[lead].coins); g.squads[lead].coins -= n; g.squads[s].coins += n; }
-    else g.squads[s].coins += 2;
-  } },
+// Art: each squad's evolved My Climb creature, the clear shield, Cliff, and the Opponents.
+function spArt_() {
+  const on = String(getSetting_('MASCOT_ART') || 'ON').toUpperCase() !== 'OFF', pieces = {};
+  SQUAD_KEYS_.forEach(function (s) { pieces[s] = on ? ART_BASE_ + 'creatures/' + s.toLowerCase() + '-4.jpg' : ''; });
+  const shield = String(getSetting_('SHIELD_LOGO_URL') || '').trim();
+  // The board uses the clear-background shield unless Settings SHIELD_LOGO_URL names another picture.
+  const custom = /^https:\/\//i.test(shield) && !/shield-2026-27\.png$/.test(shield);
+  return { pieces: pieces, shield: custom ? shield : ART_BASE_ + 'shield-2026-27-clear.png', cliff: ART_BASE_ + 'cliff.png',
+    villains: { shady: ART_BASE_ + 'monster-shady.jpg', troll: ART_BASE_ + 'monster-tardy-troll.jpg', litter: ART_BASE_ + 'monster-litter-beast.jpg' } };
+}
+
+// The live Move, Make, Talk challenges (from the December files). Editable on the Summit Live Challenges tab.
+const SP_LIVE_SEED_ = [
+  [true, 'Move', 'Boom, Clap, Snatch', 'Partners face each other with a marker between them. Follow the caller: boom, clap... snatch! Snatch too soon and you are out. Last squad standing wins.'],
+  [true, 'Move', 'Four Corners', 'Everyone moves to a corner before "Freeze!". The caller picks a corner; anyone there sits down. Last squad with players standing wins.'],
+  [true, 'Talk', 'Chain Gauntlet', 'One word each, linked to the word before it (snow, ball, park...). A pause or a repeat breaks the chain. Longest chain in 60 seconds wins.'],
+  [true, 'Make', 'Gratitude Sprint', 'In 90 seconds, each squad writes as many real thank-you notes as it can to people in the building. Most notes wins.'],
+  [true, 'Move', 'Silent Line-Up', 'Line up by birthday with no talking. Fastest correct line wins.'],
+  [true, 'Talk', 'Two-Word Story', 'Tell a story two words at a time around the squad. The room votes for the best story.'],
 ];
+function spLiveChallenges_() {
+  const rows = getSheetSafe_('Summit Live Challenges') ? sheetRows_('Summit Live Challenges').filter(function (r) { return ticked_(r['Show']) && String(r['Challenge'] || '').trim(); }) : [];
+  const list = rows.length ? rows.map(function (r) { return [String(r['Kind'] || 'Move'), String(r['Challenge']), String(r['How to play'] || '')]; })
+    : SP_LIVE_SEED_.map(function (r) { return [r[1], r[2], r[3]]; });
+  return list.map(function (r) { return { kind: r[0], name: r[1], how: r[2] }; });
+}
+
+const SP_MINIGAMES_ = {
+  tap: { name: 'Tap Rally', how: 'Tap the button as fast as you can for 20 seconds. Most taps wins.', better: 'high', max: 260 },
+  react: { name: 'Quick Draw', how: 'Wait for the gold flash, then tap. Best of three. Fastest time wins.', better: 'low', max: 3000 },
+  memory: { name: 'Trail Memory', how: 'Watch the trail signs light up, then tap them back in order. Longest trail wins.', better: 'high', max: 15 },
+};
 
 function spOn_() { return String(getSetting_('SUMMIT_PARTY') || 'OFF').toUpperCase() === 'ON'; }
 function spRequireOn_() { if (!spOn_()) throw new Error('Summit Party is closed right now.'); }
@@ -168,66 +220,226 @@ function clashSummitSignIn() {
   return JSON.stringify({ token: token, name: who.name });
 }
 
+// ── THE GAME ───────────────────────────────────────────────────────
 function spPlaces_(g) {
   return Object.keys(g.squads).sort(function (a, b) {
     return (g.squads[b].flags - g.squads[a].flags) || (g.squads[b].coins - g.squads[a].coins) || g.order.indexOf(a) - g.order.indexOf(b);
   });
 }
 function spTitle_(s) { return s.charAt(0) + s.slice(1).toLowerCase(); }
-function spLog_(g, text) { g.log = [text].concat(g.log || []).slice(0, 10); g.last.events.push(text); }
+function spLog_(g, text) { g.log = [text].concat(g.log || []).slice(0, 12); if (g.last) g.last.events.push(text); }
+function spHost_(g, text) { g.host = { text: text, at: Date.now() }; }
+function spCoins_(g, s, n) {
+  const me = g.squads[s];
+  me.coins = Math.max(0, me.coins + n);
+  if (me.coins > (me.peak || 0)) me.peak = me.coins;
+}
+function spOnFlag_() { return String(getSetting_('SUMMIT_PARTY_ITEMS') || 'ON').toUpperCase() !== 'OFF'; }
+function spFlagCost_() { return spSetting_('SUMMIT_PARTY_FLAG_COST', 20); }
 
 function spMoveFlag_(g, board) {
-  const spots = board.filter(function (n) { return n.type === 'trail' && n.id !== g.flagAt; });
+  const spots = board.filter(function (n) { return n.type === 'blue' && !n.path && n.id !== g.flagAt; });
   g.flagAt = spots[Math.floor(Math.random() * spots.length)].id;
 }
 
-// Walks `steps` spaces for squad s. Stops at a fork (pending choice) or the end.
+// Walks `steps` spaces for squad s. Stops at a fork or at the Camp Store (a choice), or lands.
 function spWalk_(g, board, s, steps) {
   const me = g.squads[s];
   while (steps > 0) {
     const here = board[me.pos];
-    if (here.next.length > 1) { g.turnAt = Date.now(); g.pending = { squad: s, left: steps, at: here.id, options: here.next.map(function (id) { return { id: id, name: board[id].path || 'Main Trail' }; }) }; return; }
+    if (here.next.length > 1) {
+      g.turnAt = Date.now();
+      g.pending = { kind: 'fork', squad: s, left: steps, at: here.id, options: here.next.map(function (id) { return { id: id, name: board[id].path || 'Main Trail' }; }) };
+      spHost_(g, spTitle_(s) + ', which way? The ' + board[here.next[1]].path + ' is shorter, but rougher.');
+      return;
+    }
     me.pos = here.next[0];
+    me.moved = (me.moved || 0) + 1;
     g.last.path.push(me.pos);
     steps--;
     if (me.pos === g.flagAt) spTryFlag_(g, board, s);
-    if (me.pos === 0 && steps > 0) { me.coins += 2; spLog_(g, spTitle_(s) + ' passed Base Camp: +2 coins.'); }
+    if (me.pos === 0 && steps > 0) { spCoins_(g, s, 3); spLog_(g, spTitle_(s) + ' passed Base Camp: +3 coins.'); }
+    if (board[me.pos].type === 'shop' && spShopOpen_(g, s)) {
+      g.turnAt = Date.now();
+      g.pending = { kind: 'shop', squad: s, left: steps, at: me.pos, options: spShopList_(g, s) };
+      spHost_(g, 'Welcome to the Camp Store, ' + spTitle_(s) + '! Want anything?');
+      return;
+    }
   }
   spLand_(g, board, s);
 }
 
-function spTryFlag_(g, board, s) {
-  const cost = spSetting_('SUMMIT_PARTY_FLAG_COST', 10), me = g.squads[s];
-  if (me.coins >= cost) {
-    me.coins -= cost; me.flags++;
-    spLog_(g, '🚩 ' + spTitle_(s) + ' planted a Summit Flag!');
-    g.last.flag = s;
-    spMoveFlag_(g, board);
-  } else spLog_(g, spTitle_(s) + ' reached the Summit Flag but needs ' + cost + ' coins.');
+function spShopOpen_(g, s) {
+  const me = g.squads[s];
+  return spOnFlag_() && (me.items || []).length < 2 && Object.keys(SP_ITEMS_).some(function (k) { return SP_ITEMS_[k].price <= me.coins; });
+}
+function spShopList_(g, s) {
+  return Object.keys(SP_ITEMS_).map(function (k) { return { id: k, name: SP_ITEMS_[k].name, price: SP_ITEMS_[k].price, text: SP_ITEMS_[k].text, afford: SP_ITEMS_[k].price <= g.squads[s].coins }; });
 }
 
+function spTryFlag_(g, board, s) {
+  const cost = spFlagCost_(), me = g.squads[s];
+  if (me.coins >= cost) {
+    me.coins -= cost; me.flags++;
+    spLog_(g, spTitle_(s) + ' planted a Summit Flag!');
+    spHost_(g, 'A SUMMIT FLAG for ' + spTitle_(s) + '! Now where will the next one be?');
+    g.last.flag = s;
+    spMoveFlag_(g, board);
+  } else {
+    spLog_(g, spTitle_(s) + ' reached the Summit Flag but needs ' + cost + ' coins.');
+    spHost_(g, 'So close! A Summit Flag costs ' + cost + ' coins, ' + spTitle_(s) + '.');
+  }
+}
+
+const SP_EVENTS_ = [
+  { text: 'A trail cache! +6 coins.', fn: function (g, board, s) { spCoins_(g, s, 6); } },
+  { text: 'A tailwind carries you 3 spaces ahead.', fn: function (g, board, s) { const me = g.squads[s]; for (let i = 0; i < 3; i++) { me.pos = board[me.pos].next[0]; g.last.path.push(me.pos); } } },
+  { text: 'The Summit Flag blew away to a new spot!', fn: function (g, board) { spMoveFlag_(g, board); } },
+  { text: 'Trail mix for everyone: every squad +3 coins.', fn: function (g) { Object.keys(g.squads).forEach(function (k) { spCoins_(g, k, 3); }); } },
+  { text: 'Switchback! You trade places with the squad in first.', fn: function (g, board, s) {
+    const lead = spPlaces_(g)[0];
+    if (lead === s) { spCoins_(g, s, 4); return; }
+    const p = g.squads[s].pos; g.squads[s].pos = g.squads[lead].pos; g.squads[lead].pos = p; g.last.swap = [s, lead];
+  } },
+];
+const SP_VILLAINS_ = [
+  { key: 'troll', name: 'The Tardy Troll', text: 'charges a late fee: -6 coins.', fn: function (g, board, s) { spCoins_(g, s, -6); } },
+  { key: 'litter', name: 'The Hallway Litter Beast', text: 'scatters 3 coins from every squad.', fn: function (g) { Object.keys(g.squads).forEach(function (k) { spCoins_(g, k, -3); }); } },
+  { key: 'shady', name: 'Shady', text: 'swaps your coins with the squad that has the fewest!', fn: function (g, board, s) {
+    const poor = Object.keys(g.squads).sort(function (a, b) { return g.squads[a].coins - g.squads[b].coins; })[0];
+    if (poor === s) { spCoins_(g, s, -4); return; }
+    const c = g.squads[s].coins; g.squads[s].coins = g.squads[poor].coins; spCoins_(g, poor, c - g.squads[poor].coins);
+  } },
+];
+
 function spLand_(g, board, s) {
-  const me = g.squads[s], n = board[me.pos];
-  if (n.type === 'trail') { me.coins += 3; spLog_(g, spTitle_(s) + ' landed on a trail: +3 coins.'); }
-  else if (n.type === 'rock') { const lost = Math.min(3, me.coins); me.coins -= lost; spLog_(g, spTitle_(s) + ' hit a rockslide: -' + lost + ' coins.'); }
-  else if (n.type === 'spring') { me.boost = 2; spLog_(g, spTitle_(s) + ' found a spring: +2 on the next roll.'); }
-  else if (n.type === 'cairn') { const c = SP_CARDS_[Math.floor(Math.random() * SP_CARDS_.length)]; c.fn(g, s); g.last.card = c.text; spLog_(g, spTitle_(s) + ' drew a trail card: ' + c.text); }
+  const me = g.squads[s], n = board[me.pos], x = g.final ? 2 : 1;
+  if (n.type === 'blue') { spCoins_(g, s, 3 * x); spLog_(g, spTitle_(s) + ' landed on blue: +' + 3 * x + ' coins.'); }
+  else if (n.type === 'red') { spCoins_(g, s, -3 * x); spLog_(g, spTitle_(s) + ' landed on red: -' + 3 * x + ' coins.'); spHost_(g, 'Ouch, a red space! -' + 3 * x + ' coins.'); }
+  else if (n.type === 'event') {
+    const e = SP_EVENTS_[Math.floor(Math.random() * SP_EVENTS_.length)];
+    me.events = (me.events || 0) + 1;
+    e.fn(g, board, s);
+    g.last.event = e.text;
+    spLog_(g, spTitle_(s) + ': ' + e.text);
+    spHost_(g, 'A ? space! ' + e.text);
+  }
+  else if (n.type === 'item') {
+    if (spOnFlag_() && (me.items || []).length < 2) {
+      const keys = Object.keys(SP_ITEMS_), k = keys[Math.floor(Math.random() * keys.length)];
+      me.items = (me.items || []).concat([k]);
+      g.last.item = k;
+      spLog_(g, spTitle_(s) + ' found a ' + SP_ITEMS_[k].name + '.');
+      spHost_(g, spTitle_(s) + ' found a ' + SP_ITEMS_[k].name + '! ' + SP_ITEMS_[k].text);
+    } else { spCoins_(g, s, 3); spLog_(g, spTitle_(s) + ' found 3 coins.'); }
+  }
+  else if (n.type === 'villain') {
+    const v = SP_VILLAINS_[Math.floor(Math.random() * SP_VILLAINS_.length)];
+    v.fn(g, board, s);
+    g.last.villain = v.key;
+    spLog_(g, v.name + ' ' + v.text);
+    spHost_(g, 'Uh oh. ' + v.name + ' ' + v.text);
+  }
+  else if (n.type === 'avalanche') {
+    const others = Object.keys(g.squads).filter(function (k) { return k !== s; }), other = others[Math.floor(Math.random() * others.length)];
+    const pick = Math.floor(Math.random() * 3);
+    if (pick === 0) { const c = g.squads[s].coins; g.squads[s].coins = g.squads[other].coins; g.squads[other].coins = c; g.last.avalanche = spTitle_(s) + ' and ' + spTitle_(other) + ' swap coins!'; }
+    else if (pick === 1) { const n2 = Math.min(10, g.squads[other].coins); spCoins_(g, other, -n2); spCoins_(g, s, n2); g.last.avalanche = spTitle_(other) + ' gives ' + spTitle_(s) + ' ' + n2 + ' coins!'; }
+    else { const n3 = Math.min(10, g.squads[s].coins); spCoins_(g, s, -n3); spCoins_(g, other, n3); g.last.avalanche = spTitle_(s) + ' gives ' + spTitle_(other) + ' ' + n3 + ' coins!'; }
+    spLog_(g, 'AVALANCHE! ' + g.last.avalanche);
+    spHost_(g, 'AVALANCHE! ' + g.last.avalanche);
+  }
   spNextTurn_(g, board);
 }
 
+// After the last squad of a round moves, everybody plays a minigame.
 function spNextTurn_(g, board) {
   g.pending = null;
-  g.turnAt = Date.now();
   g.turn++;
-  if (g.turn >= g.order.length) { g.turn = 0; g.round++; }
-  if (g.round > g.rounds) spFinish_(g, 'ended');
+  g.turnAt = Date.now();
+  if (g.turn >= g.order.length) { g.turn = 0; spStartMinigame_(g); }
+}
+
+function spStartMinigame_(g) {
+  const live = String(getSetting_('SUMMIT_PARTY_LIVE') || 'ON').toUpperCase() !== 'OFF' && g.round % 3 === 0 && g.round < g.rounds + 1;
+  g.phase = 'minigame';
+  if (live) {
+    const list = spLiveChallenges_(), c = list[(Math.floor(g.round / 3) - 1 + (g.seed || 0)) % list.length];
+    g.mg = { round: g.round, live: true, kind: c.kind, name: c.name, how: c.how, scores: {} };
+    spHost_(g, 'Minigame time! A LIVE ' + c.kind.toUpperCase() + ' challenge: ' + c.name + '. Staff, tap the winning squad.');
+  } else {
+    const keys = Object.keys(SP_MINIGAMES_), k = keys[(g.round - 1 + (g.seed || 0)) % keys.length], m = SP_MINIGAMES_[k];
+    const now = Date.now();
+    g.mg = { round: g.round, live: false, game: k, name: m.name, how: m.how, startAt: now + 9000, endAt: now + 29000, scores: {}, seed: Math.floor(Math.random() * 1e6) };
+    spHost_(g, 'Minigame time! ' + m.name + ': ' + m.how);
+  }
+  spLog_(g, 'Minigame: ' + g.mg.name + '.');
+}
+
+// Minigame coins by place; ties share the better place.
+function spResolveMinigame_(g) {
+  const mg = g.mg, squads = Object.keys(g.squads);
+  let prizes = {};
+  if (mg.live) {
+    squads.forEach(function (s) { prizes[s] = mg.winner === s ? 10 : 2; });
+    if (mg.winner) g.squads[mg.winner].mgWins = (g.squads[mg.winner].mgWins || 0) + 1;
+  } else {
+    const def = SP_MINIGAMES_[mg.game], has = squads.filter(function (s) { return mg.scores[s] != null; });
+    const sorted = has.sort(function (a, b) { return def.better === 'low' ? mg.scores[a] - mg.scores[b] : mg.scores[b] - mg.scores[a]; });
+    const pay = [10, 5, 3, 0];
+    let place = 0;
+    sorted.forEach(function (s, i) {
+      if (i > 0 && mg.scores[s] !== mg.scores[sorted[i - 1]]) place = i;
+      prizes[s] = pay[place] || 0;
+      if (place === 0) g.squads[s].mgWins = (g.squads[s].mgWins || 0) + 1;
+    });
+    squads.forEach(function (s) { if (prizes[s] == null) prizes[s] = 0; });
+  }
+  squads.forEach(function (s) { spCoins_(g, s, prizes[s]); });
+  mg.prizes = prizes;
+  mg.done = true;
+  mg.resolvedAt = Date.now();
+  const top = squads.filter(function (s) { return prizes[s] === 10; });
+  spLog_(g, mg.name + ': ' + (top.length ? top.map(spTitle_).join(' and ') + ' won 10 coins.' : 'nobody played.'));
+  spHost_(g, top.length ? top.map(spTitle_).join(' and ') + ' wins ' + mg.name + '!' : 'Nobody played ' + mg.name + '. Next round!');
+  // On to the next round, the Final Climb, or the end.
+  g.round++;
+  g.phase = 'turn';
+  g.turnAt = Date.now() + 6000; // the results show for a moment before the auto-roll clock starts
+  g.last = { squad: '', roll: 0, path: [], events: [] };
+  if (g.round > g.rounds) { spBonus_(g); spFinish_(g, 'ended'); return; }
+  if (!g.final && g.round >= g.rounds - 2 && g.rounds >= 4) {
+    g.final = true;
+    const last = spPlaces_(g).slice(-1)[0];
+    spCoins_(g, last, 10);
+    spLog_(g, 'The FINAL CLIMB! ' + spTitle_(last) + ' gets 10 catch-up coins. Blue and red spaces count double.');
+    spHost_(g, 'It is the FINAL CLIMB! Three rounds left. ' + spTitle_(last) + ', here are 10 coins. Blue and red spaces count DOUBLE!');
+    g.finalNews = Date.now();
+  }
+}
+
+// End of game: bonus flags (ties all get one).
+function spBonus_(g) {
+  if (String(getSetting_('SUMMIT_PARTY_BONUS') || 'ON').toUpperCase() === 'OFF') { g.bonus = []; return; }
+  const squads = Object.keys(g.squads), out = [];
+  [['Minigame Champ', 'mgWins'], ['Coin Keeper', 'peak'], ['Trail Explorer', 'events']].forEach(function (b) {
+    const best = Math.max.apply(null, squads.map(function (s) { return g.squads[s][b[1]] || 0; }));
+    if (best <= 0) return;
+    const who = squads.filter(function (s) { return (g.squads[s][b[1]] || 0) === best; });
+    who.forEach(function (s) { g.squads[s].flags++; });
+    out.push({ name: b[0], squads: who, value: best });
+    spLog_(g, 'Bonus flag, ' + b[0] + ': ' + who.map(spTitle_).join(' and ') + '.');
+  });
+  g.bonus = out;
 }
 
 function spFinish_(g, status) {
   g.status = status;
+  g.phase = 'over';
   g.endedAt = new Date().toISOString();
   g.places = spPlaces_(g);
   const result = g.places.map(function (s, i) { return (i + 1) + '. ' + spTitle_(s) + ' (' + g.squads[s].flags + ' flags, ' + g.squads[s].coins + ' coins)'; }).join(' · ');
+  if (status === 'ended') spHost_(g, 'And the winner of Summit Party is... ' + spTitle_(g.places[0]) + '!');
   try {
     const sh = spGamesTab_(), r = sheetRows_('Summit Games').filter(function (x) { return String(x['Game']) === g.id; })[0];
     if (r) sh.getRange(r._row, 2, 1, 6).setValues([[status === 'ended' ? 'Finished' : 'Stopped', g.startedAt.slice(0, 10), todayYmd_(), g.rounds, String(r['Started By'] || ''), result]]);
@@ -237,59 +449,74 @@ function spFinish_(g, status) {
   if (!pts.some(Boolean)) return;
   const row = { BLACK: '', GOLD: '', GREY: '', PURPLE: '' };
   g.places.forEach(function (s, i) { row[s] = pts[i] || ''; });
-  const sh = spPointsTab_();
-  sh.appendRow([g.id, todayYmd_(), result, row.BLACK, row.GOLD, row.GREY, row.PURPLE, '', '']);
+  spPointsTab_().appendRow([g.id, todayYmd_(), result, row.BLACK, row.GOLD, row.GREY, row.PURPLE, '', '']);
 }
 
 function spGamesTab_() { return getSheetSafe_('Summit Games') || spMakeTab_('Summit Games', SP_GAME_HEADERS_); }
 function spPointsTab_() { return getSheetSafe_('Summit Party Points') || spMakeTab_('Summit Party Points', SP_POINT_HEADERS_); }
-function spMakeTab_(name, headers) {
+function spMakeTab_(name, headers, rows) {
   const sh = SpreadsheetApp.getActiveSpreadsheet().insertSheet(name);
   sh.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
   sh.setFrozenRows(1);
+  if (rows && rows.length) sh.getRange(2, 1, rows.length, headers.length).setValues(rows);
   return sh;
 }
-function ensureSummitPartyTabs_() { spGamesTab_(); spPointsTab_(); }
+function ensureSummitPartyTabs_() {
+  spGamesTab_(); spPointsTab_();
+  if (!getSheetSafe_('Summit Live Challenges')) spMakeTab_('Summit Live Challenges', SP_LIVE_HEADERS_, SP_LIVE_SEED_);
+}
 
 // What the screen and the Chromebooks see.
 function spView_(g) {
-  return { on: true, board: spBoard_(), spaces: SP_SPACES_, flagCost: spSetting_('SUMMIT_PARTY_FLAG_COST', 10),
-    autoRoll: spSetting_('SUMMIT_PARTY_AUTO_ROLL', 30), rounds: spSetting_('SUMMIT_PARTY_ROUNDS', 8), game: g };
+  const layout = spLayoutOf_(g && g.layout);
+  return { on: true, board: spBoard_(layout), layout: layout, art: spArt_(), spaces: SP_SPACES_, items: SP_ITEMS_, minigames: SP_MINIGAMES_,
+    flagCost: spFlagCost_(), autoRoll: spSetting_('SUMMIT_PARTY_AUTO_ROLL', 30), rounds: spSetting_('SUMMIT_PARTY_ROUNDS', 10), now: Date.now(), game: g };
 }
 
-// AUTO-ROLL: when a squad has not rolled (or picked a path) for SUMMIT_PARTY_AUTO_ROLL seconds,
-// the board rolls for it (the Main Trail at forks), so a drop-in game keeps moving. 0 = off.
-function spMaybeAuto_(g) {
-  const secs = spSetting_('SUMMIT_PARTY_AUTO_ROLL', 30);
-  if (!g || g.status !== 'playing' || !(secs > 0) || Date.now() - Number(g.turnAt || 0) < secs * 1000) return g;
+// The clock: auto-roll (or auto-pick) for a squad that waits too long; minigames that run out of time.
+function spTick_(g) {
+  if (!g || g.status !== 'playing') return g;
+  const secs = spSetting_('SUMMIT_PARTY_AUTO_ROLL', 30), now = Date.now();
+  const mgDue = g.phase === 'minigame' && g.mg && !g.mg.live && now > g.mg.endAt + 8000;
+  const turnDue = g.phase === 'turn' && secs > 0 && now - Number(g.turnAt || 0) >= secs * 1000;
+  if (!mgDue && !turnDue) return g;
   return spWithLock_(function () {
-    const now = spLoad_(g.code), board = spBoard_();
-    if (!now || now.status !== 'playing' || Date.now() - Number(now.turnAt || 0) < secs * 1000) return now;
-    if (now.pending) {
-      const s = now.pending.squad, opt = now.pending.options[0];
-      spLog_(now, spTitle_(s) + ' took the ' + opt.name + ' (auto).');
-      spTake_(now, board, s, opt.id);
-    } else {
-      const s = now.order[now.turn];
-      spRoll_(now, board, s, true);
-    }
-    return spSave_(now);
+    const cur = spLoad_(g.code), board = spBoard_(cur && cur.layout);
+    if (!cur || cur.status !== 'playing') return cur;
+    if (cur.phase === 'minigame' && cur.mg && !cur.mg.live && Date.now() > cur.mg.endAt + 8000) { spResolveMinigame_(cur); return spSave_(cur); }
+    if (cur.phase !== 'turn' || !(secs > 0) || Date.now() - Number(cur.turnAt || 0) < secs * 1000) return cur;
+    if (cur.pending) {
+      const s = cur.pending.squad;
+      if (cur.pending.kind === 'shop') { spLog_(cur, spTitle_(s) + ' walked past the Camp Store.'); spContinue_(cur, board, s); }
+      else { const opt = cur.pending.options[0]; spLog_(cur, spTitle_(s) + ' took the ' + opt.name + ' (auto).'); spTake_(cur, board, s, opt.id); }
+    } else spRoll_(cur, board, cur.order[cur.turn], true);
+    return spSave_(cur);
   });
 }
 
 function spRoll_(g, board, s, auto) {
-  const me = g.squads[s], die = 1 + Math.floor(Math.random() * 6), roll = die + (me.boost || 0);
-  g.last = { squad: s, roll: roll, die: die, boost: me.boost || 0, path: [], events: [], from: me.pos, auto: !!auto };
-  me.boost = 0;
-  spLog_(g, spTitle_(s) + ' rolled ' + die + (g.last.boost ? ' +' + g.last.boost : '') + (auto ? ' (auto-roll)' : '') + '.');
+  const me = g.squads[s], dice = me.dice || 1, fixed = me.fixed || 0;
+  const dieA = 1 + Math.floor(Math.random() * 6), dieB = dice > 1 ? 1 + Math.floor(Math.random() * 6) : 0;
+  const roll = fixed || (dieA + dieB);
+  g.last = { squad: s, roll: roll, dice: fixed ? [fixed] : dieB ? [dieA, dieB] : [dieA], path: [], events: [], from: me.pos, auto: !!auto, fixed: !!fixed };
+  me.dice = 0; me.fixed = 0;
+  spLog_(g, spTitle_(s) + (fixed ? ' used the compass: ' + roll : ' rolled ' + roll) + (auto ? ' (auto-roll)' : '') + '.');
+  spHost_(g, spTitle_(s) + ' rolled a ' + roll + '!');
   spWalk_(g, board, s, roll);
 }
 function spTake_(g, board, s, pick) {
   const me = g.squads[s], left = g.pending.left - 1;
   g.pending = null;
   me.pos = pick;
+  me.moved = (me.moved || 0) + 1;
   g.last.path.push(pick);
   if (me.pos === g.flagAt) spTryFlag_(g, board, s);
+  if (left > 0) spWalk_(g, board, s, left); else spLand_(g, board, s);
+}
+// After the Camp Store: keep walking the steps that were left.
+function spContinue_(g, board, s) {
+  const left = g.pending.left;
+  g.pending = null;
   if (left > 0) spWalk_(g, board, s, left); else spLand_(g, board, s);
 }
 
@@ -297,28 +524,31 @@ function spTake_(g, board, s, pick) {
 function clashSummitState(code, sinceSeq) {
   if (!spOn_()) return JSON.stringify({ on: false });
   let g = spLoad_(code);
-  g = spMaybeAuto_(g);
-  if (g && Number(sinceSeq) && Number(sinceSeq) === g.seq) return JSON.stringify({ on: true, same: true, seq: g.seq });
+  g = spTick_(g);
+  if (g && Number(sinceSeq) && Number(sinceSeq) === g.seq) return JSON.stringify({ on: true, same: true, seq: g.seq, now: Date.now() });
   const v = spView_(g);
   if (!g) v.live = spIndex_().filter(function (x) { return x.status === 'playing'; }).length;
   return JSON.stringify(v);
 }
 
 /** Staff: start a new game; it gets its own code. */
-function clashSummitStart(token, rounds) {
+function clashSummitStart(token, rounds, layout) {
   const who = spStaff_(token);
   spRequireOn_();
   return spWithLock_(function () {
-    const board = spBoard_(), list = spTidy_();
+    const list = spTidy_();
     if (list.filter(function (x) { return x.status === 'playing'; }).length >= SP_MAX_GAMES_) throw new Error('There are already ' + SP_MAX_GAMES_ + ' games going. End one first.');
     const code = spNewCode_(list.map(function (x) { return x.code; }));
+    const board = spBoard_(layout);
     const order = SQUAD_KEYS_.slice().sort(function () { return Math.random() - 0.5; });
-    const g = { id: 'SP-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd-HHmm') + '-' + code, code: code, status: 'playing', startedAt: new Date().toISOString(),
-      rounds: Math.max(1, Math.min(30, Math.round(Number(rounds) || spSetting_('SUMMIT_PARTY_ROUNDS', 8)))), round: 1, turn: 0, order: order, turnAt: Date.now(),
-      squads: {}, flagAt: 0, pending: null, log: [], seq: 0, last: { squad: '', roll: 0, path: [], events: [] }, by: String(who.name || who.email || 'staff') };
-    order.forEach(function (s) { g.squads[s] = { pos: 0, coins: 5, flags: 0, boost: 0 }; });
+    const g = { id: 'SP-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd-HHmm') + '-' + code, code: code, status: 'playing', phase: 'turn',
+      startedAt: new Date().toISOString(), layout: spLayoutOf_(layout), seed: Math.floor(Math.random() * 6),
+      rounds: Math.max(1, Math.min(30, Math.round(Number(rounds) || spSetting_('SUMMIT_PARTY_ROUNDS', 10)))), round: 1, turn: 0, order: order, turnAt: Date.now(),
+      squads: {}, flagAt: 0, pending: null, mg: null, log: [], seq: 0, last: { squad: '', roll: 0, path: [], events: [] }, by: String(who.name || who.email || 'staff') };
+    order.forEach(function (s) { g.squads[s] = { pos: 0, coins: 10, peak: 10, flags: 0, items: [], mgWins: 0, events: 0, moved: 0 }; });
     spMoveFlag_(g, board);
     spLog_(g, 'A new Summit Party! Game code ' + code + '. ' + spTitle_(order[0]) + ' goes first.');
+    spHost_(g, 'Welcome to SUMMIT PARTY! I am Cliff, your host. Plant the most Summit Flags to win. ' + spTitle_(order[0]) + ', you are up first!');
     list.push({ code: code, status: 'playing', started: Date.now() });
     spSetIndex_(list);
     spGamesTab_().appendRow([g.id, 'Playing', todayYmd_(), '', g.rounds, g.by, '']);
@@ -326,17 +556,33 @@ function clashSummitStart(token, rounds) {
   });
 }
 
-/** Staff: skip the squad whose turn it is (nobody at their Chromebook). */
+/** Staff: skip the squad whose turn it is (nobody at their Chromebook), or end a live minigame with no winner. */
 function clashSummitSkip(token, code) {
   spStaff_(token);
   spRequireOn_();
   return spWithLock_(function () {
-    const g = spGame_(code);
+    const g = spGame_(code), board = spBoard_(g.layout);
     if (g.status !== 'playing') throw new Error('That game is over.');
+    if (g.phase === 'minigame') { spResolveMinigame_(g); return JSON.stringify(spView_(spSave_(g))); }
     const s = g.pending ? g.pending.squad : g.order[g.turn];
     g.last = { squad: s, roll: 0, path: [], events: [] };
     spLog_(g, spTitle_(s) + ' skipped a turn.');
-    spNextTurn_(g, spBoard_());
+    spNextTurn_(g, board);
+    return JSON.stringify(spView_(spSave_(g)));
+  });
+}
+
+/** Staff: the winner of a live Move, Make or Talk challenge. */
+function clashSummitLiveWin(token, code, squad) {
+  spStaff_(token);
+  spRequireOn_();
+  return spWithLock_(function () {
+    const g = spGame_(code);
+    if (g.status !== 'playing' || g.phase !== 'minigame' || !g.mg || !g.mg.live) throw new Error('No live challenge right now.');
+    const s = String(squad || '').toUpperCase();
+    if (!g.squads[s]) throw new Error('Pick a squad.');
+    g.mg.winner = s;
+    spResolveMinigame_(g);
     return JSON.stringify(spView_(spSave_(g)));
   });
 }
@@ -348,6 +594,7 @@ function clashSummitEnd(token, code, finish) {
     const g = spGame_(code);
     if (g.status !== 'playing') throw new Error('That game is over.');
     g.last = { squad: '', roll: 0, path: [], events: [] };
+    if (finish) spBonus_(g);
     spFinish_(g, finish ? 'ended' : 'stopped');
     spLog_(g, finish ? 'The game was ended early. Final results are in.' : 'The game was stopped. No points.');
     return JSON.stringify(spView_(spSave_(g)));
@@ -358,7 +605,7 @@ function clashSummitEnd(token, code, finish) {
 function spPlayer_(id) {
   spRequireOn_();
   const cache = CacheService.getScriptCache(), used = Number(cache.get('sp-calls')) || 0;
-  if (used >= 4000) throw new Error('Summit Party is busy. Try again in a minute.');
+  if (used >= 6000) throw new Error('Summit Party is busy. Try again in a minute.');
   cache.put('sp-calls', String(used + 1), 600);
   const sid = id800_(id);
   if (sid.length < 5) throw new Error('Type your 800 number.');
@@ -375,30 +622,106 @@ function clashSummitJoin(id, code) {
   return JSON.stringify({ squad: p.squad, code: g.code, state: JSON.parse(clashSummitState(g.code, 0)) });
 }
 
+function spMyTurn_(g, squad) {
+  if (g.status !== 'playing') throw new Error('This game is over. Watch the big screen.');
+  if (g.phase !== 'turn') throw new Error('It is minigame time!');
+  if (g.order[g.turn] !== squad) throw new Error('It is ' + spTitle_(g.order[g.turn]) + '\'s turn.');
+}
+
 /** Controller: roll for your squad (only on its turn). */
 function clashSummitRoll(id, code) {
   const p = spPlayer_(id);
   return spWithLock_(function () {
-    const g = spGame_(code), board = spBoard_();
-    if (g.status !== 'playing') throw new Error('This game is over. Watch the big screen.');
-    if (g.order[g.turn] !== p.squad) throw new Error('It is ' + spTitle_(g.order[g.turn]) + '\'s turn.');
-    if (g.pending) throw new Error('Pick a path first.');
+    const g = spGame_(code), board = spBoard_(g.layout);
+    spMyTurn_(g, p.squad);
+    if (g.pending) throw new Error(g.pending.kind === 'shop' ? 'Finish shopping first.' : 'Pick a path first.');
     spRoll_(g, board, p.squad, false);
     return JSON.stringify(spView_(spSave_(g)));
   });
 }
 
-/** Controller: at a fork, pick the path (one of the options' ids). */
-function clashSummitChoose(id, code, nodeId) {
+/** Controller: use an item before rolling (one per turn). arg = the compass number. */
+function clashSummitItem(id, code, item, arg) {
+  const p = spPlayer_(id);
+  if (!spOnFlag_()) throw new Error('Items are turned off.');
+  return spWithLock_(function () {
+    const g = spGame_(code), board = spBoard_(g.layout), me = g.squads[p.squad];
+    spMyTurn_(g, p.squad);
+    if (g.pending) throw new Error('Finish your move first.');
+    const i = (me.items || []).indexOf(String(item));
+    if (i === -1) throw new Error('You don\'t have that item.');
+    if (me.usedOn === g.round) throw new Error('One item per turn.');
+    me.items.splice(i, 1);
+    me.usedOn = g.round;
+    const name = SP_ITEMS_[item].name;
+    g.last = { squad: p.squad, roll: 0, path: [], events: [], item: item };
+    if (item === 'double') { me.dice = 2; spHost_(g, spTitle_(p.squad) + ' used Double Dice! Two dice this turn.'); }
+    else if (item === 'compass') {
+      const n = Math.round(Number(arg));
+      if (!(n >= 1 && n <= 6)) { me.items.push(item); me.usedOn = 0; throw new Error('Pick 1 to 6.'); }
+      me.fixed = n; spHost_(g, spTitle_(p.squad) + ' used the Golden Compass: exactly ' + n + '!');
+    } else if (item === 'paws') {
+      const lead = Object.keys(g.squads).filter(function (k) { return k !== p.squad; }).sort(function (a, b) { return g.squads[b].coins - g.squads[a].coins; })[0];
+      const n = Math.min(10, g.squads[lead].coins);
+      spCoins_(g, lead, -n); spCoins_(g, p.squad, n);
+      spHost_(g, 'Sticky Paws! ' + spTitle_(p.squad) + ' grabbed ' + n + ' coins from ' + spTitle_(lead) + '!');
+    } else if (item === 'zipline') {
+      const others = Object.keys(g.squads).filter(function (k) { return k !== p.squad; }), o = others[Math.floor(Math.random() * others.length)];
+      const pos = me.pos; me.pos = g.squads[o].pos; g.squads[o].pos = pos; g.last.swap = [p.squad, o];
+      spHost_(g, 'Zipline! ' + spTitle_(p.squad) + ' and ' + spTitle_(o) + ' trade places!');
+    }
+    spLog_(g, spTitle_(p.squad) + ' used ' + name + '.');
+    g.turnAt = Date.now();
+    return JSON.stringify(spView_(spSave_(g)));
+  });
+}
+
+/** Controller: at a fork pick the path (a node id); at the Camp Store pick an item id or 'skip'. */
+function clashSummitChoose(id, code, choice) {
   const p = spPlayer_(id);
   return spWithLock_(function () {
-    const g = spGame_(code), board = spBoard_();
+    const g = spGame_(code), board = spBoard_(g.layout);
     if (g.status !== 'playing' || !g.pending) throw new Error('Nothing to choose right now.');
     if (g.pending.squad !== p.squad) throw new Error('It is ' + spTitle_(g.pending.squad) + '\'s choice.');
-    const pick = Number(nodeId), opt = g.pending.options.filter(function (o) { return o.id === pick; })[0];
+    if (g.pending.kind === 'shop') {
+      const me = g.squads[p.squad], k = String(choice);
+      if (k !== 'skip') {
+        const it = SP_ITEMS_[k];
+        if (!it) throw new Error('Pick an item.');
+        if (me.coins < it.price) throw new Error('Not enough coins for that.');
+        if ((me.items || []).length >= 2) throw new Error('Your pack is full (2 items).');
+        me.coins -= it.price; me.items = (me.items || []).concat([k]);
+        g.last.item = k;
+        spLog_(g, spTitle_(p.squad) + ' bought a ' + it.name + '.');
+        spHost_(g, 'Thanks for shopping! ' + spTitle_(p.squad) + ' got a ' + it.name + '.');
+      } else spLog_(g, spTitle_(p.squad) + ' walked past the Camp Store.');
+      spContinue_(g, board, p.squad);
+      return JSON.stringify(spView_(spSave_(g)));
+    }
+    const pick = Number(choice), opt = g.pending.options.filter(function (o) { return o.id === pick; })[0];
     if (!opt) throw new Error('Pick one of the paths.');
     spLog_(g, spTitle_(p.squad) + ' took the ' + opt.name + '.');
     spTake_(g, board, p.squad, pick);
+    return JSON.stringify(spView_(spSave_(g)));
+  });
+}
+
+/** Controller: this squad's minigame score (the best one counts). */
+function clashSummitScore(id, code, score) {
+  const p = spPlayer_(id);
+  return spWithLock_(function () {
+    const g = spGame_(code), mg = g.mg;
+    if (g.status !== 'playing' || g.phase !== 'minigame' || !mg || mg.live || mg.done) throw new Error('No minigame right now.');
+    const now = Date.now();
+    if (now < mg.startAt - 1000 || now > mg.endAt + 8000) throw new Error('Time is up!');
+    const def = SP_MINIGAMES_[mg.game];
+    let v = Math.round(Number(score));
+    if (!(v >= 0)) v = 0;
+    if (def.better === 'low' && (v < 120 || v > def.max)) v = def.max; // a reaction faster than 0.12 s is not a reaction
+    if (def.better === 'high') v = Math.min(v, def.max);
+    const old = mg.scores[p.squad];
+    if (old == null || (def.better === 'low' ? v < old : v > old)) mg.scores[p.squad] = v;
+    if (Object.keys(g.squads).every(function (s) { return mg.scores[s] != null; }) && now >= mg.endAt - 500) spResolveMinigame_(g);
     return JSON.stringify(spView_(spSave_(g)));
   });
 }
@@ -428,4 +751,4 @@ function serveSummitPlay_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_63_SummitParty = '5d34a29a85';
+var FILE_STAMP_63_SummitParty = 'd1d2b59b64';
