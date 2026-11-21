@@ -189,7 +189,7 @@ function clashAccessInfo(token) {
 // The admin function that called requireAdmin_, read from the call stack.
 function adminCaller_() {
   try {
-    const names = [], re = /at ([A-Za-z0-9_$]+) \(/g, stack = String(new Error().stack || '');
+    const names = [], re = /^\s*at (?:[A-Za-z0-9_$]+\.)?([A-Za-z0-9_$]+) \(/gm, stack = String(new Error().stack || '');
     let m;
     while ((m = re.exec(stack))) names.push(m[1]);
     const i = names.indexOf('requireAdmin_');
@@ -253,4 +253,4 @@ function clashActionLog(token) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_60_StaffAccess = '84aa690ad4';
+var FILE_STAMP_60_StaffAccess = '1aff674a17';

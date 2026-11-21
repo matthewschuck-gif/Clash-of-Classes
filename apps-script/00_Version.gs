@@ -65,7 +65,7 @@ const FILE_STAMPS_ = {
   "57_Leagues.gs":"01fad88adf",
   "58_Cairns.gs":"d5ecf0f4c7",
   "59_MapWeek.gs":"ffda1ad076",
-  "60_StaffAccess.gs":"84aa690ad4",
+  "60_StaffAccess.gs":"1aff674a17",
   "61_Hardening.gs":"e15e2b191a",
   "Announce.html":"ed03b14ce7",
   "App.html":"15562b8072",
