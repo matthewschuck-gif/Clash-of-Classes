@@ -3135,76 +3135,100 @@ test('every new feature has an OFF switch: quarter recap, usage counts, security
   assert.strictEqual(w.securityAlert_('x', 'Test', ['a']), false);
 });
 
-test('Summit Party (63_SummitParty.gs): OFF until switched on; staff start; only the squad whose turn it is rolls; forks wait for a pick; flags cost coins; the end queues points that reach Clash only after a yes; a roll never writes to the Sheet', () => {
+test('Summit Party (63_SummitParty.gs): OFF until switched on; staff start a game with a code; only the squad whose turn it is rolls; forks wait for a pick; the end queues points that reach Clash only after a yes; a roll never writes to the Sheet', () => {
   const w = world();
   w.ensureSettings_();
   w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade'],
     ['8001111', 'Ann L.', 'Gold', '7'], ['8002222', 'Bo K.', 'Grey', '8'], ['8003333', 'Cy D.', 'Purple', '7'], ['8004444', 'Di E.', 'Black', '8']];
   const ids = { GOLD: '8001111', GREY: '8002222', PURPLE: '8003333', BLACK: '8004444' };
-  // OFF (the default): closed everywhere.
-  assert.deepStrictEqual(JSON.parse(w.clashSummitState(0)), { on: false });
-  assert.throws(() => w.clashSummitJoin('8001111'), /closed/);
+  const props = () => w.PropertiesService.getScriptProperties();
+  assert.deepStrictEqual(JSON.parse(w.clashSummitState('', 0)), { on: false });
+  assert.throws(() => w.clashSummitJoin('8001111', ''), /closed/);
   const tok = login(w, 'oldpw');
   assert.throws(() => w.clashSummitStart(tok, 3), /closed/);
   w.setSettingValue_('SUMMIT_PARTY', 'ON');
-  assert.throws(() => w.clashSummitStart('nope', 3), 'staff only');
+  w.setSettingValue_('SUMMIT_PARTY_AUTO_ROLL', '0'); // this test plays every turn by hand
+  assert.throws(() => w.clashSummitStart('nope', 3), /sign in/);
   let s = JSON.parse(w.clashSummitStart(tok, 3)).game;
-  assert.strictEqual(s.status, 'playing');
+  const code = s.code;
+  assert.ok(/^[A-Z]{4}$/.test(code), 'a 4-letter game code');
   assert.strictEqual(s.order.length, 4);
-  assert.ok(w.book.getSheetByName('Summit Games').rows.length === 2, 'one row when it starts');
-  assert.throws(() => w.clashSummitJoin('8999999'), /isn't on the list/);
-  assert.strictEqual(JSON.parse(w.clashSummitJoin('8001111')).squad, 'GOLD');
+  assert.strictEqual(w.book.getSheetByName('Summit Games').rows.length, 2, 'one row when it starts');
+  assert.throws(() => w.clashSummitJoin('8999999', code), /isn't on the list/);
+  assert.throws(() => w.clashSummitJoin('8001111', 'QQQQ'), /No game with the code QQQQ/);
+  assert.strictEqual(JSON.parse(w.clashSummitJoin('8001111', code.toLowerCase())).squad, 'GOLD', 'codes are not case-sensitive');
+  assert.strictEqual(JSON.parse(w.clashSummitJoin('8001111', '')).code, code, 'one game going: the code can be left out');
   const first = s.order[0], other = s.order[1];
-  assert.throws(() => w.clashSummitRoll(ids[other]), /turn/);
-  // Fork: put the first squad right before space 4 with a roll of 1 left... simplest: stand on the fork.
-  const g0 = JSON.parse(w.PropertiesService.getScriptProperties().getProperty('summit-party-game'));
+  assert.throws(() => w.clashSummitRoll(ids[other], code), /turn/);
+  const g0 = JSON.parse(props().getProperty('sp-game-' + code));
   g0.squads[first].pos = 4; g0.squads[first].coins = 50;
-  w.PropertiesService.getScriptProperties().setProperty('summit-party-game', JSON.stringify(g0));
-  w.CacheService.getScriptCache().remove('summit-party-game');
+  props().setProperty('sp-game-' + code, JSON.stringify(g0));
+  w.CacheService.getScriptCache().remove('sp-game-' + code);
   const eventsBefore = w.book.getSheetByName('events').rows.length;
-  s = JSON.parse(w.clashSummitRoll(ids[first])).game;
+  s = JSON.parse(w.clashSummitRoll(ids[first], code)).game;
   assert.ok(s.pending && s.pending.squad === first, 'standing on a fork: pick a path first');
   assert.deepStrictEqual(s.pending.options.map(o => o.name), ['Main Trail', 'Ridge Shortcut']);
-  assert.throws(() => w.clashSummitRoll(ids[first]), /Pick a path/);
-  assert.throws(() => w.clashSummitChoose(ids[other], 20), /choice/);
-  s = JSON.parse(w.clashSummitChoose(ids[first], 20)).game;
+  assert.throws(() => w.clashSummitRoll(ids[first], code), /Pick a path/);
+  assert.throws(() => w.clashSummitChoose(ids[other], code, 20), /choice/);
+  s = JSON.parse(w.clashSummitChoose(ids[first], code, 20)).game;
   assert.strictEqual(s.pending, null);
   assert.strictEqual(s.order[s.turn], other, 'next squad');
-  assert.ok(s.last.path[0] === 20, 'took the Ridge Shortcut');
+  assert.strictEqual(s.last.path[0], 20, 'took the Ridge Shortcut');
   assert.strictEqual(w.book.getSheetByName('events').rows.length, eventsBefore, 'a roll never writes to the Clash Sheet');
-  // Flags: passing the flag with enough coins plants one.
-  const g1 = JSON.parse(w.PropertiesService.getScriptProperties().getProperty('summit-party-game'));
-  w.Math = Math;
-  // Play the rest out: every squad rolls (picking the main trail at forks) until the game ends.
   let guard = 0;
   while (s.status === 'playing' && guard++ < 200) {
     const who = s.pending ? s.pending.squad : s.order[s.turn];
-    s = JSON.parse(s.pending ? w.clashSummitChoose(ids[who], s.pending.options[0].id) : w.clashSummitRoll(ids[who])).game;
+    s = JSON.parse(s.pending ? w.clashSummitChoose(ids[who], code, s.pending.options[0].id) : w.clashSummitRoll(ids[who], code)).game;
   }
   assert.strictEqual(s.status, 'ended');
   assert.strictEqual(s.places.length, 4);
-  assert.ok(s.squads[first].flags >= 0 && typeof g1.flagAt === 'number');
-  const games = w.book.getSheetByName('Summit Games').rows;
-  assert.strictEqual(games[1][1], 'Finished');
-  // Points wait for a yes, then reach Clash once.
+  assert.strictEqual(w.book.getSheetByName('Summit Games').rows[1][1], 'Finished');
   const ap = JSON.parse(w.clashApprovals(tok));
   assert.strictEqual(ap.summit.length, 1);
   assert.strictEqual(ap.summit[0].pts[s.places[0]], 25);
   assert.strictEqual(w.book.getSheetByName('events').rows.length, eventsBefore, 'nothing on Clash before the yes');
   w.clashApprove(tok, 'summit', ap.summit[0].row, true);
-  const ev = w.book.getSheetByName('events').rows.filter(r => r[2] === 'summit_party');
-  assert.strictEqual(ev.length, 1);
+  assert.strictEqual(w.book.getSheetByName('events').rows.filter(r => r[2] === 'summit_party').length, 1);
   assert.strictEqual(JSON.parse(w.clashApprovals(tok)).summit.length, 0);
-  // SUMMIT_PARTY_POINTS = 0: a finished game queues nothing.
   w.setSettingValue_('SUMMIT_PARTY_POINTS', '0');
-  JSON.parse(w.clashSummitStart(tok, 1));
-  w.clashSummitEnd(tok, true);
-  assert.strictEqual(JSON.parse(w.clashApprovals(tok)).summit.length, 0);
-  // Stop without points; the OFF switch closes it again.
-  w.clashSummitStart(tok, 2);
-  assert.strictEqual(JSON.parse(w.clashSummitEnd(tok, false)).game.status, 'stopped');
+  const c2 = JSON.parse(w.clashSummitStart(tok, 1)).game.code;
+  w.clashSummitEnd(tok, c2, true);
+  assert.strictEqual(JSON.parse(w.clashApprovals(tok)).summit.length, 0, 'SUMMIT_PARTY_POINTS = 0: nothing queued');
+  const c3 = JSON.parse(w.clashSummitStart(tok, 2)).game.code;
+  assert.strictEqual(JSON.parse(w.clashSummitEnd(tok, c3, false)).game.status, 'stopped');
   w.setSettingValue_('SUMMIT_PARTY', 'OFF');
-  assert.deepStrictEqual(JSON.parse(w.clashSummitState(0)), { on: false });
+  assert.deepStrictEqual(JSON.parse(w.clashSummitState(c3, 0)), { on: false });
+});
+
+test('Summit Party: several games at once by code; any Staff Access role can run one; a squad that does not roll gets an auto-roll after SUMMIT_PARTY_AUTO_ROLL seconds', () => {
+  const w = world();
+  w.ensureSettings_();
+  w.setSettingValue_('SUMMIT_PARTY', 'ON');
+  w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade'], ['8001111', 'Ann L.', 'Gold', '7'], ['8002222', 'Bo K.', 'Grey', '8']];
+  // A Teacher (not in EDIT_ROLES, so no Clash Admin) can still run Summit Party.
+  w.book.insertSheet('Staff Access').rows = [['Email', 'Name', 'Role', 'Active', 'Added', 'Last Sign-in'], ['teach@easdpa.org', 'Ms. Ridge', 'Teacher', true, '2026-11-01', '']];
+  w.Session.getActiveUser = () => ({ getEmail: () => 'teach@easdpa.org' });
+  const t = JSON.parse(w.clashSummitSignIn()).token;
+  const a = JSON.parse(w.clashSummitStart(t, 4)).game, b = JSON.parse(w.clashSummitStart(t, 4)).game;
+  assert.notStrictEqual(a.code, b.code, 'two classrooms, two codes');
+  assert.throws(() => w.clashSummitJoin('8001111', ''), /game code/, 'two games going: the code is needed');
+  assert.strictEqual(JSON.parse(w.clashSummitJoin('8001111', b.code)).code, b.code);
+  w.Session.getActiveUser = () => ({ getEmail: () => 'kid@gomounts.org' });
+  assert.throws(() => w.clashSummitSignIn(), /not on the Clash Staff Access list/);
+  // Auto-roll: nobody rolled for 31 seconds.
+  const props = w.PropertiesService.getScriptProperties();
+  const g = JSON.parse(props.getProperty('sp-game-' + a.code));
+  const waiting = g.order[g.turn];
+  g.turnAt = Date.now() - 31000;
+  props.setProperty('sp-game-' + a.code, JSON.stringify(g));
+  w.CacheService.getScriptCache().remove('sp-game-' + a.code);
+  const after = JSON.parse(w.clashSummitState(a.code, 0)).game;
+  assert.ok(after.last.squad === waiting && after.last.auto, 'the board rolled for ' + waiting);
+  assert.ok(/auto-roll|\(auto\)/.test(after.log.join(' ')));
+  w.setSettingValue_('SUMMIT_PARTY_AUTO_ROLL', '0');
+  const g2 = JSON.parse(props.getProperty('sp-game-' + b.code)); g2.turnAt = Date.now() - 999000;
+  props.setProperty('sp-game-' + b.code, JSON.stringify(g2)); w.CacheService.getScriptCache().remove('sp-game-' + b.code);
+  assert.strictEqual(JSON.parse(w.clashSummitState(b.code, 0)).game.seq, g2.seq, '0 = never auto-roll');
 });
 
 console.log('\n' + passed + ' tests passed');

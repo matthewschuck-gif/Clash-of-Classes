@@ -2,6 +2,13 @@
  * Clash of Classes -- Apps Script backend
  * File 63: Summit Party, the squad board game.
  *
+ * GAME CODES: every game gets a 4-letter code, shown big on its board, so several can run at once
+ * (classrooms during PASS, the cafeteria, an assembly). Chromebooks type the code with their 800#.
+ * With only one game going, the code can be left out. AUTO-ROLL: a squad that has not rolled for
+ * SUMMIT_PARTY_AUTO_ROLL seconds (30) gets an automatic roll (Main Trail at forks); 0 = off.
+ * WHO RUNS A GAME: any staff member on the Staff Access tab (any role) signs in on the board with
+ * their school account (open the board on the staff link), or anyone with the admin password.
+ *
  * The board shows on one big screen: clashofclasses.org/?page=summit (SummitParty.html). Each squad
  * plays from its own Chromebook: ?page=summit-play (SummitPlay.html), where a student types an
  * 800# (checked on the Student Board). On their squad's turn they roll; at a fork they pick a path.
@@ -27,7 +34,6 @@
 
 const SP_GAME_HEADERS_ = ['Game', 'Status', 'Started', 'Ended', 'Rounds', 'Started By', 'Result'];
 const SP_POINT_HEADERS_ = ['Game', 'Ended', 'Result', 'BLACK', 'GOLD', 'GREY', 'PURPLE', 'Approved', 'Sent'];
-const SP_PROP_ = 'summit-party-game';
 const SP_SPACES_ = { start: 'Base Camp', trail: 'Trail (+3 coins)', rock: 'Rockslide (-3 coins)', cairn: 'Cairn (draw a trail card)', spring: 'Spring (+2 on your next roll)' };
 
 // The board: a loop of 20 spaces around the mountain, two forks with a shortcut each.
@@ -66,24 +72,100 @@ function spOn_() { return String(getSetting_('SUMMIT_PARTY') || 'OFF').toUpperCa
 function spRequireOn_() { if (!spOn_()) throw new Error('Summit Party is closed right now.'); }
 function spSetting_(k, d) { const v = Number(getSetting_(k)); return String(getSetting_(k) || '').trim() !== '' && !isNaN(v) ? v : d; }
 
-function spLoad_() {
-  const cache = CacheService.getScriptCache();
-  const hit = cache.get(SP_PROP_);
+// ── GAMES BY CODE ──────────────────────────────────────────────────
+// Each game has a 4-letter code (shown on its board). Several can run at once (classrooms, the
+// cafeteria, an assembly). Each game lives in its own Script Property; 'sp-games' lists them.
+const SP_LETTERS_ = 'ACDEFGHJKMNPQRTUVWXY'; // no B/I/L/O/S/Z: easy to read off a screen
+const SP_MAX_GAMES_ = 20;
+function spCode_(code) { return String(code || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4); }
+function spKey_(code) { return 'sp-game-' + code; }
+function spIndex_() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('sp-games') || '[]'); } catch (e) { return []; } }
+function spSetIndex_(list) { PropertiesService.getScriptProperties().setProperty('sp-games', JSON.stringify(list)); }
+
+// Games older than 12 hours drop off the list (their result is already on the Summit Games tab).
+function spTidy_() {
+  const now = Date.now(), props = PropertiesService.getScriptProperties(), keep = [];
+  spIndex_().forEach(function (x) {
+    if (now - Number(x.started || 0) > 12 * 3600000) { props.deleteProperty(spKey_(x.code)); CacheService.getScriptCache().remove(spKey_(x.code)); }
+    else keep.push(x);
+  });
+  spSetIndex_(keep);
+  return keep;
+}
+
+function spNewCode_(taken) {
+  for (let i = 0; i < 50; i++) {
+    let c = '';
+    for (let k = 0; k < 4; k++) c += SP_LETTERS_.charAt(Math.floor(Math.random() * SP_LETTERS_.length));
+    if (taken.indexOf(c) === -1) return c;
+  }
+  throw new Error('Could not make a game code. Try again.');
+}
+
+// The game for a code. No code: the one game being played, if there is exactly one (the cafeteria).
+function spLoad_(code) {
+  code = spCode_(code);
+  if (!code) {
+    const live = spIndex_().filter(function (x) { return x.status === 'playing'; });
+    if (live.length !== 1) return null;
+    code = live[0].code;
+  }
+  const cache = CacheService.getScriptCache(), hit = cache.get(spKey_(code));
   if (hit) { try { return JSON.parse(hit); } catch (e) { /* read the property */ } }
-  const raw = PropertiesService.getScriptProperties().getProperty(SP_PROP_);
+  const raw = PropertiesService.getScriptProperties().getProperty(spKey_(code));
   if (!raw) return null;
-  try { cache.put(SP_PROP_, raw, 600); return JSON.parse(raw); } catch (e) { return null; }
+  try { cache.put(spKey_(code), raw, 600); return JSON.parse(raw); } catch (e) { return null; }
 }
 function spSave_(g) {
   g.seq = (Number(g.seq) || 0) + 1;
   const raw = JSON.stringify(g);
-  PropertiesService.getScriptProperties().setProperty(SP_PROP_, raw);
-  CacheService.getScriptCache().put(SP_PROP_, raw, 600);
+  PropertiesService.getScriptProperties().setProperty(spKey_(g.code), raw);
+  CacheService.getScriptCache().put(spKey_(g.code), raw, 600);
+  const list = spIndex_(), x = list.filter(function (y) { return y.code === g.code; })[0];
+  if (x && x.status !== g.status) { x.status = g.status; spSetIndex_(list); }
   return g;
 }
 function spWithLock_(fn) {
   const lock = LockService.getScriptLock(); lock.waitLock(15000);
   try { return fn(); } finally { lock.releaseLock(); }
+}
+function spGame_(code) {
+  const g = spLoad_(code);
+  if (!g) throw new Error(spCode_(code) ? 'No game with the code ' + spCode_(code) + '. Check the big screen.' : 'Type the game code from the big screen.');
+  return g;
+}
+
+// ── STAFF WHO RUN A GAME ───────────────────────────────────────────
+// Any staff member on the Staff Access tab with Active ticked (any role, not only EDIT_ROLES) may
+// start, skip and end games. Admin sessions (password or school account) work too.
+function spStaff_(token) {
+  const admin = adminSession_(token);
+  if (admin) return admin;
+  const raw = token && typeof token === 'string' && token.length < 200 ? CacheService.getScriptCache().get('sp-staff-' + token) : null;
+  if (raw) {
+    let who = null; try { who = JSON.parse(raw); } catch (e) { who = null; }
+    if (who && spStaffRecord_(who.email)) return who;
+  }
+  throw new Error('Please sign in again (staff on the Clash Staff Access list).');
+}
+function spStaffRecord_(email) {
+  email = String(email || '').toLowerCase();
+  if (!email) return null;
+  const rec = staffAccessMap_()[email];
+  if (email === ownerEmail_()) return { email: email, name: (rec && rec.name) || 'Sheet owner', role: 'Admin' };
+  if (!staffDomainOk_(email) || !rec || !rec.active) return null;
+  return { email: email, name: rec.name || email, role: rec.role || 'Staff' };
+}
+/** Staff sign-in on the board with the school account (on the staff link). Any Staff Access role. */
+function clashSummitSignIn() {
+  const email = activeEmail_();
+  if (!email) throw new Error('Open the board on the staff link, signed in with your school Google account. Or use the admin password.');
+  const who = spStaffRecord_(email);
+  if (!who) throw new Error(email + ' is not on the Clash Staff Access list. Ask Mr. Schuck to add you.');
+  const token = Utilities.getUuid() + Utilities.getUuid().replace(/-/g, '');
+  CacheService.getScriptCache().put('sp-staff-' + token, JSON.stringify(who), 6 * 3600);
+  logAdminAction_({ name: who.name, email: who.email, role: who.role, via: 'google' }, 'Summit Party sign-in', '');
+  return JSON.stringify({ token: token, name: who.name });
 }
 
 function spPlaces_(g) {
@@ -104,7 +186,7 @@ function spWalk_(g, board, s, steps) {
   const me = g.squads[s];
   while (steps > 0) {
     const here = board[me.pos];
-    if (here.next.length > 1) { g.pending = { squad: s, left: steps, at: here.id, options: here.next.map(function (id) { return { id: id, name: board[id].path || 'Main Trail' }; }) }; return; }
+    if (here.next.length > 1) { g.turnAt = Date.now(); g.pending = { squad: s, left: steps, at: here.id, options: here.next.map(function (id) { return { id: id, name: board[id].path || 'Main Trail' }; }) }; return; }
     me.pos = here.next[0];
     g.last.path.push(me.pos);
     steps--;
@@ -135,6 +217,7 @@ function spLand_(g, board, s) {
 
 function spNextTurn_(g, board) {
   g.pending = null;
+  g.turnAt = Date.now();
   g.turn++;
   if (g.turn >= g.order.length) { g.turn = 0; g.round++; }
   if (g.round > g.rounds) spFinish_(g, 'ended');
@@ -168,46 +251,89 @@ function spMakeTab_(name, headers) {
 }
 function ensureSummitPartyTabs_() { spGamesTab_(); spPointsTab_(); }
 
-// What the screen and the Chromebooks see. sinceSeq = the last one the page has: { same: true } if nothing changed.
+// What the screen and the Chromebooks see.
 function spView_(g) {
-  return { on: true, board: spBoard_(), spaces: SP_SPACES_, flagCost: spSetting_('SUMMIT_PARTY_FLAG_COST', 10), game: g };
+  return { on: true, board: spBoard_(), spaces: SP_SPACES_, flagCost: spSetting_('SUMMIT_PARTY_FLAG_COST', 10),
+    autoRoll: spSetting_('SUMMIT_PARTY_AUTO_ROLL', 30), rounds: spSetting_('SUMMIT_PARTY_ROUNDS', 8), game: g };
 }
 
-/** Public: the live game for the screen and the controllers. */
-function clashSummitState(sinceSeq) {
+// AUTO-ROLL: when a squad has not rolled (or picked a path) for SUMMIT_PARTY_AUTO_ROLL seconds,
+// the board rolls for it (the Main Trail at forks), so a drop-in game keeps moving. 0 = off.
+function spMaybeAuto_(g) {
+  const secs = spSetting_('SUMMIT_PARTY_AUTO_ROLL', 30);
+  if (!g || g.status !== 'playing' || !(secs > 0) || Date.now() - Number(g.turnAt || 0) < secs * 1000) return g;
+  return spWithLock_(function () {
+    const now = spLoad_(g.code), board = spBoard_();
+    if (!now || now.status !== 'playing' || Date.now() - Number(now.turnAt || 0) < secs * 1000) return now;
+    if (now.pending) {
+      const s = now.pending.squad, opt = now.pending.options[0];
+      spLog_(now, spTitle_(s) + ' took the ' + opt.name + ' (auto).');
+      spTake_(now, board, s, opt.id);
+    } else {
+      const s = now.order[now.turn];
+      spRoll_(now, board, s, true);
+    }
+    return spSave_(now);
+  });
+}
+
+function spRoll_(g, board, s, auto) {
+  const me = g.squads[s], die = 1 + Math.floor(Math.random() * 6), roll = die + (me.boost || 0);
+  g.last = { squad: s, roll: roll, die: die, boost: me.boost || 0, path: [], events: [], from: me.pos, auto: !!auto };
+  me.boost = 0;
+  spLog_(g, spTitle_(s) + ' rolled ' + die + (g.last.boost ? ' +' + g.last.boost : '') + (auto ? ' (auto-roll)' : '') + '.');
+  spWalk_(g, board, s, roll);
+}
+function spTake_(g, board, s, pick) {
+  const me = g.squads[s], left = g.pending.left - 1;
+  g.pending = null;
+  me.pos = pick;
+  g.last.path.push(pick);
+  if (me.pos === g.flagAt) spTryFlag_(g, board, s);
+  if (left > 0) spWalk_(g, board, s, left); else spLand_(g, board, s);
+}
+
+/** Public: one game for the screen and the controllers. sinceSeq = the page's last one ({ same: true } if nothing changed). */
+function clashSummitState(code, sinceSeq) {
   if (!spOn_()) return JSON.stringify({ on: false });
-  const g = spLoad_();
+  let g = spLoad_(code);
+  g = spMaybeAuto_(g);
   if (g && Number(sinceSeq) && Number(sinceSeq) === g.seq) return JSON.stringify({ on: true, same: true, seq: g.seq });
-  return JSON.stringify(spView_(g));
+  const v = spView_(g);
+  if (!g) v.live = spIndex_().filter(function (x) { return x.status === 'playing'; }).length;
+  return JSON.stringify(v);
 }
 
-/** Staff: start a new game (an unfinished one is stopped first). */
+/** Staff: start a new game; it gets its own code. */
 function clashSummitStart(token, rounds) {
-  const who = requireAdmin_(token);
+  const who = spStaff_(token);
   spRequireOn_();
   return spWithLock_(function () {
-    const board = spBoard_(), old = spLoad_();
-    if (old && old.status === 'playing') spFinish_(old, 'stopped');
+    const board = spBoard_(), list = spTidy_();
+    if (list.filter(function (x) { return x.status === 'playing'; }).length >= SP_MAX_GAMES_) throw new Error('There are already ' + SP_MAX_GAMES_ + ' games going. End one first.');
+    const code = spNewCode_(list.map(function (x) { return x.code; }));
     const order = SQUAD_KEYS_.slice().sort(function () { return Math.random() - 0.5; });
-    const g = { id: 'SP-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd-HHmm'), status: 'playing', startedAt: new Date().toISOString(),
-      rounds: Math.max(1, Math.min(30, Math.round(Number(rounds) || spSetting_('SUMMIT_PARTY_ROUNDS', 8)))), round: 1, turn: 0, order: order,
-      squads: {}, flagAt: 0, pending: null, log: [], seq: 0, last: { squad: '', roll: 0, path: [], events: [] } };
+    const g = { id: 'SP-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd-HHmm') + '-' + code, code: code, status: 'playing', startedAt: new Date().toISOString(),
+      rounds: Math.max(1, Math.min(30, Math.round(Number(rounds) || spSetting_('SUMMIT_PARTY_ROUNDS', 8)))), round: 1, turn: 0, order: order, turnAt: Date.now(),
+      squads: {}, flagAt: 0, pending: null, log: [], seq: 0, last: { squad: '', roll: 0, path: [], events: [] }, by: String(who.name || who.email || 'staff') };
     order.forEach(function (s) { g.squads[s] = { pos: 0, coins: 5, flags: 0, boost: 0 }; });
     spMoveFlag_(g, board);
-    spLog_(g, 'A new Summit Party! ' + spTitle_(order[0]) + ' goes first.');
-    spGamesTab_().appendRow([g.id, 'Playing', todayYmd_(), '', g.rounds, String(who && (who.name || who.email) || 'staff'), '']);
+    spLog_(g, 'A new Summit Party! Game code ' + code + '. ' + spTitle_(order[0]) + ' goes first.');
+    list.push({ code: code, status: 'playing', started: Date.now() });
+    spSetIndex_(list);
+    spGamesTab_().appendRow([g.id, 'Playing', todayYmd_(), '', g.rounds, g.by, '']);
     return JSON.stringify(spView_(spSave_(g)));
   });
 }
 
 /** Staff: skip the squad whose turn it is (nobody at their Chromebook). */
-function clashSummitSkip(token) {
-  requireAdmin_(token);
+function clashSummitSkip(token, code) {
+  spStaff_(token);
   spRequireOn_();
   return spWithLock_(function () {
-    const g = spLoad_();
-    if (!g || g.status !== 'playing') throw new Error('No game is being played.');
-    const s = g.order[g.turn];
+    const g = spGame_(code);
+    if (g.status !== 'playing') throw new Error('That game is over.');
+    const s = g.pending ? g.pending.squad : g.order[g.turn];
     g.last = { squad: s, roll: 0, path: [], events: [] };
     spLog_(g, spTitle_(s) + ' skipped a turn.');
     spNextTurn_(g, spBoard_());
@@ -215,12 +341,12 @@ function clashSummitSkip(token) {
   });
 }
 
-/** Staff: end the game now. finish = true scores it (points wait for approval); false just stops it. */
-function clashSummitEnd(token, finish) {
-  requireAdmin_(token);
+/** Staff: end a game now. finish = true scores it (points wait for approval); false just stops it. */
+function clashSummitEnd(token, code, finish) {
+  spStaff_(token);
   return spWithLock_(function () {
-    const g = spLoad_();
-    if (!g || g.status !== 'playing') throw new Error('No game is being played.');
+    const g = spGame_(code);
+    if (g.status !== 'playing') throw new Error('That game is over.');
     g.last = { squad: '', roll: 0, path: [], events: [] };
     spFinish_(g, finish ? 'ended' : 'stopped');
     spLog_(g, finish ? 'The game was ended early. Final results are in.' : 'The game was stopped. No points.');
@@ -232,7 +358,7 @@ function clashSummitEnd(token, finish) {
 function spPlayer_(id) {
   spRequireOn_();
   const cache = CacheService.getScriptCache(), used = Number(cache.get('sp-calls')) || 0;
-  if (used >= 2000) throw new Error('Summit Party is busy. Try again in a minute.');
+  if (used >= 4000) throw new Error('Summit Party is busy. Try again in a minute.');
   cache.put('sp-calls', String(used + 1), 600);
   const sid = id800_(id);
   if (sid.length < 5) throw new Error('Type your 800 number.');
@@ -243,45 +369,36 @@ function spPlayer_(id) {
   return { id: sid, squad: squad };
 }
 
-/** Controller: who am I (the page remembers the 800# on that Chromebook). */
-function clashSummitJoin(id) {
-  const p = spPlayer_(id);
-  return JSON.stringify({ squad: p.squad, state: JSON.parse(clashSummitState(0)) });
+/** Controller: join a game (800# + the code on the big screen). */
+function clashSummitJoin(id, code) {
+  const p = spPlayer_(id), g = spGame_(code);
+  return JSON.stringify({ squad: p.squad, code: g.code, state: JSON.parse(clashSummitState(g.code, 0)) });
 }
 
 /** Controller: roll for your squad (only on its turn). */
-function clashSummitRoll(id) {
+function clashSummitRoll(id, code) {
   const p = spPlayer_(id);
   return spWithLock_(function () {
-    const g = spLoad_(), board = spBoard_();
-    if (!g || g.status !== 'playing') throw new Error('No game right now. Watch the big screen.');
+    const g = spGame_(code), board = spBoard_();
+    if (g.status !== 'playing') throw new Error('This game is over. Watch the big screen.');
     if (g.order[g.turn] !== p.squad) throw new Error('It is ' + spTitle_(g.order[g.turn]) + '\'s turn.');
     if (g.pending) throw new Error('Pick a path first.');
-    const me = g.squads[p.squad], die = 1 + Math.floor(Math.random() * 6), roll = die + (me.boost || 0);
-    g.last = { squad: p.squad, roll: roll, die: die, boost: me.boost || 0, path: [], events: [], from: me.pos };
-    me.boost = 0;
-    spLog_(g, spTitle_(p.squad) + ' rolled ' + die + (g.last.boost ? ' +' + g.last.boost : '') + '.');
-    spWalk_(g, board, p.squad, roll);
+    spRoll_(g, board, p.squad, false);
     return JSON.stringify(spView_(spSave_(g)));
   });
 }
 
 /** Controller: at a fork, pick the path (one of the options' ids). */
-function clashSummitChoose(id, nodeId) {
+function clashSummitChoose(id, code, nodeId) {
   const p = spPlayer_(id);
   return spWithLock_(function () {
-    const g = spLoad_(), board = spBoard_();
-    if (!g || g.status !== 'playing' || !g.pending) throw new Error('Nothing to choose right now.');
+    const g = spGame_(code), board = spBoard_();
+    if (g.status !== 'playing' || !g.pending) throw new Error('Nothing to choose right now.');
     if (g.pending.squad !== p.squad) throw new Error('It is ' + spTitle_(g.pending.squad) + '\'s choice.');
     const pick = Number(nodeId), opt = g.pending.options.filter(function (o) { return o.id === pick; })[0];
     if (!opt) throw new Error('Pick one of the paths.');
-    const me = g.squads[p.squad], left = g.pending.left - 1;
-    g.pending = null;
-    me.pos = pick;
-    g.last.path.push(pick);
     spLog_(g, spTitle_(p.squad) + ' took the ' + opt.name + '.');
-    if (me.pos === g.flagAt) spTryFlag_(g, board, p.squad);
-    if (left > 0) spWalk_(g, board, p.squad, left); else spLand_(g, board, p.squad);
+    spTake_(g, board, p.squad, pick);
     return JSON.stringify(spView_(spSave_(g)));
   });
 }
@@ -311,4 +428,4 @@ function serveSummitPlay_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_63_SummitParty = '143732deb0';
+var FILE_STAMP_63_SummitParty = '5d34a29a85';

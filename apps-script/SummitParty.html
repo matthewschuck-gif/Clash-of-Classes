@@ -54,6 +54,8 @@
   .msg { font-size:13px; color:#fca5a5; min-height:1em; margin-top:6px; }
   .join { font-size:14px; color:var(--mute); line-height:1.5; }
   .join b { color:var(--ink); font-family:'DM Mono',monospace; }
+  .code { font-family:'DM Mono',monospace; font-weight:500; font-size:clamp(34px,4.2vw,70px); letter-spacing:.18em; color:var(--gold); line-height:1; margin:4px 0 6px; }
+  .auto { color:var(--mute); font-size:.85em; }
   .confetti { position:fixed; top:-20px; width:10px; height:16px; border-radius:3px; pointer-events:none; animation:fall linear forwards; z-index:9; }
   @keyframes fall { to { transform:translateY(110vh) rotate(720deg); } }
   @media (prefers-reduced-motion: reduce) { .confetti { display:none; } }
@@ -73,7 +75,7 @@
     <div class="card"><div class="round" id="round">Summit Party</div><div class="turnline" id="turnline"></div></div>
     <div class="card"><h3>Flags and coins</h3><div id="standings"></div></div>
     <div class="card log"><h3>On the trail</h3><div id="log"></div></div>
-    <div class="card"><h3>Play from your squad's Chromebook</h3><div class="join">Open <b id="joinLink"></b> and type your 800#. On your squad's turn, tap Roll.</div></div>
+    <div class="card"><h3>Game code</h3><div class="code" id="codeBig">····</div><div class="join">On one Chromebook per squad, open <b id="joinLink"></b>, type this code and your 800#. On your squad's turn, tap Roll.</div></div>
     <div class="card" id="staff"></div>
   </aside>
 </div>
@@ -81,7 +83,8 @@
 (function () {
   var COLORS = { BLACK: '#e9e3f5', GOLD: '#ffd23f', GREY: '#9aa5b8', PURPLE: '#b583ff' };
   var TYPE = { start: '#ffe100', trail: '#5aa9ff', rock: '#ff6b6b', cairn: '#c084fc', spring: '#4ade80' };
-  var S = null, seq = 0, token = '', busy = false, tokens = {}, flagEl = null, drawn = false;
+  var S = null, seq = 0, token = '', busy = false, tokens = {}, flagEl = null, drawn = false, code = '';
+  try { code = sessionStorage.getItem('summit-code') || ''; } catch (e) {}
   try { token = sessionStorage.getItem('summit-admin') || ''; } catch (e) {}
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -134,7 +137,7 @@
     $('round').textContent = g.status === 'playing' ? 'Round ' + Math.min(g.round, g.rounds) + ' of ' + g.rounds : g.status === 'ended' ? 'Final' : 'Stopped';
     var now = g.order[g.turn];
     $('turnline').innerHTML = g.status !== 'playing' ? (g.places ? '🏆 <b style="color:' + COLORS[g.places[0]] + '">' + esc(title(g.places[0])) + '</b> wins the Summit Party!' : '')
-      : g.pending ? '<b style="color:' + COLORS[g.pending.squad] + '">' + esc(title(g.pending.squad)) + '</b> is picking a path…' : 'Your turn: <b style="color:' + COLORS[now] + '">' + esc(title(now)) + '</b>. Roll on your Chromebook.';
+      : (g.pending ? '<b style="color:' + COLORS[g.pending.squad] + '">' + esc(title(g.pending.squad)) + '</b> is picking a path…' : 'Your turn: <b style="color:' + COLORS[now] + '">' + esc(title(now)) + '</b>. Roll on your Chromebook.') + ' <span class="auto" id="auto"></span>';
     $('standings').innerHTML = places.map(function (s) { var q = g.squads[s]; return '<div class="sq"><i style="background:' + COLORS[s] + '"></i><b>' + esc(title(s)) + '</b><span class="f">🚩 ' + q.flags + '</span><span class="c">' + q.coins + ' ¢</span></div>'; }).join('');
     $('log').innerHTML = (g.log || []).map(function (t) { return '<div>' + esc(t) + '</div>'; }).join('');
     Object.keys(tokens).forEach(function (s) { tokens[s].classList.toggle('turn', g.status === 'playing' && s === (g.pending ? g.pending.squad : now)); });
@@ -144,7 +147,7 @@
     if (!token) {
       el.innerHTML = '<h3>Staff</h3><input type="text" data-pw id="pw" placeholder="Admin password" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore>' +
         '<div class="row"><button class="ghost" id="signin">Sign in</button><button class="ghost" id="gsignin">Sign in with my school account</button></div><div class="msg" id="smsg"></div>';
-      var go = function (pw) { run('clashLogin', pw).then(function (r) { token = r.token; try { sessionStorage.setItem('summit-admin', token); } catch (e) {} staff(); }).catch(function (e) { $('smsg').textContent = msgOf(e); }); };
+      var go = function (pw) { run.apply(null, pw ? ['clashLogin', pw] : ['clashSummitSignIn']).then(function (r) { token = r.token; try { sessionStorage.setItem('summit-admin', token); } catch (e) {} staff(); }).catch(function (e) { $('smsg').textContent = msgOf(e); }); };
       $('signin').onclick = function () { go($('pw').value); };
       $('gsignin').onclick = function () { go(''); };
       return;
@@ -153,10 +156,14 @@
     el.innerHTML = '<h3>Staff</h3><div class="row"><label style="font-size:14px">Rounds <input id="rounds" type="number" min="1" max="30" value="' + (S.rounds || 8) + '" style="width:5em"></label><button class="gold" id="start">' + (playing ? 'Start over' : 'Start a game') + '</button></div>' +
       '<div class="row"><button class="ghost" id="skip"' + (playing ? '' : ' disabled') + '>Skip this turn</button><button class="ghost" id="finish"' + (playing ? '' : ' disabled') + '>End and score it</button><button class="ghost" id="stop"' + (playing ? '' : ' disabled') + '>Stop, no points</button></div><div class="msg" id="smsg"></div>';
     var act = function (p) { p.then(function (v) { take(v); }).catch(function (e) { if (/sign in|password|session/i.test(msgOf(e))) { token = ''; try { sessionStorage.removeItem('summit-admin'); } catch (x) {} staff(); } $('smsg').textContent = msgOf(e); }); };
-    $('start').onclick = function () { if (playing && !confirm('Stop this game and start a new one?')) return; act(run('clashSummitStart', token, Number($('rounds').value) || 8)); };
-    $('skip').onclick = function () { act(run('clashSummitSkip', token)); };
-    $('finish').onclick = function () { if (confirm('End now and score it? The points wait for a yes in Admin.')) act(run('clashSummitEnd', token, true)); };
-    $('stop').onclick = function () { if (confirm('Stop the game with no points?')) act(run('clashSummitEnd', token, false)); };
+    $('start').onclick = function () {
+      var rounds = Number($('rounds').value) || 8;
+      if (playing && !confirm('Stop this game (no points) and start a new one?')) return;
+      act((playing ? run('clashSummitEnd', token, code, false) : Promise.resolve()).then(function () { return run('clashSummitStart', token, rounds); }));
+    };
+    $('skip').onclick = function () { act(run('clashSummitSkip', token, code)); };
+    $('finish').onclick = function () { if (confirm('End now and score it? The points wait for a yes in Admin.')) act(run('clashSummitEnd', token, code, true)); };
+    $('stop').onclick = function () { if (confirm('Stop the game with no points?')) act(run('clashSummitEnd', token, code, false)); };
   }
   // A new state: animate the last move hop by hop, then update the side.
   function take(v) {
@@ -167,6 +174,8 @@
     if (!drawn) drawBoard(S.board);
     var g = S.game;
     $('joinLink').textContent = 'clashofclasses.org/?page=summit-play';
+    if (g && g.code !== code) { code = g.code; try { sessionStorage.setItem('summit-code', code); } catch (e) {} }
+    $('codeBig').textContent = g ? g.code : '····';
     if (!g) { side(); staff(); return; }
     var L = g.last || { path: [] }, moved = !first && prev && prev.id === g.id && L.squad && L.path.length;
     Object.keys(g.squads).forEach(function (s) { if (!(moved && s === L.squad)) place(s, g.squads[s].pos); });
@@ -184,11 +193,18 @@
       side(); staff(); busy = false;
     })();
   }
-  function poll() { if (busy) return; run('clashSummitState', seq).then(take).catch(function () {}); }
-  run('clashSummitState', 0).then(take).catch(function (e) { document.querySelector('.wrap').innerHTML = '<div class="closed">' + esc(msgOf(e)) + '</div>'; });
+  function poll() { if (busy) return; run('clashSummitState', code, seq).then(take).catch(function () {}); }
+  // The auto-roll countdown under whose turn it is.
+  setInterval(function () {
+    var a = $('auto'), g = S && S.game;
+    if (!a || !g || g.status !== 'playing' || !(S.autoRoll > 0)) { if (a) a.textContent = ''; return; }
+    var left = Math.max(0, S.autoRoll - Math.floor((Date.now() - Number(g.turnAt || 0)) / 1000));
+    a.textContent = left ? '(auto-roll in ' + left + 's)' : '(auto-rolling…)';
+  }, 1000);
+  run('clashSummitState', code, 0).then(take).catch(function (e) { document.querySelector('.wrap').innerHTML = '<div class="closed">' + esc(msgOf(e)) + '</div>'; });
   setInterval(poll, 1500);
 })();
 </script>
 </body>
 </html>
-<!-- file-stamp: b51a1ff717 -->
+<!-- file-stamp: 33247b27dd -->

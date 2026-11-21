@@ -296,6 +296,7 @@ const DEFAULT_SETTINGS = [
   ['STUDENT_EMAIL_PATTERN', '{800}@gomounts.org', 'My Climb sign-in when the Student Board has no Email column: how a student email is built from the 800#, e.g. {800}@easdpa.org. Blank = use the Email column only.'],
   ['SUMMIT_PARTY', 'OFF', 'Summit Party, the squad board game (63_SummitParty.gs): ON = the big-screen board (?page=summit) and the squad Chromebooks (?page=summit-play) work. OFF = both say it is closed.'],
   ['SUMMIT_PARTY_ROUNDS', '8', 'Summit Party: rounds in a game (every squad moves once a round). Staff can pick another number when they start.'],
+  ['SUMMIT_PARTY_AUTO_ROLL', '30', 'Summit Party: seconds a squad has to roll (or pick a path) before the board rolls for it (Main Trail at forks), so a drop-in game keeps moving. 0 = never (staff press Skip).'],
   ['SUMMIT_PARTY_FLAG_COST', '10', 'Summit Party: coins to plant a Summit Flag.'],
   ['SUMMIT_PARTY_POINTS', '25,15,10,5', 'Summit Party: Clash points by place (1st,2nd,3rd,4th). They wait for a yes in Admin › System › Waiting for a yes. 0 = no squad points.'],
   ['QUARTER_RECAP', 'ON', 'Quarter recap on the Tracker (57_Leagues.gs): ON = shows it. OFF = hidden.'],
@@ -521,4 +522,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = '95ab878c8b';
+var FILE_STAMP_01_Config = 'fac76f5ba6';

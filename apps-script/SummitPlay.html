@@ -43,8 +43,8 @@
 <script>
 (function () {
   var COLORS = { BLACK: '#e9e3f5', GOLD: '#ffd23f', GREY: '#9aa5b8', PURPLE: '#b583ff' };
-  var me = '', squad = '', S = null, seq = 0, acting = false;
-  try { me = localStorage.getItem('clash-my-800') || ''; } catch (e) {}
+  var me = '', squad = '', S = null, seq = 0, acting = false, code = '';
+  try { me = localStorage.getItem('clash-my-800') || ''; code = sessionStorage.getItem('summit-code') || ''; } catch (e) {}
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function title(s) { s = String(s || ''); return s.charAt(0) + s.slice(1).toLowerCase(); }
@@ -52,16 +52,17 @@
   function msgOf(e) { return String(e && e.message || e).replace(/^Exception:\s{0,}/, ''); }
 
   function ask(err) {
-    $('app').innerHTML = '<div class="card"><p class="sub" style="margin:0 0 12px">Type your 800 number. Your squad plays from this Chromebook.</p>' +
-      '<input id="id" inputmode="numeric" autocomplete="off" maxlength="10" value="' + esc(me) + '" aria-label="Your 800 number">' +
+    $('app').innerHTML = '<div class="card"><p class="sub" style="margin:0 0 12px">Type the game code on the big screen, then your 800 number. Your squad plays from this Chromebook.</p>' +
+      '<input id="code" autocomplete="off" autocapitalize="characters" maxlength="4" value="' + esc(code) + '" placeholder="GAME CODE" aria-label="Game code" style="text-transform:uppercase;margin-bottom:10px">' +
+      '<input id="id" inputmode="numeric" autocomplete="off" maxlength="10" value="' + esc(me) + '" placeholder="800 number" aria-label="Your 800 number">' +
       '<button class="go" id="join">Join my squad</button><div class="msg" id="msg">' + esc(err || '') + '</div></div>';
-    $('id').focus();
-    var go = function () { me = $('id').value.replace(/\D/g, ''); join(); };
-    $('join').onclick = go; $('id').onkeydown = function (e) { if (e.key === 'Enter') go(); };
+    (code ? $('id') : $('code')).focus();
+    var go = function () { me = $('id').value.replace(/\D/g, ''); code = $('code').value.toUpperCase().replace(/[^A-Z]/g, ''); join(); };
+    $('join').onclick = go; $('id').onkeydown = $('code').onkeydown = function (e) { if (e.key === 'Enter') go(); };
   }
   function join() {
-    run('clashSummitJoin', me).then(function (r) {
-      squad = r.squad; try { localStorage.setItem('clash-my-800', me); } catch (e) {}
+    run('clashSummitJoin', me, code).then(function (r) {
+      squad = r.squad; code = r.code; try { localStorage.setItem('clash-my-800', me); sessionStorage.setItem('summit-code', code); } catch (e) {}
       document.documentElement.style.setProperty('--sq', COLORS[squad] || '#b583ff');
       take(r.state);
     }).catch(function (e) { ask(msgOf(e)); });
@@ -89,20 +90,20 @@
     else if (myTurn) body += '<button class="roll" id="roll">ROLL</button><p class="sub">Your squad\'s turn!</p>';
     else body += '<p class="wait">' + (pend ? esc(title(pend.squad)) + ' is picking a path.' : 'It\'s ' + esc(title(now)) + '\'s turn.') + '</p><p class="sub">Watch the big screen. Your button lights up on your turn.</p>';
     el.innerHTML = head + body + '<div class="msg" id="msg"></div></div>' + foot();
-    if ($('roll')) $('roll').onclick = function () { act(run('clashSummitRoll', me)); };
-    document.querySelectorAll('[data-pick]').forEach(function (b) { b.onclick = function () { act(run('clashSummitChoose', me, Number(b.getAttribute('data-pick')))); }; });
+    if ($('roll')) $('roll').onclick = function () { act(run('clashSummitRoll', me, code)); };
+    document.querySelectorAll('[data-pick]').forEach(function (b) { b.onclick = function () { act(run('clashSummitChoose', me, code, Number(b.getAttribute('data-pick')))); }; });
     wireFoot();
   }
-  function foot() { return '<p class="small">Not ' + esc(me) + '? <a href="#" id="change">Change the 800#</a></p>'; }
+  function foot() { return '<p class="small">Game ' + esc(code) + ' · not ' + esc(me) + '? <a href="#" id="change">Change</a></p>'; }
   function wireFoot() { var c = $('change'); if (c) c.onclick = function (e) { e.preventDefault(); me = ''; try { localStorage.removeItem('clash-my-800'); } catch (x) {} ask(); }; }
   function act(p) {
     acting = true; document.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
     p.then(function (v) { acting = false; take(v); }).catch(function (e) { acting = false; draw(); if ($('msg')) $('msg').textContent = msgOf(e); });
   }
   if (me) join(); else ask();
-  setInterval(function () { if (!acting && squad) run('clashSummitState', seq).then(take).catch(function () {}); }, 2000);
+  setInterval(function () { if (!acting && squad) run('clashSummitState', code, seq).then(take).catch(function () {}); }, 2000);
 })();
 </script>
 </body>
 </html>
-<!-- file-stamp: 4cf3e549ab -->
+<!-- file-stamp: 50e443f9db -->
