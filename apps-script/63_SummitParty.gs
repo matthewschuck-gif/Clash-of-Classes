@@ -128,11 +128,14 @@ const SP_MINIGAMES_ = {
   stack: { name: 'Cairn Stack', how: 'A stone slides back and forth. Tap or press space to drop it on the cairn. Only the part that lands stays. Tallest cairn wins.', better: 'high', max: 40, unit: 'stones', icon: 'ph-stack', from: 'Ridgeline' },
   catch: { name: 'Camp Snack Catch', how: 'Trail snacks fall from the pines. Steer your pack to catch them and dodge the rocks. Most snacks wins.', better: 'high', max: 150, unit: 'snacks', icon: 'ph-basket' },
   sketch: { name: 'Trail Sketch', how: 'Draw the word on your screen. The AI watches and guesses as you draw. The sooner it guesses right, the more points.', better: 'high', max: 200, unit: 'pts', icon: 'ph-paint-brush', secs: 45, ai: true },
+  escape: { name: 'Avalanche Escape', how: 'Run from the avalanche! Jump the rocks (space, up, or Jump) and duck the low branches (down, or hold Duck). One crash ends your run. Farthest run wins.', better: 'high', max: 6000, unit: 'm', icon: 'ph-sneaker-move', secs: 60 },
+  rockslide: { name: 'Rockslide', how: 'Stones fall. Slide and turn them to fill whole rows. Clear 2 or more rows at once to drop junk rows on the other squads. Most rows in 90 seconds wins.', better: 'high', max: 300, unit: 'rows', icon: 'ph-squares-four', secs: 90 },
+  chase: { name: 'Trail Chase', how: 'On the big screen! One squad is the hiker: gobble the trail markers and dodge the ghosts. Every other squad steers a ghost to catch the hiker. Grab a lantern and the ghosts run!', better: 'high', max: 400, unit: 'markers', icon: 'ph-ghost', secs: 60, board: true },
   dodge: { name: 'Avalanche Dodge', how: 'Snowballs roll down the slope. Steer to dodge them and grab gold flags. A hit drops a flag. Most flags wins.', better: 'high', max: 60, unit: 'flags', icon: 'ph-mountains' },
 };
 
 // Everyone vs Shady: the average score every squad must reach together (the low-is-better game: at or under).
-const SP_COOP_TARGET_ = { tap: 90, react: 450, memory: 5, updraft: 7, bounce: 110, runner: 5, slalom: 11, stack: 7, catch: 22, sketch: 100, dodge: 5 };
+const SP_COOP_TARGET_ = { escape: 120, rockslide: 6, tap: 90, react: 450, memory: 5, updraft: 7, bounce: 110, runner: 5, slalom: 11, stack: 7, catch: 22, sketch: 100, dodge: 5 };
 const SP_MODES_ = ['ffa', '2v2', 'ffa', '1v3', 'ffa', 'coop'];
 function spSwitch_(k) { return String(getSetting_(k) || 'ON').toUpperCase() !== 'OFF'; }
 /** Trail Sketch needs its switch on and a Claude key (Script Property CLAUDE_API_KEY, the same one Follow-Up uses). */
@@ -140,7 +143,7 @@ function spDrawOn_() { return spSwitch_('SUMMIT_PARTY_DRAW') && !!PropertiesServ
 
 /** The minigames in the rotation (Settings › SUMMIT_PARTY_MINIGAMES: ALL, or keys like updraft, bounce, tap). */
 function spMinigameKeys_() {
-  const all = Object.keys(SP_MINIGAMES_).filter(function (k) { return k !== 'sketch' || spDrawOn_(); }), raw = String(getSetting_('SUMMIT_PARTY_MINIGAMES') || 'ALL').trim().toLowerCase();
+  const all = Object.keys(SP_MINIGAMES_).filter(function (k) { return (k !== 'sketch' || spDrawOn_()) && (k !== 'chase' || spSwitch_('SUMMIT_PARTY_CHASE')); }), raw = String(getSetting_('SUMMIT_PARTY_MINIGAMES') || 'ALL').trim().toLowerCase();
   if (!raw || raw === 'all') return all;
   const pick = raw.split(/[\s,]+/).filter(function (k) { return SP_MINIGAMES_[k]; });
   return pick.length ? all.filter(function (k) { return pick.indexOf(k) >= 0; }) : all;
@@ -405,7 +408,7 @@ function spStartMinigame_(g) {
     spHost_(g, 'Minigame time! A LIVE ' + c.kind.toUpperCase() + ' challenge: ' + c.name + '. Staff, tap the winning squad.');
   } else {
     const keys = spMinigameKeys_(), k = keys[(g.round - 1 + (g.seed || 0)) % keys.length];
-    const mode = spSwitch_('SUMMIT_PARTY_TEAMS') ? SP_MODES_[(g.round - 1 + (g.seed || 0)) % SP_MODES_.length] : 'ffa';
+    const mode = k === 'chase' ? 'chase' : spSwitch_('SUMMIT_PARTY_TEAMS') ? SP_MODES_[(g.round - 1 + (g.seed || 0)) % SP_MODES_.length] : 'ffa';
     spNewMg_(g, k, mode, Object.keys(g.squads));
     spHost_(g, 'Minigame time! ' + spModeLine_(g) + g.mg.name + ': ' + g.mg.how);
   }
@@ -414,7 +417,7 @@ function spStartMinigame_(g) {
 
 // A Chromebook minigame for some squads. Practice ON = up to 25 seconds to practice, starting early once every squad taps Ready.
 function spNewMg_(g, k, mode, squads, extra) {
-  const m = SP_MINIGAMES_[k], now = Date.now(), wait = spSwitch_('SUMMIT_PARTY_PRACTICE') ? 25000 : 9000, secs = m.secs || 20;
+  const m = SP_MINIGAMES_[k], now = Date.now(), wait = k === 'chase' ? 12000 : spSwitch_('SUMMIT_PARTY_PRACTICE') ? 25000 : 9000, secs = m.secs || 20;
   g.mgCount = (g.mgCount || 0) + 1;
   g.mg = { id: g.mgCount, round: g.round, live: false, game: k, name: m.name, how: m.how, mode: mode, squads: squads, secs: secs,
     startAt: now + wait, endAt: now + wait + secs * 1000, scores: {}, ready: {}, seed: Math.floor(Math.random() * 1e6) };
@@ -424,8 +427,19 @@ function spNewMg_(g, k, mode, squads, extra) {
   }
   if (mode === 'coop') g.mg.target = SP_COOP_TARGET_[k] || 1;
   if (k === 'sketch') spSketchSetup_(g.mg);
+  if (k === 'chase') {
+    g.chases = (g.chases || 0) + 1;
+    const hiker = g.order[(g.chases - 1) % g.order.length], v = ['shady', 'troll', 'litter'];
+    g.mg.hiker = hiker; g.mg.ghosts = {};
+    g.order.filter(function (s) { return s !== hiker && squads.indexOf(s) >= 0; }).forEach(function (s, i) { g.mg.ghosts[s] = v[i % v.length]; });
+  }
   if (extra) Object.keys(extra).forEach(function (x) { g.mg[x] = extra[x]; });
   return g.mg;
+}
+// Games a duel or the Showdown can use (not the AI or big-screen ones).
+function spSoloKeys_() {
+  const k = spMinigameKeys_().filter(function (x) { return x !== 'sketch' && x !== 'chase'; });
+  return k.length ? k : ['tap'];
 }
 function spModeLine_(g) {
   const mg = g.mg, t = function (list) { return list.map(spTitle_).join(' + '); };
@@ -433,6 +447,7 @@ function spModeLine_(g) {
   if (mg.mode === '1v3') return '1 vs 3! ' + spTitle_(mg.teams[0][0]) + ' takes on everyone. ';
   if (mg.mode === 'coop') return 'Everyone vs Shady! Work together: every squad averages ' + mg.target + ' or Shady steals coins. ';
   if (mg.mode === 'duel') return 'DUEL! ' + t(mg.squads) + ' for ' + mg.bet + ' coins each. ';
+  if (mg.mode === 'chase') return 'TRAIL CHASE! ' + spTitle_(mg.hiker) + ' is the hiker; ' + Object.keys(mg.ghosts).map(spTitle_).join(', ') + ' are the ghosts. ';
   if (mg.mode === 'showdown') return 'SHOWDOWN! ' + t(mg.squads) + ' are tied for first. ';
   return '';
 }
@@ -458,6 +473,17 @@ function spResolveMinigame_(g) {
     if (win < 0) squads.forEach(function (s) { prizes[s] = 3; });
     else mg.teams[win].forEach(function (s) { prizes[s] = pay[win]; g.squads[s].mgWins = (g.squads[s].mgWins || 0) + 1; });
     mg.winTeam = win;
+  } else if (mg.mode === 'chase') {
+    const r = mg.result || {}, h = mg.hiker, bonus = Math.floor((r.markers || 0) / 10);
+    squads.forEach(function (s) { prizes[s] = 0; });
+    if (mg.result) {
+      mg.scores[h] = r.markers || 0;
+      if (r.caught && mg.ghosts[r.by]) {
+        Object.keys(mg.ghosts).forEach(function (s) { prizes[s] = 5; });
+        prizes[r.by] = 10; prizes[h] = bonus;
+        g.squads[r.by].mgWins = (g.squads[r.by].mgWins || 0) + 1;
+      } else { prizes[h] = (r.cleared ? 15 : 10) + bonus; g.squads[h].mgWins = (g.squads[h].mgWins || 0) + 1; }
+    }
   } else if (mg.mode === 'coop') {
     const avg = spAvg_(mg, squads), made = SP_MINIGAMES_[mg.game].better === 'low' ? avg <= mg.target : avg >= mg.target;
     squads.forEach(function (s) { prizes[s] = made ? 6 : -3; });
@@ -504,7 +530,7 @@ function spResolveMinigame_(g) {
 
 // ── Duels (SUMMIT_PARTY_DUELS): the squad on a duel space bets coins against a squad it picks. ──
 function spBeginDuel_(g, s, opp, bet) {
-  const keys = spMinigameKeys_().filter(function (k) { return k !== 'sketch'; }), k = keys[((g.duels || 0) + (g.seed || 0)) % keys.length];
+  const keys = spSoloKeys_(), k = keys[((g.duels || 0) + (g.seed || 0)) % keys.length];
   g.duels = (g.duels || 0) + 1;
   const pot = Math.min(bet, g.squads[s].coins, g.squads[opp].coins);
   g.pending = null;
@@ -536,7 +562,7 @@ function spStartShowdown_(g) {
   const p = spPlaces_(g), top = g.squads[p[0]];
   const tied = p.filter(function (s) { return g.squads[s].flags === top.flags && g.squads[s].coins === top.coins; });
   if (tied.length < 2) return false;
-  const keys = spMinigameKeys_().filter(function (k) { return k !== 'sketch'; });
+  const keys = spSoloKeys_();
   g.phase = 'minigame';
   spNewMg_(g, keys[(g.seed || 0) % keys.length], 'showdown', tied);
   spLog_(g, 'Showdown: ' + tied.map(spTitle_).join(', ') + ' are tied for first.');
@@ -900,9 +926,10 @@ function clashSummitScore(id, code, score) {
     const g = spGame_(code), mg = g.mg;
     if (g.status !== 'playing' || g.phase !== 'minigame' || !mg || mg.live || mg.done) throw new Error('No minigame right now.');
     const now = Date.now();
-    if (now < mg.startAt - 1000 || now > mg.endAt + 8000) throw new Error('Time is up!');
     if ((mg.squads || Object.keys(g.squads)).indexOf(p.squad) < 0) throw new Error('Your squad sits this one out. Watch the big screen!');
     if (mg.game === 'sketch') throw new Error('Trail Sketch scores itself when the AI guesses your drawing.');
+    if (mg.game === 'chase') throw new Error('Trail Chase is scored on the big screen.');
+    if (now < mg.startAt - 1000 || now > mg.endAt + 8000) throw new Error('Time is up!');
     const def = SP_MINIGAMES_[mg.game];
     let v = Math.round(Number(score));
     if (!(v >= 0)) v = 0;
@@ -912,6 +939,51 @@ function clashSummitScore(id, code, score) {
     if (old == null || (def.better === 'low' ? v < old : v > old)) mg.scores[p.squad] = v;
     if ((mg.squads || Object.keys(g.squads)).every(function (s) { return mg.scores[s] != null; }) && now >= mg.endAt - 500) spResolveMinigame_(g);
     return JSON.stringify(spView_(spSave_(g)));
+  });
+}
+
+/** Controller: Trail Chase steering (U, D, L, R). Kept in the cache, not the game, so it is fast and needs no lock. */
+function clashSummitSteer(id, code, dir) {
+  const p = spPlayer_(id), g = spGame_(code), mg = g.mg, d = String(dir || '').toUpperCase();
+  if (g.status !== 'playing' || g.phase !== 'minigame' || !mg || mg.game !== 'chase' || mg.done) throw new Error('No chase right now.');
+  if (['U', 'D', 'L', 'R'].indexOf(d) < 0) throw new Error('Pick a direction.');
+  if (mg.hiker !== p.squad && !mg.ghosts[p.squad]) throw new Error('Your squad sits this one out.');
+  CacheService.getScriptCache().put('sp-steer-' + g.code + '-' + p.squad, d + ':' + Date.now(), 600);
+  return JSON.stringify({ ok: true, dir: d });
+}
+/** Big screen: every squad's latest steering, with how long ago it came in (ms). */
+function clashSummitSteers(code) {
+  spRequireOn_();
+  const g = spGame_(code), out = {}, c = CacheService.getScriptCache(), now = Date.now();
+  Object.keys(g.squads).forEach(function (s) {
+    const v = String(c.get('sp-steer-' + g.code + '-' + s) || '').split(':');
+    if (v[0]) out[s] = { dir: v[0], ago: now - Number(v[1] || 0) };
+  });
+  return JSON.stringify(out);
+}
+/** Big screen (staff): how the chase ended. res = { caught, by (the ghost's squad), markers, cleared }. */
+function clashSummitChaseEnd(token, code, res) {
+  spStaff_(token);
+  return spWithLock_(function () {
+    const g = spGame_(code), mg = g.mg;
+    if (g.status !== 'playing' || g.phase !== 'minigame' || !mg || mg.game !== 'chase' || mg.done) throw new Error('No chase right now.');
+    const r = res || {}, by = String(r.by || '').toUpperCase();
+    mg.result = { caught: !!r.caught && !!mg.ghosts[by], by: mg.ghosts[by] ? by : '', markers: Math.max(0, Math.min(400, Math.round(Number(r.markers) || 0))), cleared: !!r.cleared };
+    spResolveMinigame_(g);
+    return JSON.stringify(spView_(spSave_(g)));
+  });
+}
+/** Controller: Rockslide. The running total of junk rows this squad has sent; every other squad takes them. */
+function clashSummitJunk(id, code, total) {
+  const p = spPlayer_(id);
+  return spWithLock_(function () {
+    const g = spGame_(code), mg = g.mg;
+    if (g.status !== 'playing' || g.phase !== 'minigame' || !mg || mg.game !== 'rockslide' || mg.done) throw new Error('No Rockslide right now.');
+    if ((mg.squads || Object.keys(g.squads)).indexOf(p.squad) < 0) throw new Error('Your squad sits this one out.');
+    mg.junk = mg.junk || {};
+    mg.junk[p.squad] = Math.max(mg.junk[p.squad] || 0, Math.min(500, Math.round(Number(total) || 0)));
+    spSave_(g);
+    return JSON.stringify({ junk: mg.junk });
   });
 }
 
@@ -983,4 +1055,4 @@ function serveSummitPlay_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_63_SummitParty = '906a22c38a';
+var FILE_STAMP_63_SummitParty = '42ee6c0fcc';

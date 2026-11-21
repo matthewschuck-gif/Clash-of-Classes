@@ -3253,7 +3253,7 @@ test('Summit Party minigames: ten in the rotation (five from Ridgeline); SUMMIT_
   w.ensureSettings_();
   const defs = w.SP_MINIGAMES_ || vm.runInContext('SP_MINIGAMES_', w);
   const keys = Object.keys(defs);
-  assert.deepStrictEqual(keys, ['tap', 'react', 'memory', 'updraft', 'bounce', 'runner', 'slalom', 'stack', 'catch', 'sketch', 'dodge']);
+  assert.deepStrictEqual(keys, ['tap', 'react', 'memory', 'updraft', 'bounce', 'runner', 'slalom', 'stack', 'catch', 'sketch', 'escape', 'rockslide', 'chase', 'dodge']);
   const noKey = keys.filter(k => k !== 'sketch');
   keys.forEach(k => { const d = defs[k]; assert.ok(d.name && d.how && /^(high|low)$/.test(d.better) && d.max > 0 && d.unit && /^ph-/.test(d.icon), k + ' is complete'); });
   assert.deepStrictEqual(keys.filter(k => defs[k].from === 'Ridgeline'), ['updraft', 'bounce', 'runner', 'slalom', 'stack']);
@@ -3287,7 +3287,7 @@ test('Summit Party minigames: ten in the rotation (five from Ridgeline); SUMMIT_
   const box = { window: { matchMedia: () => ({ matches: false }), devicePixelRatio: 1 }, matchMedia: () => ({ matches: false }), Image: function () {}, S: { art: {} }, squad: 'GOLD', COLORS: { GOLD: '#ffd23f' }, FOCUS: {}, Math, String, parseFloat, Object };
   vm.createContext(box);
   vm.runInContext(html.slice(a, b) + '\nthis.GAMES = GAMES; this.rng = rng;', box);
-  const page = ['tap', 'react', 'memory', 'sketch'].concat(Object.keys(box.GAMES));
+  const page = ['tap', 'react', 'memory', 'sketch', 'chase'].concat(Object.keys(box.GAMES));
   assert.deepStrictEqual(page.slice().sort(), keys.slice().sort(), 'the page has every minigame');
   function run(k, seed, presses) {
     const keysDown = {};
@@ -3436,6 +3436,63 @@ test('Summit Party extras: 2 vs 2, 1 vs 3 and Everyone vs Shady; duel spaces wit
   assert.strictEqual(w.spAskClaude_('png', 'AAAA', ['tent', 'moon']), 'unsure', 'anything off the list counts as unsure');
   w.setSettingValue_('SUMMIT_PARTY_DRAW', 'OFF');
   assert.ok(w.spMinigameKeys_().indexOf('sketch') < 0, 'SUMMIT_PARTY_DRAW = OFF');
+});
+
+test('Summit Party: Trail Chase (a live big-screen maze: steering through the cache, scored by staff on the big screen), Rockslide junk rows, Avalanche Escape; the maze has every marker reachable', () => {
+  const w = world();
+  w.ensureSettings_();
+  w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade'], ['8001111', 'Ann L.', 'Gold', '7'], ['8002222', 'Bo K.', 'Grey', '8'], ['8003333', 'Cy D.', 'Purple', '7'], ['8004444', 'Di E.', 'Black', '8']];
+  const ids = { GOLD: '8001111', GREY: '8002222', PURPLE: '8003333', BLACK: '8004444' };
+  w.setSettingValue_('SUMMIT_PARTY', 'ON'); w.setSettingValue_('SUMMIT_PARTY_AUTO_ROLL', '0'); w.setSettingValue_('SUMMIT_PARTY_LIVE', 'OFF');
+  w.setSettingValue_('SUMMIT_PARTY_MINIGAMES', 'chase');
+  const tok = login(w, 'oldpw');
+  const skipTo = c => { let s; for (let i = 0; i < 4; i++) s = JSON.parse(w.clashSummitSkip(tok, c)).game; return s; };
+  let code = JSON.parse(w.clashSummitStart(tok, 6, 'trail')).game.code;
+  let s = skipTo(code);
+  assert.deepStrictEqual([s.mg.game, s.mg.mode, s.mg.secs], ['chase', 'chase', 60]);
+  const hiker = s.mg.hiker, ghosts = Object.keys(s.mg.ghosts);
+  assert.strictEqual(hiker, s.order[0], 'the first squad is the first hiker');
+  assert.deepStrictEqual(ghosts.map(q => s.mg.ghosts[q]).sort(), ['litter', 'shady', 'troll']);
+  assert.ok(s.mg.startAt - Date.now() > 10000, 'time to read the roles');
+  w.clashSummitSteer(ids[ghosts[0]], code, 'l');
+  w.clashSummitSteer(ids[hiker], code, 'U');
+  const st = JSON.parse(w.clashSummitSteers(code));
+  assert.deepStrictEqual([st[ghosts[0]].dir, st[hiker].dir], ['L', 'U']);
+  assert.throws(() => w.clashSummitSteer(ids[hiker], code, 'up-left'), /direction/);
+  assert.throws(() => w.clashSummitScore(ids[hiker], code, 99), /big screen/);
+  assert.throws(() => w.clashSummitChaseEnd('nope', code, { caught: true, by: ghosts[0] }), /sign in/);
+  const before = JSON.parse(w.clashSummitState(code, 0)).game.squads;
+  s = JSON.parse(w.clashSummitChaseEnd(tok, code, { caught: true, by: ghosts[1], markers: 23 })).game;
+  assert.strictEqual(s.squads[ghosts[1]].coins - before[ghosts[1]].coins, 10, 'the catching ghost +10');
+  assert.strictEqual(s.squads[ghosts[0]].coins - before[ghosts[0]].coins, 5, 'the other ghosts +5');
+  assert.strictEqual(s.squads[hiker].coins - before[hiker].coins, 2, 'the hiker keeps a marker bonus');
+  s = skipTo(code);
+  assert.strictEqual(s.mg.hiker, s.order[1], 'the next chase has the next hiker');
+  const b2 = s.squads;
+  s = JSON.parse(w.clashSummitChaseEnd(tok, code, { caught: false, markers: 999, cleared: true })).game;
+  assert.strictEqual(s.squads[s.order[1]].coins - b2[s.order[1]].coins, 15 + 40, 'cleared the maze: +15 and the bonus (markers capped at 400)');
+  w.setSettingValue_('SUMMIT_PARTY_CHASE', 'OFF');
+  assert.ok(w.spMinigameKeys_().indexOf('chase') < 0, 'SUMMIT_PARTY_CHASE = OFF');
+  assert.ok(w.spSoloKeys_().indexOf('chase') < 0 && w.spSoloKeys_().indexOf('sketch') < 0, 'never a duel or Showdown game');
+  w.clashSummitEnd(tok, code, false);
+  // Rockslide: each squad's running total of junk rows.
+  w.setSettingValue_('SUMMIT_PARTY_MINIGAMES', 'rockslide'); w.setSettingValue_('SUMMIT_PARTY_TEAMS', 'OFF');
+  code = JSON.parse(w.clashSummitStart(tok, 4, 'trail')).game.code;
+  s = skipTo(code);
+  assert.deepStrictEqual([s.mg.game, s.mg.secs], ['rockslide', 90]);
+  w.clashSummitJunk(ids.GOLD, code, 3);
+  w.clashSummitJunk(ids.GOLD, code, 1);
+  assert.deepStrictEqual(JSON.parse(w.clashSummitJunk(ids.GREY, code, 9999)).junk, { GOLD: 3, GREY: 500 }, 'totals only go up, capped');
+  w.clashSummitEnd(tok, code, false);
+  // The maze: 17 wide, walls all around, every marker reachable from the hiker's start, three ghost starts.
+  const html = fs.readFileSync(path.join(dir, 'SummitParty.html'), 'utf8');
+  const maze = eval(html.match(/var MAZE = (\[[\s\S]*?\]);/)[1]);
+  assert.ok(maze.every(r => r.length === 17) && /^#+$/.test(maze[0]) && /^#+$/.test(maze[maze.length - 1]) && maze.every(r => r[0] === '#' && r[16] === '#'));
+  assert.strictEqual(maze.join('').split('G').length - 1, 3);
+  let start; maze.forEach((r, y) => { const x = r.indexOf('H'); if (x >= 0) start = [x, y]; });
+  const seen = new Set([start.join()]), q = [start];
+  while (q.length) { const [x, y] = q.shift(); [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => { const nx = x + dx, ny = y + dy; if (maze[ny][nx] !== '#' && !seen.has(nx + ',' + ny)) { seen.add(nx + ',' + ny); q.push([nx, ny]); } }); }
+  maze.forEach((r, y) => r.split('').forEach((ch, x) => { if (ch !== '#') assert.ok(seen.has(x + ',' + y), 'cell ' + x + ',' + y + ' is reachable'); }));
 });
 
 test('Summit Party: several games at once by code; any Staff Access role can run one; a squad that does not roll gets an auto-roll after SUMMIT_PARTY_AUTO_ROLL seconds', () => {

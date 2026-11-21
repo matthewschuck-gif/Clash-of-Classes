@@ -148,6 +148,11 @@
   @keyframes tick { from { transform: scale(1.18); } }
   .card-big .mode { display:inline-block; margin-top:.6em; padding:.35em .9em; border-radius:999px; background:#e0115f; color:#fff; font:800 clamp(13px,1.3vw,22px)/1.2 'DM Sans',sans-serif; }
   .card-big .word b { color:var(--gold); font-family:Fraunces,serif; font-size:1.3em; text-transform:uppercase; }
+  .chase { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; }
+  .chase canvas { max-width:96%; max-height:calc(100% - 90px); border-radius:18px; box-shadow:0 20px 50px #000a; }
+  .chasebar { display:flex; gap:28px; align-items:baseline; font:800 clamp(16px,1.6vw,28px) 'DM Sans',sans-serif; color:#fff; }
+  .chasebar b { font-family:Fraunces,serif; font-size:1.4em; color:var(--gold); }
+  .chaseroles { display:flex; gap:22px; flex-wrap:wrap; justify-content:center; font:800 clamp(13px,1.2vw,22px) 'DM Sans',sans-serif; }
   .mute { background:#ffffff14; border:1px solid #ffffff2a; color:#fff; border-radius:999px; font-size:clamp(16px,1.4vw,24px); padding:.3em .55em; margin-left:10px; cursor:pointer; }
   .sqc.in { animation: popin .45s cubic-bezier(.34,1.56,.64,1); }
   @keyframes popin { 0% { transform: scale(.8); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
@@ -392,7 +397,155 @@
     if (mg.mode === 'showdown') return 'Showdown · ' + t(mg.squads) + ' are tied for first';
     return '';
   }
-  function teamOf(mg, s) { if (!mg.teams) return ''; return mg.mode === '1v3' ? (mg.teams[0][0] === s ? 'Solo' : 'Team of 3') : mg.teams[0].indexOf(s) >= 0 ? 'Team A' : 'Team B'; }
+  function teamOf(mg, s) { if (mg.mode === 'chase') return s === mg.hiker ? 'Hiker' : GNAME[mg.ghosts[s]] || 'Ghost'; if (!mg.teams) return ''; return mg.mode === '1v3' ? (mg.teams[0][0] === s ? 'Solo' : 'Team of 3') : mg.teams[0].indexOf(s) >= 0 ? 'Team A' : 'Team B'; }
+  // ── Trail Chase: the maze runs here on the big screen. Squads steer from their Chromebooks, about a second behind,
+  // so a turn pressed early waits for the next corner. The ghosts leave their den after 3 seconds. A ghost with no
+  // steering for 8 seconds (a hiker: 15 seconds, or never steered) is moved by the computer.
+  var MAZE = [
+    '#################',
+    '#o......#......o#',
+    '#.##.##.#.##.##.#',
+    '#...............#',
+    '#.##.#.###.#.##.#',
+    '#....#.GGG.#....#',
+    '###.##.#.#.##.###',
+    '#...............#',
+    '#.##.###.###.##.#',
+    '#o.#.........#.o#',
+    '##.#.#.#.#.#.#.##',
+    '#...H..#.#......#',
+    '#################'
+  ];
+  var GNAME = { shady: 'Shady', troll: 'Tardy Troll', litter: 'Litter Beast' };
+  var chase = null;
+  function chaseStop() { if (chase) { chase.stop(); chase = null; } }
+  function chaseStart(g) {
+    var mg = g.mg, key = g.id + ':' + (mg.id || mg.round);
+    if (chase && chase.key === key) return;
+    chaseStop();
+    var COLS = MAZE[0].length, ROWS = MAZE.length, CS = 48, W = COLS * CS, H = ROWS * CS;
+    var roles = '<span style="color:' + RING[mg.hiker] + '"><i class="ph-fill ph-person-simple-hike"></i> ' + esc(title(mg.hiker)) + ': hiker</span>' +
+      Object.keys(mg.ghosts).map(function (s) { return '<span style="color:' + RING[s] + '"><i class="ph-fill ph-ghost"></i> ' + esc(title(s)) + ': ' + esc(GNAME[mg.ghosts[s]]) + '</span>'; }).join('');
+    overlay('<div class="chase"><div class="chasebar"><span id="chT"></span><b>Trail Chase</b><span id="chM"></span></div><canvas id="chCv" width="' + W + '" height="' + H + '" aria-label="Trail Chase maze"></canvas><div class="chaseroles">' + roles + '</div></div>');
+    var cv = $('chCv'), c = cv.getContext('2d');
+    var wall = function (x, y) { return y < 0 || y >= ROWS || x < 0 || x >= COLS || MAZE[y].charAt(x) === '#'; };
+    var dots = {}, total = 0, hs = [1, 1], gs = [];
+    MAZE.forEach(function (row, y) { row.split('').forEach(function (ch, x) { if (ch === '.' || ch === 'o') { dots[x + ',' + y] = ch; total++; } if (ch === 'H') hs = [x, y]; if (ch === 'G') gs.push([x, y]); }); });
+    var D = { U: [0, -1], D: [0, 1], L: [-1, 0], R: [1, 0] }, OPP = { U: 'D', D: 'U', L: 'R', R: 'L' };
+    var mk = function (s, pos, speed) { return { s: s, x: pos[0], y: pos[1], tx: pos[0], ty: pos[1], p: 0, dir: '', speed: speed, home: pos.slice() }; };
+    var hiker = mk(mg.hiker, hs, 4.6), ghosts = Object.keys(mg.ghosts).map(function (s, i) { var a = mk(s, gs[i % gs.length], 3.9); a.v = mg.ghosts[s]; return a; });
+    var eaten = 0, bonus = 0, scared = 0, over = false, alive = true, steer = {}, polling = false, lastPoll = 0, last = performance.now(), endMsg = '';
+    var imgs = {}, img = function (src) { if (!src) return null; if (!imgs[src]) { imgs[src] = new Image(); imgs[src].src = src; } return imgs[src]; };
+    var open = function (a, d) { return !!d && !wall(a.x + D[d][0], a.y + D[d][1]); };
+    var pos = function (a) { return [a.x + (a.tx - a.x) * a.p, a.y + (a.ty - a.y) * a.p]; };
+    function choose(a, isGhost) {
+      var st = steer[a.s], want = st && st.dir && st.ago < (isGhost ? 8000 : 15000) ? st.dir : '';
+      if (want && open(a, want)) return want;
+      if (want) return open(a, a.dir) ? a.dir : '';
+      if (!isGhost) return autoHiker(a);
+      // The computer steers a ghost: toward the hiker (away while the lantern burns), now and then at random.
+      var hp = pos(hiker), opts = ['U', 'D', 'L', 'R'].filter(function (d) { return open(a, d) && d !== OPP[a.dir]; });
+      if (!opts.length) opts = ['U', 'D', 'L', 'R'].filter(function (d) { return open(a, d); });
+      if (Math.random() < .2) return opts[Math.floor(Math.random() * opts.length)] || '';
+      opts.sort(function (p, q) { var dp = Math.abs(a.x + D[p][0] - hp[0]) + Math.abs(a.y + D[p][1] - hp[1]), dq = Math.abs(a.x + D[q][0] - hp[0]) + Math.abs(a.y + D[q][1] - hp[1]); return scared > 0 ? dq - dp : dp - dq; });
+      return opts[0] || '';
+    }
+    // The computer hiker: toward the nearest marker, away from any ghost within 4 spaces.
+    function autoHiker(a) {
+      var opts = ['U', 'D', 'L', 'R'].filter(function (d) { return open(a, d) && d !== OPP[a.dir]; });
+      if (!opts.length) opts = ['U', 'D', 'L', 'R'].filter(function (d) { return open(a, d); });
+      var keys = Object.keys(dots);
+      var cost = function (d) {
+        var nx = a.x + D[d][0], ny = a.y + D[d][1], best = 99;
+        keys.forEach(function (k) { var p = k.split(','), dd = Math.abs(p[0] - nx) + Math.abs(p[1] - ny); if (dd < best) best = dd; });
+        ghosts.forEach(function (gh) { var gd = Math.abs(gh.x - nx) + Math.abs(gh.y - ny); if (scared <= 0 && gd < 4) best += (4 - gd) * 6; });
+        return best + Math.random() * .5;
+      };
+      opts.sort(function (p, q) { return cost(p) - cost(q); });
+      return opts[0] || '';
+    }
+    function arrive(a) {
+      if (a !== hiker) return;
+      var k = a.x + ',' + a.y, d = dots[k];
+      if (!d) return;
+      delete dots[k]; eaten++;
+      if (d === 'o') { scared = 6500; bonus += 2; SFX.play('item'); } else if (eaten % 3 === 0) SFX.play('tick');
+    }
+    function move(a, dt, isGhost) {
+      var sp = a.speed * (isGhost && scared > 0 ? .6 : 1);
+      if (!a.dir) { var d0 = choose(a, isGhost); if (d0) { a.dir = d0; a.tx = a.x + D[d0][0]; a.ty = a.y + D[d0][1]; a.p = 0; } else return; }
+      a.p += sp * dt / 1000;
+      while (a.p >= 1) {
+        a.x = a.tx; a.y = a.ty; a.p -= 1;
+        arrive(a);
+        var nd = choose(a, isGhost);
+        if (!nd) { a.dir = ''; a.p = 0; a.tx = a.x; a.ty = a.y; break; }
+        a.dir = nd; a.tx = a.x + D[nd][0]; a.ty = a.y + D[nd][1];
+      }
+    }
+    function finishChase(caughtBy) {
+      if (over) return;
+      over = true;
+      var cleared = !Object.keys(dots).length, res = { caught: !!caughtBy, by: caughtBy || '', markers: eaten + bonus, cleared: cleared };
+      endMsg = caughtBy ? 'Caught by ' + title(caughtBy) + '!' : cleared ? 'Every marker gobbled!' : title(mg.hiker) + ' got away!';
+      SFX.play(caughtBy ? 'villain' : 'win');
+      if (token) run('clashSummitChaseEnd', token, code, res).then(take).catch(function (e) { host('Trail Chase: ' + msgOf(e)); });
+      else host('Sign in as staff on the big screen to score Trail Chase.');
+    }
+    function frame(ts) {
+      if (!alive) return;
+      var dt = Math.min(50, Math.max(0, ts - last)); last = ts;
+      var m = S && S.game && S.game.mg, endAt = m && m.id === mg.id ? m.endAt : mg.endAt, left = Math.max(0, endAt - now());
+      if (!over) {
+        if (ts - lastPoll > 400 && !polling) { polling = true; lastPoll = ts; run('clashSummitSteers', code).then(function (v) { steer = v || {}; polling = false; }).catch(function () { polling = false; }); }
+        if (scared > 0) scared -= dt;
+        move(hiker, dt, false);
+        if (now() - mg.startAt > 3000) ghosts.forEach(function (gh) { move(gh, dt, true); });
+        var hp = pos(hiker);
+        ghosts.forEach(function (gh) {
+          if (over) return;
+          var gp = pos(gh);
+          if (Math.abs(gp[0] - hp[0]) + Math.abs(gp[1] - hp[1]) < .75) {
+            if (scared > 0) { gh.x = gh.tx = gh.home[0]; gh.y = gh.ty = gh.home[1]; gh.p = 0; gh.dir = ''; bonus += 5; SFX.play('coin'); }
+            else finishChase(gh.s);
+          }
+        });
+        if (!over && !Object.keys(dots).length) finishChase('');
+        if (!over && left <= 0) finishChase('');
+      }
+      // Draw
+      c.fillStyle = '#160a26'; c.fillRect(0, 0, W, H);
+      for (var y = 0; y < ROWS; y++) for (var x = 0; x < COLS; x++) {
+        if (wall(x, y)) { c.fillStyle = '#4a2c6e'; c.beginPath(); if (c.roundRect) c.roundRect(x * CS + 2, y * CS + 2, CS - 4, CS - 4, 10); else c.rect(x * CS + 2, y * CS + 2, CS - 4, CS - 4); c.fill(); c.fillStyle = '#6b4596'; c.fillRect(x * CS + 8, y * CS + 6, CS - 16, 5); }
+        var dd = dots[x + ',' + y];
+        if (dd === '.') { c.fillStyle = '#ffe100'; c.beginPath(); c.arc(x * CS + CS / 2, y * CS + CS / 2, 5, 0, 7); c.fill(); }
+        if (dd === 'o') { var pulse = calm ? 1 : 1 + Math.sin(ts / 180) * .15; c.fillStyle = '#ff9a1f'; c.shadowColor = '#ffb84d'; c.shadowBlur = 18; c.beginPath(); c.arc(x * CS + CS / 2, y * CS + CS / 2, 11 * pulse, 0, 7); c.fill(); c.shadowBlur = 0; }
+      }
+      ghosts.forEach(function (gh) {
+        var gp = pos(gh), cx = gp[0] * CS + CS / 2, cy = gp[1] * CS + CS / 2, r = CS * .42, im = img(S.art && S.art.villains && S.art.villains[gh.v]);
+        c.save(); c.beginPath(); c.arc(cx, cy, r + 3, 0, 7); c.fillStyle = scared > 0 ? '#5b8cff' : RING[gh.s]; c.fill();
+        c.beginPath(); c.arc(cx, cy, r, 0, 7); c.clip();
+        if (im && im.complete && im.naturalWidth) c.drawImage(im, cx - r, cy - r, r * 2, r * 2); else { c.fillStyle = '#6b2bb8'; c.fillRect(cx - r, cy - r, r * 2, r * 2); }
+        if (scared > 0) { c.fillStyle = 'rgba(70,110,255,.55)'; c.fillRect(cx - r, cy - r, r * 2, r * 2); }
+        c.restore();
+      });
+      var hp2 = pos(hiker), hx = hp2[0] * CS + CS / 2, hy = hp2[1] * CS + CS / 2, hr = CS * .44, him = img(S.art && S.art.pieces && S.art.pieces[mg.hiker]);
+      c.save(); c.beginPath(); c.arc(hx, hy, hr + 4, 0, 7); c.fillStyle = RING[mg.hiker]; c.fill(); c.beginPath(); c.arc(hx, hy, hr, 0, 7); c.clip();
+      if (him && him.complete && him.naturalWidth) {
+        var f = String(FOCUS[mg.hiker] || '50% 50%').split(' '), iw = hr * 2 * 2.4, ih = iw * him.naturalHeight / him.naturalWidth;
+        c.drawImage(him, hx - hr + (hr * 2 - iw) * parseFloat(f[0]) / 100, hy - hr + (hr * 2 - ih) * parseFloat(f[1]) / 100, iw, ih);
+      } else { c.fillStyle = BASE[mg.hiker]; c.fill(); }
+      c.restore();
+      if (over) { c.fillStyle = 'rgba(14,6,24,.6)'; c.fillRect(0, 0, W, H); c.font = '900 64px Fraunces,serif'; c.textAlign = 'center'; c.fillStyle = '#ffe100'; c.fillText(endMsg, W / 2, H / 2 + 20); }
+      var tt = $('chT'), mm = $('chM');
+      if (tt) tt.textContent = Math.ceil(left / 1000) + ' s';
+      if (mm) mm.textContent = (eaten + bonus) + ' markers · ' + Object.keys(dots).length + ' left' + (scared > 0 ? ' · LANTERN!' : '');
+      requestAnimationFrame(frame);
+    }
+    chase = { key: key, stop: function () { alive = false; } };
+    SFX.play('go');
+    requestAnimationFrame(frame);
+  }
   function minigameCard(g) {
     var mg = g.mg, key = g.id + ':' + (mg.id || mg.round);
     if (Date.now() < duelHold) return;
@@ -404,7 +557,8 @@
       return;
     }
     var t = mg.startAt - now(), left = Math.max(0, Math.ceil(t / 1000)), playing = t <= 0, remain = Math.max(0, Math.ceil((mg.endAt - now()) / 1000));
-    var practice = S.opts && S.opts.practice;
+    var practice = S.opts && S.opts.practice && mg.game !== 'chase';
+    if (mg.game === 'chase' && playing && !mg.done) { chaseStart(g); return; }
     if (mgBuilt !== key || !$('mgClock')) {
       mgBuilt = key; mgIn = {}; mgClock = '';
       var d = S.minigames && S.minigames[mg.game], from = d && d.from ? ' · from ' + d.from : '', ml = modeLine(mg);
@@ -460,13 +614,15 @@
   }
   function coinsText(p) { return (p < 0 ? '' : '+') + p + ' coins'; }
   function resultsCard(g) {
+    chaseStop();
     var mg = g.mg, k = 'Minigame results';
+    if (mg.mode === 'chase') k = !mg.result ? 'No result from the big screen' : mg.result.caught ? title(mg.result.by) + ' caught the hiker!' : title(mg.hiker) + ' got away!';
     if (mg.mode === '2v2' || mg.mode === '1v3') k = mg.winTeam < 0 ? 'A tie!' : (mg.mode === '1v3' ? (mg.winTeam === 0 ? title(mg.teams[0][0]) + ' beat everyone!' : 'The team of 3 wins!') : (mg.winTeam === 0 ? 'Team A' : 'Team B') + ' wins!');
     if (mg.mode === 'coop') k = mg.made ? 'Teamwork! Shady loses' : 'Shady wins this one';
     overlay('<div class="card-big results"><div class="kicker">' + esc(k) + '</div><h2>' + esc(mg.name) + '</h2>' +
       squadCards(g, function (s) {
         var p = mg.prizes[s] || 0, v = mg.scores && mg.scores[s];
-        var sc = mg.live ? (mg.winner === s ? 'Winner' : 'Played') : v == null ? (mg.game === 'sketch' ? 'Not guessed' : 'No score') : resultText(mg, v);
+        var sc = mg.mode === 'chase' ? (s === mg.hiker ? (v || 0) + ' markers' : mg.result && mg.result.by === s ? 'Caught the hiker!' : 'Ghost') : mg.live ? (mg.winner === s ? 'Winner' : 'Played') : v == null ? (mg.game === 'sketch' ? 'Not guessed' : 'No score') : resultText(mg, v);
         return { big: coinsText(p), small: (teamOf(mg, s) ? teamOf(mg, s) + ' · ' : '') + sc, cls: p >= 10 || (mg.mode === '1v3' && p > 3) ? 'win' : '' };
       }) + '</div>', 5200);
     document.querySelectorAll('#overlay .results .sqc').forEach(function (el, i) { el.style.animationDelay = (i * 110) + 'ms'; });
@@ -602,7 +758,7 @@
     else if (g.mg && g.mg.done && g.mg.mode !== 'duel' && seenResult !== mgKey) { seenResult = mgKey; if (seenMg === mgKey || (prev && prev.phase === 'minigame')) resultsCard(g); }
     if (g.finalNews && g.finalNews !== seenFinal && g.status === 'playing') { seenFinal = g.finalNews; setTimeout(function () { SFX.play('final'); overlay('<div class="card-big"><div class="kicker">Three rounds left</div><h2 style="color:#ff6b6b">The Final Climb!</h2><p>The squad in last place gets 10 coins. Blue and red spaces count double.</p></div>', 4200); }, 5400); }
     if (g.status === 'ended' && seenEnd !== g.id) { seenEnd = g.id; setTimeout(function () { endSequence(g); }, 1500); }
-    if (g.status === 'stopped') closeOverlay();
+    if (g.status === 'stopped') { chaseStop(); closeOverlay(); }
   }
   function poll() { if (busy) return; run('clashSummitState', code, seq).then(take).catch(function (e) { busy = false; if (window.console) console.warn('Summit Party: ' + msgOf(e)); }); }
   setInterval(function () {
@@ -620,4 +776,4 @@
 </script>
 </body>
 </html>
-<!-- file-stamp: 1d9087ee24 -->
+<!-- file-stamp: ff878d1b96 -->
