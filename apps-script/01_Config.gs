@@ -299,6 +299,7 @@ const DEFAULT_SETTINGS = [
   ['SUMMIT_PARTY_ROUNDS', '10', 'Summit Party: rounds in a game (every squad moves once a round). Staff can pick another number when they start.'],
   ['SUMMIT_PARTY_AUTO_ROLL', '30', 'Summit Party: seconds a squad has to roll (or pick a path) before the board rolls for it (Main Trail at forks), so a drop-in game keeps moving. 0 = never (staff press Skip).'],
   ['SUMMIT_PARTY_FLAG_COST', '20', 'Summit Party: coins to plant a Summit Flag.'],
+  ['SUMMIT_PARTY_MINIGAMES', 'ALL', 'Summit Party: the Chromebook minigames in the rotation. ALL, or a list of keys: tap, react, memory, updraft, bounce, runner, slalom, stack, catch, dodge (updraft through stack come from Ridgeline).'],
   ['SUMMIT_PARTY_LIVE', 'ON', 'Summit Party: ON = the minigame every third round is a live Move, Make or Talk challenge (the Summit Live Challenges tab; staff tap the winner). OFF = every minigame is on the Chromebooks.'],
   ['SUMMIT_PARTY_ITEMS', 'ON', 'Summit Party: ON = items (Double Dice, Golden Compass, Sticky Paws, Zipline), item spaces and the Camp Store. OFF = no items.'],
   ['SUMMIT_PARTY_BONUS', 'ON', 'Summit Party: ON = bonus flags at the end (Minigame Champ, Coin Keeper, Trail Explorer). OFF = none.'],
@@ -526,4 +527,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = 'eccda44265';
+var FILE_STAMP_01_Config = 'eea0bc0b64';

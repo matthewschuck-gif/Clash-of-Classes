@@ -3198,7 +3198,7 @@ test('Summit Party (63_SummitParty.gs): OFF until switched on; staff start a cod
   assert.throws(() => w.clashSummitRoll(ids[first], code), /minigame/);
   poke(code, g => { g.mg.startAt = Date.now() - 1000; g.mg.endAt = Date.now() + 20000; }); // past the countdown
   const coinsBefore = JSON.parse(JSON.stringify(s.squads));
-  const better = s.mg.game === 'react' ? [400, 600, 900, 1200] : s.mg.game === 'memory' ? [9, 7, 5, 3] : [60, 40, 20, 10];
+  const better = s.mg.game === 'react' ? [400, 600, 900, 1200] : [9, 7, 5, 3];
   ['GOLD', 'GREY', 'PURPLE', 'BLACK'].forEach((q, i) => w.clashSummitScore(ids[q], code, better[i]));
   s = JSON.parse(w.clashSummitSkip(tok, code)).game; // staff: time's up
   assert.strictEqual(s.phase, 'turn');
@@ -3245,6 +3245,66 @@ test('Summit Party (63_SummitParty.gs): OFF until switched on; staff start a cod
   assert.strictEqual(JSON.parse(w.clashSummitStart(tok, 2, 'square')).layout, 'trail');
   w.setSettingValue_('SUMMIT_PARTY', 'OFF');
   assert.deepStrictEqual(JSON.parse(w.clashSummitState(c3, 0)), { on: false });
+});
+
+test('Summit Party minigames: ten in the rotation (five from Ridgeline); SUMMIT_PARTY_MINIGAMES picks them; every Chromebook game runs on the same seeded course and scores inside its cap', () => {
+  const w = world();
+  w.ensureSettings_();
+  const defs = w.SP_MINIGAMES_ || vm.runInContext('SP_MINIGAMES_', w);
+  const keys = Object.keys(defs);
+  assert.deepStrictEqual(keys, ['tap', 'react', 'memory', 'updraft', 'bounce', 'runner', 'slalom', 'stack', 'catch', 'dodge']);
+  keys.forEach(k => { const d = defs[k]; assert.ok(d.name && d.how && /^(high|low)$/.test(d.better) && d.max > 0 && d.unit && /^ph-/.test(d.icon), k + ' is complete'); });
+  assert.deepStrictEqual(keys.filter(k => defs[k].from === 'Ridgeline'), ['updraft', 'bounce', 'runner', 'slalom', 'stack']);
+  assert.deepStrictEqual(w.spMinigameKeys_(), keys, 'ALL by default');
+  w.setSettingValue_('SUMMIT_PARTY_MINIGAMES', 'updraft, Stack  dodge, nope');
+  assert.deepStrictEqual(w.spMinigameKeys_(), ['updraft', 'stack', 'dodge'], 'a list keeps only those (any case, commas or spaces)');
+  w.setSettingValue_('SUMMIT_PARTY_MINIGAMES', 'nope');
+  assert.deepStrictEqual(w.spMinigameKeys_(), keys, 'nothing valid = all of them');
+  // A game with only Updraft switched on plays Updraft; scores are capped server-side.
+  w.setSettingValue_('SUMMIT_PARTY', 'ON');
+  w.setSettingValue_('SUMMIT_PARTY_AUTO_ROLL', '0');
+  w.setSettingValue_('SUMMIT_PARTY_MINIGAMES', 'updraft');
+  w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade'], ['8001111', 'Ann L.', 'Gold', '7'], ['8002222', 'Bo K.', 'Grey', '8'], ['8003333', 'Cy D.', 'Purple', '7'], ['8004444', 'Di E.', 'Black', '8']];
+  const ids = { GOLD: '8001111', GREY: '8002222', PURPLE: '8003333', BLACK: '8004444' };
+  const tok = login(w, 'oldpw');
+  let s = JSON.parse(w.clashSummitStart(tok, 4, 'trail')).game; const code = s.code;
+  let guard = 0;
+  while (s.phase !== 'minigame' && guard++ < 50) { const who = s.pending ? s.pending.squad : s.order[s.turn]; s = JSON.parse(s.pending ? w.clashSummitChoose(ids[who], code, s.pending.kind === 'shop' ? 'skip' : s.pending.options[0].id) : w.clashSummitRoll(ids[who], code)).game; }
+  assert.strictEqual(s.mg.game, 'updraft');
+  const props = w.PropertiesService.getScriptProperties(), g = JSON.parse(props.getProperty('sp-game-' + code));
+  g.mg.startAt = Date.now() - 1000; props.setProperty('sp-game-' + code, JSON.stringify(g)); w.CacheService.getScriptCache().remove('sp-game-' + code);
+  s = JSON.parse(w.clashSummitScore(ids.GOLD, code, 999)).game;
+  assert.strictEqual(s.mg.scores.GOLD, 60, 'capped at max');
+  // The page: run every canvas game for 20 seconds of frames with presses and steering, twice on one seed.
+  const html = fs.readFileSync(path.join(dir, 'SummitPlay.html'), 'utf8');
+  const a = html.indexOf('  // ── Canvas minigames'), b = html.indexOf('  if (me) join(); else ask();');
+  assert.ok(a > 0 && b > a, 'the canvas minigame block');
+  const noop = () => {};
+  const ctx = new Proxy({}, { get: (t, k) => k === 'createLinearGradient' ? () => ({ addColorStop: noop }) : k === 'measureText' ? () => ({ width: 10 }) : (k in t ? t[k] : noop), set: (t, k, v) => { t[k] = v; return true; } });
+  const box = { window: { matchMedia: () => ({ matches: false }), devicePixelRatio: 1 }, matchMedia: () => ({ matches: false }), Image: function () {}, S: { art: {} }, squad: 'GOLD', COLORS: { GOLD: '#ffd23f' }, FOCUS: {}, Math, String, parseFloat, Object };
+  vm.createContext(box);
+  vm.runInContext(html.slice(a, b) + '\nthis.GAMES = GAMES; this.rng = rng;', box);
+  const page = ['tap', 'react', 'memory'].concat(Object.keys(box.GAMES));
+  assert.deepStrictEqual(page.slice().sort(), keys.slice().sort(), 'the page has every minigame');
+  function run(k, seed, presses) {
+    const keysDown = {};
+    const E = { W: 360, H: 440, t: 0, R: box.rng(seed), keys: keysDown, pad: 0, touch: 0, fx: [], float: noop, burst: noop, shake: noop, flash: noop };
+    E.steer = () => E.pad;
+    const G = box.GAMES[k].make(E);
+    for (let f = 0; f < 1250; f++) { // 20 s at 16 ms
+      E.t += 16;
+      if (presses && f % 9 === 0 && G.press) G.press(f % 18 ? 'go' : 'up', 180);
+      E.pad = presses ? (Math.floor(f / 40) % 3) - 1 : 0;
+      G.update(16); G.draw(ctx, 16);
+    }
+    return G.score();
+  }
+  Object.keys(box.GAMES).forEach(k => {
+    const v = run(k, 1234, true);
+    assert.ok(Number.isFinite(v) && v >= 0 && v <= defs[k].max, k + ' scores inside 0..' + defs[k].max + ' (got ' + v + ')');
+    assert.strictEqual(run(k, 1234, true), v, k + ': the same seed and the same play give the same score');
+  });
+  assert.ok(run('bounce', 9, true) > 0 && run('catch', 9, true) > 0, 'playing scores');
 });
 
 test('Summit Party: several games at once by code; any Staff Access role can run one; a squad that does not roll gets an auto-roll after SUMMIT_PARTY_AUTO_ROLL seconds', () => {

@@ -137,6 +137,22 @@
   .confetti { position:fixed; top:-20px; width:10px; height:16px; border-radius:3px; pointer-events:none; animation:fall linear forwards; z-index:20; }
   @keyframes fall { to { transform:translateY(110vh) rotate(720deg); } }
   @media (prefers-reduced-motion: reduce) { .confetti { display:none; } }
+  .card-big .mgicon { font-size:clamp(46px,6vw,110px); color:var(--gold); line-height:1; margin-top:.2em; }
+  .card-big .mgicon.land, .card-big h2.land { animation: landin .55s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes landin { 0% { transform: scale(1.35); } 100% { transform: scale(1); } }
+  .card-big h2.spin { color:#d9ccf2; }
+  .mgrest.wait { opacity:0; }
+  .mgrest.show { animation: rise .45s cubic-bezier(.2,.8,.2,1) both; }
+  .card-big .clock.hot { color:#ff6b6b; }
+  .card-big .clock.tick { animation: tick .32s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes tick { from { transform: scale(1.18); } }
+  .sqc.in { animation: popin .45s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes popin { 0% { transform: scale(.8); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+  .results .sqc { animation: rise .5s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes rise { from { opacity:0; transform: translateY(40px); } }
+  .results .sqc.win .logo { animation: cheer .45s cubic-bezier(.34,1.56,.64,1) .8s 2; }
+  @keyframes cheer { 50% { transform: translateY(-14%) rotate(-6deg); } }
+  @media (prefers-reduced-motion: reduce) { .card-big .mgicon.land, .card-big h2.land, .mgrest.show, .card-big .clock.tick, .sqc.in, .results .sqc, .results .sqc.win .logo { animation:none; } }
 </style>
 </head>
 <body>
@@ -291,25 +307,70 @@
 
   // ── Minigame, results, Final Climb, bonus flags, winner ──
   function squadCards(g, fill) { return '<div class="squads">' + g.order.map(function (s) { var f = fill(s); return '<div class="sqc ' + (f.cls || '') + '">' + logo(s) + '<b style="color:' + RING[s] + '">' + esc(f.big) + '</b><small>' + esc(f.small || title(s)) + '</small></div>'; }).join('') + '</div>'; }
+  // The minigame card. Built once per minigame; after that only the clock and the squad chips change,
+  // so the entrance plays once. A Chromebook minigame opens with a roulette that slows down and lands
+  // on the game (skipped under prefers-reduced-motion). Squads pop in as their scores arrive.
+  var mgBuilt = '', mgIn = {};
+  function mgIcon(mg) { var d = S.minigames && S.minigames[mg.game]; return d && d.icon ? d.icon : 'ph-game-controller'; }
   function minigameCard(g) {
-    var mg = g.mg;
+    var mg = g.mg, key = g.id + ':' + mg.round;
     if (mg.live) {
-      overlay('<div class="card-big"><div class="kicker">Minigame · live ' + esc(mg.kind) + ' challenge</div><h2>' + esc(mg.name) + '</h2><p>' + esc(mg.how) + '</p><p style="color:var(--gold);font-weight:800">Staff: tap the winning squad on the right.</p></div>');
+      if (mgBuilt === key) return;
+      mgBuilt = key;
+      overlay('<div class="card-big"><div class="kicker">Minigame · live ' + esc(mg.kind) + ' challenge</div><h2 class="land">' + esc(mg.name) + '</h2><p>' + esc(mg.how) + '</p><p style="color:var(--gold);font-weight:800">Staff: tap the winning squad on the right.</p></div>');
       return;
     }
     var t = mg.startAt - now(), left = Math.max(0, Math.ceil(t / 1000)), playing = t <= 0, remain = Math.max(0, Math.ceil((mg.endAt - now()) / 1000));
-    overlay('<div class="card-big"><div class="kicker">Minigame · everyone plays on their Chromebook</div><h2>' + esc(mg.name) + '</h2><p>' + esc(mg.how) + '</p>' +
-      '<div class="clock">' + (playing ? (remain ? remain : 'Time!') : 'Get ready... ' + left) + '</div>' +
-      squadCards(g, function (s) { var done = mg.scores && mg.scores[s] != null; return { big: done ? 'In!' : playing ? '...' : 'Ready', cls: done ? 'done' : '' }; }) + '</div>');
+    if (mgBuilt !== key || !$('mgClock')) {
+      mgBuilt = key; mgIn = {};
+      var d = S.minigames && S.minigames[mg.game], from = d && d.from ? ' · from ' + d.from : '';
+      overlay('<div class="card-big"><div class="kicker">Minigame · everyone plays on their Chromebook' + esc(from) + '</div>' +
+        '<div class="mgicon" id="mgIcon"><i class="ph-fill ' + mgIcon(mg) + '"></i></div><h2 id="mgName">' + esc(mg.name) + '</h2><div class="mgrest" id="mgRest"><p>' + esc(mg.how) + '</p>' +
+        '<div class="clock" id="mgClock"></div>' +
+        squadCards(g, function (s) { return { big: 'Ready', cls: 'mgs' }; }) + '</div></div>');
+      roulette(mg);
+    }
+    var c = $('mgClock'), txt = playing ? (remain ? String(remain) : 'Time!') : 'Get ready... ' + left;
+    if (c && c.textContent !== txt) { c.textContent = txt; c.classList.toggle('hot', playing && remain > 0 && remain <= 5); if (!calm) { c.classList.remove('tick'); void c.offsetWidth; c.classList.add('tick'); } }
+    document.querySelectorAll('#overlay .sqc.mgs').forEach(function (el, i) {
+      var s = g.order[i], done = mg.scores && mg.scores[s] != null, b = el.querySelector('b');
+      var want = done ? 'In!' : playing ? 'Playing' : 'Ready';
+      if (b.textContent !== want) b.textContent = want;
+      if (done && !mgIn[s]) { mgIn[s] = true; el.classList.add('done', 'in'); }
+    });
+  }
+  // Mario Party-style pick: names flick by, slow down, and land. About two seconds, well inside the 9-second ready time.
+  function roulette(mg) {
+    var name = $('mgName'), icon = $('mgIcon'), rest = $('mgRest'), all = S.minigames ? Object.keys(S.minigames) : [];
+    if (calm || all.length < 3 || mg.startAt - now() < 4000) { name.classList.add('land'); return; }
+    rest.classList.add('wait'); name.classList.add('spin');
+    var steps = 14, i = 0, start = all.indexOf(mg.game) + 3;
+    (function next() {
+      if (!$('mgName') || $('mgName') !== name) return;
+      i++;
+      if (i >= steps) {
+        name.textContent = mg.name; icon.innerHTML = '<i class="ph-fill ' + mgIcon(mg) + '"></i>';
+        name.classList.remove('spin'); name.classList.add('land'); icon.classList.add('land'); rest.classList.remove('wait'); rest.classList.add('show');
+        return;
+      }
+      var k = all[(start + i) % all.length], d = S.minigames[k];
+      name.textContent = d.name; icon.innerHTML = '<i class="ph-fill ' + (d.icon || 'ph-game-controller') + '"></i>';
+      setTimeout(next, 50 + Math.pow(i / steps, 3) * 320);
+    })();
+  }
+  function resultText(mg, v) {
+    var d = S.minigames && S.minigames[mg.game];
+    return mg.game === 'react' ? (v / 1000).toFixed(2) + ' s' : v + (d && d.unit ? ' ' + d.unit : '');
   }
   function resultsCard(g) {
     var mg = g.mg;
-    overlay('<div class="card-big"><div class="kicker">Minigame results</div><h2>' + esc(mg.name) + '</h2>' +
+    overlay('<div class="card-big results"><div class="kicker">Minigame results</div><h2>' + esc(mg.name) + '</h2>' +
       squadCards(g, function (s) {
         var p = mg.prizes[s] || 0, v = mg.scores && mg.scores[s];
-        var sc = mg.live ? (mg.winner === s ? 'Winner' : 'Played') : v == null ? 'No score' : mg.game === 'react' ? (v / 1000).toFixed(2) + ' s' : mg.game === 'memory' ? v + ' signs' : v + ' taps';
+        var sc = mg.live ? (mg.winner === s ? 'Winner' : 'Played') : v == null ? 'No score' : resultText(mg, v);
         return { big: '+' + p + ' coins', small: sc, cls: p === 10 ? 'win' : '' };
       }) + '</div>', 5200);
+    document.querySelectorAll('#overlay .results .sqc').forEach(function (el, i) { el.style.animationDelay = (i * 110) + 'ms'; });
   }
   function endSequence(g) {
     var steps = [];
@@ -445,4 +506,4 @@
 </script>
 </body>
 </html>
-<!-- file-stamp: dff7dd5b6d -->
+<!-- file-stamp: 2e80bc69d5 -->

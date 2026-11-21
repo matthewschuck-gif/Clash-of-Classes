@@ -5,7 +5,7 @@
  * GitHub, to show which files still need pasting.
  */
 const FILE_STAMPS_ = {
-  "01_Config.gs":"eccda44265",
+  "01_Config.gs":"eea0bc0b64",
   "02_Router.gs":"3712b23951",
   "03_Web.gs":"4a8eb73603",
   "04_Students.gs":"63c5e8f276",
@@ -68,7 +68,7 @@ const FILE_STAMPS_ = {
   "60_StaffAccess.gs":"1aff674a17",
   "61_Hardening.gs":"41d295703e",
   "62_Hope.gs":"b553963a3d",
-  "63_SummitParty.gs":"5c2ecf6cc2",
+  "63_SummitParty.gs":"7af068bbe1",
   "64_SquadLogos.gs":"d61c4bf19f",
   "Announce.html":"ed03b14ce7",
   "App.html":"49f1fb9826",
@@ -97,7 +97,7 @@ const FILE_STAMPS_ = {
   "SiteCss.html":"a932f10ec6",
   "Student.html":"27669ae4c4",
   "Styles.html":"d869270812",
-  "SummitParty.html":"dff7dd5b6d",
-  "SummitPlay.html":"f932bf05b7",
+  "SummitParty.html":"2e80bc69d5",
+  "SummitPlay.html":"149ac3fc66",
   "Widgets.html":"e8987ba766"
 };

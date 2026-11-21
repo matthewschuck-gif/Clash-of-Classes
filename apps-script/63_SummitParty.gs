@@ -27,7 +27,8 @@
  *
  * Switches: SUMMIT_PARTY (OFF until turned on), SUMMIT_PARTY_POINTS (0 = no points),
  * SUMMIT_PARTY_LIVE (live challenges every third round), SUMMIT_PARTY_ITEMS (items and the Camp
- * Store), SUMMIT_PARTY_BONUS (bonus flags), SUMMIT_PARTY_AUTO_ROLL (0 = off).
+ * Store), SUMMIT_PARTY_BONUS (bonus flags), SUMMIT_PARTY_AUTO_ROLL (0 = off), SUMMIT_PARTY_MINIGAMES
+ * (which Chromebook minigames are in the rotation).
  */
 
 const SP_GAME_HEADERS_ = ['Game', 'Status', 'Started', 'Ended', 'Rounds', 'Started By', 'Result'];
@@ -113,11 +114,29 @@ function spLiveChallenges_() {
   return list.map(function (r) { return { kind: r[0], name: r[1], how: r[2] }; });
 }
 
+// Chromebook minigames: 20 seconds, every squad at once, scored on the page. Five come from Ridgeline's arcade
+// (Updraft, Summit Bounce, Ridge Runner, Switchback Slalom, Cairn Stack). Every squad gets the same course (mg.seed).
+// SUMMIT_PARTY_MINIGAMES picks which ones are in the rotation (ALL, or a list of keys).
 const SP_MINIGAMES_ = {
-  tap: { name: 'Tap Rally', how: 'Tap the button as fast as you can for 20 seconds. Most taps wins.', better: 'high', max: 260 },
-  react: { name: 'Quick Draw', how: 'Wait for the gold flash, then tap. Best of three. Fastest time wins.', better: 'low', max: 3000 },
-  memory: { name: 'Trail Memory', how: 'Watch the trail signs light up, then tap them back in order. Longest trail wins.', better: 'high', max: 15 },
+  tap: { name: 'Tap Rally', how: 'Tap the button as fast as you can for 20 seconds. Most taps wins.', better: 'high', max: 260, unit: 'taps', icon: 'ph-hand-tap' },
+  react: { name: 'Quick Draw', how: 'Wait for the gold flash, then tap. Best of three. Fastest time wins.', better: 'low', max: 3000, unit: 's', icon: 'ph-lightning' },
+  memory: { name: 'Trail Memory', how: 'Watch the trail signs light up, then tap them back in order. Longest trail wins.', better: 'high', max: 15, unit: 'signs', icon: 'ph-signpost' },
+  updraft: { name: 'Updraft', how: 'Tap or press space to rise. Glide through the gaps in the rock gates and grab gold flags. Most gates wins.', better: 'high', max: 60, unit: 'gates', icon: 'ph-wind', from: 'Ridgeline' },
+  bounce: { name: 'Summit Bounce', how: 'You bounce on your own. Steer onto the ledges with the arrow keys (or hold a side) and climb. Highest climb wins.', better: 'high', max: 1000, unit: 'm', icon: 'ph-arrow-fat-lines-up', from: 'Ridgeline' },
+  runner: { name: 'Ridge Runner', how: 'Run the ridge. Grab only the GOLD summit flags (purple ones are look-alikes) and jump the rockfall. Most gold flags wins.', better: 'high', max: 40, unit: 'flags', icon: 'ph-person-simple-run', from: 'Ridgeline' },
+  slalom: { name: 'Switchback Slalom', how: 'Ski down the mountain. Steer through the gold gates with the arrow keys (or hold a side). Most gates wins.', better: 'high', max: 60, unit: 'gates', icon: 'ph-snowflake', from: 'Ridgeline' },
+  stack: { name: 'Cairn Stack', how: 'A stone slides back and forth. Tap or press space to drop it on the cairn. Only the part that lands stays. Tallest cairn wins.', better: 'high', max: 40, unit: 'stones', icon: 'ph-stack', from: 'Ridgeline' },
+  catch: { name: 'Camp Snack Catch', how: 'Trail snacks fall from the pines. Steer your pack to catch them and dodge the rocks. Most snacks wins.', better: 'high', max: 150, unit: 'snacks', icon: 'ph-basket' },
+  dodge: { name: 'Avalanche Dodge', how: 'Snowballs roll down the slope. Steer to dodge them and grab gold flags. A hit drops a flag. Most flags wins.', better: 'high', max: 60, unit: 'flags', icon: 'ph-mountains' },
 };
+
+/** The minigames in the rotation (Settings › SUMMIT_PARTY_MINIGAMES: ALL, or keys like updraft, bounce, tap). */
+function spMinigameKeys_() {
+  const all = Object.keys(SP_MINIGAMES_), raw = String(getSetting_('SUMMIT_PARTY_MINIGAMES') || 'ALL').trim().toLowerCase();
+  if (!raw || raw === 'all') return all;
+  const pick = raw.split(/[\s,]+/).filter(function (k) { return SP_MINIGAMES_[k]; });
+  return pick.length ? all.filter(function (k) { return pick.indexOf(k) >= 0; }) : all;
+}
 
 function spOn_() { return String(getSetting_('SUMMIT_PARTY') || 'OFF').toUpperCase() === 'ON'; }
 function spRequireOn_() { if (!spOn_()) throw new Error('Summit Party is closed right now.'); }
@@ -367,7 +386,7 @@ function spStartMinigame_(g) {
     g.mg = { round: g.round, live: true, kind: c.kind, name: c.name, how: c.how, scores: {} };
     spHost_(g, 'Minigame time! A LIVE ' + c.kind.toUpperCase() + ' challenge: ' + c.name + '. Staff, tap the winning squad.');
   } else {
-    const keys = Object.keys(SP_MINIGAMES_), k = keys[(g.round - 1 + (g.seed || 0)) % keys.length], m = SP_MINIGAMES_[k];
+    const keys = spMinigameKeys_(), k = keys[(g.round - 1 + (g.seed || 0)) % keys.length], m = SP_MINIGAMES_[k];
     const now = Date.now();
     g.mg = { round: g.round, live: false, game: k, name: m.name, how: m.how, startAt: now + 9000, endAt: now + 29000, scores: {}, seed: Math.floor(Math.random() * 1e6) };
     spHost_(g, 'Minigame time! ' + m.name + ': ' + m.how);
@@ -751,4 +770,4 @@ function serveSummitPlay_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_63_SummitParty = '5c2ecf6cc2';
+var FILE_STAMP_63_SummitParty = '7af068bbe1';
