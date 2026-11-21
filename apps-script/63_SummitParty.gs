@@ -536,6 +536,7 @@ function clashSummitStart(token, rounds, layout) {
   const who = spStaff_(token);
   spRequireOn_();
   return spWithLock_(function () {
+    ensureSummitPartyTabs_(); // first game: the Summit tabs, including the live challenges
     const list = spTidy_();
     if (list.filter(function (x) { return x.status === 'playing'; }).length >= SP_MAX_GAMES_) throw new Error('There are already ' + SP_MAX_GAMES_ + ' games going. End one first.');
     const code = spNewCode_(list.map(function (x) { return x.code; }));
@@ -751,4 +752,4 @@ function serveSummitPlay_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_63_SummitParty = 'd1d2b59b64';
+var FILE_STAMP_63_SummitParty = '79a4bb6076';

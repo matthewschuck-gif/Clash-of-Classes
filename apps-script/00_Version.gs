@@ -68,7 +68,7 @@ const FILE_STAMPS_ = {
   "60_StaffAccess.gs":"1aff674a17",
   "61_Hardening.gs":"41d295703e",
   "62_Hope.gs":"b553963a3d",
-  "63_SummitParty.gs":"d1d2b59b64",
+  "63_SummitParty.gs":"79a4bb6076",
   "64_SquadLogos.gs":"d61c4bf19f",
   "Announce.html":"ed03b14ce7",
   "App.html":"49f1fb9826",
