@@ -68,7 +68,7 @@ const FILE_STAMPS_ = {
   "60_StaffAccess.gs":"1aff674a17",
   "61_Hardening.gs":"41d295703e",
   "62_Hope.gs":"b553963a3d",
-  "63_SummitParty.gs":"79a4bb6076",
+  "63_SummitParty.gs":"b10eaa1b8a",
   "64_SquadLogos.gs":"d61c4bf19f",
   "Announce.html":"ed03b14ce7",
   "App.html":"49f1fb9826",
@@ -97,7 +97,7 @@ const FILE_STAMPS_ = {
   "SiteCss.html":"a932f10ec6",
   "Student.html":"27669ae4c4",
   "Styles.html":"d869270812",
-  "SummitParty.html":"139a81c438",
-  "SummitPlay.html":"b586d30cfe",
+  "SummitParty.html":"2a165bc2e4",
+  "SummitPlay.html":"f932bf05b7",
   "Widgets.html":"e8987ba766"
 };

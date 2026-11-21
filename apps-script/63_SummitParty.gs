@@ -78,7 +78,7 @@ function spBoard_(layout) {
       const f = (k + 1) / (sc.types.length + 1);
       // A straight line between the two ends, pulled toward the middle of the board.
       let x = a.x + (b.x - a.x) * f, y = a.y + (b.y - a.y) * f;
-      const pull = layout === 'square' ? 0.16 : 0.3;
+      const pull = layout === 'square' ? 0.42 : 0.3;
       x += (50 - x) * pull * Math.sin(Math.PI * f); y += (50 - y) * pull * Math.sin(Math.PI * f);
       nodes.push({ id: first + k, type: type, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, next: [k === sc.types.length - 1 ? sc.to : first + k + 1], path: sc.name });
     });
@@ -752,4 +752,4 @@ function serveSummitPlay_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_63_SummitParty = '79a4bb6076';
+var FILE_STAMP_63_SummitParty = 'b10eaa1b8a';

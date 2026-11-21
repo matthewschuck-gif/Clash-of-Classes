@@ -4,38 +4,60 @@
 <base target="_top">
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,900&family=DM+Mono:wght@500&family=DM+Sans:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,900&family=DM+Mono:wght@500&family=DM+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
 <style>
   :root { --bg:#12081f; --panel:#1d1033; --line:#38255a; --ink:#f6f0ff; --mute:#b9a6d8; --gold:#ffe100; --sq:#b583ff; }
   * { box-sizing:border-box; }
   html, body { margin:0; min-height:100%; background:var(--bg); color:var(--ink); font-family:'DM Sans',system-ui,sans-serif; }
   body { background: radial-gradient(900px 600px at 50% -10%, color-mix(in srgb, var(--sq) 35%, transparent) 0%, transparent 65%), var(--bg); }
-  .wrap { max-width:560px; margin:0 auto; padding:24px 16px 40px; text-align:center; }
-  h1 { font-family:Fraunces,Georgia,serif; font-weight:900; font-size:clamp(30px,8vw,46px); margin:6px 0 2px; letter-spacing:-.02em; }
+  .wrap { max-width:560px; margin:0 auto; padding:20px 16px 40px; text-align:center; }
+  h1 { font-family:Fraunces,Georgia,serif; font-weight:900; font-size:clamp(28px,7vw,42px); margin:4px 0 2px; letter-spacing:-.02em; }
   .tag { font-family:'DM Mono',monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); font-size:12px; }
-  .card { background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:20px 18px; margin-top:16px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:18px 16px; margin-top:14px; }
   .sub { color:var(--mute); font-size:15px; line-height:1.5; margin:6px 0 0; }
   input { font:inherit; font-size:22px; letter-spacing:.08em; text-align:center; width:100%; padding:14px; border-radius:14px; border:1px solid var(--line); background:#0d0618; color:var(--ink); }
-  button { font:inherit; font-weight:700; cursor:pointer; border:0; border-radius:999px; padding:12px 20px; }
-  .go { background:var(--gold); color:#1a0b2e; width:100%; margin-top:12px; font-size:18px; }
-  .roll { width:min(260px,70vw); aspect-ratio:1; border-radius:36px; font-family:Fraunces,serif; font-weight:900; font-size:clamp(40px,11vw,64px); background:var(--sq); color:#12081f;
-    box-shadow:0 14px 0 color-mix(in srgb, var(--sq) 55%, #000), 0 24px 40px #000a; margin:18px auto 6px; display:block; transition: transform .12s; }
-  .roll:active { transform: translateY(8px); box-shadow:0 6px 0 color-mix(in srgb, var(--sq) 55%, #000), 0 12px 24px #000a; }
-  .roll:disabled { opacity:.35; transform:none; }
+  label.field { display:grid; gap:6px; text-align:left; font-size:13px; color:var(--mute); margin-bottom:10px; }
+  button { font:inherit; font-weight:800; cursor:pointer; border:0; border-radius:999px; padding:12px 20px; }
+  button:active { transform: translateY(2px); }
+  button:disabled { opacity:.35; cursor:default; transform:none; }
+  .go { background:var(--gold); color:#1a0b2e; width:100%; margin-top:6px; font-size:18px; }
+  .who { display:flex; justify-content:center; align-items:center; gap:14px; margin-bottom:8px; }
+  .slogo { width:84px; height:84px; border-radius:20px; display:grid; place-items:center; padding:8px; box-shadow:0 8px 20px #0007; }
+  .slogo img { width:100%; height:100%; object-fit:contain; }
+  .spiece { width:84px; height:84px; border-radius:50%; border:4px solid var(--sq); background:#1d1033 no-repeat; background-size:240%; box-shadow:0 8px 20px #0007; }
+  .stats { display:flex; justify-content:center; gap:26px; margin-top:6px; }
+  .stats div { font-family:Fraunces,serif; font-weight:900; font-size:32px; color:var(--gold); }
+  .stats span { display:block; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.12em; color:var(--mute); font-weight:500; }
+  .dice { width:min(240px,64vw); aspect-ratio:1; border-radius:28%; font-family:Fraunces,serif; font-weight:900; font-size:clamp(44px,12vw,70px); color:#5e4500;
+    background:linear-gradient(#fff6b0,#ffd23f); border:6px solid #fff; box-shadow:0 14px 0 #a87b00, 0 24px 40px #000a; margin:16px auto 8px; display:grid; place-items:center; align-content:center; gap:6px; line-height:1; }
+  .dice small { display:block; font:800 15px 'DM Sans',sans-serif; color:#7a5a00; margin-top:4px; }
+  .dice:active { transform: translateY(8px); box-shadow:0 6px 0 #a87b00, 0 12px 24px #000a; }
+  .items { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+  .item { background:#ffffff12; color:var(--ink); border:2px solid #ff9a1f; border-radius:16px; padding:12px 10px; font-size:15px; text-align:center; }
+  .item i { display:block; font-size:30px; color:#ff9a1f; margin-bottom:4px; }
+  .item small { display:block; color:var(--mute); font-weight:400; font-size:12.5px; margin-top:3px; }
+  .item.price b { color:var(--gold); }
   .paths { display:grid; gap:12px; margin-top:14px; }
   .path { background:#ffffff14; color:var(--ink); border:2px solid var(--sq); border-radius:18px; padding:16px; font-size:19px; }
   .path small { display:block; color:var(--mute); font-weight:400; font-size:13px; margin-top:4px; }
-  .stats { display:flex; justify-content:center; gap:26px; margin-top:6px; }
-  .stats div { font-family:Fraunces,serif; font-weight:900; font-size:34px; color:var(--gold); }
-  .stats span { display:block; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.12em; color:var(--mute); font-weight:500; }
-  .wait { font-size:18px; margin-top:8px; }
-  .who { display:flex; justify-content:center; align-items:center; gap:14px; margin-bottom:10px; }
-  .slogo { width:96px; height:96px; border-radius:22px; display:grid; place-items:center; padding:8px; box-shadow:0 8px 20px #0007; }
-  .slogo img { width:100%; height:100%; object-fit:contain; }
-  .spiece { width:96px; height:96px; border-radius:50%; border:4px solid; background:#1d1033 no-repeat; background-size:240%; box-shadow:0 8px 20px #0007; }
+  .nums { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-top:10px; }
+  .nums button { aspect-ratio:1; border-radius:14px; padding:0; font:900 26px Fraunces,serif; background:#fff; color:#2a173f; }
+  .wait { font-size:18px; margin-top:10px; }
   .msg { color:#fca5a5; min-height:1.2em; margin-top:10px; font-size:15px; }
   .small { font-size:13px; color:var(--mute); margin-top:14px; }
   .small a { color:var(--mute); }
+  /* Minigames */
+  .mg h2 { font-family:Fraunces,serif; font-weight:900; font-size:clamp(28px,8vw,40px); margin:4px 0; }
+  .clock { font:900 clamp(40px,12vw,64px)/1 Fraunces,serif; color:var(--gold); margin:10px 0; }
+  .tapbtn { width:min(260px,70vw); aspect-ratio:1; border-radius:50%; background:var(--sq); color:#12081f; font:900 clamp(40px,12vw,64px) Fraunces,serif; box-shadow:0 12px 0 color-mix(in srgb, var(--sq) 50%, #000), 0 20px 36px #000a; touch-action:manipulation; }
+  .tapbtn:active { transform: translateY(8px); box-shadow:0 4px 0 color-mix(in srgb, var(--sq) 50%, #000), 0 10px 20px #000a; }
+  .react { width:100%; aspect-ratio: 4 / 3; border-radius:22px; font:900 clamp(26px,8vw,40px) Fraunces,serif; background:#3a2659; color:#fff; touch-action:manipulation; }
+  .react.go-now { background:var(--gold); color:#1a0b2e; }
+  .signs { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px; }
+  .sign { aspect-ratio: 1.4; border-radius:18px; font-size:44px; color:#fff; opacity:.55; touch-action:manipulation; transition: opacity .12s, transform .12s; }
+  .sign.lit { opacity:1; transform: scale(1.05); box-shadow:0 0 0 4px #fff, 0 0 30px #fff8; }
+  @media (prefers-reduced-motion: reduce) { .sign { transition:none; } }
 </style>
 </head>
 <body>
@@ -49,20 +71,22 @@
   var COLORS = { BLACK: '#e9e3f5', GOLD: '#ffd23f', GREY: '#9aa5b8', PURPLE: '#b583ff' };
   var BASE = { BLACK: '#2b2633', GOLD: '#a87b00', GREY: '#5d6673', PURPLE: '#5b1a86' };
   var FOCUS = { BLACK: '47% 11%', GOLD: '72% 2%', GREY: '77% 11%', PURPLE: '69% 0%' };
-  var LOGOS = {};
-  run('clashSquadLogos').then(function (l) { LOGOS = l || {}; if (S) draw(); }).catch(function () {});
-  var me = '', squad = '', S = null, seq = 0, acting = false, code = '';
+  var ITEMICON = { double: 'ph-dice-two', compass: 'ph-compass', paws: 'ph-hand-grabbing', zipline: 'ph-arrows-left-right' };
+  var me = '', squad = '', S = null, seq = 0, acting = false, code = '', LOGOS = {}, skew = 0, compassOpen = false, play = null;
   try { me = localStorage.getItem('clash-my-800') || ''; code = sessionStorage.getItem('summit-code') || ''; } catch (e) {}
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function title(s) { s = String(s || ''); return s.charAt(0) + s.slice(1).toLowerCase(); }
   function run(fn) { var a = Array.prototype.slice.call(arguments, 1); return new Promise(function (ok, no) { var r = google.script.run.withSuccessHandler(function (t) { ok(JSON.parse(t)); }).withFailureHandler(no); r[fn].apply(r, a); }); }
   function msgOf(e) { return String(e && e.message || e).replace(/^Exception:\s{0,}/, ''); }
+  function now() { return Date.now() + skew; }
+  run('clashSquadLogos').then(function (l) { LOGOS = l || {}; if (S && !play) draw(); }).catch(function () {});
 
   function ask(err) {
-    $('app').innerHTML = '<div class="card"><p class="sub" style="margin:0 0 12px">Type the game code on the big screen, then your 800 number. Your squad plays from this Chromebook.</p>' +
-      '<input id="code" autocomplete="off" autocapitalize="characters" maxlength="4" value="' + esc(code) + '" placeholder="GAME CODE" aria-label="Game code" style="text-transform:uppercase;margin-bottom:10px">' +
-      '<input id="id" inputmode="numeric" autocomplete="off" maxlength="10" value="' + esc(me) + '" placeholder="800 number" aria-label="Your 800 number">' +
+    play = null;
+    $('app').innerHTML = '<div class="card"><p class="sub" style="margin:0 0 14px">Type the game code on the big screen, then your 800 number. Your squad plays from this Chromebook.</p>' +
+      '<label class="field">Game code<input id="code" autocomplete="off" autocapitalize="characters" maxlength="4" value="' + esc(code) + '" style="text-transform:uppercase"></label>' +
+      '<label class="field">Your 800 number<input id="id" inputmode="numeric" autocomplete="off" maxlength="10" value="' + esc(me) + '"></label>' +
       '<button class="go" id="join">Join my squad</button><div class="msg" id="msg">' + esc(err || '') + '</div></div>';
     (code ? $('id') : $('code')).focus();
     var go = function () { me = $('id').value.replace(/\D/g, ''); code = $('code').value.toUpperCase().replace(/[^A-Z]/g, ''); join(); };
@@ -76,33 +100,57 @@
     }).catch(function (e) { ask(msgOf(e)); });
   }
   function take(v) {
+    if (v && v.now) skew = v.now - Date.now();
     if (!v || v.same) return;
     if (!v.on) { $('app').innerHTML = '<div class="card"><p class="sub">Summit Party is closed right now.</p></div>'; return; }
-    S = v; seq = v.game ? v.game.seq : 0; draw();
+    S = v; seq = v.game ? v.game.seq : 0;
+    if (play && S.game && S.game.phase === 'minigame' && S.game.mg && play.key === S.game.id + ':' + S.game.mg.round) return; // keep playing
+    play = null;
+    draw();
+  }
+
+  function head(g) {
+    var mine = g && g.squads[squad], art = S.art && S.art.pieces && S.art.pieces[squad];
+    return '<div class="card"><div class="who">' + (LOGOS[squad] ? '<span class="slogo" style="background:' + BASE[squad] + '"><img src="' + LOGOS[squad] + '" alt="' + esc(title(squad)) + ' Squad logo"></span>' : '') +
+      (art ? '<span class="spiece" style="background-image:url(&quot;' + art + '&quot;);background-position:' + FOCUS[squad] + '" role="img" aria-label="Your squad piece"></span>' : '') + '</div>' +
+      '<div style="font-family:Fraunces,serif;font-weight:900;font-size:26px;color:var(--sq)">' + esc(title(squad)) + ' Squad</div>' +
+      (mine ? '<div class="stats"><div>' + mine.flags + '<span>FLAGS</span></div><div>' + mine.coins + '<span>COINS</span></div><div>' + (mine.items || []).length + '<span>ITEMS</span></div></div>' : '');
   }
   function draw() {
-    var g = S.game, mine = g && g.squads[squad], el = $('app');
-    var art = S.art && S.art.pieces && S.art.pieces[squad];
-    var head = '<div class="card"><div class="who">' + (LOGOS[squad] ? '<span class="slogo" style="background:' + BASE[squad] + '"><img src="' + LOGOS[squad] + '" alt="' + esc(title(squad)) + ' Squad logo"></span>' : '') +
-      (art ? '<span class="spiece" style="background-image:url(&quot;' + art + '&quot;);background-position:' + FOCUS[squad] + ';border-color:var(--sq)" role="img" aria-label="Your squad piece"></span>' : '') + '</div>' +
-      '<div style="font-family:Fraunces,serif;font-weight:900;font-size:26px;color:var(--sq)">' + esc(title(squad)) + ' Squad</div>' +
-      (mine ? '<div class="stats"><div>' + mine.flags + '<span>FLAGS</span></div><div>' + mine.coins + '<span>COINS</span></div>' + (mine.boost ? '<div>+' + mine.boost + '<span>NEXT ROLL</span></div>' : '') + '</div>' : '');
+    var g = S.game, el = $('app');
     if (!g || g.status !== 'playing') {
-      el.innerHTML = head + '<p class="wait">' + (g && g.places ? esc(title(g.places[0])) + ' won the last game.' : 'Waiting for a game to start.') + '</p><p class="sub">Watch the big screen.</p></div>' + foot();
-      wireFoot(); return;
+      el.innerHTML = head(g) + '<p class="wait">' + (g && g.places ? esc(title(g.places[0])) + ' won Summit Party!' : 'Waiting for a game to start.') + '</p><p class="sub">Watch the big screen.</p></div>' + foot();
+      return wireFoot();
     }
-    var now = g.order[g.turn], pend = g.pending, myTurn = now === squad && !pend, myPick = pend && pend.squad === squad;
-    var body = '<p class="sub">Round ' + Math.min(g.round, g.rounds) + ' of ' + g.rounds + '</p>';
-    var L = g.last || {};
-    if (L.squad === squad && L.roll) body += '<p class="sub">You rolled <b style="color:var(--gold)">' + L.roll + '</b>' + (L.card ? ' · ' + esc(L.card) : '') + '</p>';
-    if (myPick) body += '<p class="wait">You reached a fork. Which way?</p><div class="paths">' + pend.options.map(function (o) {
-      var hint = o.name === 'Main Trail' ? 'The long way around, more coins' : 'Shorter and riskier';
-      return '<button class="path" data-pick="' + o.id + '">' + esc(o.name) + '<small>' + esc(hint) + '</small></button>'; }).join('') + '</div>';
-    else if (myTurn) body += '<button class="roll" id="roll">ROLL</button><p class="sub">Your squad\'s turn!</p>';
-    else body += '<p class="wait">' + (pend ? esc(title(pend.squad)) + ' is picking a path.' : 'It\'s ' + esc(title(now)) + '\'s turn.') + '</p><p class="sub">Watch the big screen. Your button lights up on your turn.</p>';
-    el.innerHTML = head + body + '<div class="msg" id="msg"></div></div>' + foot();
+    if (g.phase === 'minigame' && g.mg) return minigame(g);
+    var mine = g.squads[squad], now0 = g.order[g.turn], pend = g.pending, myTurn = now0 === squad && !pend, myPick = pend && pend.squad === squad, L = g.last || {};
+    var body = '<p class="sub">Round ' + Math.min(g.round, g.rounds) + ' of ' + g.rounds + (g.final ? ' · <b style="color:#ff6b6b">Final Climb!</b>' : '') + '</p>';
+    if (L.squad === squad && L.roll) body += '<p class="sub">You rolled <b style="color:var(--gold)">' + L.roll + '</b>.</p>';
+    if (myPick && pend.kind === 'shop') {
+      body += '<p class="wait">The Camp Store! Buy one item?</p><div class="items">' + pend.options.map(function (o) {
+        return '<button class="item price" data-buy="' + o.id + '"' + (o.afford ? '' : ' disabled') + '><i class="ph-fill ' + ITEMICON[o.id] + '"></i>' + esc(o.name) + ' · <b>' + o.price + '</b><small>' + esc(o.text) + '</small></button>'; }).join('') +
+        '</div><button class="go" data-buy="skip" style="margin-top:12px;background:#ffffff1a;color:var(--ink)">No thanks</button>';
+    } else if (myPick) {
+      body += '<p class="wait">You reached a fork. Which way?</p><div class="paths">' + pend.options.map(function (o) {
+        return '<button class="path" data-pick="' + o.id + '">' + esc(o.name) + '<small>' + (o.name === 'Main Trail' ? 'The long way around' : 'Shorter, but rougher') + '</small></button>'; }).join('') + '</div>';
+    } else if (myTurn) {
+      var used = mine.usedOn === g.round, items = mine.items || [];
+      if (compassOpen) body += '<p class="wait">Golden Compass: how far?</p><div class="nums">' + [1, 2, 3, 4, 5, 6].map(function (n) { return '<button data-n="' + n + '">' + n + '</button>'; }).join('') + '</div><button class="go" id="cancelC" style="margin-top:12px;background:#ffffff1a;color:var(--ink)">Never mind</button>';
+      else {
+        body += '<button class="dice" id="roll">' + (mine.fixed ? mine.fixed : mine.dice === 2 ? '2 dice' : 'ROLL') + '<small>' + (mine.fixed ? 'Golden Compass' : 'Tap to hit the dice block') + '</small></button><p class="sub">Your squad\'s turn!</p>';
+        if (items.length && !used) body += '<p class="sub" style="margin-top:14px">Use an item first? (one per turn)</p><div class="items">' + items.map(function (k) { return '<button class="item" data-use="' + k + '"><i class="ph-fill ' + ITEMICON[k] + '"></i>' + esc(S.items[k].name) + '<small>' + esc(S.items[k].text) + '</small></button>'; }).join('') + '</div>';
+      }
+    } else {
+      body += '<p class="wait">' + (pend ? esc(title(pend.squad)) + ' is ' + (pend.kind === 'shop' ? 'shopping.' : 'picking a path.') : 'It\'s ' + esc(title(now0)) + '\'s turn.') + '</p><p class="sub">Watch the big screen. The dice block shows up here on your turn.</p>';
+      if ((mine.items || []).length) body += '<div class="items">' + mine.items.map(function (k) { return '<div class="item" style="opacity:.7"><i class="ph-fill ' + ITEMICON[k] + '"></i>' + esc(S.items[k].name) + '</div>'; }).join('') + '</div>';
+    }
+    el.innerHTML = head(g) + body + '<div class="msg" id="msg"></div></div>' + foot();
     if ($('roll')) $('roll').onclick = function () { act(run('clashSummitRoll', me, code)); };
     document.querySelectorAll('[data-pick]').forEach(function (b) { b.onclick = function () { act(run('clashSummitChoose', me, code, Number(b.getAttribute('data-pick')))); }; });
+    document.querySelectorAll('[data-buy]').forEach(function (b) { b.onclick = function () { act(run('clashSummitChoose', me, code, b.getAttribute('data-buy'))); }; });
+    document.querySelectorAll('[data-use]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-use'); if (k === 'compass') { compassOpen = true; draw(); return; } act(run('clashSummitItem', me, code, k)); }; });
+    document.querySelectorAll('[data-n]').forEach(function (b) { b.onclick = function () { compassOpen = false; act(run('clashSummitItem', me, code, 'compass', Number(b.getAttribute('data-n')))); }; });
+    if ($('cancelC')) $('cancelC').onclick = function () { compassOpen = false; draw(); };
     wireFoot();
   }
   function foot() { return '<p class="small">Game ' + esc(code) + ' · not ' + esc(me) + '? <a href="#" id="change">Change</a></p>'; }
@@ -111,10 +159,84 @@
     acting = true; document.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
     p.then(function (v) { acting = false; take(v); }).catch(function (e) { acting = false; draw(); if ($('msg')) $('msg').textContent = msgOf(e); });
   }
+
+  // ── Minigames: 20 seconds, every squad at once ──
+  function minigame(g) {
+    var mg = g.mg, key = g.id + ':' + mg.round, el = $('app');
+    if (mg.live) { el.innerHTML = head(g) + '<div class="mg"><div class="tag" style="margin-top:12px">Live ' + esc(mg.kind) + ' challenge</div><h2>' + esc(mg.name) + '</h2><p class="sub">' + esc(mg.how) + '</p><p class="wait">Play it in the room. Staff pick the winner.</p></div></div>' + foot(); return wireFoot(); }
+    var mine = mg.scores && mg.scores[squad] != null;
+    if (mine) { el.innerHTML = head(g) + '<div class="mg"><h2>' + esc(mg.name) + '</h2><p class="wait">Score sent: <b style="color:var(--gold)">' + (mg.game === 'react' ? (mg.scores[squad] / 1000).toFixed(2) + ' s' : mg.scores[squad]) + '</b></p><p class="sub">Results on the big screen in a moment.</p></div></div>' + foot(); return wireFoot(); }
+    if (now() > mg.endAt) { el.innerHTML = head(g) + '<div class="mg"><h2>' + esc(mg.name) + '</h2><p class="wait">Time is up for this one.</p></div></div>' + foot(); return wireFoot(); }
+    play = { key: key, game: mg.game, done: false };
+    el.innerHTML = head(g) + '<div class="mg"><div class="tag" style="margin-top:10px">Minigame</div><h2>' + esc(mg.name) + '</h2><p class="sub">' + esc(mg.how) + '</p><div class="clock" id="clock"></div><div id="arena"></div></div></div>';
+    var tick = setInterval(function () {
+      if (!play || play.key !== key) { clearInterval(tick); return; }
+      var t = mg.startAt - now();
+      if (t > 0) { $('clock').textContent = 'Get ready... ' + Math.ceil(t / 1000); return; }
+      if (!play.started) { play.started = true; start(mg, key); }
+      var r = Math.max(0, Math.ceil((mg.endAt - now()) / 1000));
+      $('clock').textContent = r ? r : 'Time!';
+      if (r <= 0) { clearInterval(tick); finish(); }
+    }, 100);
+  }
+  function send(score) {
+    if (!play || play.done) return;
+    play.done = true;
+    run('clashSummitScore', me, code, Math.round(score)).then(function (v) { play = null; take(v); }).catch(function (e) { play = null; draw(); if ($('msg')) $('msg').textContent = msgOf(e); });
+  }
+  function finish() { if (play && !play.done && play.score) send(play.score()); }
+  function start(mg, key) {
+    var a = $('arena');
+    if (mg.game === 'tap') {
+      var n = 0;
+      a.innerHTML = '<button class="tapbtn" id="tap">0</button>';
+      $('tap').onpointerdown = function (e) { e.preventDefault(); if (now() <= mg.endAt) { n++; this.textContent = n; } };
+      play.score = function () { return n; };
+    } else if (mg.game === 'react') {
+      var tries = [], waiting = false, goAt = 0, timer = null;
+      a.innerHTML = '<button class="react" id="pad">Tap to start try 1 of 3</button><p class="sub" id="best"></p>';
+      var pad = $('pad');
+      var arm = function () { waiting = true; goAt = 0; pad.className = 'react'; pad.textContent = 'Wait for gold...'; timer = setTimeout(function () { goAt = performance.now(); pad.className = 'react go-now'; pad.textContent = 'TAP!'; }, 900 + Math.random() * 2200); };
+      pad.onpointerdown = function (e) {
+        e.preventDefault();
+        if (!waiting) { if (tries.length < 3) arm(); return; }
+        waiting = false; clearTimeout(timer);
+        var ms = goAt ? Math.round(performance.now() - goAt) : 3000; // too early = the slowest time
+        tries.push(ms);
+        pad.className = 'react';
+        pad.textContent = goAt ? (ms / 1000).toFixed(3) + ' s' + (tries.length < 3 ? ' · tap for the next try' : '') : 'Too early!' + (tries.length < 3 ? ' Tap to try again' : '');
+        $('best').textContent = 'Best: ' + (Math.min.apply(null, tries) / 1000).toFixed(3) + ' s';
+        if (tries.length >= 3) send(Math.min.apply(null, tries));
+      };
+      play.score = function () { return tries.length ? Math.min.apply(null, tries) : 3000; };
+    } else {
+      var signs = [['ph-tree-evergreen', '#2fcf7a'], ['ph-mountains', '#2f8fff'], ['ph-campfire', '#ff9a1f'], ['ph-tent', '#ff6fb5']];
+      var seqn = [], pos = 0, best = 0, showing = false;
+      a.innerHTML = '<div class="signs">' + signs.map(function (s, i) { return '<button class="sign" data-s="' + i + '" style="background:' + s[1] + '"><i class="ph-fill ' + s[0] + '"></i></button>'; }).join('') + '</div><p class="sub" id="mem">Watch...</p>';
+      var btns = a.querySelectorAll('.sign');
+      var light = function (i, ms) { btns[i].classList.add('lit'); setTimeout(function () { btns[i].classList.remove('lit'); }, ms); };
+      var round = function () {
+        seqn.push(Math.floor(Math.random() * 4)); pos = 0; showing = true; $('mem').textContent = 'Watch the trail...';
+        seqn.forEach(function (s, k) { setTimeout(function () { light(s, 380); }, 500 + k * 560); });
+        setTimeout(function () { showing = false; $('mem').textContent = 'Your turn: ' + seqn.length + ' signs'; }, 500 + seqn.length * 560);
+      };
+      btns.forEach(function (b) { b.onpointerdown = function (e) {
+        e.preventDefault(); if (showing || !play || play.done) return;
+        var i = Number(b.getAttribute('data-s')); light(i, 160);
+        if (i !== seqn[pos]) { $('mem').textContent = 'Oops! Trail of ' + best + '.'; send(best); return; }
+        pos++;
+        if (pos === seqn.length) { best = seqn.length; $('mem').textContent = 'Nice! ' + best + ' signs.'; setTimeout(round, 500); }
+      }; });
+      seqn = [Math.floor(Math.random() * 4), Math.floor(Math.random() * 4)];
+      round();
+      play.score = function () { return best; };
+    }
+  }
+
   if (me) join(); else ask();
   setInterval(function () { if (!acting && squad) run('clashSummitState', code, seq).then(take).catch(function () {}); }, 2000);
 })();
 </script>
 </body>
 </html>
-<!-- file-stamp: b586d30cfe -->
+<!-- file-stamp: f932bf05b7 -->

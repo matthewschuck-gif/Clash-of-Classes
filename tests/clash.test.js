@@ -3198,7 +3198,7 @@ test('Summit Party (63_SummitParty.gs): OFF until switched on; staff start a cod
   assert.throws(() => w.clashSummitRoll(ids[first], code), /minigame/);
   poke(code, g => { g.mg.startAt = Date.now() - 1000; g.mg.endAt = Date.now() + 20000; }); // past the countdown
   const coinsBefore = JSON.parse(JSON.stringify(s.squads));
-  const better = s.mg.game === 'react' ? [400, 600, 900, 1200] : [60, 40, 20, 10];
+  const better = s.mg.game === 'react' ? [400, 600, 900, 1200] : s.mg.game === 'memory' ? [9, 7, 5, 3] : [60, 40, 20, 10];
   ['GOLD', 'GREY', 'PURPLE', 'BLACK'].forEach((q, i) => w.clashSummitScore(ids[q], code, better[i]));
   s = JSON.parse(w.clashSummitSkip(tok, code)).game; // staff: time's up
   assert.strictEqual(s.phase, 'turn');
