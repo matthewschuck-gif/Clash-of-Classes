@@ -29,7 +29,6 @@
   .table { display:grid; place-items:center; padding:14px; }
   .board { position:relative; width:100%; border-radius:26px; overflow:hidden; box-shadow: 0 0 0 10px #2a173f, 0 0 0 14px #6b3fa0, 0 30px 60px -10px #000c; }
   .board.trail { aspect-ratio: 16 / 10; max-height:74vh; }
-  .board.square { aspect-ratio: 1 / 1; width:min(100%, 74vh); background:#dff1e6; }
   .scenery { position:absolute; inset:0; width:100%; height:100%; }
   .space { position:absolute; transform:translate(-50%,-50%); display:grid; place-items:center; z-index:2; }
   .space i { line-height:1; }
@@ -44,28 +43,10 @@
   .trail .space.avalanche { color:#2a4f7a; }
   .trail .space .lab { position:absolute; top:-1.8em; white-space:nowrap; font:800 clamp(9px,.9vw,15px)/1 'DM Sans',sans-serif; color:#fff; text-shadow:0 2px 0 #0009; letter-spacing:.05em; }
   .trail .space.short { width:4%; }
+  .frost .space { box-shadow: 0 0 0 .2vw #3b5591, 0 .4vw 0 #0005, inset 0 -.45vw 0 #0003, inset 0 .3vw 0 #fff5; }
+  .frost .space .lab { color:#1d2f6e; text-shadow:0 1px 0 #fff; }
   .trail .shield { position:absolute; left:50%; top:53%; width:15%; transform:translate(-50%,-50%); filter: drop-shadow(0 10px 18px #0009); z-index:1; }
 
-  /* Square board spaces */
-  .square .space { background:#fbfdf9; color:#1c2a22; border:2px solid #23402f; border-radius:6px; overflow:hidden; text-align:center; }
-  .square .space .band { position:absolute; left:0; right:0; top:0; height:22%; }
-  .square .space .body { position:relative; display:grid; place-items:center; gap:.1em; padding-top:16%; }
-  .square .space i { font-size:clamp(12px,1.8vw,28px); }
-  .square .space .q { font:900 clamp(14px,2vw,32px)/1 Fraunces,serif; }
-  .square .space .lab { font:800 clamp(6px,.62vw,11px)/1.05 'DM Sans',sans-serif; text-transform:uppercase; }
-  .square .space.edge-b, .square .space.edge-t { width:10.25%; height:14%; }
-  .square .space.edge-t .band { top:auto; bottom:0; }
-  .square .space.edge-l, .square .space.edge-r { width:14%; height:10.25%; }
-  .square .space.edge-l .band { top:0; bottom:0; left:auto; right:0; width:22%; height:auto; }
-  .square .space.edge-r .band { top:0; bottom:0; right:auto; left:0; width:22%; height:auto; }
-  .square .space.edge-l .body, .square .space.edge-r .body, .square .space.corner .body { padding-top:0; }
-  .square .space.corner { width:14%; height:14%; }
-  .square .space.corner .band { height:100%; opacity:.22; }
-  .square .space.short { width:6.5%; height:6.5%; border-radius:50%; border-style:dashed; }
-  .square .space.short .band, .square .space.short .lab { display:none; }
-  .square .space.short .body { padding-top:0; }
-  .square .middle { position:absolute; inset:24%; display:grid; place-items:center; z-index:1; }
-  .square .middle img { width:62%; filter: drop-shadow(0 8px 14px #0005); }
 
   /* Summit Flag: the gold flag that marks where flags are planted */
   .flag { position:absolute; z-index:3; width:6%; aspect-ratio:1; margin:-6.2% 0 0 -3%; display:grid; place-items:center; transition: left .7s, top .7s; }
@@ -74,7 +55,6 @@
 
   /* Pieces: each squad's evolved My Climb creature */
   .piece { position:absolute; width:6.6%; aspect-ratio:1; margin:-5.2% 0 0 -3.3%; transition: left var(--hop) cubic-bezier(.34,1.56,.64,1), top var(--hop) cubic-bezier(.34,1.56,.64,1); z-index:5; }
-  .square .piece { width:7%; margin:-5.4% 0 0 -3.5%; }
   .piece .face { position:absolute; inset:0; border-radius:50%; border:.3vw solid var(--ring); background:var(--base) var(--focus, center 15%) / 240% no-repeat; box-shadow: 0 .5vw 0 var(--baseDark), 0 1vw 1.4vw #0009; display:grid; place-items:center; color:#fff; font:900 clamp(12px,1.6vw,26px) Fraunces,serif; }
   .piece.turn { z-index:6; }
   .piece.turn .face { animation: bob 1.1s ease-in-out infinite; box-shadow: 0 0 0 .3vw var(--gold), 0 .5vw 0 var(--baseDark), 0 1vw 1.4vw #0009; }
@@ -221,35 +201,39 @@
     b.forEach(function (n) { n.next.forEach(function (to) { var m = b[to]; if (!n.path && !m.path) return; h += '<line x1="' + n.x + '" y1="' + n.y + '" x2="' + m.x + '" y2="' + m.y + '" stroke="#8a5a2b" stroke-width="1.5" stroke-dasharray="1.1 .8" stroke-linecap="round"/>'; }); });
     return h + '</svg>';
   }
-  function edgeOf(n, ringN) {
-    if (n.path) return 'short';
-    var side = ringN / 4;
-    if (n.id % side === 0) return 'corner';
-    var s = Math.floor(n.id / side);
-    return ['edge-b', 'edge-l', 'edge-t', 'edge-r'][s];
+  // Frostpeak at Night: stars, an aurora, a snowy island, a frozen lake and snow-capped pines.
+  function frostScenery(b) {
+    var ring = b.filter(function (n) { return !n.path; }), d = 'M' + ring.concat([ring[0]]).map(function (n) { return n.x + ' ' + n.y; }).join(' L');
+    var h = '<svg class="scenery" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' +
+      '<defs><linearGradient id="night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a1238"/><stop offset=".55" stop-color="#1d2f6e"/><stop offset="1" stop-color="#2b3f86"/></linearGradient>' +
+      '<linearGradient id="aurora" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3dffb0" stop-opacity="0"/><stop offset=".35" stop-color="#3dffb0" stop-opacity=".55"/><stop offset=".7" stop-color="#8f7bff" stop-opacity=".45"/><stop offset="1" stop-color="#8f7bff" stop-opacity="0"/></linearGradient>' +
+      '<radialGradient id="snow" cx=".5" cy=".5" r=".55"><stop offset="0" stop-color="#ffffff"/><stop offset=".75" stop-color="#e3eefc"/><stop offset="1" stop-color="#bcd3f2"/></radialGradient></defs>' +
+      '<rect width="100" height="100" fill="url(#night)"/>' +
+      '<path d="M0 16 C20 4 38 22 56 10 S86 4 100 14 L100 22 C84 14 70 24 54 18 S20 14 0 26 Z" fill="url(#aurora)"/>' +
+      '<circle cx="88" cy="9" r="3.4" fill="#fdf6d8"/><circle cx="89.6" cy="8" r="3" fill="#1b2a63"/>';
+    for (var s = 0; s < 46; s++) { var sx = (s * 47 + 13) % 100, sy = (s * 29 + 7) % 34; h += '<circle cx="' + sx + '" cy="' + sy + '" r="' + (s % 5 ? .18 : .32) + '" fill="#fff" opacity="' + (s % 3 ? .7 : .95) + '"/>'; }
+    h += '<ellipse cx="50" cy="57" rx="49" ry="42" fill="#9fc0ec"/><ellipse cx="50" cy="56" rx="47.5" ry="40.5" fill="url(#snow)"/>' +
+      '<polygon points="16,66 31,30 46,64" fill="#c7d9f3"/><polygon points="31,30 35,40 31,37 27,41" fill="#fff"/>' +
+      '<polygon points="54,64 70,28 86,66" fill="#c7d9f3"/><polygon points="70,28 74,38 70,35 66,39" fill="#fff"/>' +
+      '<polygon points="26,76 50,6 74,76" fill="#a9c2e8"/><polygon points="26,76 50,6 50,76" fill="#93b0dc"/><polygon points="41,32 50,6 59,32 55,27 51,33 47,26" fill="#ffffff"/>' +
+      '<ellipse cx="27" cy="54" rx="7" ry="3.6" fill="#bfefff" stroke="#ffffff" stroke-width=".5"/><ellipse cx="25" cy="53" rx="2.6" ry=".7" fill="#ffffff" opacity=".7"/>';
+    for (var i = 0; i < 34; i++) { var x = 8 + (i * 37 + 11) % 84, y = 30 + ((i * 53) % 60); if (x > 22 && x < 78 && y < 80) continue; h += '<polygon points="' + x + ',' + (y - 4) + ' ' + (x - 1.8) + ',' + y + ' ' + (x + 1.8) + ',' + y + '" fill="#1d4f43"/><polygon points="' + x + ',' + (y - 4) + ' ' + (x - .9) + ',' + (y - 2) + ' ' + (x + .9) + ',' + (y - 2) + '" fill="#fff"/>'; }
+    h += '<path d="' + d + '" fill="none" stroke="#7fa3d6" stroke-width="5.4" stroke-linejoin="round" stroke-linecap="round" opacity=".55"/>' +
+      '<path d="' + d + '" fill="none" stroke="#f4f8ff" stroke-width="4.4" stroke-linejoin="round" stroke-linecap="round"/>' +
+      '<path d="' + d + '" fill="none" stroke="#9cb9e2" stroke-width="1.4" stroke-linejoin="round" stroke-dasharray=".5 1.6" stroke-linecap="round" opacity=".9"/>';
+    b.forEach(function (n) { n.next.forEach(function (to) { var m = b[to]; if (!n.path && !m.path) return; h += '<line x1="' + n.x + '" y1="' + n.y + '" x2="' + m.x + '" y2="' + m.y + '" stroke="#6e88b8" stroke-width="1.5" stroke-dasharray="1.1 .8" stroke-linecap="round"/>'; }); });
+    return h + '</svg>';
   }
   function drawBoard() {
-    var b = S.board, box = $('box'), layout = S.layout || 'trail', h = '', ringN = b.filter(function (n) { return !n.path; }).length;
-    box.className = 'board ' + layout;
-    box.querySelectorAll('.space, .scenery, .shield, .middle').forEach(function (el) { el.remove(); });
-    if (layout === 'trail') {
-      h += trailScenery(b);
-      if (S.art && S.art.shield) h += '<img class="shield" src="' + esc(S.art.shield) + '" alt="Clash of Classes 2026-2027 shield">';
-      b.forEach(function (n) {
-        h += '<div class="space ' + n.type + (n.path ? ' short' : '') + '" style="left:' + n.x + '%;top:' + n.y + '%;background:var(--t-' + n.type + ')" title="' + esc(S.spaces[n.type] || n.type) + '">' + glyph(n.type) +
-          (n.type === 'start' ? '<span class="lab">BASE CAMP</span>' : n.type === 'shop' ? '<span class="lab">CAMP STORE</span>' : '') + '</div>';
-      });
-    } else {
-      var lines = '';
-      b.forEach(function (n) { n.next.forEach(function (to) { var m = b[to]; if (n.path || m.path) lines += '<line x1="' + n.x + '" y1="' + n.y + '" x2="' + m.x + '" y2="' + m.y + '" stroke="#23402f" stroke-width=".6" stroke-dasharray="1.2 .9"/>'; }); });
-      h += '<svg class="scenery" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="z-index:1">' + lines + '</svg>';
-      h += '<div class="middle">' + (S.art && S.art.shield ? '<img src="' + esc(S.art.shield) + '" alt="Clash of Classes 2026-2027 shield">' : '') + '</div>';
-      b.forEach(function (n) {
-        var col = n.type === 'start' ? '#a87b00' : n.type === 'avalanche' ? '#3d7fb8' : 'var(--t-' + n.type + ')';
-        h += '<div class="space ' + edgeOf(n, ringN) + (n.path ? ' short' : '') + '" style="left:' + n.x + '%;top:' + n.y + '%" title="' + esc(S.spaces[n.type] || n.type) + '">' +
-          '<span class="band" style="background:var(--t-' + n.type + ')"></span><span class="body" style="color:' + col + '">' + glyph(n.type) + '<span class="lab" style="color:#1c2a22">' + esc(LABEL[n.type]) + '</span></span></div>';
-      });
-    }
+    var b = S.board, box = $('box'), layout = S.layout || 'trail', h = '';
+    box.className = 'board trail' + (layout === 'frost' ? ' frost' : ''); // both boards use the round party spaces
+    box.querySelectorAll('.space, .scenery, .shield').forEach(function (el) { el.remove(); });
+    h += layout === 'frost' ? frostScenery(b) : trailScenery(b);
+    if (S.art && S.art.shield) h += '<img class="shield" src="' + esc(S.art.shield) + '" alt="Clash of Classes 2026-2027 shield">';
+    b.forEach(function (n) {
+      h += '<div class="space ' + n.type + (n.path ? ' short' : '') + '" style="left:' + n.x + '%;top:' + n.y + '%;background:var(--t-' + n.type + ')" title="' + esc(S.spaces[n.type] || n.type) + '">' + glyph(n.type) +
+        (n.type === 'start' ? '<span class="lab">BASE CAMP</span>' : n.type === 'shop' ? '<span class="lab">CAMP STORE</span>' : '') + '</div>';
+    });
     box.insertAdjacentHTML('afterbegin', h);
     Object.keys(pieces).forEach(function (s) { pieces[s].remove(); }); pieces = {};
     if (flagEl) { flagEl.remove(); flagEl = null; }
@@ -259,7 +243,7 @@
     drawnLayout = layout; drawnCode = S.game ? S.game.code : '';
   }
   function spot(nodeId, squad) {
-    var n = S.board[nodeId], i = SQ.indexOf(squad), d = S.layout === 'square' ? 2.4 : 2.3;
+    var n = S.board[nodeId], i = SQ.indexOf(squad), d = 2.3;
     return { x: n.x + (i % 2 ? d : -d), y: n.y + (i < 2 ? -d * .9 : d * .9) };
   }
   function place(squad, nodeId) {
@@ -373,7 +357,7 @@
     el.innerHTML = '<h3>Staff</h3>' +
       (live ? '<div style="font-weight:800;margin-bottom:6px">Who won ' + esc(g.mg.name) + '?</div><div class="row">' + g.order.map(function (s) { return '<button class="gold" data-win="' + s + '" style="background:' + RING[s] + '">' + esc(title(s)) + '</button>'; }).join('') + '</div>' : '') +
       '<div class="row"><label class="field">Rounds<input id="rounds" type="number" min="1" max="30" value="' + (S.rounds || 10) + '" style="width:5em"></label>' +
-      '<label class="field">Board<select id="layout"><option value="trail"' + (S.layout !== 'square' ? ' selected' : '') + '>Mountain island</option><option value="square"' + (S.layout === 'square' ? ' selected' : '') + '>Square board</option></select></label>' +
+      '<label class="field">Board<select id="layout"><option value="trail"' + (S.layout !== 'frost' ? ' selected' : '') + '>Mountain Island</option><option value="frost"' + (S.layout === 'frost' ? ' selected' : '') + '>Frostpeak at Night</option></select></label>' +
       '<button class="gold" id="start">' + (playing ? 'New game' : 'Start a game') + '</button></div>' +
       '<div class="row"><button class="ghost" id="skip"' + (playing ? '' : ' disabled') + '>' + (playing && g.phase === 'minigame' ? 'End the minigame' : 'Skip this turn') + '</button><button class="ghost" id="finish"' + (playing ? '' : ' disabled') + '>End and score</button><button class="ghost" id="stop"' + (playing ? '' : ' disabled') + '>Stop, no points</button></div><div class="msg" id="smsg"></div>';
     var act = function (p) { p.then(function (v) { take(v); }).catch(function (e) { if (/sign in|password|session/i.test(msgOf(e))) { token = ''; try { sessionStorage.removeItem('summit-admin'); } catch (x) {} staff(); } $('smsg').textContent = msgOf(e); }); };
@@ -461,4 +445,4 @@
 </script>
 </body>
 </html>
-<!-- file-stamp: 2a165bc2e4 -->
+<!-- file-stamp: dff7dd5b6d -->

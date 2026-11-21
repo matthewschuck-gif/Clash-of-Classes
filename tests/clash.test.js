@@ -3238,6 +3238,11 @@ test('Summit Party (63_SummitParty.gs): OFF until switched on; staff start a cod
   const c3 = JSON.parse(w.clashSummitStart(tok, 2)).game.code;
   assert.throws(() => w.clashSummitItem('8001111', c3, 'double'), /turned off/);
   assert.strictEqual(JSON.parse(w.clashSummitEnd(tok, c3, false)).game.status, 'stopped');
+  // Two boards: Mountain Island (trail) and Frostpeak at Night (frost); anything else is the island.
+  const fr = JSON.parse(w.clashSummitStart(tok, 2, 'frost'));
+  assert.deepStrictEqual([fr.layout, fr.board.length], ['frost', 37]);
+  assert.notDeepStrictEqual(fr.board[5], v0.board[5], 'a different trail shape');
+  assert.strictEqual(JSON.parse(w.clashSummitStart(tok, 2, 'square')).layout, 'trail');
   w.setSettingValue_('SUMMIT_PARTY', 'OFF');
   assert.deepStrictEqual(JSON.parse(w.clashSummitState(c3, 0)), { on: false });
 });

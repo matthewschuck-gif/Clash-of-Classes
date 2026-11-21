@@ -295,7 +295,7 @@ const DEFAULT_SETTINGS = [
   ['ROSTER_SHEET', 'https://docs.google.com/spreadsheets/d/1SDmwtkP9RzMZ62WVn6awZW6-6gA_wPtc6altTwoAeME/edit', 'The district roster Sheet (link or ID) with 800 Number, Email Address, First Name, Last Name, Grade Level. Clash of Classes › Import student roster copies it to the Students tab.'],
   ['STUDENT_EMAIL_PATTERN', '{800}@gomounts.org', 'My Climb sign-in when the Student Board has no Email column: how a student email is built from the 800#, e.g. {800}@easdpa.org. Blank = use the Email column only.'],
   ['SUMMIT_PARTY', 'OFF', 'Summit Party, the squad board game (63_SummitParty.gs): ON = the big-screen board (?page=summit) and the squad Chromebooks (?page=summit-play) work. OFF = both say it is closed.'],
-  ['SUMMIT_PARTY_BOARD', 'trail', 'Summit Party: the board staff start with. trail = the mountain island with round spaces along a winding trail; square = a square board. Staff can pick either one when they start a game.'],
+  ['SUMMIT_PARTY_BOARD', 'trail', 'Summit Party: the board staff start with. trail = Mountain Island (sunny, a lake, pines); frost = Frostpeak at Night (snow, stars, an aurora). Staff can pick either one when they start a game.'],
   ['SUMMIT_PARTY_ROUNDS', '10', 'Summit Party: rounds in a game (every squad moves once a round). Staff can pick another number when they start.'],
   ['SUMMIT_PARTY_AUTO_ROLL', '30', 'Summit Party: seconds a squad has to roll (or pick a path) before the board rolls for it (Main Trail at forks), so a drop-in game keeps moving. 0 = never (staff press Skip).'],
   ['SUMMIT_PARTY_FLAG_COST', '20', 'Summit Party: coins to plant a Summit Flag.'],
@@ -526,4 +526,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = '7da9b4386b';
+var FILE_STAMP_01_Config = 'eccda44265';

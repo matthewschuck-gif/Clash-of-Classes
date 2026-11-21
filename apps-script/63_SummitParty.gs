@@ -45,7 +45,7 @@ const SP_ITEMS_ = {
 // THE BOARD: a 32-space loop around the mountain with two forks (each a shortcut). The game uses
 // id, type, next and path; x and y (percent) place the spaces for the chosen look:
 //   trail  = the mountain island (16:10 board), round spaces along a winding trail
-//   square = a square board with Base Camp in a corner
+//   frost  = Frostpeak at Night: a snowy summit under the stars, the trail in a different shape
 const SP_RING_ = ['start', 'blue', 'blue', 'event', 'blue', 'red', 'blue', 'item', 'blue', 'blue', 'villain', 'blue', 'event', 'shop', 'blue', 'red',
   'blue', 'avalanche', 'blue', 'item', 'blue', 'red', 'blue', 'event', 'blue', 'villain', 'blue', 'item', 'red', 'blue', 'event', 'red'];
 const SP_SHORTCUTS_ = [
@@ -53,17 +53,16 @@ const SP_SHORTCUTS_ = [
   { from: 20, to: 25, types: ['red', 'item'], name: 'Lake Shortcut' },
 ];
 function spRingXY_(layout, i, n) {
-  if (layout === 'square') {
-    const side = n / 4, step = 82 / side, k = i % side, s = Math.floor(i / side);
-    const p = s === 0 ? [91 - k * step, 91] : s === 1 ? [9, 91 - k * step] : s === 2 ? [9 + k * step, 9] : [91, 9 + k * step];
-    return [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10];
-  }
   const t = Math.PI / 2 + (i / n) * Math.PI * 2; // Base Camp at the bottom, going clockwise up the left side
+  if (layout === 'frost') { // a switchback trail that climbs high toward the summit at the top
+    const fx = 50 + 41 * Math.cos(t) + 4 * Math.sin(2 * t), fy = 53 + 36 * Math.sin(t) + 6 * Math.cos(3 * t);
+    return [Math.round(fx * 10) / 10, Math.round(fy * 10) / 10];
+  }
   const x = 50 + 42 * Math.cos(t) + 3.5 * Math.sin(3 * t), y = 51 + 38 * Math.sin(t) + 3 * Math.cos(2 * t);
   return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
 }
 function spLayoutOf_(layout) {
-  const ok = function (l) { return l === 'trail' || l === 'square'; };
+  const ok = function (l) { return l === 'trail' || l === 'frost'; };
   if (ok(layout)) return layout;
   const d = String(getSetting_('SUMMIT_PARTY_BOARD') || '').toLowerCase();
   return ok(d) ? d : 'trail';
@@ -78,7 +77,7 @@ function spBoard_(layout) {
       const f = (k + 1) / (sc.types.length + 1);
       // A straight line between the two ends, pulled toward the middle of the board.
       let x = a.x + (b.x - a.x) * f, y = a.y + (b.y - a.y) * f;
-      const pull = layout === 'square' ? 0.42 : 0.3;
+      const pull = layout === 'frost' ? 0.36 : 0.3;
       x += (50 - x) * pull * Math.sin(Math.PI * f); y += (50 - y) * pull * Math.sin(Math.PI * f);
       nodes.push({ id: first + k, type: type, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, next: [k === sc.types.length - 1 ? sc.to : first + k + 1], path: sc.name });
     });
@@ -752,4 +751,4 @@ function serveSummitPlay_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_63_SummitParty = 'b10eaa1b8a';
+var FILE_STAMP_63_SummitParty = '5c2ecf6cc2';
