@@ -1686,7 +1686,7 @@
 <div class="overlay" id="adminModal" style="z-index:600">
   <div class="modal">
     <button class="modal-close" onclick="close1('adminModal')">✕</button>
-    <h2>Admin Panel</h2>
+    <h2>Admin Panel <button class="btn btn-sm" style="font-size:12px;margin-left:8px;vertical-align:middle" onclick="clashSignOut_()">Sign out</button></h2>
     <div class="last-saved-bar" id="lastSavedTs"></div>
     <div class="admin-tabs">
       <button class="a-tab on" onclick="aTab('points')">Points</button>
@@ -2395,6 +2395,12 @@ window.clashLogin_ = function (pw) {
     return r;
   });
 };
+// Sign out: the server forgets the session (61_Hardening.gs), then the page starts fresh.
+window.clashSignOut_ = function () {
+  var t = window.ADMIN_SESSION; window.ADMIN_SESSION = ''; window._authed = false;
+  var done = function () { location.reload(); };
+  if (t) window.gasRun_('clashSignOut', t).then(done, done); else done();
+};
 // The sign-in error, in words (with the staff link when the page doesn't know who you are).
 window.clashLoginMsg_ = function (err) {
   var m = String(err && err.message || err || '').replace(/^Exception:\s*/, '');
@@ -2458,4 +2464,4 @@ document.addEventListener('click', function (ev) {
 
 </body>
 </html>
-<!-- file-stamp: f57036d082 -->
+<!-- file-stamp: 8877408e85 -->

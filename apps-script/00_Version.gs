@@ -79,7 +79,7 @@ const FILE_STAMPS_ = {
   "Generals.html":"f057a600d0",
   "Guides.html":"8943064ee0",
   "Hall.html":"7ba0f4fcd6",
-  "Index.html":"f57036d082",
+  "Index.html":"8877408e85",
   "MapEditor.html":"770000ae63",
   "Me.html":"3b320f26b9",
   "Morning.html":"9a5c9d1033",
