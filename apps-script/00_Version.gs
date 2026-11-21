@@ -97,6 +97,6 @@ const FILE_STAMPS_ = {
   "Student.html":"27669ae4c4",
   "Styles.html":"d869270812",
   "SummitParty.html":"b51a1ff717",
-  "SummitPlay.html":"2b510be503",
+  "SummitPlay.html":"4cf3e549ab",
   "Widgets.html":"e8987ba766"
 };

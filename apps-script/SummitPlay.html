@@ -81,6 +81,8 @@
     }
     var now = g.order[g.turn], pend = g.pending, myTurn = now === squad && !pend, myPick = pend && pend.squad === squad;
     var body = '<p class="sub">Round ' + Math.min(g.round, g.rounds) + ' of ' + g.rounds + '</p>';
+    var L = g.last || {};
+    if (L.squad === squad && L.roll) body += '<p class="sub">You rolled <b style="color:var(--gold)">' + L.roll + '</b>' + (L.card ? ' · ' + esc(L.card) : '') + '</p>';
     if (myPick) body += '<p class="wait">You reached a fork. Which way?</p><div class="paths">' + pend.options.map(function (o) {
       var hint = o.name === 'Main Trail' ? 'The long way around, more coins' : 'Shorter and riskier';
       return '<button class="path" data-pick="' + o.id + '">' + esc(o.name) + '<small>' + esc(hint) + '</small></button>'; }).join('') + '</div>';
@@ -103,4 +105,4 @@
 </script>
 </body>
 </html>
-<!-- file-stamp: 2b510be503 -->
+<!-- file-stamp: 4cf3e549ab -->
