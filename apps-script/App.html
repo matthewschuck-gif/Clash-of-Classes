@@ -1886,7 +1886,7 @@ function renderTrackerRecap(q){
   if(_recapCache[_recapQ]){ draw(_recapCache[_recapQ]); return; }
   if(!box.innerHTML) box.innerHTML=head+'<div style="color:var(--text3);font-size:13px">Loading the quarter…</div>';
   var want=_recapQ;
-  window.gasRun_('clashRecap',want).then(d=>{ _recapCache[want]=d; if(want===_recapQ) draw(d); }).catch(()=>{ box.innerHTML=''; });
+  window.gasRun_('clashRecap',want).then(d=>{ if(d&&d.off){ box.innerHTML=''; return; } _recapCache[want]=d; if(want===_recapQ) draw(d); }).catch(()=>{ box.innerHTML=''; });
 }
 
 // Tracker events in collapsible weeks (Monday to Sunday), newest first, like the Follow-Up dashboard.
@@ -5886,4 +5886,4 @@ window.__moduleReady=true;
 // Now that all functions are live, re-render whatever page the user navigated to
 goTo(window.__currentPage || currentPage);
 </script>
-<!-- file-stamp: 15562b8072 -->
+<!-- file-stamp: 473030bcc4 -->

@@ -199,6 +199,7 @@ function menuAnnouncement_() { SpreadsheetApp.getUi().alert('Read this in the mo
 function clashTrack(page, first) {
   page = String(page || '').toLowerCase();
   if (USAGE_PAGES_.indexOf(page) === -1 || page === '(site)') return '';
+  if (!usageOn_()) return '';
   if (!trackAllowed_()) return ''; // 61_Hardening.gs: TRACK_PER_MINUTE for the whole site
   first = first && typeof first === 'object' ? first : {};
   countUsage_(page, !!first.p, !!first.s);
@@ -221,7 +222,11 @@ function countUsage_(page, uniquePage, uniqueSite) {
 }
 
 // A page the server sends on its own (?page=…): counted as an open (it has no browser flag).
+// Settings USAGE_TRACKING = OFF stops every page count (01_Config.gs).
+function usageOn_() { return String(getSetting_('USAGE_TRACKING') || 'ON').toUpperCase() !== 'OFF'; }
+
 function trackServedPage_(page) {
+  if (!usageOn_()) return;
   try { if (USAGE_PAGES_.indexOf(page) > -1) countUsage_(page, false, false); } catch (e) { /* never block a page */ }
 }
 
@@ -471,4 +476,4 @@ function clashVersion(token) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_22_Week = '18409157a5';
+var FILE_STAMP_22_Week = '0f5861dcdc';

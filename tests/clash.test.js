@@ -3122,4 +3122,17 @@ test('My Hope (62_Hope.gs): one goal with two different pathways, a weekly 1-5 c
   assert.throws(() => w.clashMeHopeCheck(3), /turned off/);
 });
 
+test('every new feature has an OFF switch: quarter recap, usage counts, security alerts, nightly backup (plus CAIRN_EVENTS, POLL_APPROVAL, ARCADE_ON_SITE, HELPING_HANDS, HOPE, PASSWORD_SIGN_IN)', () => {
+  const w = world();
+  w.ensureSettings_();
+  const keys = w.book.getSheetByName('Settings').rows.map(r => r[0]);
+  ['QUARTER_RECAP', 'USAGE_TRACKING', 'CAIRN_EVENTS', 'POLL_APPROVAL', 'ARCADE_ON_SITE', 'HELPING_HANDS', 'HOPE', 'PASSWORD_SIGN_IN', 'MAP_CYCLE'].forEach(k => assert.ok(keys.indexOf(k) > -1, k + ' is on the Settings tab'));
+  w.setSettingValue_('QUARTER_RECAP', 'OFF');
+  assert.deepStrictEqual(JSON.parse(w.clashRecap('')), { off: true });
+  w.setSettingValue_('USAGE_TRACKING', 'OFF');
+  assert.strictEqual(w.clashTrack('home', { p: 1, s: 1 }), '');
+  w.setSettingValue_('SECURITY_ALERTS', 'OFF');
+  assert.strictEqual(w.securityAlert_('x', 'Test', ['a']), false);
+});
+
 console.log('\n' + passed + ' tests passed');

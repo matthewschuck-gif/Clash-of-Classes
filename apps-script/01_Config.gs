@@ -293,6 +293,8 @@ const DEFAULT_SETTINGS = [
   ['EMBED_APPS', 'ON', 'ON = those three apps show inside their Clash pages (signed in with a school account). OFF = an Open button only.'],
   ['ROSTER_SHEET', 'https://docs.google.com/spreadsheets/d/1SDmwtkP9RzMZ62WVn6awZW6-6gA_wPtc6altTwoAeME/edit', 'The district roster Sheet (link or ID) with 800 Number, Email Address, First Name, Last Name, Grade Level. Clash of Classes › Import student roster copies it to the Students tab.'],
   ['STUDENT_EMAIL_PATTERN', '{800}@gomounts.org', 'My Climb sign-in when the Student Board has no Email column: how a student email is built from the 800#, e.g. {800}@easdpa.org. Blank = use the Email column only.'],
+  ['QUARTER_RECAP', 'ON', 'Quarter recap on the Tracker (57_Leagues.gs): ON = shows it. OFF = hidden.'],
+  ['USAGE_TRACKING', 'ON', 'Page and visitor counts (Usage tab, 22_Week.gs): ON = counted. OFF = nothing is counted.'],
   ['HOPE', 'ON', 'My Hope on My Climb (62_Hope.gs): a goal with two pathways, a weekly 1-5 check, and the six-question Hope Scale each marking period (QUARTER_STARTS). Students see only their own; Climb-er shows staff the scores. OFF hides the Hope tab.'],
   ['MY_CLIMB_HOURS', '07:00-16:00', 'My Climb is open to students only between these times (24-hour clock). Keeps it school-focused.'],
   ['MY_CLIMB_SCHOOL_DAYS', 'ON', 'ON = My Climb is open only on school days (weekdays not on the School Calendar tab). Staff previews are never locked.'],
@@ -514,4 +516,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = '8a18bf825c';
+var FILE_STAMP_01_Config = 'c6b6ba4666';

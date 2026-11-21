@@ -21,6 +21,8 @@
  */
 
 const HARDENING_SETTINGS_ = [
+  ['SECURITY_ALERTS', 'ON', 'ON = security alert emails (wrong passwords, refused sign-ins, first sign-ins, big point changes). OFF = none are sent; the Admin Actions tab still records everything.'],
+  ['NIGHTLY_BACKUP', 'ON', 'ON = a copy of this Sheet goes to the Clash Backups folder each night after 2 a.m. OFF = no nightly copies (the menu\'s Back up this Sheet now still works).'],
   ['SECURITY_ALERT_EMAILS', '', 'Who gets security alert emails (comma separated). Blank = the Sheet owner.'],
   ['BIG_CHANGE_POINTS', '200', 'A save that adds, changes or removes more than this many points in total sends a security alert.'],
   ['MAX_EVENT_POINTS', '1000', 'Most points one new or edited event may give one squad. Bigger values are refused on the server.'],
@@ -32,6 +34,7 @@ const HARDENING_SETTINGS_ = [
 // ── ALERTS ──────────────────────────────────────────────────────────
 function securityAlert_(key, subject, lines) {
   try {
+    if (String(getSetting_('SECURITY_ALERTS') || 'ON').toUpperCase() === 'OFF') return false;
     const cache = CacheService.getScriptCache(), k = 'clash-alert-' + key;
     if (cache.get(k)) return false;
     cache.put(k, '1', 3600);
@@ -133,6 +136,7 @@ function clashSignOut(token) {
 
 // ── NIGHTLY BACKUP ──────────────────────────────────────────────────
 function maybeBackup_() {
+  if (String(getSetting_('NIGHTLY_BACKUP') || 'ON').toUpperCase() === 'OFF') return;
   const props = PropertiesService.getScriptProperties();
   const day = todayYmd_(), hour = Number(Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'H'));
   if (hour < 2 || props.getProperty('clash-backup-day') === day) return;
@@ -173,4 +177,4 @@ function ensureHardeningSettings_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_61_Hardening = 'e15e2b191a';
+var FILE_STAMP_61_Hardening = '41d295703e';

@@ -216,7 +216,10 @@ function recapData_(q) {
   };
 }
 
-function clashRecap(q) { return JSON.stringify(recapData_(q)); }
+function clashRecap(q) {
+  if (String(getSetting_('QUARTER_RECAP') || 'ON').toUpperCase() === 'OFF') return JSON.stringify({ off: true }); // the Tracker shows nothing
+  return JSON.stringify(recapData_(q));
+}
 
 function serveRecap_() {
   return HtmlService.createHtmlOutputFromFile('Recap').setTitle('Quarter recap · Clash of Classes')
@@ -322,4 +325,4 @@ function dailyLeagues_() {
 var FILE_STAMP_57_Leagues = '';
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_57_Leagues = '01fad88adf';
+var FILE_STAMP_57_Leagues = 'a2825d57c5';
