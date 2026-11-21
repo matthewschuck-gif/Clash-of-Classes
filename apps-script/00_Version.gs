@@ -5,7 +5,7 @@
  * GitHub, to show which files still need pasting.
  */
 const FILE_STAMPS_ = {
-  "01_Config.gs":"2995b0ca9f",
+  "01_Config.gs":"8a18bf825c",
   "02_Router.gs":"3712b23951",
   "03_Web.gs":"618b8d410b",
   "04_Students.gs":"63c5e8f276",
@@ -20,7 +20,7 @@ const FILE_STAMPS_ = {
   "13_SchoolCalendar.gs":"87c920defb",
   "14_Thaw.gs":"a74da067f7",
   "15_Game.gs":"203832644f",
-  "16_Me.gs":"1091e03a42",
+  "16_Me.gs":"952253ec52",
   "17_Roster.gs":"ae5623afe4",
   "18_Conquest.gs":"912825ddec",
   "19_Evolve.gs":"07c0faea71",
@@ -67,6 +67,7 @@ const FILE_STAMPS_ = {
   "59_MapWeek.gs":"ffda1ad076",
   "60_StaffAccess.gs":"1aff674a17",
   "61_Hardening.gs":"e15e2b191a",
+  "62_Hope.gs":"b553963a3d",
   "Announce.html":"ed03b14ce7",
   "App.html":"15562b8072",
   "Arcade.html":"66b9139f40",
@@ -81,7 +82,7 @@ const FILE_STAMPS_ = {
   "Hall.html":"7ba0f4fcd6",
   "Index.html":"a340262470",
   "MapEditor.html":"770000ae63",
-  "Me.html":"d026d04e06",
+  "Me.html":"244601e186",
   "Morning.html":"9a5c9d1033",
   "Plinko.html":"b3e4172e6c",
   "PollBoard.html":"ac579ce129",

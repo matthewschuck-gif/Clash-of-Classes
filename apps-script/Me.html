@@ -60,6 +60,33 @@ body { margin: 0; background: #0d0518; color: var(--text, #f5f0ff); font-family:
 .me-opt button { font: inherit; font-weight: 700; width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(187,142,245,.3); background: rgba(255,255,255,.06); color: #fff; cursor: pointer; }
 .me-opt .n { text-align: center; font-family: 'DM Mono', monospace; color: #cbb6ef; }
 @media (max-width: 560px) { .me-build { grid-template-columns: 1fr; } .me-build > :first-child { max-width: 180px; margin: 0 auto; } }
+/* My Hope (62_Hope.gs) */
+.me-hope textarea, .me-hope input { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px; color: #fff; background: rgba(10,4,20,.55); border: 1px solid rgba(187,142,245,.3); border-radius: 12px; padding: 10px 12px; margin-bottom: 4px; }
+.me-hope textarea:focus, .me-hope input:focus { outline: 2px solid var(--squad, #bb8ef5); outline-offset: 1px; }
+.hope-l { display: block; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #b09ec8; margin: 10px 0 5px; }
+.hope-goal { font-family: 'Fraunces', serif; font-weight: 900; font-size: clamp(20px, 3.4vw, 26px); line-height: 1.2; color: var(--pop-gold, #ffe100); margin-bottom: 10px; }
+.hope-paths { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hope-path { padding: 12px 14px; border-radius: 14px; background: rgba(10,4,20,.5); border: 1px solid rgba(255,255,255,.07); border-left: 4px solid var(--squad, #bb8ef5); line-height: 1.45; }
+.hope-path span { display: block; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #b09ec8; margin-bottom: 4px; }
+.hope-five { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.hope-n { font: inherit; color: #e9ddff; background: rgba(255,255,255,.05); border: 1px solid rgba(187,142,245,.22); border-radius: 14px; padding: 10px 4px; cursor: pointer; display: grid; gap: 2px; justify-items: center; min-height: 64px; }
+.hope-n b { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 900; }
+.hope-n span { font-size: 11.5px; line-height: 1.2; text-align: center; color: #cbb6ef; }
+.hope-n[aria-checked="true"], .hope-o[aria-checked="true"] { background: var(--squad, #bb8ef5); color: #12081f; border-color: transparent; }
+.hope-n[aria-checked="true"] span { color: #12081f; }
+.hope-weeks { display: flex; align-items: flex-end; gap: 6px; height: 56px; margin-top: 14px; padding: 6px; border-radius: 12px; background: rgba(10,4,20,.45); }
+.hope-weeks i { flex: 1; max-width: 28px; border-radius: 6px 6px 2px 2px; background: var(--pop-gold, #ffe100); opacity: .85; }
+.hope-q { border: 0; padding: 0; margin: 14px 0 0; }
+.hope-q legend { font-weight: 700; line-height: 1.45; margin-bottom: 8px; padding: 0; }
+.hope-opts { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.hope-o { font: inherit; font-size: 12.5px; line-height: 1.2; color: #e9ddff; background: rgba(255,255,255,.05); border: 1px solid rgba(187,142,245,.22); border-radius: 10px; padding: 9px 4px; cursor: pointer; min-height: 44px; }
+.hope-scores { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr)); gap: 10px; }
+.hope-score { padding: 12px 14px; border-radius: 14px; background: rgba(10,4,20,.5); border: 1px solid rgba(255,255,255,.07); display: grid; gap: 2px; }
+.hope-score span { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .1em; color: #b09ec8; }
+.hope-score b { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 900; color: var(--pop-gold, #ffe100); line-height: 1.05; font-variant-numeric: tabular-nums; }
+.hope-score em { font-style: normal; font-size: 12px; color: #cbb6ef; }
+.hope-score small { font-size: 12px; color: #cbb6ef; }
+@media (max-width: 560px) { .hope-paths { grid-template-columns: 1fr; } .hope-opts { grid-template-columns: repeat(3, 1fr); } .hope-n span { font-size: 10.5px; } }
 /* Destination tickets */
 .me-tickets { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 12px; }
 .me-tk { position: relative; padding: 16px 16px 14px; border-radius: 16px; background: linear-gradient(160deg, color-mix(in srgb, var(--squad, #bb8ef5) 16%, transparent), #170b29 70%); border: 1px solid color-mix(in srgb, var(--squad, #bb8ef5) 35%, transparent); }
@@ -314,7 +341,8 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
     var first = String(me.name || '').split(' ')[0];
     var standing = st.place ? '<b>' + title(st.squad) + '</b> is in <b>' + ['1st', '2nd', '3rd', '4th'][st.place - 1] + ' place</b>' +
       (st.place > 1 ? ', ' + st.behindBy.toLocaleString() + ' behind ' + title(st.ahead) + '.' : ', ' + st.leadBy.toLocaleString() + ' ahead.') : '';
-    var tabs = [['me', 'Me'], ['tickets', 'Tickets'], ['squad', 'My Squad'], ['map', 'Map'], ['game', 'Game'], ['arcade', 'Arcade']];
+    var tabs = [['me', 'Me'], ['tickets', 'Tickets']].concat(D.hope ? [['hope', 'Hope']] : []).concat([['squad', 'My Squad'], ['map', 'Map'], ['game', 'Game'], ['arcade', 'Arcade']]);
+    if (tab === 'hope' && !D.hope) tab = 'me';
     $('me').innerHTML = (D.sample ? '<div class="me-card" style="border-color:#fbbf24">Sample student on ' + esc(me.squad.charAt(0) + me.squad.slice(1).toLowerCase()) + ' with made-up numbers. Look around every tab; nothing you change here is saved. <a href="#" id="pvAnother">Another squad</a></div>'
       : D.preview ? '<div class="me-card" style="border-color:#fbbf24">Staff preview of ' + esc(me.name) + '. Changing their creature, picking a boost or keeping tickets here changes their real account.</div>' : '') +
       '<section class="me-hero craft-lit craft-motes" style="' + sceneCss() + '"><div class="me-mascot">' + creatureImg(0, true) + '</div><div>' +
@@ -322,9 +350,10 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
       (D.roles || []).map(function (r) { return '<span class="me-pill alt">' + esc(r) + '</span>'; }).join('') + '</div><div class="me-standing">' + standing + '</div></div>' +
       '<div class="me-say"><b>' + esc(cliffName()) + '</b>' + esc(cliffLine()) + '</div><img class="me-cliff" src="' + esc(D.cliff.image) + '" alt="' + esc(cliffName()) + ', the Mountaineer"></section>' +
       '<nav class="me-tabs" role="tablist">' + tabs.map(function (t) { return '<button class="me-tab craft-press" role="tab" data-t="' + t[0] + '" aria-selected="' + (tab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</nav>' +
-      '<div id="meBody">' + ({ me: meTab, tickets: ticketsTab, squad: squadTab, map: mapTab, game: gameTab, arcade: arcadeTab }[tab])() + '</div>';
+      '<div id="meBody">' + ({ me: meTab, tickets: ticketsTab, hope: hopeTab, squad: squadTab, map: mapTab, game: gameTab, arcade: arcadeTab }[tab])() + '</div>';
     document.querySelectorAll('.me-tab').forEach(function (b) { b.onclick = function () { if (window.Arcade) Arcade.stop(); tab = b.getAttribute('data-t'); track(tab); render(); }; });
     wire();
+    wireHope();
   }
 
   // ── Me: my numbers next to my squad's average, my gear, my mascot ──
@@ -446,6 +475,71 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 
   // ── Arcade: short games for squad points (48_Arcade.gs, Arcade.html) ──
   var AR = null, arcLoading = false;
+  // ── Hope: one goal, two pathways, how sure I am this week, the Hope Scale each marking period (62_Hope.gs) ──
+  var hopeEdit = false, hopePick = [];
+  function hopeTab() {
+    var h = D.hope, g = h.goal, set = !!g.goal && !hopeEdit;
+    var goalCard = '<section class="me-card me-hope"><h2>My goal</h2><p class="me-sub">Hope is a goal, ways to get there, and believing you can. Pick one goal and two different ways to reach it, so if one gets blocked, the other still works.</p>' +
+      (set
+        ? '<div class="hope-goal">' + esc(g.goal) + '</div><div class="hope-paths"><div class="hope-path"><span>Pathway 1</span>' + esc(g.p1) + '</div><div class="hope-path"><span>Pathway 2</span>' + esc(g.p2) + '</div></div>' +
+          '<p style="margin-top:12px"><button class="btn craft-press" id="hopeChange">Change my goal</button></p>'
+        : '<label class="hope-l" for="hopeG">My goal</label><textarea id="hopeG" maxlength="200" rows="2" placeholder="Something I want to reach this marking period">' + esc(g.goal) + '</textarea>' +
+          '<label class="hope-l" for="hopeP1">Pathway 1: one way to get there</label><input id="hopeP1" maxlength="200" value="' + esc(g.p1) + '">' +
+          '<label class="hope-l" for="hopeP2">Pathway 2: a different way</label><input id="hopeP2" maxlength="200" value="' + esc(g.p2) + '">' +
+          '<p style="margin-top:12px"><button class="btn btn-gold craft-press" id="hopeSaveGoal">Save my goal</button>' + (g.goal ? ' <button class="btn craft-press" id="hopeCancel">Cancel</button>' : '') + '</p>') +
+      '<p class="me-sub" id="hopeGoalMsg" style="margin-top:8px"></p></section>';
+    var weekCard = '<section class="me-card me-hope"><h2>This week</h2><p class="me-sub">How sure are you that you can move toward your goal this week?</p><div class="hope-five" role="radiogroup" aria-label="How sure, 1 to 5">' +
+      h.agencyWords.map(function (w, i) { var n = i + 1; return '<button class="hope-n craft-press" role="radio" data-agency="' + n + '" aria-checked="' + (h.thisWeek === n) + '"><b>' + n + '</b><span>' + esc(w) + '</span></button>'; }).join('') + '</div>' +
+      (h.checks.length > 1 ? '<div class="hope-weeks" aria-label="Your last weeks">' + h.checks.map(function (c) { return '<i style="height:' + (c.agency * 20) + '%" title="Week of ' + esc(c.week) + ': ' + c.agency + '"></i>'; }).join('') + '</div><p class="me-sub" style="margin:6px 0 0">Your last ' + h.checks.length + ' weeks</p>' : '') +
+      '<p class="me-sub" id="hopeWeekMsg" style="margin-top:8px">' + (h.thisWeek ? 'Checked in for this week. You can change it until Sunday.' : '') + '</p></section>';
+    var past = h.scales.slice().sort(function (a, b) { return a.period < b.period ? -1 : 1; });
+    var scaleCard = '<section class="me-card me-hope"><h2>Hope check · ' + esc(h.period) + '</h2>' + (h.scaleDone
+      ? '<p class="me-sub">Done for this marking period. Here is how your hope has grown:</p><div class="hope-scores">' + past.map(function (s) {
+          return '<div class="hope-score"><span>' + esc(s.period) + '</span><b>' + s.total + '</b><em>of 36</em><small>Believing ' + s.agency + ' · Ways ' + s.pathways + '</small></div>'; }).join('') + '</div>'
+      : '<p class="me-sub">Six quick questions, once each marking period. There are no wrong answers: pick what is true for you most of the time.</p>' +
+        h.items.map(function (it, i) {
+          return '<fieldset class="hope-q"><legend>' + (i + 1) + '. ' + esc(it.q) + '</legend><div class="hope-opts">' + h.answers.map(function (a, k) {
+            return '<button class="hope-o craft-press" role="radio" data-q="' + i + '" data-a="' + (k + 1) + '" aria-checked="' + (hopePick[i] === k + 1) + '">' + esc(a) + '</button>'; }).join('') + '</div></fieldset>';
+        }).join('') + '<p style="margin-top:12px"><button class="btn btn-gold craft-press" id="hopeSendScale"' + (hopePick.filter(Boolean).length === 6 ? '' : ' disabled') + '>Save my answers</button></p>') +
+      '<p class="me-sub" id="hopeScaleMsg" style="margin-top:8px"></p></section>';
+    return goalCard + weekCard + scaleCard;
+  }
+  function wireHope() {
+    if (tab !== 'hope' || !D.hope) return;
+    var saved = function (h, el, text) { D.hope = h; render(); if (el && $(el)) $(el).textContent = text; };
+    if ($('hopeChange')) $('hopeChange').onclick = function () { hopeEdit = true; render(); };
+    if ($('hopeCancel')) $('hopeCancel').onclick = function () { hopeEdit = false; render(); };
+    if ($('hopeSaveGoal')) $('hopeSaveGoal').onclick = function () {
+      $('hopeGoalMsg').textContent = 'Saving…';
+      run.apply(null, ['clashMeHopeGoal', $('hopeG').value, $('hopeP1').value, $('hopeP2').value].concat(who()))
+        .then(function (h) { hopeEdit = false; saved(h, 'hopeGoalMsg', 'Saved. Two ways up the mountain.'); })
+        .catch(function (e) { $('hopeGoalMsg').textContent = msg(e); });
+    };
+    document.querySelectorAll('[data-agency]').forEach(function (b) {
+      b.onclick = function () {
+        $('hopeWeekMsg').textContent = 'Saving…';
+        run.apply(null, ['clashMeHopeCheck', Number(b.getAttribute('data-agency'))].concat(who()))
+          .then(function (h) { saved(h, 'hopeWeekMsg', 'Checked in for this week.'); })
+          .catch(function (e) { $('hopeWeekMsg').textContent = msg(e); });
+      };
+    });
+    document.querySelectorAll('[data-q]').forEach(function (b) {
+      b.onclick = function () {
+        var q = Number(b.getAttribute('data-q'));
+        hopePick[q] = Number(b.getAttribute('data-a'));
+        document.querySelectorAll('[data-q="' + q + '"]').forEach(function (x) { x.setAttribute('aria-checked', x === b); });
+        $('hopeSendScale').disabled = hopePick.filter(Boolean).length < 6;
+      };
+    });
+    if ($('hopeSendScale')) $('hopeSendScale').onclick = function () {
+      $('hopeScaleMsg').textContent = 'Saving…';
+      var from = $('hopeSendScale').getBoundingClientRect();
+      run.apply(null, ['clashMeHopeScale', hopePick.slice(0, 6)].concat(who()))
+        .then(function (h) { hopePick = []; saved(h, 'hopeScaleMsg', 'Saved. See you next marking period.'); if (window.craftCelebrate) craftCelebrate({ getBoundingClientRect: function () { return from; } }); })
+        .catch(function (e) { $('hopeScaleMsg').textContent = msg(e); });
+    };
+  }
+
   function arcadeTab() {
     if (!AR) {
       if (!arcLoading) {
@@ -629,4 +723,4 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 </script>
 </body>
 </html>
-<!-- file-stamp: d026d04e06 -->
+<!-- file-stamp: 244601e186 -->

@@ -3080,4 +3080,46 @@ test('hardening: save limits on the server, big-change alert, sign-out, tracking
   assert.strictEqual(t.book.getSheetByName('Usage').rows.find(x => x[1] === 'home')[2], 10, 'the per-minute cap holds');
 });
 
+test('My Hope (62_Hope.gs): one goal with two different pathways, a weekly 1-5 check, the six-question Hope Scale once per marking period; only your own rows; formulas stored as text', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureMeTabs_(); w.ensureHopeTabs_();
+  w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade', 'Email'], ['8001111', 'Ann L.', 'Gold', '7', 'ann.l@easdpa.org'], ['8090001', 'Bo K.', 'Grey', '8', '8090001@gomounts.org']];
+  w.setSettingValue_('MY_CLIMB_HOURS', '00:00-23:59'); w.setSettingValue_('MY_CLIMB_SCHOOL_DAYS', 'OFF');
+  w.Session.getActiveUser = () => ({ getEmail: () => 'Ann.L@easdpa.org' });
+  let me = JSON.parse(w.clashMe());
+  assert.ok(me.hope, 'Hope tab data');
+  assert.strictEqual(me.hope.items.length, 6);
+  assert.strictEqual(me.hope.scaleDone, false);
+  assert.throws(() => w.clashMeHopeGoal('Make honor roll', 'Study', 'study'), /different/);
+  assert.throws(() => w.clashMeHopeGoal('Make honor roll', 'Study 20 minutes', ''), /two different ways/);
+  let h = JSON.parse(w.clashMeHopeGoal('=Make honor roll', 'Study 20 minutes a night', 'Go to Mountaineer Time for help'));
+  assert.deepStrictEqual([h.goal.goal, h.goal.p2], ['\'=Make honor roll', 'Go to Mountaineer Time for help']);
+  h = JSON.parse(w.clashMeHopeGoal('Make honor roll', 'Study 20 minutes a night', 'Ask Ms. Ridge'));
+  assert.strictEqual(w.book.getSheetByName('Hope Goals').rows.length, 2, 'changing the goal keeps one row');
+  assert.throws(() => w.clashMeHopeCheck(9), /1 to 5/);
+  w.clashMeHopeCheck(3);
+  h = JSON.parse(w.clashMeHopeCheck(4));
+  assert.strictEqual(h.thisWeek, 4);
+  assert.strictEqual(w.book.getSheetByName('Hope Checks').rows.length, 2, 'one check a week; answering again changes it');
+  assert.throws(() => w.clashMeHopeScale([1, 2, 3]), /all six/);
+  h = JSON.parse(w.clashMeHopeScale([4, 5, 3, 6, 4, 5]));
+  assert.strictEqual(h.scaleDone, true);
+  assert.deepStrictEqual([h.scales[0].agency, h.scales[0].pathways, h.scales[0].total], [11, 16, 27], 'agency = 1,3,5; pathways = 2,4,6');
+  w.clashMeHopeScale([6, 6, 6, 6, 6, 6]);
+  assert.strictEqual(w.book.getSheetByName('Hope Scale').rows.length, 2, 'once per marking period (a redo replaces it)');
+  // Marking periods from QUARTER_STARTS.
+  w.setSettingValue_('QUARTER_STARTS', '2026-08-26, 2026-11-02, 2027-01-25, 2027-04-05');
+  assert.strictEqual(w.hopePeriod_('2026-11-20').name, 'MP2');
+  assert.strictEqual(w.hopePeriod_('2027-05-01').name, 'MP4');
+  assert.strictEqual(w.hopePeriod_('2026-09-01').name, 'MP1');
+  // Another student sees none of Ann's.
+  w.Session.getActiveUser = () => ({ getEmail: () => '8090001@gomounts.org' });
+  try { me = JSON.parse(w.clashMe()); assert.strictEqual(me.hope.goal.goal, '', 'nothing of Ann\'s'); } catch (e) { assert.ok(/NOT_FOUND/.test(e.message)); }
+  // Off switch.
+  w.setSettingValue_('HOPE', 'OFF');
+  w.Session.getActiveUser = () => ({ getEmail: () => 'Ann.L@easdpa.org' });
+  assert.strictEqual(JSON.parse(w.clashMe()).hope, null);
+  assert.throws(() => w.clashMeHopeCheck(3), /turned off/);
+});
+
 console.log('\n' + passed + ' tests passed');
