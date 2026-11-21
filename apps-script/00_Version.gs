@@ -5,9 +5,9 @@
  * GitHub, to show which files still need pasting.
  */
 const FILE_STAMPS_ = {
-  "01_Config.gs":"c6b6ba4666",
+  "01_Config.gs":"95ab878c8b",
   "02_Router.gs":"3712b23951",
-  "03_Web.gs":"618b8d410b",
+  "03_Web.gs":"4a8eb73603",
   "04_Students.gs":"63c5e8f276",
   "05_Generals.gs":"a584de3631",
   "06_Polls.gs":"05ea9935f1",
@@ -62,14 +62,15 @@ const FILE_STAMPS_ = {
   "54_Rally.gs":"deccc5da46",
   "55_Badges.gs":"d5a7bab840",
   "56_Shoutouts.gs":"f39ff8ae13",
-  "57_Leagues.gs":"a2825d57c5",
+  "57_Leagues.gs":"0b569896a0",
   "58_Cairns.gs":"d5ecf0f4c7",
   "59_MapWeek.gs":"ffda1ad076",
   "60_StaffAccess.gs":"1aff674a17",
   "61_Hardening.gs":"41d295703e",
   "62_Hope.gs":"b553963a3d",
+  "63_SummitParty.gs":"143732deb0",
   "Announce.html":"ed03b14ce7",
-  "App.html":"473030bcc4",
+  "App.html":"49f1fb9826",
   "Arcade.html":"66b9139f40",
   "CliffTour.html":"41fdf27b32",
   "Dough.html":"8b432461ac",
@@ -95,5 +96,7 @@ const FILE_STAMPS_ = {
   "SiteCss.html":"a932f10ec6",
   "Student.html":"27669ae4c4",
   "Styles.html":"d869270812",
+  "SummitParty.html":"b51a1ff717",
+  "SummitPlay.html":"2b510be503",
   "Widgets.html":"e8987ba766"
 };

@@ -249,12 +249,18 @@ function clashApprovals(token) {
       const pts = {}; SQUAD_KEYS_.forEach(function (s) { pts[s] = Number(r[s]) || 0; });
       return { row: r._row, question: String(r['Question'] || ''), closed: asYmd_(r['Closed']).slice(0, 10), votes: Number(r['Votes']) || 0, pts: pts };
     }),
+    // Finished Summit Party games whose squad points wait for a yes (63_SummitParty.gs).
+    summit: summitPointsWaiting_().map(function (r) {
+      const pts = {}; SQUAD_KEYS_.forEach(function (s) { pts[s] = Number(r[s]) || 0; });
+      return { row: r._row, game: String(r['Game'] || ''), ended: asYmd_(r['Ended']).slice(0, 10), result: String(r['Result'] || ''), pts: pts };
+    }),
   });
 }
 
 function clashApprove(token, kind, row, yes) {
   requireAdmin_(token);
   if (kind === 'poll') { decidePollPoints_(row, yes); return clashApprovals(token); }
+  if (kind === 'summit') { decideSummitPoints_(row, yes); return clashApprovals(token); }
   const tab = kind === 'banner' ? 'Squad Banners' : 'Staff Shout-outs', headers = kind === 'banner' ? BANNER_HEADERS_ : SHOUT_HEADERS_;
   const r = sheetRows_(tab).filter(function (x) { return x._row === Number(row); })[0];
   if (!r) throw new Error('That row moved. Refresh and try again.');
@@ -325,4 +331,4 @@ function dailyLeagues_() {
 var FILE_STAMP_57_Leagues = '';
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_57_Leagues = 'a2825d57c5';
+var FILE_STAMP_57_Leagues = '0b569896a0';

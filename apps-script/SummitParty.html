@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=DM+Mono:wght@500&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#12081f; --panel:#1d1033; --line:#38255a; --ink:#f6f0ff; --mute:#b9a6d8; --gold:#ffe100; --purple:#490e6f;
+    --BLACK:#e9e3f5; --GOLD:#ffd23f; --GREY:#9aa5b8; --PURPLE:#b583ff; --hop:300ms; }
+  @media (prefers-reduced-motion: reduce) { :root { --hop:0ms; } }
+  * { box-sizing:border-box; }
+  html, body { margin:0; min-height:100%; background:var(--bg); color:var(--ink); font-family:'DM Sans',system-ui,sans-serif; }
+  body { background: radial-gradient(1200px 700px at 30% -10%, #3b1a66 0%, transparent 60%), var(--bg); }
+  .wrap { min-height:100vh; display:grid; grid-template-columns: minmax(0,1fr) minmax(270px, 25%); gap:2vw; padding:2.2vh 2.2vw; }
+  @media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } }
+  .head { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:1vh; }
+  .head h1 { margin:0; font-family:Fraunces,Georgia,serif; font-weight:900; font-size:clamp(28px,3.6vw,60px); letter-spacing:-.02em; }
+  .head span { font-family:'DM Mono',monospace; color:var(--gold); letter-spacing:.14em; text-transform:uppercase; font-size:clamp(11px,1vw,16px); }
+  .boardbox { position:relative; width:100%; aspect-ratio: 16 / 10; max-height:82vh; border-radius:22px; overflow:hidden;
+    background: linear-gradient(180deg, #1b2b4a 0%, #243a3a 55%, #1d2c22 100%); border:1px solid var(--line); }
+  svg.board { position:absolute; inset:0; width:100%; height:100%; }
+  .token { position:absolute; width:4.2%; aspect-ratio:1; margin:-2.1% 0 0 -2.1%; border-radius:50%; display:grid; place-items:center;
+    font-family:Fraunces,serif; font-weight:900; font-size:clamp(11px,1.4vw,22px); color:#12081f; border:3px solid #12081f;
+    box-shadow:0 6px 14px #0008; transition: left var(--hop) cubic-bezier(.3,1.4,.5,1), top var(--hop) cubic-bezier(.3,1.4,.5,1), transform .2s; z-index:3; }
+  .token.turn { transform: scale(1.22); box-shadow:0 0 0 4px var(--gold), 0 8px 18px #000a; }
+  .flag { position:absolute; font-size:clamp(20px,2.6vw,42px); margin:-2.6% 0 0 -.6%; z-index:2; filter: drop-shadow(0 4px 6px #000a); transition: left .6s, top .6s; }
+  .banner { position:absolute; left:50%; top:46%; transform:translate(-50%,-50%) scale(.7); opacity:0; pointer-events:none; text-align:center; z-index:5;
+    font-family:Fraunces,serif; font-weight:900; font-size:clamp(30px,5vw,88px); text-shadow:0 6px 30px #000c; transition: transform .4s cubic-bezier(.2,1.5,.4,1), opacity .3s; max-width:90%; }
+  .banner.on { opacity:1; transform:translate(-50%,-50%) scale(1); }
+  .banner small { display:block; font-family:'DM Sans',sans-serif; font-weight:700; font-size:.3em; color:#fff; margin-top:.4em; }
+  .closed { display:grid; place-items:center; min-height:60vh; text-align:center; color:var(--mute); font-size:20px; }
+  .side { display:flex; flex-direction:column; gap:1.4vh; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:14px 16px; }
+  .card h3 { margin:0 0 8px; font-family:'DM Mono',monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--mute); font-weight:500; }
+  .round { font-family:Fraunces,serif; font-weight:900; font-size:clamp(22px,2.2vw,38px); }
+  .turnline { font-size:clamp(15px,1.3vw,21px); margin-top:4px; }
+  .sq { display:grid; grid-template-columns: 14px 1fr auto auto; gap:10px; align-items:center; padding:8px 0; border-top:1px solid var(--line); font-size:clamp(15px,1.3vw,21px); }
+  .sq:first-of-type { border-top:0; }
+  .sq i { width:14px; height:14px; border-radius:50%; }
+  .sq b { font-weight:700; }
+  .sq .f { font-family:Fraunces,serif; font-weight:900; color:var(--gold); }
+  .sq .c { font-family:'DM Mono',monospace; color:var(--mute); min-width:5ch; text-align:right; }
+  .log div { font-size:14px; color:var(--mute); padding:4px 0; border-top:1px solid #ffffff10; }
+  .log div:first-child { color:var(--ink); border-top:0; }
+  .legend { display:flex; flex-wrap:wrap; gap:6px 12px; font-size:12.5px; color:var(--mute); }
+  .legend span::before { content:''; display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px; background:var(--c); }
+  button { font:inherit; font-weight:700; cursor:pointer; border:0; border-radius:999px; padding:9px 15px; }
+  .gold { background:var(--gold); color:#1a0b2e; } .ghost { background:#ffffff1a; color:var(--ink); }
+  button:disabled { opacity:.4; cursor:default; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; align-items:center; }
+  input { font:inherit; padding:8px 10px; border-radius:10px; border:1px solid var(--line); background:#0d0618; color:var(--ink); width:100%; }
+  input[data-pw] { -webkit-text-security:disc; }
+  .msg { font-size:13px; color:#fca5a5; min-height:1em; margin-top:6px; }
+  .join { font-size:14px; color:var(--mute); line-height:1.5; }
+  .join b { color:var(--ink); font-family:'DM Mono',monospace; }
+  .confetti { position:fixed; top:-20px; width:10px; height:16px; border-radius:3px; pointer-events:none; animation:fall linear forwards; z-index:9; }
+  @keyframes fall { to { transform:translateY(110vh) rotate(720deg); } }
+  @media (prefers-reduced-motion: reduce) { .confetti { display:none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <main>
+    <div class="head"><h1>Summit Party</h1><span>Clash of Classes · Together We Climb</span></div>
+    <div class="boardbox" id="box">
+      <svg class="board" id="svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="The Summit Party trail around the mountain"></svg>
+      <div class="banner" id="banner"></div>
+    </div>
+    <div class="legend" id="legend" style="margin-top:10px"></div>
+  </main>
+  <aside class="side">
+    <div class="card"><div class="round" id="round">Summit Party</div><div class="turnline" id="turnline"></div></div>
+    <div class="card"><h3>Flags and coins</h3><div id="standings"></div></div>
+    <div class="card log"><h3>On the trail</h3><div id="log"></div></div>
+    <div class="card"><h3>Play from your squad's Chromebook</h3><div class="join">Open <b id="joinLink"></b> and type your 800#. On your squad's turn, tap Roll.</div></div>
+    <div class="card" id="staff"></div>
+  </aside>
+</div>
+<script>
+(function () {
+  var COLORS = { BLACK: '#e9e3f5', GOLD: '#ffd23f', GREY: '#9aa5b8', PURPLE: '#b583ff' };
+  var TYPE = { start: '#ffe100', trail: '#5aa9ff', rock: '#ff6b6b', cairn: '#c084fc', spring: '#4ade80' };
+  var S = null, seq = 0, token = '', busy = false, tokens = {}, flagEl = null, drawn = false;
+  try { token = sessionStorage.getItem('summit-admin') || ''; } catch (e) {}
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function title(s) { s = String(s || ''); return s.charAt(0) + s.slice(1).toLowerCase(); }
+  function run(fn) { var a = Array.prototype.slice.call(arguments, 1); return new Promise(function (ok, no) { var r = google.script.run.withSuccessHandler(function (t) { ok(JSON.parse(t)); }).withFailureHandler(no); r[fn].apply(r, a); }); }
+  function msgOf(e) { return String(e && e.message || e).replace(/^Exception:\s{0,}/, ''); }
+  var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function drawBoard(b) {
+    var svg = $('svg'), h = '';
+    // The mountain behind the trail.
+    h += '<polygon points="22,92 50,6 78,92" fill="#2f3f5f" opacity=".55"/><polygon points="40,40 50,6 60,40 55,36 50,42 45,35" fill="#e8eefc" opacity=".8"/>';
+    h += '<polygon points="4,96 26,48 46,96" fill="#2a3a3a" opacity=".6"/><polygon points="58,96 80,44 98,96" fill="#2a3a3a" opacity=".6"/>';
+    b.forEach(function (n) { n.next.forEach(function (to) { var m = b[to]; h += '<line x1="' + n.x + '" y1="' + n.y + '" x2="' + m.x + '" y2="' + m.y + '" stroke="#f6efe0" stroke-opacity=".55" stroke-width=".9" stroke-dasharray="' + (n.path || m.path ? '1.4 1.2' : 'none') + '" stroke-linecap="round"/>'; }); });
+    b.forEach(function (n) {
+      h += '<ellipse cx="' + n.x + '" cy="' + n.y + '" rx="2.3" ry="3.6" fill="' + (TYPE[n.type] || '#888') + '" stroke="#12081f" stroke-width=".5"/>';
+      if (n.type === 'start') h += '<text x="' + n.x + '" y="' + (n.y + 7.5) + '" text-anchor="middle" font-size="2.6" fill="#ffe100" font-family="DM Mono">BASE CAMP</text>';
+      if (n.next.length > 1) h += '<text x="' + n.x + '" y="' + (n.y - 5) + '" text-anchor="middle" font-size="2.2" fill="#fff" font-family="DM Mono">FORK</text>';
+    });
+    svg.innerHTML = h;
+    var legend = ''; Object.keys(TYPE).forEach(function (k) { legend += '<span style="--c:' + TYPE[k] + '">' + esc(S.spaces[k] || k) + '</span>'; });
+    $('legend').innerHTML = legend + '<span style="--c:transparent">🚩 Summit Flag: pass it with ' + S.flagCost + ' coins to plant one</span>';
+    drawn = true;
+  }
+  function spot(nodeId, squad) {
+    var n = S.board[nodeId], i = ['BLACK', 'GOLD', 'GREY', 'PURPLE'].indexOf(squad);
+    return { x: n.x + (i % 2 ? 1.6 : -1.6), y: n.y + (i < 2 ? -1.8 : 1.8) };
+  }
+  function place(squad, nodeId) {
+    var t = tokens[squad];
+    if (!t) { t = document.createElement('div'); t.className = 'token'; t.style.background = COLORS[squad]; t.textContent = squad.charAt(0) + (squad === 'GREY' ? 'r' : ''); t.title = title(squad); $('box').appendChild(t); tokens[squad] = t; }
+    var p = spot(nodeId, squad); t.style.left = p.x + '%'; t.style.top = p.y + '%';
+  }
+  function placeFlag(nodeId) {
+    if (!flagEl) { flagEl = document.createElement('div'); flagEl.className = 'flag'; flagEl.textContent = '🚩'; $('box').appendChild(flagEl); }
+    var n = S.board[nodeId]; flagEl.style.left = n.x + '%'; flagEl.style.top = n.y + '%';
+  }
+  function banner(big, small, color) {
+    var b = $('banner'); b.innerHTML = esc(big) + (small ? '<small>' + esc(small) + '</small>' : ''); b.style.color = color || '#fff';
+    b.classList.add('on'); clearTimeout(b._t); b._t = setTimeout(function () { b.classList.remove('on'); }, 2200);
+  }
+  function confetti(color) {
+    if (calm) return;
+    for (var i = 0; i < 60; i++) { var c = document.createElement('div'); c.className = 'confetti'; c.style.left = Math.random() * 100 + 'vw'; c.style.background = i % 3 ? color : '#ffe100'; c.style.animationDuration = (1.6 + Math.random() * 1.4) + 's'; document.body.appendChild(c); setTimeout(function (n) { return function () { n.remove(); }; }(c), 3200); }
+  }
+  function side() {
+    var g = S.game;
+    if (!g) { $('round').textContent = 'No game yet'; $('turnline').textContent = 'Staff: sign in below and start one.'; $('standings').innerHTML = ''; $('log').innerHTML = ''; return; }
+    var places = Object.keys(g.squads).sort(function (a, b) { return (g.squads[b].flags - g.squads[a].flags) || (g.squads[b].coins - g.squads[a].coins); });
+    $('round').textContent = g.status === 'playing' ? 'Round ' + Math.min(g.round, g.rounds) + ' of ' + g.rounds : g.status === 'ended' ? 'Final' : 'Stopped';
+    var now = g.order[g.turn];
+    $('turnline').innerHTML = g.status !== 'playing' ? (g.places ? '🏆 <b style="color:' + COLORS[g.places[0]] + '">' + esc(title(g.places[0])) + '</b> wins the Summit Party!' : '')
+      : g.pending ? '<b style="color:' + COLORS[g.pending.squad] + '">' + esc(title(g.pending.squad)) + '</b> is picking a path…' : 'Your turn: <b style="color:' + COLORS[now] + '">' + esc(title(now)) + '</b>. Roll on your Chromebook.';
+    $('standings').innerHTML = places.map(function (s) { var q = g.squads[s]; return '<div class="sq"><i style="background:' + COLORS[s] + '"></i><b>' + esc(title(s)) + '</b><span class="f">🚩 ' + q.flags + '</span><span class="c">' + q.coins + ' ¢</span></div>'; }).join('');
+    $('log').innerHTML = (g.log || []).map(function (t) { return '<div>' + esc(t) + '</div>'; }).join('');
+    Object.keys(tokens).forEach(function (s) { tokens[s].classList.toggle('turn', g.status === 'playing' && s === (g.pending ? g.pending.squad : now)); });
+  }
+  function staff() {
+    var el = $('staff');
+    if (!token) {
+      el.innerHTML = '<h3>Staff</h3><input type="text" data-pw id="pw" placeholder="Admin password" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore>' +
+        '<div class="row"><button class="ghost" id="signin">Sign in</button><button class="ghost" id="gsignin">Sign in with my school account</button></div><div class="msg" id="smsg"></div>';
+      var go = function (pw) { run('clashLogin', pw).then(function (r) { token = r.token; try { sessionStorage.setItem('summit-admin', token); } catch (e) {} staff(); }).catch(function (e) { $('smsg').textContent = msgOf(e); }); };
+      $('signin').onclick = function () { go($('pw').value); };
+      $('gsignin').onclick = function () { go(''); };
+      return;
+    }
+    var playing = S.game && S.game.status === 'playing';
+    el.innerHTML = '<h3>Staff</h3><div class="row"><label style="font-size:14px">Rounds <input id="rounds" type="number" min="1" max="30" value="' + (S.rounds || 8) + '" style="width:5em"></label><button class="gold" id="start">' + (playing ? 'Start over' : 'Start a game') + '</button></div>' +
+      '<div class="row"><button class="ghost" id="skip"' + (playing ? '' : ' disabled') + '>Skip this turn</button><button class="ghost" id="finish"' + (playing ? '' : ' disabled') + '>End and score it</button><button class="ghost" id="stop"' + (playing ? '' : ' disabled') + '>Stop, no points</button></div><div class="msg" id="smsg"></div>';
+    var act = function (p) { p.then(function (v) { take(v); }).catch(function (e) { if (/sign in|password|session/i.test(msgOf(e))) { token = ''; try { sessionStorage.removeItem('summit-admin'); } catch (x) {} staff(); } $('smsg').textContent = msgOf(e); }); };
+    $('start').onclick = function () { if (playing && !confirm('Stop this game and start a new one?')) return; act(run('clashSummitStart', token, Number($('rounds').value) || 8)); };
+    $('skip').onclick = function () { act(run('clashSummitSkip', token)); };
+    $('finish').onclick = function () { if (confirm('End now and score it? The points wait for a yes in Admin.')) act(run('clashSummitEnd', token, true)); };
+    $('stop').onclick = function () { if (confirm('Stop the game with no points?')) act(run('clashSummitEnd', token, false)); };
+  }
+  // A new state: animate the last move hop by hop, then update the side.
+  function take(v) {
+    if (!v || v.same) return;
+    if (!v.on) { document.querySelector('.wrap').innerHTML = '<div class="closed">Summit Party is closed right now.</div>'; return; }
+    var prev = S && S.game, first = !S;
+    S = v; seq = v.game ? v.game.seq : 0;
+    if (!drawn) drawBoard(S.board);
+    var g = S.game;
+    $('joinLink').textContent = 'clashofclasses.org/?page=summit-play';
+    if (!g) { side(); staff(); return; }
+    var L = g.last || { path: [] }, moved = !first && prev && prev.id === g.id && L.squad && L.path.length;
+    Object.keys(g.squads).forEach(function (s) { if (!(moved && s === L.squad)) place(s, g.squads[s].pos); });
+    if (!moved) { if (L.squad && tokens[L.squad]) place(L.squad, g.squads[L.squad].pos); placeFlag(g.flagAt); side(); staff(); return; }
+    busy = true;
+    if (L.roll && (!prev.pending || prev.pending.squad !== L.squad)) banner(String(L.roll), title(L.squad) + ' rolled' + (L.boost ? ' (' + L.die + ' + ' + L.boost + ')' : ''), COLORS[L.squad]);
+    var already = prev.pending && prev.pending.squad === L.squad ? prev.last.path.length : 0;
+    var hops = L.path.slice(already), i = 0, hop = calm ? 0 : 320;
+    (function step() {
+      if (i < hops.length) { place(L.squad, hops[i++]); setTimeout(step, hop); return; }
+      placeFlag(g.flagAt);
+      if (L.flag) { banner('🚩 Summit Flag!', title(L.flag) + ' planted a flag', COLORS[L.flag]); confetti(COLORS[L.flag]); }
+      else if (L.card) banner('Trail card', L.card, '#c084fc');
+      if (g.status === 'ended' && g.places) setTimeout(function () { banner('🏆 ' + title(g.places[0]) + ' wins!', 'The points wait for a staff yes', COLORS[g.places[0]]); confetti(COLORS[g.places[0]]); }, 1200);
+      side(); staff(); busy = false;
+    })();
+  }
+  function poll() { if (busy) return; run('clashSummitState', seq).then(take).catch(function () {}); }
+  run('clashSummitState', 0).then(take).catch(function (e) { document.querySelector('.wrap').innerHTML = '<div class="closed">' + esc(msgOf(e)) + '</div>'; });
+  setInterval(poll, 1500);
+})();
+</script>
+</body>
+</html>
+<!-- file-stamp: b51a1ff717 -->

@@ -115,6 +115,7 @@ function setupSpreadsheet() {
   ensureCheckinTabs_(); // 26_CheckIns.gs
   ensureMeTabs_();
   ensureHopeTabs_(); // 62_Hope.gs: My Hope
+  ensureSummitPartyTabs_(); // 63_SummitParty.gs: Summit Games, Summit Party Points
   ensureRosterTab_();
   ensureTourTab_(); // 20_Tour.gs
   ensureWeekTabs_(); // 22_Week.gs
@@ -293,6 +294,10 @@ const DEFAULT_SETTINGS = [
   ['EMBED_APPS', 'ON', 'ON = those three apps show inside their Clash pages (signed in with a school account). OFF = an Open button only.'],
   ['ROSTER_SHEET', 'https://docs.google.com/spreadsheets/d/1SDmwtkP9RzMZ62WVn6awZW6-6gA_wPtc6altTwoAeME/edit', 'The district roster Sheet (link or ID) with 800 Number, Email Address, First Name, Last Name, Grade Level. Clash of Classes › Import student roster copies it to the Students tab.'],
   ['STUDENT_EMAIL_PATTERN', '{800}@gomounts.org', 'My Climb sign-in when the Student Board has no Email column: how a student email is built from the 800#, e.g. {800}@easdpa.org. Blank = use the Email column only.'],
+  ['SUMMIT_PARTY', 'OFF', 'Summit Party, the squad board game (63_SummitParty.gs): ON = the big-screen board (?page=summit) and the squad Chromebooks (?page=summit-play) work. OFF = both say it is closed.'],
+  ['SUMMIT_PARTY_ROUNDS', '8', 'Summit Party: rounds in a game (every squad moves once a round). Staff can pick another number when they start.'],
+  ['SUMMIT_PARTY_FLAG_COST', '10', 'Summit Party: coins to plant a Summit Flag.'],
+  ['SUMMIT_PARTY_POINTS', '25,15,10,5', 'Summit Party: Clash points by place (1st,2nd,3rd,4th). They wait for a yes in Admin › System › Waiting for a yes. 0 = no squad points.'],
   ['QUARTER_RECAP', 'ON', 'Quarter recap on the Tracker (57_Leagues.gs): ON = shows it. OFF = hidden.'],
   ['USAGE_TRACKING', 'ON', 'Page and visitor counts (Usage tab, 22_Week.gs): ON = counted. OFF = nothing is counted.'],
   ['HOPE', 'ON', 'My Hope on My Climb (62_Hope.gs): a goal with two pathways, a weekly 1-5 check, and the six-question Hope Scale each marking period (QUARTER_STARTS). Students see only their own; Climb-er shows staff the scores. OFF hides the Hope tab.'],
@@ -516,4 +521,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = 'c6b6ba4666';
+var FILE_STAMP_01_Config = '95ab878c8b';

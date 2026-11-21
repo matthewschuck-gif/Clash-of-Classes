@@ -35,6 +35,8 @@ function serveSite_(e) {
   if (e && e.parameter && e.parameter.page === 'hall') return serveHall_(); // the Hall of Fame (52_Legacy.gs)
   if (e && e.parameter && e.parameter.page === 'recap') return serveRecap_(); // the quarter recap (57_Leagues.gs)
   if (e && e.parameter && e.parameter.page === 'plinko') return servePlinko_(); // the Plinko board (46_Plinko.gs)
+  if (e && e.parameter && e.parameter.page === 'summit') return serveSummitParty_(); // Summit Party board for the big screen (63_SummitParty.gs)
+  if (e && e.parameter && e.parameter.page === 'summit-play') return serveSummitPlay_(); // Summit Party on a squad's Chromebook
   if (e && e.parameter && e.parameter.page === 'reveal') return serveReveal_(); // the Clash Bash reveal + award certificates (44_Reveal.gs) // the monthly family update (42_Family.gs)
   if (e && e.parameter && e.parameter.page === 'guides') return serveGuides_(); // one-page role guides from Settings (33_Guides.gs)
   if (e && e.parameter && e.parameter.page === 'frost') return serveFrostPage_(); // Freeze & Thaw slides + frost meter (28_Frost.gs)
@@ -487,4 +489,4 @@ function saveSummary_(before, after, keptFromOthers) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_03_Web = '618b8d410b';
+var FILE_STAMP_03_Web = '4a8eb73603';
