@@ -5,9 +5,9 @@
  * GitHub, to show which files still need pasting.
  */
 const FILE_STAMPS_ = {
-  "01_Config.gs":"edc79028b6",
+  "01_Config.gs":"2995b0ca9f",
   "02_Router.gs":"3712b23951",
-  "03_Web.gs":"f979e3ef03",
+  "03_Web.gs":"618b8d410b",
   "04_Students.gs":"63c5e8f276",
   "05_Generals.gs":"a584de3631",
   "06_Polls.gs":"05ea9935f1",
@@ -26,7 +26,7 @@ const FILE_STAMPS_ = {
   "19_Evolve.gs":"07c0faea71",
   "20_Tour.gs":"e2400bff5a",
   "21_Leaders.gs":"de1fe45afe",
-  "22_Week.gs":"931d4ce1b3",
+  "22_Week.gs":"18409157a5",
   "23_Drive.gs":"423bfd8ad6",
   "24_YearPlan.gs":"6626b30b8c",
   "25_Homerooms.gs":"82e1d971a7",
@@ -65,7 +65,8 @@ const FILE_STAMPS_ = {
   "57_Leagues.gs":"01fad88adf",
   "58_Cairns.gs":"d5ecf0f4c7",
   "59_MapWeek.gs":"ffda1ad076",
-  "60_StaffAccess.gs":"ac9c312cea",
+  "60_StaffAccess.gs":"84aa690ad4",
+  "61_Hardening.gs":"e15e2b191a",
   "Announce.html":"ed03b14ce7",
   "App.html":"15562b8072",
   "Arcade.html":"66b9139f40",

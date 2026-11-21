@@ -152,6 +152,7 @@ function backgroundTick() {
   try { maybeGameTick_(); } catch (e) { noteError_('map claims', e); }
   try { flushUsage_(); snapshotStages_(); } catch (e) { noteError_('usage + creature snapshot', e); }
   try { flushAdminActions_(); } catch (e) { noteError_('admin actions log', e); } // 60_StaffAccess.gs
+  try { maybeBackup_(); } catch (e) { noteError_('nightly backup', e); } // 61_Hardening.gs: after 2 a.m.
   try { maybeImportHomerooms_(); } catch (e) { noteError_('homeroom forms', e); } // 25_Homerooms.gs, every 30 minutes
   try { maybeFollowUpStats_(); } catch (e) { noteError_('Follow-Up LRR count', e); } // 27_FollowUpStats.gs, once a day
   try { maybeFrostCheck_(); } catch (e) { noteError_('frost check', e); } // 28_Frost.gs: monthly check + approvals
@@ -187,8 +188,9 @@ function clashSave(token, valueJson, syncJson) {
   const who = requireAdmin_(token, { noLog: true }); // logged below, with what changed
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
-  let summary = null;
+  let summary = null, swing = 0;
   try {
+    checkSaveSize_(valueJson); // 61_Hardening.gs: limits checked here, never only in the page
     const value = JSON.parse(valueJson);
     const sync = syncJson ? JSON.parse(syncJson) : {};
     delete value.password;
@@ -203,6 +205,7 @@ function clashSave(token, valueJson, syncJson) {
     // A page that loaded before signing in holds the public (shortened) names: put the real
     // name and note back on any row the admin didn't change, so a save never rewrites them.
     const stored = readEventsTab_();
+    swing = checkSave_(value, stored); // whole-number points, MAX_EVENT_POINTS on new or changed rows
     const storedById = {};
     stored.forEach(function (s) { storedById[s.id] = s; });
     events.forEach(function (e) {
@@ -231,10 +234,11 @@ function clashSave(token, valueJson, syncJson) {
     const unchanged = !!sync.metrics && sameMetrics_(sync.metrics, value.metrics);
     const res = saveAppData_('coc', value, { skipMetricsTab: unchanged });
     summary = saveSummary_(stored, value.events, added);
+    swing += removedSwing_(stored, events, wasSeen);
     return JSON.stringify({ saved: true, keptFromOthers: added.length, updated_at: res.updated_at });
   } finally {
     lock.releaseLock();
-    if (summary !== null) logAdminAction_(who, ACTION_LABELS_.clashSave, summary); // after the lock: the log takes it too
+    if (summary !== null) { logAdminAction_(who, ACTION_LABELS_.clashSave, summary); bigChangeAlert_(who, swing, summary); } // after the lock: these take it too
   }
 }
 
@@ -304,10 +308,13 @@ function clashLogin(pw) {
   if (!passwordSignInOn_()) throw new Error('The shared password is turned off. Use "Sign in with my school account".');
   const cache = CacheService.getScriptCache();
   const fails = Number(cache.get('clash-login-fails')) || 0;
-  if (fails >= 10) throw new Error('Too many tries. Wait 10 minutes.');
+  if (fails >= 10) throw new Error('Too many tries. Wait 10 minutes.'); // the alert went out at 10 (61_Hardening.gs)
   if (!checkPassword_(String(pw || ''))) {
     cache.put('clash-login-fails', String(fails + 1), 600);
     logAdminAction_({ name: '', email: activeEmail_(), role: '', via: 'password' }, 'Refused sign-in', 'Wrong shared password');
+    if (fails + 1 === 5 || fails + 1 === 10) securityAlert_('pw-fails-' + (fails + 1), (fails + 1) + ' wrong shared passwords in 10 minutes', [
+      'Someone has typed the wrong shared admin password ' + (fails + 1) + ' times in the last 10 minutes' + (fails + 1 >= 10 ? '. Password sign-in is locked for 10 minutes.' : '.'),
+      'If that wasn\'t one of your admins: set PASSWORD_SIGN_IN = OFF in Settings so only school-account sign-in works.']);
     throw new Error('Incorrect password.');
   }
   const who = { name: 'Shared admin password', email: activeEmail_(), role: 'Admin', via: 'password' };
@@ -369,6 +376,7 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu('Clash of Classes')
     .addItem('Run setup (tabs + Settings)', 'setupSpreadsheet')
     .addItem('Set admin password…', 'menuSetPassword_')
+    .addItem('Back up this Sheet now', 'menuBackupNow_')
     .addItem('Open the site', 'menuOpenSite_')
     .addSeparator()
     .addItem('Turn on challenge bonuses', 'menuTurnOnChallenges_')
@@ -479,4 +487,4 @@ function saveSummary_(before, after, keptFromOthers) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_03_Web = 'f979e3ef03';
+var FILE_STAMP_03_Web = '618b8d410b';

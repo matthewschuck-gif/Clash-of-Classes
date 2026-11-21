@@ -199,6 +199,7 @@ function menuAnnouncement_() { SpreadsheetApp.getUi().alert('Read this in the mo
 function clashTrack(page, first) {
   page = String(page || '').toLowerCase();
   if (USAGE_PAGES_.indexOf(page) === -1 || page === '(site)') return '';
+  if (!trackAllowed_()) return ''; // 61_Hardening.gs: TRACK_PER_MINUTE for the whole site
   first = first && typeof first === 'object' ? first : {};
   countUsage_(page, !!first.p, !!first.s);
   return '';
@@ -470,4 +471,4 @@ function clashVersion(token) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_22_Week = '931d4ce1b3';
+var FILE_STAMP_22_Week = '18409157a5';

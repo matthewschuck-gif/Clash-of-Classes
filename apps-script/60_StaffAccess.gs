@@ -99,7 +99,7 @@ function staffAccessMap_(fresh) {
     const email = String(r['Email'] || '').trim().toLowerCase();
     if (!email) return;
     const active = r['Active'] === true || /^(true|yes|y|x|1|on)$/i.test(String(r['Active']).trim());
-    map[email] = { name: String(r['Name'] || '').trim(), role: String(r['Role'] || '').trim(), active: active, row: r._row };
+    map[email] = { name: String(r['Name'] || '').trim(), role: String(r['Role'] || '').trim(), active: active, row: r._row, last: String(r['Last Sign-in'] || '').trim() };
   });
   try { cache.put('clash-staff-access', JSON.stringify(map), 300); } catch (e) { /* fine */ }
   return map;
@@ -152,9 +152,13 @@ function clashStaffSignIn() {
   const who = staffRecord_(email);
   if (!who) {
     logAdminAction_({ name: '', email: email, role: '', via: 'google' }, 'Refused sign-in', 'Not on the Staff Access tab (or not Active, or role not in EDIT_ROLES)');
+    securityAlert_('refused-' + email, 'Refused sign-in: ' + email, [email + ' tried to sign in to Clash Admin and is not on the Staff Access list (or is not Active, or their role cannot use Admin).',
+      'Nothing to do if that was expected. To let them in, add a row on the Staff Access tab.']); // 61_Hardening.gs
     throw new Error('NOT_ON_LIST: ' + email + ' is not on the Clash Staff Access list. Ask Mr. Schuck to add you.');
   }
   who.via = 'google';
+  const rec = staffAccessMap_()[email];
+  if (rec && !rec.last) securityAlert_('first-' + email, 'First sign-in: ' + who.name, [who.name + ' (' + email + ', ' + who.role + ') signed in to Clash Admin with their school account for the first time.']);
   const token = newAdminSession_(who);
   noteSignIn_(email);
   logAdminAction_(who, 'Signed in', '');
@@ -249,4 +253,4 @@ function clashActionLog(token) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_60_StaffAccess = 'ac9c312cea';
+var FILE_STAMP_60_StaffAccess = '84aa690ad4';

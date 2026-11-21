@@ -118,6 +118,7 @@ function setupSpreadsheet() {
   ensureTourTab_(); // 20_Tour.gs
   ensureWeekTabs_(); // 22_Week.gs
   ensureStaffAccessTabs_(); // 60_StaffAccess.gs: Staff Access + Admin Actions
+  ensureHardeningSettings_(); // 61_Hardening.gs: alert, limit and backup Settings rows
   ensureMindsetLinksTab_(); // 23_Drive.gs
   ensureYearPlanTab_(); // 24_YearPlan.gs
   ensureHomeroomTabs_(); // 25_Homerooms.gs
@@ -511,4 +512,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = 'edc79028b6';
+var FILE_STAMP_01_Config = '2995b0ca9f';

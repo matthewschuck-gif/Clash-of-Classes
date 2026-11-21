@@ -3051,4 +3051,33 @@ test('usage: opens and unique visitors per page and for the whole site', () => {
   assert.strictEqual(u[0].page, '(site)'); assert.strictEqual(u.find(x => x.page === 'home').unique, 1);
 });
 
+
+test('hardening: save limits on the server, big-change alert, sign-out, tracking limit', () => {
+  const w = staffWorld([['kelly@easdpa.org', 'Kelly R.', 'Admin', true]], 'kelly@easdpa.org');
+  const sent = []; w.MailApp = { sendEmail: m => sent.push(m) };
+  const tok = JSON.parse(w.clashStaffSignIn()).token;
+  const v = JSON.parse(w.clashLoad(tok)).value;
+  const seen = JSON.stringify({ seen: ['101|Kickoff', '102|Bill'] });
+  const withEvent = pts => JSON.stringify(Object.assign({}, v, { events: v.events.concat([{ id: 300, name: 'Huge', type: 'event', date: '2026-11-20', pts: pts }]) }));
+  assert.throws(() => w.clashSave(tok, withEvent({ BLACK: 5000, GOLD: 0, GREY: 0, PURPLE: 0 }), seen), /more than 1000/);
+  assert.throws(() => w.clashSave(tok, withEvent({ BLACK: 'x', GOLD: 0, GREY: 0, PURPLE: 0 }), seen), /whole number/);
+  assert.throws(() => w.clashSave(tok, 'x'.repeat(9000 * 1024), seen), /too big/);
+  assert.ok(!w.book.getSheetByName('events').rows.some(r => r[1] === 'Huge'), 'nothing refused was saved');
+  sent.length = 0;
+  w.clashSave(tok, withEvent({ BLACK: 300, GOLD: 0, GREY: 0, PURPLE: 0 }), seen);
+  assert.ok(sent.some(m => /moved 300 points/.test(m.subject)), 'big save alert');
+  assert.ok(sent.every(m => m.to === 'owner@easdpa.org'), 'alerts go to the owner by default');
+  w.clashSignOut(tok);
+  assert.throws(() => w.clashSave(tok, JSON.stringify(v), seen), /sign in as admin again/, 'signed out on the server');
+  assert.ok(actions(w).some(r => r[5] === 'Signed out'));
+  const r = staffWorld([], 'stranger@easdpa.org'); const s2 = []; r.MailApp = { sendEmail: m => s2.push(m) };
+  assert.throws(() => r.clashStaffSignIn(), /NOT_ON_LIST/);
+  assert.throws(() => r.clashStaffSignIn(), /NOT_ON_LIST/);
+  assert.strictEqual(s2.filter(m => /Refused sign-in/.test(m.subject)).length, 1, 'one alert an hour, not one per try');
+  const t = world(); t.ensureWeekTabs_(); t.setSettingValue_('TRACK_PER_MINUTE', '10');
+  for (let i = 0; i < 25; i++) t.clashTrack('home', { p: 0, s: 0 });
+  t.flushUsage_();
+  assert.strictEqual(t.book.getSheetByName('Usage').rows.find(x => x[1] === 'home')[2], 10, 'the per-minute cap holds');
+});
+
 console.log('\n' + passed + ' tests passed');
