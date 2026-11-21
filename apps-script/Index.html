@@ -1101,7 +1101,7 @@
     <div style="font-family:'Fraunces',serif;font-size:24px;font-weight:900;color:var(--gold-soft);margin-bottom:8px">Admin Access Required</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:24px;max-width:340px;margin-left:auto;margin-right:auto;line-height:1.7">The Spin wheel is for staff only. Enter the admin password to spin and save results to the tracker.</div>
     <div style="display:flex;gap:10px;justify-content:center;max-width:360px;margin:0 auto">
-      <input type="password" id="spinPwInput" placeholder="Admin password (blank = school account)" onkeydown="if(event.key==='Enter')spinAuth()" style="flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s">
+      <input type="text" data-pw="1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" id="spinPwInput" placeholder="Admin password (blank = school account)" onkeydown="if(event.key==='Enter')spinAuth()" style="flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s">
       <button onclick="spinAuth()" class="btn btn-purple" style="padding:12px 20px;font-size:14px">Enter</button>
     </div>
     <button onclick="document.getElementById('spinPwInput').value='';spinAuth()" class="btn btn-purple" style="padding:12px 20px;font-size:14px;margin-top:12px">Sign in with my school account</button>
@@ -1675,7 +1675,7 @@
     <h2>Admin Access</h2>
     <button class="btn-submit" style="margin-bottom:12px" onclick="document.getElementById('pwIn').value='';tryLogin()">Sign in with my school account</button>
     <div class="fr" id="pwRow"><label>Or the shared admin password</label>
-      <input type="password" id="pwIn" type="password" autocorrect="off" autocapitalize="off" autocomplete="current-password" onkeydown="if(event.key==='Enter')tryLogin()" placeholder="Enter admin password">
+      <input type="text" data-pw="1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" id="pwIn" onkeydown="if(event.key==='Enter')tryLogin()" placeholder="Enter admin password">
     </div>
     <div class="fmsg err" id="loginErr">Incorrect password.</div>
     <button class="btn-submit" id="pwUnlock" onclick="tryLogin()">Unlock with password</button>
@@ -2219,8 +2219,8 @@
         <button class="btn-submit" onclick="saveSpinCaps()">Save Spin Caps</button>
       </div>
       <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">🔑 Change Password</div>
-      <div class="fr"><label>New Admin Password</label><input type="password" id="newPw" placeholder="New password (min 10 chars)"></div>
-      <div class="fr"><input type="password" id="newPw2" placeholder="Confirm password"></div>
+      <div class="fr"><label>New Admin Password</label><input type="text" data-pw="1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" id="newPw" placeholder="New password (min 10 chars)"></div>
+      <div class="fr"><input type="text" data-pw="1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" id="newPw2" placeholder="Confirm password"></div>
       <div class="fmsg err" id="pwErr">Passwords don't match or too short.</div>
       <div class="fmsg" id="pwOk">✓ Password updated!</div>
       <button class="btn-submit" onclick="changePw()">Update Password</button>
@@ -2462,6 +2462,16 @@ document.addEventListener('click', function (ev) {
 <!-- ── MOBILE BOTTOM NAV BAR ── -->
 <div id="mobileBottomBar" style="display:none"></div>
 
+<style>[data-pw]{-webkit-text-security:disc;text-security:disc}</style>
+<script>
+/* Password boxes are plain text boxes drawn as dots, so Chrome, Safari and password managers never offer to save or fill them. Browsers that can't draw the dots get a password box that asks not to be filled. */
+(function () {
+  try { if (window.CSS && CSS.supports && CSS.supports('-webkit-text-security', 'disc')) return; } catch (e) { return; }
+  function fix(root) { if (!root || !root.querySelectorAll) return; root.querySelectorAll('input[data-pw]').forEach(function (i) { if (i.type !== 'password') { i.type = 'password'; i.setAttribute('autocomplete', 'new-password'); } }); }
+  fix(document);
+  new MutationObserver(function (list) { list.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1) fix(n.parentNode || n); }); }); }).observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
 </body>
 </html>
-<!-- file-stamp: 8877408e85 -->
+<!-- file-stamp: a340262470 -->

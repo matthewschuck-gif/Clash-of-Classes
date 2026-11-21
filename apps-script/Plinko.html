@@ -48,7 +48,7 @@
     <div class="boardbox"><canvas id="cv"></canvas><div class="banner" id="banner"></div></div></div>
   <div class="side">
     <div class="card"><h3>Drops waiting</h3><div id="squads"></div><div class="row"><button class="ghost" id="practice">Practice drop</button></div><div class="msg" id="msg"></div></div>
-    <div class="card" id="staff"><h3>Staff</h3><div id="signin"><input id="pw" type="password" placeholder="Admin password (blank = school account)" style="width:100%"><div class="row"><button class="drop" id="in">Sign in to drop</button></div></div>
+    <div class="card" id="staff"><h3>Staff</h3><div id="signin"><input id="pw" type="text" data-pw="1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="Admin password (blank = school account)" style="width:100%"><div class="row"><button class="drop" id="in">Sign in to drop</button></div></div>
       <div id="tools" style="display:none"><div class="row"><select id="gs"><option value="BLACK">Black</option><option value="GOLD">Gold</option><option value="GREY">Grey</option><option value="PURPLE">Purple</option></select>
         <input id="gr" placeholder="Why (e.g. won the Squad Duel)" style="flex:1;min-width:120px"></div><div class="row"><button class="ghost" id="grant">+ Give a drop</button></div>
         <table class="odds" id="odds"></table></div></div>
@@ -201,6 +201,16 @@
   setInterval(function () { if (!busy) run('clashPlinkoBoard').then(function (b) { B.waiting = b.waiting; B.recent = b.recent; if (JSON.stringify(b.slots) !== JSON.stringify(B.slots) || b.rows !== B.rows) { B = b; layout(); draw(); } side(); }).catch(function () {}); }, 15000);
 })();
 </script>
+<style>[data-pw]{-webkit-text-security:disc;text-security:disc}</style>
+<script>
+/* Password boxes are plain text boxes drawn as dots, so Chrome, Safari and password managers never offer to save or fill them. Browsers that can't draw the dots get a password box that asks not to be filled. */
+(function () {
+  try { if (window.CSS && CSS.supports && CSS.supports('-webkit-text-security', 'disc')) return; } catch (e) { return; }
+  function fix(root) { if (!root || !root.querySelectorAll) return; root.querySelectorAll('input[data-pw]').forEach(function (i) { if (i.type !== 'password') { i.type = 'password'; i.setAttribute('autocomplete', 'new-password'); } }); }
+  fix(document);
+  new MutationObserver(function (list) { list.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1) fix(n.parentNode || n); }); }); }).observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
 </body>
 </html>
-<!-- file-stamp: 5e37e095af -->
+<!-- file-stamp: b3e4172e6c -->

@@ -65,7 +65,7 @@
   function signIn() {
     main('<div class="card"><label for="t">Your name</label><select id="t"><option value="">Pick your name</option>' +
       S.start.teachers.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join('') + '</select>' +
-      '<label for="pw">Your password</label><input id="pw" type="password" autocomplete="off" placeholder="From the Clash coordinator">' +
+      '<label for="pw">Your password</label><input id="pw" type="text" data-pw="1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="From the Clash coordinator">' +
       '<button class="go" id="in">Sign in</button><div class="err" id="e1"></div>' +
       '<p class="hint">Not on the list? Ask the Clash coordinator to add you.</p></div>');
     document.getElementById('in').onclick = function () {
@@ -189,6 +189,16 @@
     .catch(function (e) { main('<div class="card">Could not load: ' + esc(e && e.message) + '</div>'); });
 })();
 </script>
+<style>[data-pw]{-webkit-text-security:disc;text-security:disc}</style>
+<script>
+/* Password boxes are plain text boxes drawn as dots, so Chrome, Safari and password managers never offer to save or fill them. Browsers that can't draw the dots get a password box that asks not to be filled. */
+(function () {
+  try { if (window.CSS && CSS.supports && CSS.supports('-webkit-text-security', 'disc')) return; } catch (e) { return; }
+  function fix(root) { if (!root || !root.querySelectorAll) return; root.querySelectorAll('input[data-pw]').forEach(function (i) { if (i.type !== 'password') { i.type = 'password'; i.setAttribute('autocomplete', 'new-password'); } }); }
+  fix(document);
+  new MutationObserver(function (list) { list.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1) fix(n.parentNode || n); }); }); }).observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
 </body>
 </html>
-<!-- file-stamp: 9953375d7d -->
+<!-- file-stamp: 8b432461ac -->

@@ -58,11 +58,11 @@
 
   function signIn() {
     el().innerHTML = '<div class="ms-card"><div class="ms-h">Generals HQ: sign in</div>' +
-      '<div class="ms-form"><input id="hq800" inputmode="numeric" placeholder="Your 800 number"><input id="hqCode" type="password" placeholder="Generals code"><button class="btn btn-purple" id="hqGo">Open HQ</button></div>' +
+      '<div class="ms-form"><input id="hq800" inputmode="numeric" placeholder="Your 800 number"><input id="hqCode" type="text" data-pw="1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="Generals code"><button class="btn btn-purple" id="hqGo">Open HQ</button></div>' +
       '<div class="ms-err" id="hqErr"></div><div class="ms-small">Only Squad Generals on the MLC Roster can open HQ. Ask your staff advisor for the code.</div>' +
       '<details style="margin-top:12px"><summary class="ms-small" style="cursor:pointer">Staff: preview a squad\'s HQ</summary>' +
       '<div class="ms-form" style="margin-top:8px"><select id="hqPrevSq"><option value="BLACK">Black</option><option value="GOLD">Gold</option><option value="GREY">Grey</option><option value="PURPLE">Purple</option></select>' +
-      '<input id="hqPrevPw" type="password" placeholder="Admin password (blank = school account)"><button class="btn" id="hqPrevGo">Preview HQ</button></div>' +
+      '<input id="hqPrevPw" type="text" data-pw="1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="Admin password (blank = school account)"><button class="btn" id="hqPrevGo">Preview HQ</button></div>' +
       '<div class="ms-small">Opens the real HQ: anything you sign up, tick or nominate there is saved.</div></details></div>';
     var preview = function () {
       var e = document.getElementById('hqErr'); e.textContent = 'Checking…';
@@ -483,4 +483,4 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script>
-<!-- file-stamp: f057a600d0 -->
+<!-- file-stamp: 7ec9cc5ab0 -->

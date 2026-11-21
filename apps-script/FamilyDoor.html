@@ -25,7 +25,7 @@
 </head>
 <body>
 <header><div class="in"><h1>🏠 Family Night check-in</h1><p>Find the student, check their family in. Every family earns points for the squad.</p></div></header>
-<main id="main"><div class="card"><label for="pw">Admin password</label><input id="pw" type="password"><button class="go" id="in">Start</button><div class="err" id="e"></div></div></main>
+<main id="main"><div class="card"><label for="pw">Admin password</label><input id="pw" type="text" data-pw="1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other"><button class="go" id="in">Start</button><div class="err" id="e"></div></div></main>
 <script>
 (function () {
   var token = '', picked = null, ev = '';
@@ -74,6 +74,16 @@
   if (token) door(null);
 })();
 </script>
+<style>[data-pw]{-webkit-text-security:disc;text-security:disc}</style>
+<script>
+/* Password boxes are plain text boxes drawn as dots, so Chrome, Safari and password managers never offer to save or fill them. Browsers that can't draw the dots get a password box that asks not to be filled. */
+(function () {
+  try { if (window.CSS && CSS.supports && CSS.supports('-webkit-text-security', 'disc')) return; } catch (e) { return; }
+  function fix(root) { if (!root || !root.querySelectorAll) return; root.querySelectorAll('input[data-pw]').forEach(function (i) { if (i.type !== 'password') { i.type = 'password'; i.setAttribute('autocomplete', 'new-password'); } }); }
+  fix(document);
+  new MutationObserver(function (list) { list.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1) fix(n.parentNode || n); }); }); }).observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
 </body>
 </html>
-<!-- file-stamp: 143e16e279 -->
+<!-- file-stamp: bb6101dc3f -->
