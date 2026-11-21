@@ -9,10 +9,10 @@
  * Page files: Index (markup), Styles + SiteCss (CSS), App (the main script), Widgets (Ticker
  * and Growth board). The page talks to the functions below with google.script.run.
  *
- * Admin password: stored only as a salted SHA-256 hash in Script Properties (ADMIN_PW_HASH /
- * ADMIN_PW_SALT), set from the Sheet menu or Admin › Settings on the site. It is never sent to
- * the page and is no longer kept in the site data. Until one is set, the password that was
- * already in the site data still works once and is then saved scrambled.
+ * Admin sign-in: staff sign in with their school Google account and the Staff Access tab
+ * (60_StaffAccess.gs). The shared admin password still works while Settings PASSWORD_SIGN_IN is
+ * ON; it is stored only as a salted SHA-256 hash in Script Properties (ADMIN_PW_HASH /
+ * ADMIN_PW_SALT) and is never sent to the page. Every admin change is logged with who made it.
  *
  * Saving: only with an admin session (about 6 hours). The save MERGES the events tab: rows
  * other projects added after the page loaded (Trait Dough, Mindset, Trail Journal, STAR
@@ -20,10 +20,11 @@
  */
 
 const SESSION_HOURS_ = 6;
-const LEGACY_DEFAULT_PW_ = 'ephrata2026'; // the site's built-in password before this move
 
 // ── PAGE ────────────────────────────────────────────────────────────
 function serveSite_(e) {
+  const asked = e && e.parameter ? String(e.parameter.page || (e.parameter.tv ? 'tv' : '')).toLowerCase() : '';
+  if (asked) trackServedPage_(asked); // 22_Week.gs: opens of the pages served on their own
   if (e && e.parameter && e.parameter.page === 'me') return serveMe_(); // My Climb, the student dashboard (16_Me.gs)
   if (e && e.parameter && e.parameter.page === 'pollboard') return servePollBoard_(); // the live poll screen (26_PollIdeas.gs)
   if (e && e.parameter && e.parameter.page === 'dough') return serveDough_(); // Virtual Trait Dough for teachers (39_VirtualDough.gs)
@@ -38,7 +39,8 @@ function serveSite_(e) {
   if (e && e.parameter && e.parameter.page === 'guides') return serveGuides_(); // one-page role guides from Settings (33_Guides.gs)
   if (e && e.parameter && e.parameter.page === 'frost') return serveFrostPage_(); // Freeze & Thaw slides + frost meter (28_Frost.gs)
   const t = HtmlService.createTemplateFromFile('Index');
-  t.config = JSON.stringify({ pollMs: Math.max(3, Number(getSetting_('POLL_SECONDS')) || 5) * 1000 });
+  t.config = JSON.stringify({ pollMs: Math.max(3, Number(getSetting_('POLL_SECONDS')) || 5) * 1000,
+    passwordSignIn: passwordSignInOn_(), staffLink: String(getSetting_('STAFF_LINK') || getSetting_('STUDENT_LINK') || '') });
   // The first load rides inside the page, so it shows without a second trip to the server.
   let boot = 'null';
   try { boot = cachedPublicLoad_().replace(/</g, '\\u003c'); } catch (err) { console.warn('Boot data: ' + err.message); }
@@ -149,6 +151,7 @@ function backgroundTick() {
   try { maybeCheckThaws_(); } catch (e) { noteError_('thaw check', e); }
   try { maybeGameTick_(); } catch (e) { noteError_('map claims', e); }
   try { flushUsage_(); snapshotStages_(); } catch (e) { noteError_('usage + creature snapshot', e); }
+  try { flushAdminActions_(); } catch (e) { noteError_('admin actions log', e); } // 60_StaffAccess.gs
   try { maybeImportHomerooms_(); } catch (e) { noteError_('homeroom forms', e); } // 25_Homerooms.gs, every 30 minutes
   try { maybeFollowUpStats_(); } catch (e) { noteError_('Follow-Up LRR count', e); } // 27_FollowUpStats.gs, once a day
   try { maybeFrostCheck_(); } catch (e) { noteError_('frost check', e); } // 28_Frost.gs: monthly check + approvals
@@ -181,9 +184,10 @@ function clashMeta() { return JSON.stringify(getAppDataMeta_('coc')); }
  * purpose. The metrics tab is only rewritten when the page changed the numbers.
  */
 function clashSave(token, valueJson, syncJson) {
-  requireAdmin_(token);
+  const who = requireAdmin_(token, { noLog: true }); // logged below, with what changed
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
+  let summary = null;
   try {
     const value = JSON.parse(valueJson);
     const sync = syncJson ? JSON.parse(syncJson) : {};
@@ -226,9 +230,11 @@ function clashSave(token, valueJson, syncJson) {
     if (value.nextId !== undefined && Number(value.nextId) <= maxId) value.nextId = maxId + 1;
     const unchanged = !!sync.metrics && sameMetrics_(sync.metrics, value.metrics);
     const res = saveAppData_('coc', value, { skipMetricsTab: unchanged });
+    summary = saveSummary_(stored, value.events, added);
     return JSON.stringify({ saved: true, keptFromOthers: added.length, updated_at: res.updated_at });
   } finally {
     lock.releaseLock();
+    if (summary !== null) logAdminAction_(who, ACTION_LABELS_.clashSave, summary); // after the lock: the log takes it too
   }
 }
 
@@ -294,27 +300,40 @@ function clashTrailJournalStats() {
 
 // ── ADMIN SIGN-IN ───────────────────────────────────────────────────
 function clashLogin(pw) {
+  if (!String(pw || '')) return clashStaffSignIn(); // the Google button sends no password (60_StaffAccess.gs)
+  if (!passwordSignInOn_()) throw new Error('The shared password is turned off. Use "Sign in with my school account".');
   const cache = CacheService.getScriptCache();
   const fails = Number(cache.get('clash-login-fails')) || 0;
   if (fails >= 10) throw new Error('Too many tries. Wait 10 minutes.');
   if (!checkPassword_(String(pw || ''))) {
     cache.put('clash-login-fails', String(fails + 1), 600);
+    logAdminAction_({ name: '', email: activeEmail_(), role: '', via: 'password' }, 'Refused sign-in', 'Wrong shared password');
     throw new Error('Incorrect password.');
   }
-  const token = Utilities.getUuid();
-  cache.put('clash-admin-' + token, '1', SESSION_HOURS_ * 3600);
-  return JSON.stringify({ token: token });
+  const who = { name: 'Shared admin password', email: activeEmail_(), role: 'Admin', via: 'password' };
+  const token = newAdminSession_(who);
+  logAdminAction_(who, 'Signed in', '');
+  return JSON.stringify({ token: token, name: who.name, role: who.role, via: 'password' });
 }
 
-function requireAdmin_(token) {
-  if (!token || !CacheService.getScriptCache().get('clash-admin-' + token)) {
-    throw new Error('Please sign in as admin again.');
+/**
+ * The signed-in admin behind a token (or an error). Every call that changes something is written
+ * to the Admin Actions tab with who made it; READ_ONLY_ADMIN_CALLS_ are not. opts.noLog: the
+ * caller logs its own, more detailed row.
+ */
+function requireAdmin_(token, opts) {
+  const who = adminSession_(token);
+  if (!who) throw new Error('Please sign in as admin again.');
+  if (!(opts && opts.noLog)) {
+    const fn = adminCaller_();
+    if (READ_ONLY_ADMIN_CALLS_.indexOf(fn) === -1) logAdminAction_(who, ACTION_LABELS_[fn] || fn || 'Admin action', '');
   }
+  return who;
 }
 
 function clashSetPassword(token, pw) {
   requireAdmin_(token);
-  if (String(pw || '').length < 4) throw new Error('Use at least 4 characters.');
+  if (String(pw || '').length < 10) throw new Error('Use at least 10 characters.');
   setPassword_(String(pw));
   return JSON.stringify({ ok: true });
 }
@@ -325,9 +344,10 @@ function checkPassword_(pw) {
   if (hash) return hashPw_(pw, props.getProperty('ADMIN_PW_SALT')) === hash;
   // Not set yet: the password the site used before (in the site data, or the built-in one).
   // The first correct sign-in saves it scrambled, and the site data copy is then dropped.
+  // (The old built-in password is no longer accepted: it was in the public repo.)
   let legacy = '';
   try { legacy = (loadAppData_('coc').value || {}).password || ''; } catch (e) { /* no data yet */ }
-  const ok = pw && (pw === legacy || pw === LEGACY_DEFAULT_PW_);
+  const ok = pw && legacy && pw === legacy;
   if (ok) setPassword_(legacy || pw);
   return !!ok;
 }
@@ -431,3 +451,32 @@ function menuOpenSite_() {
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
 var FILE_STAMP_03_Web = 'e8fbb5b40c';
+
+// One line for the Admin Actions log: which events a save added, removed or re-scored.
+function saveSummary_(before, after, keptFromOthers) {
+  try {
+    const sq = ['BLACK', 'GOLD', 'GREY', 'PURPLE'];
+    const pts = function (e) { return sq.map(function (k) { return Number(e[k] != null ? e[k] : (e.pts && e.pts[k])) || 0; }).join('/'); };
+    const was = {}, now = {};
+    (before || []).forEach(function (e) { was[e.id] = e; });
+    (after || []).forEach(function (e) { now[e.id] = e; });
+    const kept = {};
+    (keptFromOthers || []).forEach(function (e) { kept[e.id] = true; });
+    const added = [], removed = [], changed = [];
+    Object.keys(now).forEach(function (id) {
+      if (kept[id]) return;
+      const e = now[id], o = was[id];
+      if (!o) added.push(e.name + ' (' + pts(e) + ')');
+      else if (pts(o) !== pts(e) || o.name !== e.name) changed.push(e.name + ' ' + pts(o) + ' → ' + pts(e));
+    });
+    Object.keys(was).forEach(function (id) { if (!now[id]) removed.push(was[id].name + ' (' + pts(was[id]) + ')'); });
+    const parts = [];
+    if (added.length) parts.push('Added: ' + added.slice(0, 5).join('; ') + (added.length > 5 ? ' +' + (added.length - 5) + ' more' : ''));
+    if (changed.length) parts.push('Changed: ' + changed.slice(0, 5).join('; ') + (changed.length > 5 ? ' +' + (changed.length - 5) + ' more' : ''));
+    if (removed.length) parts.push('Removed: ' + removed.slice(0, 5).join('; ') + (removed.length > 5 ? ' +' + (removed.length - 5) + ' more' : ''));
+    return parts.length ? parts.join(' | ') + ' (points Black/Gold/Grey/Purple)' : 'No point changes (settings, wheel or page content)';
+  } catch (e) { return ''; }
+}
+
+// file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
+var FILE_STAMP_03_Web = 'f979e3ef03';

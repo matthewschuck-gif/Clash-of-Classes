@@ -3,7 +3,7 @@
 
 // ── EARLY GLOBALS: exposed before Firebase so UI works instantly ──
 window.goTo = function(id){
-  try { var seen = JSON.parse(sessionStorage.getItem('clash-seen') || '{}'); if (!seen[id] && window.gasRun_) { seen[id] = 1; sessionStorage.setItem('clash-seen', JSON.stringify(seen)); window.gasRun_('clashTrack', id).catch(function(){}); } } catch (e) {}
+  try { var seen = JSON.parse(sessionStorage.getItem('clash-seen') || '{}'); if (!seen[id] && window.gasRun_) { seen[id] = 1; sessionStorage.setItem('clash-seen', JSON.stringify(seen)); window.gasRun_('clashTrack', id, window.clashFirstToday_ ? window.clashFirstToday_(id) : {}).catch(function(){}); } } catch (e) {}
   window.__currentPage = id;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   var el=document.getElementById('page-'+id);
@@ -27,8 +27,8 @@ window.tryLogin = function(){
   window.clashLogin_(p.value).then(function(){
     if(window.close1) window.close1('loginModal');
     if(window.openAdmin) window.openAdmin();
-  }).catch(function(){
-    const e=document.getElementById('loginErr'); if(e) e.style.display='block';
+  }).catch(function(err){
+    const e=document.getElementById('loginErr'); if(e){ e.textContent=window.clashLoginMsg_?window.clashLoginMsg_(err):'Incorrect password.'; e.style.display='block'; }
   });
 };
 window.requireAdmin = function(fn){ if(window._authed) fn(); else { window._pendingFn=fn; window.openLogin(); } };
@@ -3278,6 +3278,25 @@ function tvLinksCard(){
       '<button class="btn btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+esc(l[2])+'\');this.textContent=\'Copied ✓\'">Copy</button></div>'; }).join('')+
     '<div style="font-size:12px;color:var(--text3);margin-top:6px">Seconds per slide and which slides run: Settings TV_SECONDS, TV_SLIDES, TV_POLL_SLIDES (Admin › Sheet › Settings).</div></div>';
 }
+// Admin › System: who is signed in, the Staff Access list and the latest admin actions (60_StaffAccess.gs).
+function renderAccessCard(){
+  const box=document.getElementById('accessCard'), act=document.getElementById('actionsCard');
+  if(!box||!window.gasRun_) return;
+  const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  window.gasRun_('clashAccessInfo', window.ADMIN_SESSION||'').then(function(a){
+    const staff=a.staff||[];
+    box.innerHTML='<div class="fr"><label>Staff sign-in</label><div style="font-size:13px">Signed in as <b>'+esc(a.me.name)+'</b> ('+esc(a.me.role)+', '+(a.me.via==='google'?'school Google account':'shared password')+').<br>'+
+      'Shared password: '+(a.passwordSignIn?'<span style="color:#fbbf24">ON</span> (turn off with Settings PASSWORD_SIGN_IN = OFF once your admins are on the Staff Access tab)':'<span style="color:#86efac">OFF</span>')+' · Roles that can use Admin: '+esc(a.editRoles.join(', '))+'</div>'+
+      (staff.length?'<div style="font-size:12px;margin-top:6px">'+staff.map(s=>(s.active?'✓ ':'✕ ')+esc(s.name||s.email)+' <span style="color:var(--text3)">'+esc(s.role)+(s.last?' · last '+esc(s.last):'')+'</span>').join('<br>')+'</div>':'')+
+      '<div style="font-size:12px;color:var(--text3);margin-top:6px">Add or remove people on the Staff Access tab of the Clash sheet (Email, Name, Role, Active).</div></div>';
+  }).catch(function(){ box.innerHTML=''; });
+  if(!act) return;
+  window.gasRun_('clashActionLog', window.ADMIN_SESSION||'').then(function(r){
+    if(!r.rows||!r.rows.length){ act.innerHTML=''; return; }
+    act.innerHTML='<div class="fr"><label>Latest admin actions (full list: Admin Actions tab)</label><div style="font-size:12px;max-height:260px;overflow:auto">'+
+      r.rows.map(x=>'<div style="padding:5px 0;border-bottom:1px solid var(--border)"><b>'+esc(x.action)+'</b> · '+esc(x.who||'?')+' <span style="color:var(--text3)">'+esc(x.time)+(x.via?' · '+esc(x.via):'')+'</span>'+(x.detail?'<br><span style="color:var(--text2)">'+esc(x.detail)+'</span>':'')+'</div>').join('')+'</div></div>';
+  }).catch(function(){ act.innerHTML=''; });
+}
 function renderSystem(){
   const box=document.getElementById('systemPanel');
   if(!box||!window.gasRun_) return;
@@ -3295,7 +3314,9 @@ function renderSystem(){
       (h.missing.length?'<div class="fr"><label>Still to fill in</label><div style="font-size:13px;color:#fbbf24">'+h.missing.map(esc).join('<br>')+'</div></div>':'')+
       '<div class="fr"><label>Game awards</label><div style="font-size:13px">'+(h.gameAwards?'ON':'OFF (Clash of Classes › Turn on game awards)')+(h.emailQuota!=null?' · emails left today: '+h.emailQuota:'')+'</div></div>'+
       '<div class="fr"><label>Today\'s morning announcement</label><textarea id="sysAnn" rows="5" readonly style="width:100%">'+esc(a.text||'')+'</textarea><button class="btn-submit" style="margin-top:6px" onclick="(function(){var t=document.getElementById(\'sysAnn\');t.select();document.execCommand(\'copy\');})()">Copy</button></div>'+
-      '<div class="fr"><label>Page opens, last 7 days (anonymous)</label><div style="font-size:13px">'+(h.usage.length?h.usage.map(u=>esc(u.page)+' <b>'+u.opens+'</b>').join(' · '):'No counts yet.')+'</div></div>';
+      '<div class="fr"><label>Page opens, last 7 days (anonymous: opens · unique visitors per day, added up)</label><div style="font-size:13px">'+(h.usage.length?h.usage.map(u=>u.page==='(site)'?'<b>Whole site: '+(u.unique||0)+' visitor-days</b>':esc(u.page)+' <b>'+u.opens+'</b>'+(u.unique?' <span style="color:var(--text3)">· '+u.unique+'</span>':'')).join(' · '):'No counts yet.')+'</div></div>'+
+      '<div id="accessCard"></div><div id="actionsCard"></div>';
+    setTimeout(renderAccessCard,0);
   }).catch(function(e){ box.innerHTML=tvCard+'<p style="color:#fca5a5">'+esc(e&&e.message||e)+'</p>'; });
 }
 
@@ -4104,8 +4125,8 @@ function tryLogin(){
     close1('loginModal');
     openAdmin();
     if(pendingFn){pendingFn();pendingFn=null;}
-  }).catch(()=>{
-    document.getElementById('loginErr').style.display='block';
+  }).catch((err)=>{
+    const e=document.getElementById('loginErr'); e.textContent=window.clashLoginMsg_(err); e.style.display='block';
   });
 }
 function requireAdmin(fn){ if(authed) fn(); else { pendingFn=fn; openLogin(); } }
@@ -5121,11 +5142,12 @@ function spinAuth(){
     document.getElementById('spinWheelUI').style.display='block';
     document.getElementById('spinPwInput').value='';
     spInit();
-  }).catch(()=>{
+  }).catch((e)=>{
     const err=document.getElementById('spinAuthErr');
+    err.textContent='✕ '+window.clashLoginMsg_(e);
     err.style.display='block';
     document.getElementById('spinPwInput').value='';
-    setTimeout(()=>err.style.display='none',2000);
+    setTimeout(()=>err.style.display='none',pw?2000:8000);
   });
 }
 function spinLogout(){
@@ -5864,4 +5886,4 @@ window.__moduleReady=true;
 // Now that all functions are live, re-render whatever page the user navigated to
 goTo(window.__currentPage || currentPage);
 </script>
-<!-- file-stamp: f68d3e7e3b -->
+<!-- file-stamp: 15562b8072 -->

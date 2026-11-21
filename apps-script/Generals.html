@@ -62,7 +62,7 @@
       '<div class="ms-err" id="hqErr"></div><div class="ms-small">Only Squad Generals on the MLC Roster can open HQ. Ask your staff advisor for the code.</div>' +
       '<details style="margin-top:12px"><summary class="ms-small" style="cursor:pointer">Staff: preview a squad\'s HQ</summary>' +
       '<div class="ms-form" style="margin-top:8px"><select id="hqPrevSq"><option value="BLACK">Black</option><option value="GOLD">Gold</option><option value="GREY">Grey</option><option value="PURPLE">Purple</option></select>' +
-      '<input id="hqPrevPw" type="password" placeholder="Admin password"><button class="btn" id="hqPrevGo">Preview HQ</button></div>' +
+      '<input id="hqPrevPw" type="password" placeholder="Admin password (blank = school account)"><button class="btn" id="hqPrevGo">Preview HQ</button></div>' +
       '<div class="ms-small">Opens the real HQ: anything you sign up, tick or nominate there is saved.</div></details></div>';
     var preview = function () {
       var e = document.getElementById('hqErr'); e.textContent = 'Checking…';
@@ -483,4 +483,4 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script>
-<!-- file-stamp: 6ff012da70 -->
+<!-- file-stamp: f057a600d0 -->

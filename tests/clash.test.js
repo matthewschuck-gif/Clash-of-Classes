@@ -106,10 +106,10 @@ test('sign-in: old site password works once and is then stored only as a hash', 
   assert.ok(w.props.ADMIN_PW_HASH && w.props.ADMIN_PW_HASH !== 'oldpw');
   assert.ok(!JSON.stringify(w.props).includes('oldpw'), 'never stored as plain text');
   const t = login(w, 'oldpw');
-  w.clashSetPassword(t, 'newpass');
+  w.clashSetPassword(t, 'newpass-long-enough');
   assert.throws(() => w.clashLogin('oldpw'), /Incorrect/);
   assert.throws(() => w.clashLogin('ephrata2026'), /Incorrect/, 'built-in password no longer works once one is set');
-  assert.ok(login(w, 'newpass'));
+  assert.ok(login(w, 'newpass-long-enough'));
 });
 
 test('too many wrong passwords locks sign-in for a while', () => {
@@ -2956,6 +2956,99 @@ test('Arcade on the main site: by 800# on the Student Board, the same wallet and
   w.climbOpen_ = () => true;
   w.setSettingValue_('ARCADE_ON_SITE', 'OFF');
   assert.throws(() => w.clashSiteArcade('8001234'), /My Climb/);
+});
+
+
+// ── Staff sign-in, roles and the admin action log (60_StaffAccess.gs) ──
+function staffWorld(rows, me) {
+  const w = world();
+  w.Session.getEffectiveUser = () => ({ getEmail: () => 'owner@easdpa.org' });
+  w.Session.getActiveUser = () => ({ getEmail: () => me || '' });
+  w.book.insertSheet('Staff Access').rows = [['Email', 'Name', 'Role', 'Active', 'Added', 'Last Sign-in']].concat(rows || []);
+  w.book.insertSheet('Admin Actions').rows = [['Time', 'Who', 'Email', 'Role', 'Signed in with', 'Action', 'Detail']];
+  return w;
+}
+const actions = w => { w.flushAdminActions_(); return w.book.getSheetByName('Admin Actions').rows.slice(1); };
+
+test('staff sign-in: Google account on the Staff Access list, with roles and the staff domain', () => {
+  const rows = [['Kelly@easdpa.org', 'Kelly R.', 'Admin', true], ['teach@easdpa.org', 'T. Teacher', 'Teacher', true], ['off@easdpa.org', 'Off', 'Admin', false], ['kid@gomounts.org', 'Kid', 'Admin', true]];
+  let w = staffWorld(rows, 'kelly@easdpa.org');
+  const r = JSON.parse(w.clashStaffSignIn());
+  assert.strictEqual(r.role, 'Admin'); assert.strictEqual(r.name, 'Kelly R.');
+  assert.ok(r.token, 'a session');
+  assert.ok(JSON.parse(w.clashLoad(r.token)).value, 'the session works');
+  assert.throws(() => staffWorld(rows, 'teach@easdpa.org').clashStaffSignIn(), /NOT_ON_LIST/, 'Teacher is not in EDIT_ROLES by default');
+  assert.throws(() => staffWorld(rows, 'off@easdpa.org').clashStaffSignIn(), /NOT_ON_LIST/, 'unticked Active');
+  assert.throws(() => staffWorld(rows, 'kid@gomounts.org').clashStaffSignIn(), /NOT_ON_LIST/, 'student domain never gets in');
+  assert.throws(() => staffWorld(rows, '').clashStaffSignIn(), /NO_GOOGLE/, 'the public link cannot see who you are');
+  assert.strictEqual(JSON.parse(staffWorld([], 'owner@easdpa.org').clashStaffSignIn()).role, 'Admin', 'the owner is never locked out');
+  w = staffWorld(rows, 'teach@easdpa.org');
+  w.setSettingValue_('EDIT_ROLES', 'Admin, Teacher');
+  assert.strictEqual(JSON.parse(w.clashStaffSignIn()).role, 'Teacher', 'EDIT_ROLES widens it');
+  assert.strictEqual(JSON.parse(w.clashLogin('')).role, 'Teacher', 'the button sends no password');
+});
+
+test('staff sign-in: taking someone off the list ends their session', () => {
+  const w = staffWorld([['kelly@easdpa.org', 'Kelly R.', 'Admin', true]], 'kelly@easdpa.org');
+  const tok = JSON.parse(w.clashStaffSignIn()).token;
+  w.book.getSheetByName('Staff Access').rows[1][3] = false;
+  w.CacheService.getScriptCache().remove('clash-staff-access'); // the 5-minute list cache runs out
+  assert.throws(() => w.clashSave(tok, JSON.stringify({ events: [] }), ''), /sign in as admin again/);
+});
+
+test('shared password: OFF switch, no built-in password, logged as the shared password', () => {
+  const w = staffWorld([], '');
+  assert.throws(() => w.clashLogin('ephrata2026'), /Incorrect/, 'the old built-in password is gone');
+  const tok = login(w, 'oldpw');
+  w.setSettingValue_('PASSWORD_SIGN_IN', 'OFF');
+  assert.throws(() => w.clashLogin('oldpw'), /turned off/);
+  assert.throws(() => w.clashSave(tok, JSON.stringify({ events: [] }), ''), /sign in as admin again/, 'open password sessions stop too');
+  const log = actions(w);
+  assert.ok(log.some(r => r[5] === 'Signed in' && r[4] === 'Shared password'));
+  assert.ok(log.some(r => r[5] === 'Refused sign-in' && /Wrong/.test(r[6])));
+});
+
+test('admin actions log: who changed which points; read-only calls are not logged', () => {
+  const w = staffWorld([['kelly@easdpa.org', 'Kelly R.', 'Admin', true]], 'kelly@easdpa.org');
+  const tok = JSON.parse(w.clashStaffSignIn()).token;
+  const v = JSON.parse(w.clashLoad(tok)).value;
+  w.clashHealth(tok);
+  v.events = v.events.filter(e => e.id !== 102);
+  v.events[0].pts = { BLACK: 25, GOLD: 0, GREY: 0, PURPLE: 0 };
+  v.events.push({ id: 200, name: 'Spirit Day', type: 'event', date: '2026-11-20', pts: { BLACK: 0, GOLD: 0, GREY: 5, PURPLE: 0 } });
+  w.clashSave(tok, JSON.stringify(v), JSON.stringify({ seen: ['101|Kickoff', '102|Bill'] }));
+  const log = actions(w);
+  const save = log.find(r => /Saved site data/.test(r[5]));
+  assert.ok(save, 'the save is logged');
+  assert.strictEqual(save[1], 'Kelly R.'); assert.strictEqual(save[2], 'kelly@easdpa.org'); assert.strictEqual(save[4], 'Google account');
+  assert.ok(/Added: Spirit Day \(0\/0\/5\/0\)/.test(save[6]), save[6]);
+  assert.ok(/Changed: Kickoff 10\/0\/0\/0 → 25\/0\/0\/0/.test(save[6]), save[6]);
+  assert.ok(/Removed: Bill/.test(save[6]), save[6]);
+  assert.ok(!log.some(r => /clashLoad|clashHealth/.test(r[5])), 'loading panels is not an action');
+  assert.strictEqual(JSON.parse(w.clashActionLog(tok)).rows[0].who, 'Kelly R.');
+});
+
+test('usage: opens and unique visitors per page and for the whole site', () => {
+  const w = world();
+  w.ensureWeekTabs_();
+  w.clashTrack('home', { p: 1, s: 1 });
+  w.clashTrack('home', { p: 0, s: 0 });
+  w.clashTrack('growth', { p: 1, s: 0 });
+  w.clashTrack('nope', { p: 1, s: 1 });
+  w.trackServedPage_('recap');
+  w.flushUsage_();
+  const rows = w.book.getSheetByName('Usage').rows;
+  assert.deepStrictEqual(rows[0], ['Date', 'Page', 'Opens', 'Unique Visitors']);
+  const byPage = {}; rows.slice(1).forEach(r => { byPage[r[1]] = [r[2], r[3]]; });
+  assert.deepStrictEqual(byPage.home, [2, 1]);
+  assert.deepStrictEqual(byPage.growth, [1, 1]);
+  assert.deepStrictEqual(byPage['(site)'], [0, 1]);
+  assert.deepStrictEqual(byPage.recap, [1, 0]);
+  assert.ok(!byPage.nope, 'only known pages');
+  w.flushUsage_();
+  assert.strictEqual(w.book.getSheetByName('Usage').rows.length, rows.length, 'flushing twice adds no rows');
+  const u = J(w.usageSince_('2000-01-01'));
+  assert.strictEqual(u[0].page, '(site)'); assert.strictEqual(u.find(x => x.page === 'home').unique, 1);
 });
 
 console.log('\n' + passed + ' tests passed');

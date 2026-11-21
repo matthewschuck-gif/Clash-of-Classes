@@ -14,18 +14,26 @@
  *   out-earns its own last marking period (once per marking period, with the game awards).
  * HEALTH (Admin › System): when each automatic job last ran, the last error, triggers, how
  *   fresh the Student Board and metrics are, settings that still need filling, and which pages
- *   people open (USAGE: anonymous counts per page per day, no names, on the Usage tab).
+ *   people open (USAGE: anonymous counts per page per day, no names, on the Usage tab: Opens, and
+ *   Unique Visitors = devices that opened that page that day; the (site) row = devices that opened
+ *   any page. Uniqueness is a flag the browser keeps for the day, never a name or an 800#).
  */
 
-const USAGE_HEADERS_ = ['Date', 'Page', 'Opens'];
+const USAGE_HEADERS_ = ['Date', 'Page', 'Opens', 'Unique Visitors'];
 const DIGEST_LOG_HEADERS_ = ['Sent', 'Week Of', 'Recipients', 'Subject'];
 const USAGE_PAGES_ = ['pulse', 'homerooms', 'year', 'home', 'mysquad', 'trait', 'squads', 'tracker', 'mindset', 'wheel', 'traitdough', 'sotm', 'kickoff', 'mayhem', 'champs', 'gallery',
-  'staff', 'spin', 'growth', 'leaders', 'week', 'generals', 'hq', 'me-me', 'me-tickets', 'me-squad', 'me-map', 'me-game'];
+  'staff', 'spin', 'growth', 'leaders', 'week', 'generals', 'hq', 'me-me', 'me-tickets', 'me-squad', 'me-map', 'me-game',
+  // pages served on their own (counted when the server sends them) and the whole-site row
+  'pollboard', 'dough', 'morning', 'family', 'familydoor', 'announce', 'hall', 'recap', 'plinko', 'reveal', 'guides', 'frost', 'tv', '(site)'];
 
 function ensureWeekTabs_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   [['Usage', USAGE_HEADERS_], ['Weekly Digest Log', DIGEST_LOG_HEADERS_]].forEach(function (t) {
-    if (ss.getSheetByName(t[0])) return;
+    const have = ss.getSheetByName(t[0]);
+    if (have) { // an older Usage tab gets the Unique Visitors header
+      if (have.getLastColumn() < t[1].length) have.getRange(1, 1, 1, t[1].length).setValues([t[1]]).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
+      return;
+    }
     const sh = ss.insertSheet(t[0]);
     sh.getRange(1, 1, 1, t[1].length).setValues([t[1]]).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
     sh.setFrozenRows(1);
@@ -186,33 +194,68 @@ function clashAnnouncement(token) { requireAdmin_(token); return JSON.stringify(
 function menuAnnouncement_() { SpreadsheetApp.getUi().alert('Read this in the morning announcements', announcementScript_(), SpreadsheetApp.getUi().ButtonSet.OK); }
 
 // ── USAGE (anonymous page opens) ────────────────────────────────────
-function clashTrack(page) {
+// first: what the browser says about today -- { p: first open of this page today, s: first open of
+// any page today } (App.html / Me.html keep the flags in localStorage, by date only).
+function clashTrack(page, first) {
   page = String(page || '').toLowerCase();
-  if (USAGE_PAGES_.indexOf(page) === -1) return '';
-  const cache = CacheService.getScriptCache(), key = 'use-' + todayYmd_() + '-' + page;
-  cache.put(key, String((Number(cache.get(key)) || 0) + 1), 21600);
+  if (USAGE_PAGES_.indexOf(page) === -1 || page === '(site)') return '';
+  first = first && typeof first === 'object' ? first : {};
+  countUsage_(page, !!first.p, !!first.s);
   return '';
 }
 
-// Writes today's counts from the cache to the Usage tab (from backgroundTick).
+// Adds to today's counters in the cache. The lock keeps two visitors at the same moment from
+// overwriting each other's count; if it is busy the count is still added, just without it.
+function countUsage_(page, uniquePage, uniqueSite) {
+  const cache = CacheService.getScriptCache(), day = todayYmd_();
+  const lock = LockService.getScriptLock();
+  let locked = false;
+  try { locked = lock.tryLock ? lock.tryLock(1000) : false; } catch (e) { locked = false; }
+  try {
+    const bump = function (key) { cache.put(key, String((Number(cache.get(key)) || 0) + 1), 21600); };
+    bump('use-' + day + '-' + page);
+    if (uniquePage) bump('uniq-' + day + '-' + page);
+    if (uniqueSite) bump('uniq-' + day + '-(site)');
+  } finally { if (locked) lock.releaseLock(); }
+}
+
+// A page the server sends on its own (?page=…): counted as an open (it has no browser flag).
+function trackServedPage_(page) {
+  try { if (USAGE_PAGES_.indexOf(page) > -1) countUsage_(page, false, false); } catch (e) { /* never block a page */ }
+}
+
+// Writes today's and yesterday's counts from the cache to the Usage tab (from backgroundTick).
 function flushUsage_() {
   const sheet = getSheetSafe_('Usage');
   if (!sheet) return;
-  const today = todayYmd_(), cache = CacheService.getScriptCache();
-  const got = cache.getAll ? cache.getAll(USAGE_PAGES_.map(function (p) { return 'use-' + today + '-' + p; })) : {};
+  if (sheet.getLastColumn() < USAGE_HEADERS_.length) sheet.getRange(1, 1, 1, USAGE_HEADERS_.length).setValues([USAGE_HEADERS_]);
+  const cache = CacheService.getScriptCache();
+  const today = todayYmd_(), days = [ymdShift_(today, -1), today];
+  const keys = [];
+  days.forEach(function (d) { USAGE_PAGES_.forEach(function (p) { keys.push('use-' + d + '-' + p, 'uniq-' + d + '-' + p); }); });
+  const got = cache.getAll ? cache.getAll(keys) : keys.reduce(function (o, k) { o[k] = cache.get(k); return o; }, {});
   const rows = sheetRows_('Usage');
-  USAGE_PAGES_.forEach(function (p) {
-    const n = Number(got['use-' + today + '-' + p]) || 0;
-    if (!n) return;
-    const r = rows.filter(function (x) { return String(x['Date']).slice(0, 10) === today && String(x['Page']) === p; })[0];
-    if (r) sheet.getRange(r._row, 3).setValue(Math.max(n, Number(r['Opens']) || 0)); else sheet.appendRow([today, p, n]);
+  days.forEach(function (d) {
+    USAGE_PAGES_.forEach(function (p) {
+      const n = Number(got['use-' + d + '-' + p]) || 0, u = Number(got['uniq-' + d + '-' + p]) || 0;
+      if (!n && !u) return;
+      const r = rows.filter(function (x) { return String(x['Date']).slice(0, 10) === d && String(x['Page']) === p; })[0];
+      if (r) sheet.getRange(r._row, 3, 1, 2).setValues([[Math.max(n, Number(r['Opens']) || 0), Math.max(u, Number(r['Unique Visitors']) || 0)]]);
+      else sheet.appendRow([d, p, n, u]);
+    });
   });
 }
 
+// Opens and unique visitors per page since ymd. Unique visitors are counted per day and added
+// up (the same phone on Monday and Tuesday counts twice: "visitor-days").
 function usageSince_(ymd) {
   const out = {};
-  sheetRows_('Usage').forEach(function (r) { if (String(r['Date']).slice(0, 10) >= ymd) out[r['Page']] = (out[r['Page']] || 0) + (Number(r['Opens']) || 0); });
-  return Object.keys(out).map(function (p) { return { page: p, opens: out[p] }; }).sort(function (a, b) { return b.opens - a.opens; });
+  sheetRows_('Usage').forEach(function (r) {
+    if (String(r['Date']).slice(0, 10) < ymd) return;
+    const p = String(r['Page']), o = out[p] || (out[p] = { page: p, opens: 0, unique: 0 });
+    o.opens += Number(r['Opens']) || 0; o.unique += Number(r['Unique Visitors']) || 0;
+  });
+  return Object.keys(out).map(function (p) { return out[p]; }).sort(function (a, b) { return (b.page === '(site)') - (a.page === '(site)') || b.opens - a.opens; });
 }
 
 // ── HEALTH (Admin › System) ─────────────────────────────────────────
@@ -427,4 +470,4 @@ function clashVersion(token) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_22_Week = 'cd8564cc94';
+var FILE_STAMP_22_Week = '931d4ce1b3';

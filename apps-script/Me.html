@@ -205,7 +205,8 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 
   // Anonymous page opens (22_Week.gs), once per tab per visit.
   var tracked = {};
-  function track(t) { if (tracked[t]) return; tracked[t] = 1; try { google.script.run.clashTrack('me-' + t); } catch (e) {} }
+  function first(id) { var r = { p: 0, s: 0 }; try { var t = new Date(), day = t.getFullYear() + '-' + (t.getMonth() + 1) + '-' + t.getDate(), o = JSON.parse(localStorage.getItem('clash-day') || '{}'); if (o.d !== day) o = { d: day, p: {} }; if (!o.any) { r.s = 1; o.any = 1; } if (!o.p[id]) { r.p = 1; o.p[id] = 1; } localStorage.setItem('clash-day', JSON.stringify(o)); } catch (e) { /* no storage */ } return r; }
+  function track(t) { if (tracked[t]) return; tracked[t] = 1; try { google.script.run.clashTrack('me-' + t, first('me-' + t)); } catch (e) {} }
   function load() {
     track('me');
     SO = null; XT = null; // a previewed student's own extras, not the last one's
@@ -618,4 +619,4 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 </script>
 </body>
 </html>
-<!-- file-stamp: ffead8bb2e -->
+<!-- file-stamp: 3b320f26b9 -->

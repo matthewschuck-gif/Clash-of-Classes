@@ -117,6 +117,7 @@ function setupSpreadsheet() {
   ensureRosterTab_();
   ensureTourTab_(); // 20_Tour.gs
   ensureWeekTabs_(); // 22_Week.gs
+  ensureStaffAccessTabs_(); // 60_StaffAccess.gs: Staff Access + Admin Actions
   ensureMindsetLinksTab_(); // 23_Drive.gs
   ensureYearPlanTab_(); // 24_YearPlan.gs
   ensureHomeroomTabs_(); // 25_Homerooms.gs
@@ -294,6 +295,10 @@ const DEFAULT_SETTINGS = [
   ['MY_CLIMB_SCHOOL_DAYS', 'ON', 'ON = My Climb is open only on school days (weekdays not on the School Calendar tab). Staff previews are never locked.'],
   ['MASCOT_ART', 'ON', 'ON = squad pages, the TV and Shady use the rendered mascot art (repo assets folder). OFF = the drawn versions. A link in Squad Themes › Mascot Image always wins. Students always customize the drawn version.'],
   ['SHIELD_LOGO_URL', 'https://raw.githubusercontent.com/matthewschuck-gif/Clash-of-Classes/ready-to-go-live/assets/shield-2026-27.png', 'The 2026-27 shield logo shown on My Climb (any https picture link).'],
+  ['STAFF_LINK', '', 'The staff link: the "Anyone within EASD" deployment (usually the STUDENT_LINK without ?page=me). Staff open it signed in with their school account to use "Sign in with my school account". Blank = STUDENT_LINK.'],
+  ['EDIT_ROLES', 'Admin', 'Which Staff Access roles can use Admin on this site (comma separated: Admin, Counselor, Secretary, Teacher). Admin always can.'],
+  ['PASSWORD_SIGN_IN', 'ON', 'ON = the shared admin password still works (logged as "Shared admin password"). Turn OFF once your admins are on the Staff Access tab: then only Google sign-in works.'],
+  ['STAFF_EMAIL_DOMAIN', 'easdpa.org', 'Only accounts in this domain can sign in as staff (student accounts are a different domain). Comma separated for more than one.'],
   ['STUDENT_LINK', '', 'The student link (the second deployment, Anyone within EASD). The site\'s My Climb button opens it with ?page=me.'],
   ['SCHOOL_START', '', 'First day of school (yyyy-mm-dd) for the home page day counts. Blank = the date set in the site\'s admin settings.'],
   ['NEXT_YEAR_START', '2027-08-30', 'The McCracken Countdown on the home page: the first day of NEXT school year (yyyy-mm-dd). It counts every calendar day until then.'],
@@ -506,4 +511,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = '19355f4b45';
+var FILE_STAMP_01_Config = 'edc79028b6';

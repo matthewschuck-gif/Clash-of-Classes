@@ -1101,9 +1101,10 @@
     <div style="font-family:'Fraunces',serif;font-size:24px;font-weight:900;color:var(--gold-soft);margin-bottom:8px">Admin Access Required</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:24px;max-width:340px;margin-left:auto;margin-right:auto;line-height:1.7">The Spin wheel is for staff only. Enter the admin password to spin and save results to the tracker.</div>
     <div style="display:flex;gap:10px;justify-content:center;max-width:360px;margin:0 auto">
-      <input type="password" id="spinPwInput" placeholder="Admin password" onkeydown="if(event.key==='Enter')spinAuth()" style="flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s">
+      <input type="password" id="spinPwInput" placeholder="Admin password (blank = school account)" onkeydown="if(event.key==='Enter')spinAuth()" style="flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s">
       <button onclick="spinAuth()" class="btn btn-purple" style="padding:12px 20px;font-size:14px">Enter</button>
     </div>
+    <button onclick="document.getElementById('spinPwInput').value='';spinAuth()" class="btn btn-purple" style="padding:12px 20px;font-size:14px;margin-top:12px">Sign in with my school account</button>
     <div id="spinAuthErr" style="color:#f87171;font-size:12px;margin-top:10px;display:none;font-family:'DM Mono',monospace;letter-spacing:1px">&#10005; Incorrect password</div>
   </div>
 
@@ -1672,11 +1673,12 @@
   <div class="modal" style="max-width:380px">
     <button class="modal-close" onclick="close1('loginModal')">✕</button>
     <h2>Admin Access</h2>
-    <div class="fr"><label>Password</label>
+    <button class="btn-submit" style="margin-bottom:12px" onclick="document.getElementById('pwIn').value='';tryLogin()">Sign in with my school account</button>
+    <div class="fr" id="pwRow"><label>Or the shared admin password</label>
       <input type="password" id="pwIn" type="password" autocorrect="off" autocapitalize="off" autocomplete="current-password" onkeydown="if(event.key==='Enter')tryLogin()" placeholder="Enter admin password">
     </div>
     <div class="fmsg err" id="loginErr">Incorrect password.</div>
-    <button class="btn-submit" onclick="tryLogin()">Unlock</button>
+    <button class="btn-submit" id="pwUnlock" onclick="tryLogin()">Unlock with password</button>
   </div>
 </div>
 
@@ -2217,7 +2219,7 @@
         <button class="btn-submit" onclick="saveSpinCaps()">Save Spin Caps</button>
       </div>
       <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--gold-soft);margin-bottom:12px">🔑 Change Password</div>
-      <div class="fr"><label>New Admin Password</label><input type="password" id="newPw" placeholder="New password (min 4 chars)"></div>
+      <div class="fr"><label>New Admin Password</label><input type="password" id="newPw" placeholder="New password (min 10 chars)"></div>
       <div class="fr"><input type="password" id="newPw2" placeholder="Confirm password"></div>
       <div class="fmsg err" id="pwErr">Passwords don't match or too short.</div>
       <div class="fmsg" id="pwOk">✓ Password updated!</div>
@@ -2384,13 +2386,25 @@ window.gasRun_ = function (fn) {
   });
 };
 // Admin sign-in: the server checks the password and hands back a session (about 6 hours).
+// An empty password = "Sign in with my school account" (60_StaffAccess.gs reads who you are).
 window.clashLogin_ = function (pw) {
-  return window.gasRun_('clashLogin', pw).then(function (r) {
+  return window.gasRun_('clashLogin', pw || '').then(function (r) {
     window.ADMIN_SESSION = r.token;
+    window.ADMIN_WHO = { name: r.name, role: r.role, via: r.via };
     window._authed = true;
     return r;
   });
 };
+// The sign-in error, in words (with the staff link when the page doesn't know who you are).
+window.clashLoginMsg_ = function (err) {
+  var m = String(err && err.message || err || '').replace(/^Exception:\s*/, '');
+  if (/^NO_GOOGLE/.test(m)) return 'This page can\'t see your school account. Open the staff link signed in with your school Google account' + (window.CLASH_CONFIG && CLASH_CONFIG.staffLink ? ': ' + CLASH_CONFIG.staffLink : '.');
+  return m.replace(/^NOT_ON_LIST:\s*/, '') || 'Incorrect password.';
+};
+// The shared password box shows only while Settings PASSWORD_SIGN_IN is ON.
+if (window.CLASH_CONFIG && CLASH_CONFIG.passwordSignIn === false) ['pwRow', 'pwUnlock'].forEach(function (id) { var el = document.getElementById(id); if (el) el.style.display = 'none'; });
+// Unique-visitor flags for the Usage tab: first open of this page / of any page today, on this device.
+window.clashFirstToday_ = function (id) { var r = { p: 0, s: 0 }; try { var t = new Date(), day = t.getFullYear() + '-' + (t.getMonth() + 1) + '-' + t.getDate(), k = 'clash-day', o = JSON.parse(localStorage.getItem(k) || '{}'); if (o.d !== day) o = { d: day, p: {} }; if (!o.any) { r.s = 1; o.any = 1; } if (!o.p[id]) { r.p = 1; o.p[id] = 1; } localStorage.setItem(k, JSON.stringify(o)); } catch (e) { /* no storage: counted as an open only */ } return r; };
 // What this page last loaded, sent with each save so the server keeps points other
 // projects added in the meantime (see clashSave in 03_Web.gs).
 window.CLASH_SYNC = {};
@@ -2444,4 +2458,4 @@ document.addEventListener('click', function (ev) {
 
 </body>
 </html>
-<!-- file-stamp: ab851d3e52 -->
+<!-- file-stamp: f57036d082 -->
