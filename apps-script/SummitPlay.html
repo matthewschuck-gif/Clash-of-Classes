@@ -68,6 +68,16 @@
   body.mgplay .card { margin-top:0; padding-top:10px; }
   body.mgplay .mg h2 { font-size:24px; margin:0; }
   body.mgplay .clock { margin:2px 0 4px; font-size:34px; }
+  .mute { background:none; border:0; color:var(--mute); font-size:18px; padding:2px 6px; vertical-align:middle; }
+  #readyBox .go { margin:0 0 8px; padding:9px 16px; font-size:17px; }
+  .relay { position:fixed; left:50%; top:40%; transform:translate(-50%,-50%); z-index:20; background:var(--gold); color:#1a0b2e; font:900 clamp(34px,9vw,56px)/1 Fraunces,serif; padding:18px 30px; border-radius:24px; box-shadow:0 20px 50px #000c; text-align:center; animation: land .4s cubic-bezier(.34,1.56,.64,1); }
+  .relay small { display:block; font:800 17px 'DM Sans',sans-serif; margin-top:6px; }
+  .relay[hidden] { display:none; }
+  .word { font:800 20px 'DM Sans',sans-serif; margin:4px 0 6px; }
+  .word b { font-family:Fraunces,serif; font-size:30px; color:var(--gold); text-transform:uppercase; letter-spacing:.02em; }
+  .stage.sk { width:min(100%, calc(100vh - 260px)); min-width:240px; background:#fff; }
+  .ai { font-size:18px; margin:10px 0 0; min-height:1.4em; }
+  .ai b { color:var(--gold); }
   .stage { position:relative; width:min(100%, calc((100vh - 200px) * 360 / 440)); min-width:240px; max-width:420px; margin:6px auto 0; border-radius:20px; overflow:hidden; border:2px solid var(--line); box-shadow:0 14px 34px #000a; }
   .stage canvas { display:block; width:100%; height:auto; touch-action:none; user-select:none; -webkit-user-select:none; }
   .hud { position:absolute; top:10px; right:12px; min-width:52px; padding:4px 12px; border-radius:999px; background:#12081fcc; color:var(--gold); font:900 26px/1.1 Fraunces,serif; text-align:center; }
@@ -78,7 +88,7 @@
   .pad.big { background:var(--gold); color:#1a0b2e; border-color:transparent; box-shadow:0 6px 0 #a87b00; }
   .pad:active { transform: translateY(3px); }
   .pad.big:active { box-shadow:0 3px 0 #a87b00; }
-  @media (prefers-reduced-motion: reduce) { .clock.tick, .sent, .hud.bump { animation:none; } .pad:active, button:active { transform:none; } }
+  @media (prefers-reduced-motion: reduce) { .clock.tick, .sent, .hud.bump, .relay { animation:none; } .pad:active, button:active { transform:none; } }
 </style>
 </head>
 <body>
@@ -93,7 +103,7 @@
   var BASE = { BLACK: '#2b2633', GOLD: '#a87b00', GREY: '#5d6673', PURPLE: '#5b1a86' };
   var FOCUS = { BLACK: '47% 11%', GOLD: '72% 2%', GREY: '77% 11%', PURPLE: '69% 0%' };
   var ITEMICON = { double: 'ph-dice-two', compass: 'ph-compass', paws: 'ph-hand-grabbing', zipline: 'ph-arrows-left-right' };
-  var me = '', squad = '', S = null, seq = 0, acting = false, code = '', LOGOS = {}, skew = 0, compassOpen = false, play = null;
+  var me = '', squad = '', S = null, seq = 0, acting = false, code = '', LOGOS = {}, skew = 0, compassOpen = false, play = null, duelOpp = '';
   try { me = localStorage.getItem('clash-my-800') || ''; code = sessionStorage.getItem('summit-code') || ''; } catch (e) {}
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -101,6 +111,72 @@
   function run(fn) { var a = Array.prototype.slice.call(arguments, 1); return new Promise(function (ok, no) { var r = google.script.run.withSuccessHandler(function (t) { ok(JSON.parse(t)); }).withFailureHandler(no); r[fn].apply(r, a); }); }
   function msgOf(e) { return String(e && e.message || e).replace(/^Exception:\s{0,}/, ''); }
   function now() { return Date.now() + skew; }
+  // ── Sound: original effects made in the browser with Web Audio (no sound files). The speaker button mutes this page. ──
+  var SFX = (function () {
+    var ctx = null, muted = false, on = false, level = 1;
+    try { muted = localStorage.getItem('summit-mute') === '1'; } catch (e) {}
+    function ac() {
+      if (!ctx) { var A = window.AudioContext || window.webkitAudioContext; if (!A) return null; try { ctx = new A(); } catch (e) { return null; } }
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    }
+    function tone(f, t, d, type, vol, f2) {
+      var c = ac(); if (!c) return;
+      var o = c.createOscillator(), g = c.createGain(), s = c.currentTime + (t || 0);
+      o.type = type || 'square'; o.frequency.setValueAtTime(f, s);
+      if (f2) o.frequency.exponentialRampToValueAtTime(f2, s + d);
+      g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime((vol || .1) * level, s + .012); g.gain.exponentialRampToValueAtTime(0.0001, s + d);
+      o.connect(g); g.connect(c.destination); o.start(s); o.stop(s + d + .03);
+    }
+    function noise(t, d, vol) {
+      var c = ac(); if (!c) return;
+      var n = Math.floor(c.sampleRate * d), b = c.createBuffer(1, n, c.sampleRate), data = b.getChannelData(0);
+      for (var i = 0; i < n; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / n);
+      var src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), s = c.currentTime + (t || 0);
+      f.type = 'lowpass'; f.frequency.setValueAtTime(900, s); f.frequency.exponentialRampToValueAtTime(120, s + d);
+      g.gain.setValueAtTime((vol || .2) * level, s);
+      src.buffer = b; src.connect(f); f.connect(g); g.connect(c.destination); src.start(s);
+    }
+    function seq(notes, gap, d, type, vol) { notes.forEach(function (f, i) { tone(f, i * gap, d, type, vol); }); }
+    var LIB = {
+      tick: function () { tone(1500, 0, .025, 'square', .03); },
+      tap: function () { tone(900 + Math.random() * 120, 0, .045, 'triangle', .07); },
+      hop: function () { tone(600, 0, .07, 'triangle', .07, 900); },
+      dice: function () { for (var i = 0; i < 9; i++) tone(500 + Math.random() * 700, i * .07, .035, 'square', .05); },
+      land: function () { tone(523, 0, .09, 'triangle', .12); tone(784, .08, .18, 'triangle', .12); },
+      coin: function () { tone(988, 0, .07, 'square', .08); tone(1319, .06, .25, 'square', .08); },
+      lose: function () { tone(420, 0, .3, 'sawtooth', .07, 170); },
+      bonk: function () { tone(170, 0, .16, 'square', .1, 70); },
+      beep: function () { tone(660, 0, .11, 'square', .07); },
+      go: function () { tone(1046, 0, .4, 'square', .09); tone(1318, 0, .4, 'square', .05); },
+      ready: function () { tone(880, 0, .09, 'triangle', .1); tone(1175, .09, .16, 'triangle', .1); },
+      pass: function () { seq([784, 988, 1175], .09, .12, 'square', .07); },
+      pop: function () { tone(420, 0, .09, 'sine', .14, 950); },
+      spin: function () { tone(1200, 0, .03, 'triangle', .05); },
+      reveal: function () { seq([523, 659, 784, 1046], .08, .14, 'square', .08); },
+      guess: function () { tone(700, 0, .07, 'sine', .07, 760); },
+      flag: function () { seq([523, 659, 784, 1046], .11, .16, 'square', .09); tone(1046, .44, .55, 'triangle', .1); tone(1318, .44, .55, 'triangle', .06); },
+      item: function () { seq([784, 1046, 1318], .07, .12, 'triangle', .1); },
+      villain: function () { tone(233, 0, .28, 'sawtooth', .09, 117); tone(220, .26, .5, 'sawtooth', .09, 98); },
+      avalanche: function () { noise(0, 1.4, .3); tone(90, 0, 1.2, 'sawtooth', .06, 45); },
+      event: function () { seq([659, 880, 659, 988], .07, .1, 'triangle', .08); },
+      duel: function () { tone(330, 0, .18, 'sawtooth', .08); tone(330, .22, .18, 'sawtooth', .08); tone(494, .44, .4, 'sawtooth', .09); },
+      final: function () { [0, .18, .36, .54].forEach(function (t) { tone(98, t, .14, 'square', .12); }); tone(196, .75, .6, 'sawtooth', .08); },
+      win: function () { seq([784, 988, 1175, 1568], .12, .2, 'square', .09); seq([1175, 1568], .2, .5, 'triangle', .08); },
+      sad: function () { seq([392, 370, 349, 330], .18, .22, 'triangle', .08); }
+    };
+    return {
+      set: function (v, lv) { on = !!v; if (lv) level = lv; },
+      play: function (k) { if (!on || muted || !LIB[k]) return; try { LIB[k](); } catch (e) {} },
+      unlock: function () { if (on && !muted) ac(); },
+      muted: function () { return muted; },
+      toggle: function () { muted = !muted; try { localStorage.setItem('summit-mute', muted ? '1' : '0'); } catch (e) {} if (!muted) ac(); return muted; }
+    };
+  })();
+  document.addEventListener('pointerdown', function () { SFX.unlock(); });
+  document.addEventListener('keydown', function () { SFX.unlock(); });
+  function muteBtn() { return '<button class="mute" id="mute" title="Sound on or off" aria-label="Sound on or off"><i class="ph-fill ' + (SFX.muted() ? 'ph-speaker-slash' : 'ph-speaker-high') + '"></i></button>'; }
+  function wireMute() { var b = $('mute'); if (b) b.onclick = function (e) { e.preventDefault(); SFX.toggle(); b.innerHTML = '<i class="ph-fill ' + (SFX.muted() ? 'ph-speaker-slash' : 'ph-speaker-high') + '"></i>'; }; }
   run('clashSquadLogos').then(function (l) { LOGOS = l || {}; if (S && !play) draw(); }).catch(function () {});
 
   function ask(err) {
@@ -125,7 +201,8 @@
     if (!v || v.same) return;
     if (!v.on) { $('app').innerHTML = '<div class="card"><p class="sub">Summit Party is closed right now.</p></div>'; return; }
     S = v; seq = v.game ? v.game.seq : 0;
-    if (play && S.game && S.game.phase === 'minigame' && S.game.mg && play.key === S.game.id + ':' + S.game.mg.round) return; // keep playing
+    SFX.set(v.opts && v.opts.soundPlay, .6);
+    if (play && S.game && S.game.phase === 'minigame' && S.game.mg && play.key === mgKey(S.game)) return; // keep playing
     play = null;
     draw();
   }
@@ -151,6 +228,11 @@
       body += '<p class="wait">The Camp Store! Buy one item?</p><div class="items">' + pend.options.map(function (o) {
         return '<button class="item price" data-buy="' + o.id + '"' + (o.afford ? '' : ' disabled') + '><i class="ph-fill ' + ITEMICON[o.id] + '"></i>' + esc(o.name) + ' · <b>' + o.price + '</b><small>' + esc(o.text) + '</small></button>'; }).join('') +
         '</div><button class="go" data-buy="skip" style="margin-top:12px;background:#ffffff1a;color:var(--ink)">No thanks</button>';
+    } else if (myPick && pend.kind === 'duel') {
+      body += '<p class="wait">DUEL! Pick a squad to challenge.</p><div class="paths">' + pend.options.map(function (o) {
+        return '<button class="path" data-duel="' + o.id + '"' + (duelOpp === o.id ? ' style="border-color:var(--gold);background:#ffe10022"' : '') + '>' + esc(title(o.id)) + '<small>' + o.coins + ' coins</small></button>'; }).join('') + '</div>';
+      if (duelOpp) body += '<p class="sub" style="margin-top:12px">Bet how many coins? The winner takes the bet from the loser.</p><div class="nums" style="grid-template-columns:repeat(4,1fr)">' +
+        [0].concat(pend.bets || []).map(function (b) { return '<button data-bet="' + b + '">' + b + '</button>'; }).join('') + '</div>';
     } else if (myPick) {
       body += '<p class="wait">You reached a fork. Which way?</p><div class="paths">' + pend.options.map(function (o) {
         return '<button class="path" data-pick="' + o.id + '">' + esc(o.name) + '<small>' + (o.name === 'Main Trail' ? 'The long way around' : 'Shorter, but rougher') + '</small></button>'; }).join('') + '</div>';
@@ -162,11 +244,13 @@
         if (items.length && !used) body += '<p class="sub" style="margin-top:14px">Use an item first? (one per turn)</p><div class="items">' + items.map(function (k) { return '<button class="item" data-use="' + k + '"><i class="ph-fill ' + ITEMICON[k] + '"></i>' + esc(S.items[k].name) + '<small>' + esc(S.items[k].text) + '</small></button>'; }).join('') + '</div>';
       }
     } else {
-      body += '<p class="wait">' + (pend ? esc(title(pend.squad)) + ' is ' + (pend.kind === 'shop' ? 'shopping.' : 'picking a path.') : 'It\'s ' + esc(title(now0)) + '\'s turn.') + '</p><p class="sub">Watch the big screen. The dice block shows up here on your turn.</p>';
+      body += '<p class="wait">' + (pend ? esc(title(pend.squad)) + ' is ' + (pend.kind === 'shop' ? 'shopping.' : pend.kind === 'duel' ? 'picking a squad to duel!' : 'picking a path.') : 'It\'s ' + esc(title(now0)) + '\'s turn.') + '</p><p class="sub">Watch the big screen. The dice block shows up here on your turn.</p>';
       if ((mine.items || []).length) body += '<div class="items">' + mine.items.map(function (k) { return '<div class="item" style="opacity:.7"><i class="ph-fill ' + ITEMICON[k] + '"></i>' + esc(S.items[k].name) + '</div>'; }).join('') + '</div>';
     }
     el.innerHTML = head(g) + body + '<div class="msg" id="msg"></div></div>' + foot();
-    if ($('roll')) $('roll').onclick = function () { act(run('clashSummitRoll', me, code)); };
+    if ($('roll')) $('roll').onclick = function () { SFX.play('dice'); act(run('clashSummitRoll', me, code)); };
+    document.querySelectorAll('[data-duel]').forEach(function (b) { b.onclick = function () { duelOpp = b.getAttribute('data-duel'); draw(); }; });
+    document.querySelectorAll('[data-bet]').forEach(function (b) { b.onclick = function () { var o = duelOpp; duelOpp = ''; SFX.play('duel'); act(run('clashSummitChoose', me, code, o + ':' + b.getAttribute('data-bet'))); }; });
     document.querySelectorAll('[data-pick]').forEach(function (b) { b.onclick = function () { act(run('clashSummitChoose', me, code, Number(b.getAttribute('data-pick')))); }; });
     document.querySelectorAll('[data-buy]').forEach(function (b) { b.onclick = function () { act(run('clashSummitChoose', me, code, b.getAttribute('data-buy'))); }; });
     document.querySelectorAll('[data-use]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-use'); if (k === 'compass') { compassOpen = true; draw(); return; } act(run('clashSummitItem', me, code, k)); }; });
@@ -174,32 +258,79 @@
     if ($('cancelC')) $('cancelC').onclick = function () { compassOpen = false; draw(); };
     wireFoot();
   }
-  function foot() { return '<p class="small">Game ' + esc(code) + ' · not ' + esc(me) + '? <a href="#" id="change">Change</a></p>'; }
-  function wireFoot() { var c = $('change'); if (c) c.onclick = function (e) { e.preventDefault(); me = ''; try { localStorage.removeItem('clash-my-800'); } catch (x) {} ask(); }; }
+  function foot() { return '<p class="small">Game ' + esc(code) + ' · not ' + esc(me) + '? <a href="#" id="change">Change</a> ' + muteBtn() + '</p>'; }
+  function wireFoot() { wireMute(); var c = $('change'); if (c) c.onclick = function (e) { e.preventDefault(); me = ''; try { localStorage.removeItem('clash-my-800'); } catch (x) {} ask(); }; }
   function act(p) {
     acting = true; document.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
     p.then(function (v) { acting = false; take(v); }).catch(function (e) { acting = false; draw(); if ($('msg')) $('msg').textContent = msgOf(e); });
   }
 
   // ── Minigames: 20 seconds, every squad at once ──
+  function mgKey(g) { return g.id + ':' + (g.mg.id || g.mg.round); }
+  function curMg(key) { var g = S && S.game; return g && g.mg && mgKey(g) === key ? g.mg : null; }
+  function modeTag(mg) {
+    var t = function (l) { return l.map(title).join(' + '); }, mineT = mg.teams && mg.teams.filter(function (x) { return x.indexOf(squad) >= 0; })[0];
+    if (mg.mode === '2v2') return '2 vs 2 · your team: ' + t(mineT || []);
+    if (mg.mode === '1v3') return mineT && mineT.length === 1 ? '1 vs 3 · you against everyone!' : '1 vs 3 · team up against ' + title(mg.teams[0][0]);
+    if (mg.mode === 'coop') return 'Everyone vs Shady · all squads average ' + (mg.game === 'react' ? (mg.target / 1000).toFixed(2) + ' s' : mg.target) + ' to win';
+    if (mg.mode === 'duel') return 'Duel · ' + t(mg.squads) + ' · ' + mg.bet + ' coins on the line';
+    if (mg.mode === 'showdown') return 'Showdown for first place';
+    return 'Minigame · every squad for itself';
+  }
   function minigame(g) {
-    var mg = g.mg, key = g.id + ':' + mg.round, el = $('app');
+    var mg = g.mg, key = mgKey(g), el = $('app');
+    if (mg.squads && mg.squads.indexOf(squad) < 0) { el.innerHTML = head(g) + '<div class="mg"><div class="tag" style="margin-top:12px">' + esc(modeTag(mg)) + '</div><h2>' + esc(mg.name) + '</h2><p class="wait">Your squad sits this one out.</p><p class="sub">Watch the big screen and cheer!</p></div></div>' + foot(); return wireFoot(); }
     if (mg.live) { el.innerHTML = head(g) + '<div class="mg"><div class="tag" style="margin-top:12px">Live ' + esc(mg.kind) + ' challenge</div><h2>' + esc(mg.name) + '</h2><p class="sub">' + esc(mg.how) + '</p><p class="wait">Play it in the room. Staff pick the winner.</p></div></div>' + foot(); return wireFoot(); }
     var mine = mg.scores && mg.scores[squad] != null;
     if (mine) { el.innerHTML = head(g) + '<div class="mg"><h2>' + esc(mg.name) + '</h2><p class="wait">Score sent</p><p class="sent">' + scoreText(mg, mg.scores[squad]) + '</p><p class="sub">Results on the big screen in a moment.</p></div></div>' + foot(); return wireFoot(); }
     if (now() > mg.endAt) { el.innerHTML = head(g) + '<div class="mg"><h2>' + esc(mg.name) + '</h2><p class="wait">Time is up for this one.</p></div></div>' + foot(); return wireFoot(); }
-    play = { key: key, game: mg.game, done: false };
-    el.innerHTML = head(g) + '<div class="mg"><div class="tag" style="margin-top:10px">Minigame</div><h2>' + esc(mg.name) + '</h2><p class="sub">' + esc(mg.how) + '</p><div class="clock" id="clock"></div><div id="arena"></div></div></div>';
+    play = { key: key, game: mg.game, done: false, leg: 0, pausedUntil: 0 };
+    var opts = S.opts || {}, relay = opts.relay && mg.game !== 'react' && mg.game !== 'memory';
+    el.innerHTML = head(g) + '<div class="mg"><div class="tag" style="margin-top:10px">' + esc(modeTag(mg)) + '</div><h2>' + esc(mg.name) + '</h2><p class="sub">' + esc(mg.how) + '</p>' +
+      (relay ? '<p class="sub"><b style="color:var(--gold)">Pass the Chromebook:</b> 4 legs, a new teammate each time the page says so.</p>' : '') +
+      '<div class="clock" id="clock"></div><div id="readyBox"></div><div id="arena"></div><div class="relay" id="relay" hidden></div></div></div>' + foot();
+    wireFoot();
+    var practice = null, lastBeep = 0;
+    if (opts.practice && !play.started) {
+      if (GAMES[mg.game]) practice = arcade($('arena'), mg, key, GAMES[mg.game].make, GAMES[mg.game].pads, { practice: true, until: function () { return (curMg(key) || mg).startAt; } });
+      var isReady = mg.ready && mg.ready[squad];
+      $('readyBox').innerHTML = '<button class="go" id="ready"' + (isReady ? ' disabled' : '') + '>' + (isReady ? 'Ready! Waiting for the other squads' : 'Ready!') + '</button>';
+      $('ready').onclick = function () {
+        var b = this; b.disabled = true; b.textContent = 'Ready! Waiting for the other squads'; SFX.play('ready');
+        run('clashSummitReady', me, code).then(take).catch(function (e) { b.disabled = false; b.textContent = msgOf(e); });
+      };
+    }
     var tick = setInterval(function () {
-      if (!play || play.key !== key) { clearInterval(tick); return; }
-      var t = mg.startAt - now();
-      if (t > 0) { clockSet('Get ready... ' + Math.ceil(t / 1000), false); return; }
-      if (!play.started) { play.started = true; start(mg, key); }
-      var r = Math.max(0, Math.ceil((mg.endAt - now()) / 1000));
+      if (!play || play.key !== key) { clearInterval(tick); if (practice) practice.stop(); return; }
+      var m = curMg(key) || mg, t = m.startAt - now();
+      if (t > 0) {
+        var sec = Math.ceil(t / 1000);
+        clockSet(opts.practice ? (sec > 3 ? 'Practice! ' : 'Get ready... ') + sec : 'Get ready... ' + sec, false);
+        if (sec <= 3 && sec !== lastBeep) { lastBeep = sec; SFX.play('beep'); }
+        return;
+      }
+      if (!play.started) {
+        play.started = true;
+        if (practice) { practice.stop(); practice = null; }
+        if ($('readyBox')) $('readyBox').innerHTML = '';
+        SFX.play('go');
+        start(m, key);
+      }
+      if (relay) {
+        var legMs = (m.endAt - m.startAt) / 4, leg = Math.min(3, Math.floor((now() - m.startAt) / legMs));
+        if (leg > play.leg) {
+          play.leg = leg; play.pausedUntil = now() + 1500;
+          var rb = $('relay'); if (rb) { rb.hidden = false; rb.innerHTML = 'Pass it!<small>Player ' + (leg + 1) + ' of 4, step up</small>'; }
+          SFX.play('pass');
+        }
+        if ($('relay') && !$('relay').hidden && now() > play.pausedUntil) $('relay').hidden = true;
+      }
+      var r = Math.max(0, Math.ceil((m.endAt - now()) / 1000));
       clockSet(r ? String(r) : 'Time!', r > 0 && r <= 5);
-      if (r <= 0) { clearInterval(tick); finish(); }
+      if (r <= 0) { clearInterval(tick); finish(); if (play && play.noSend && $('ai') && !play.done) $('ai').textContent = 'Time! Results on the big screen in a moment.'; }
     }, 100);
   }
+  function paused() { return !!(play && play.pausedUntil > now()); }
   function scoreText(mg, v) { var d = S.minigames && S.minigames[mg.game]; return mg.game === 'react' ? (v / 1000).toFixed(2) + ' s' : v + (d && d.unit ? ' ' + d.unit : ''); }
   function clockSet(txt, hot) {
     var c = $('clock'); if (!c || c.textContent === txt) return;
@@ -215,10 +346,11 @@
   function start(mg, key) {
     var a = $('arena');
     if (GAMES[mg.game]) return arcade(a, mg, key, GAMES[mg.game].make, GAMES[mg.game].pads);
+    if (mg.game === 'sketch') return sketch(a, mg, key);
     if (mg.game === 'tap') {
       var n = 0;
       a.innerHTML = '<button class="tapbtn" id="tap">0</button>';
-      $('tap').onpointerdown = function (e) { e.preventDefault(); if (now() <= mg.endAt) { n++; this.textContent = n; } };
+      $('tap').onpointerdown = function (e) { e.preventDefault(); if (now() <= mg.endAt && !paused()) { n++; this.textContent = n; SFX.play('tap'); } };
       play.score = function () { return n; };
     } else if (mg.game === 'react') {
       var tries = [], waiting = false, goAt = 0, timer = null;
@@ -242,7 +374,7 @@
       var seqn = [], pos = 0, best = 0, showing = false;
       a.innerHTML = '<div class="signs">' + signs.map(function (s, i) { return '<button class="sign" data-s="' + i + '" style="background:' + s[1] + '"><i class="ph-fill ' + s[0] + '"></i></button>'; }).join('') + '</div><p class="sub" id="mem">Watch...</p>';
       var btns = a.querySelectorAll('.sign');
-      var light = function (i, ms) { btns[i].classList.add('lit'); setTimeout(function () { btns[i].classList.remove('lit'); }, ms); };
+      var light = function (i, ms) { SFX.play('tap'); btns[i].classList.add('lit'); setTimeout(function () { btns[i].classList.remove('lit'); }, ms); };
       var round = function () {
         seqn.push(Math.floor(Math.random() * 4)); pos = 0; showing = true; $('mem').textContent = 'Watch the trail...';
         seqn.forEach(function (s, k) { setTimeout(function () { light(s, 380); }, 500 + k * 560); });
@@ -324,7 +456,9 @@
     g.fillStyle = ARC.snow; g.beginPath(); g.moveTo(x, y - 34 * s); g.lineTo(x + 5 * s, y - 22 * s); g.lineTo(x - 5 * s, y - 22 * s); g.closePath(); g.fill();
   }
 
-  function arcade(a, mg, key, make, pads) {
+  function arcade(a, mg, key, make, pads, o) {
+    o = o || {};
+    var until = function () { return o.until ? o.until() : mg.endAt; };
     var W = 360, H = 440, dpr = Math.min(2, window.devicePixelRatio || 1);
     a.innerHTML = '<div class="stage"><canvas id="cv" width="' + W * dpr + '" height="' + H * dpr + '" aria-label="' + esc(mg.name) + '"></canvas><div class="hud" id="hud">0</div></div>' +
       '<div class="pads">' + pads.map(function (p) { return '<button class="pad' + (p[2] ? ' ' + p[2] : '') + '" data-pad="' + p[0] + '">' + p[1] + '</button>'; }).join('') + '</div>';
@@ -332,14 +466,14 @@
     g.scale(dpr, dpr);
     var E = { W: W, H: H, t: 0, R: rng(mg.seed || 7), keys: {}, pad: 0, touch: 0, fx: [], shakeT: 0, shakeM: 0, flashT: 0, flashC: '' };
     E.steer = function () { var k = E.keys; return ((k.ArrowLeft || k.a ? -1 : 0) + (k.ArrowRight || k.d ? 1 : 0)) || E.pad || E.touch || 0; };
-    E.float = function (x, y, txt, col) { E.fx.push({ k: 'txt', x: x, y: y, txt: txt, col: col || ARC.ink, t: 0, life: 700 }); };
+    E.float = function (x, y, txt, col) { if (col === ARC.gold || col === ARC.good) SFX.play('coin'); else if (col === ARC.bad) SFX.play('bonk'); E.fx.push({ k: 'txt', x: x, y: y, txt: txt, col: col || ARC.ink, t: 0, life: 700 }); };
     E.burst = function (x, y, col, n) { if (CALM) return; for (var i = 0; i < (n || 10); i++) { var an = Math.random() * 6.28, sp = .05 + Math.random() * .16; E.fx.push({ k: 'dot', x: x, y: y, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp - .04, col: col, t: 0, life: 380 + Math.random() * 260 }); } };
     E.shake = function (m) { if (CALM) return; E.shakeT = 220; E.shakeM = m || 4; };
     E.flash = function (c) { E.flashT = 180; E.flashC = c; };
     var G = make(E), last = performance.now(), alive = true, shown = -1;
     document.body.classList.add('mgplay');
     window.scrollTo(0, 0);
-    function press(kind, x) { if (alive && G.press && now() <= mg.endAt) G.press(kind, x); }
+    function press(kind, x) { if (alive && G.press && now() <= until() && !(!o.practice && paused())) G.press(kind, x); }
     function kd(e) {
       var k = e.key;
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].indexOf(k) >= 0) e.preventDefault();
@@ -362,8 +496,8 @@
       if (!alive) return;
       if (!play || play.key !== key || play.done) { stop(); return; }
       var dt = Math.min(40, Math.max(0, ts - last)); last = ts; E.t += dt;
-      var over = now() > mg.endAt;
-      if (!over) G.update(dt);
+      var over = now() > until();
+      if (!over && (o.practice || !paused())) G.update(dt);
       g.save();
       if (E.shakeT > 0) { E.shakeT -= dt; g.translate((Math.random() - .5) * E.shakeM * 2, (Math.random() - .5) * E.shakeM * 2); }
       G.draw(g, dt);
@@ -384,11 +518,49 @@
       }
       var n = Math.max(0, Math.round(G.score()));
       if (n !== shown) { shown = n; hud.textContent = n; if (!CALM) { hud.classList.remove('bump'); void hud.offsetWidth; hud.classList.add('bump'); } }
-      if (over) { stop(); finish(); return; }
+      if (o.practice) { g.font = '800 14px "DM Sans",sans-serif'; g.textAlign = 'left'; g.fillStyle = ARC.gold; g.fillText('PRACTICE: score does not count', 12, H - 12); }
+      if (over) { stop(); if (!o.practice) finish(); return; }
       requestAnimationFrame(frame);
     }
-    play.score = function () { return Math.max(0, Math.round(G.score())); };
+    if (!o.practice) play.score = function () { return Math.max(0, Math.round(G.score())); };
     requestAnimationFrame(frame);
+    return { stop: stop };
+  }
+
+  // Trail Sketch: draw the word; every 3 seconds (when the drawing changed) a small JPEG goes to the AI, which guesses from the word list.
+  function sketch(a, mg, key) {
+    var SZ = 720;
+    a.innerHTML = '<div class="word">Draw: <b>' + esc(mg.word) + '</b></div><div class="stage sk"><canvas id="pad" width="' + SZ + '" height="' + SZ + '" aria-label="Drawing pad"></canvas></div>' +
+      '<p class="ai" id="ai">The AI is watching. Start drawing!</p><div class="pads"><button class="pad" id="clear"><i class="ph-bold ph-eraser"></i> Clear</button></div>';
+    document.body.classList.add('mgplay');
+    var cv = $('pad'), g = cv.getContext('2d'), drawing = false, dirty = false, last = null, busy = false, got = false;
+    var wipe = function () { g.fillStyle = '#ffffff'; g.fillRect(0, 0, SZ, SZ); };
+    wipe(); g.lineCap = 'round'; g.lineJoin = 'round'; g.lineWidth = 14; g.strokeStyle = '#1d1033';
+    var pos = function (e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * SZ, y: (e.clientY - r.top) / r.height * SZ }; };
+    cv.onpointerdown = function (e) { if (got || paused()) return; e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (x) {} drawing = true; last = pos(e); g.beginPath(); g.arc(last.x, last.y, 7, 0, 7); g.fillStyle = '#1d1033'; g.fill(); dirty = true; };
+    cv.onpointermove = function (e) { if (!drawing || got || paused()) return; var p = pos(e); g.beginPath(); g.moveTo(last.x, last.y); g.lineTo(p.x, p.y); g.stroke(); last = p; dirty = true; };
+    cv.onpointerup = cv.onpointercancel = function () { drawing = false; };
+    $('clear').onclick = function () { if (!got) { wipe(); dirty = false; } };
+    var small = document.createElement('canvas'); small.width = small.height = 256;
+    play.noSend = true;
+    var iv = setInterval(function () {
+      if (!play || play.key !== key || got) { clearInterval(iv); document.body.classList.remove('mgplay'); return; }
+      if (now() > (curMg(key) || mg).endAt) { clearInterval(iv); return; }
+      if (!dirty || busy) return;
+      dirty = false; busy = true;
+      small.getContext('2d').drawImage(cv, 0, 0, 256, 256);
+      run('clashSummitGuess', me, code, small.toDataURL('image/jpeg', .7)).then(function (r) {
+        busy = false;
+        var el = $('ai'); if (!el) return;
+        if (r.wait) { dirty = true; return; }
+        if (r.right) {
+          got = true; play.done = true;
+          el.innerHTML = 'The AI got it: <b>' + esc(r.guess) + '</b>! <b style="color:var(--gold)">+' + r.score + ' pts</b>';
+          SFX.play('flag');
+          setTimeout(function () { play = null; document.body.classList.remove('mgplay'); run('clashSummitState', code, 0).then(take).catch(function () {}); }, 2200);
+        } else { el.innerHTML = r.guess === 'unsure' || !r.guess ? 'The AI is not sure yet. Keep drawing!' : 'The AI thinks: <b>' + esc(r.guess) + '?</b> Keep going!'; SFX.play('guess'); }
+      }).catch(function (e) { busy = false; var el = $('ai'); if (el) el.textContent = msgOf(e); });
+    }, 3000);
   }
 
   var STEER = [['left', '<i class="ph-bold ph-caret-left"></i>'], ['right', '<i class="ph-bold ph-caret-right"></i>']];
@@ -711,4 +883,4 @@
 </script>
 </body>
 </html>
-<!-- file-stamp: 149ac3fc66 -->
+<!-- file-stamp: 404ea7a5d4 -->

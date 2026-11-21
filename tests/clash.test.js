@@ -3150,6 +3150,7 @@ test('Summit Party (63_SummitParty.gs): OFF until switched on; staff start a cod
   assert.throws(() => w.clashSummitStart(tok, 3), /closed/);
   w.setSettingValue_('SUMMIT_PARTY', 'ON');
   w.setSettingValue_('SUMMIT_PARTY_AUTO_ROLL', '0');
+  w.setSettingValue_('SUMMIT_PARTY_TEAMS', 'OFF'); w.setSettingValue_('SUMMIT_PARTY_DUELS', 'OFF'); w.setSettingValue_('SUMMIT_PARTY_PRACTICE', 'OFF');
   assert.throws(() => w.clashSummitStart('nope', 3), /sign in/);
   const v0 = JSON.parse(w.clashSummitStart(tok, 6, 'trail'));
   let s = v0.game; const code = s.code;
@@ -3252,17 +3253,19 @@ test('Summit Party minigames: ten in the rotation (five from Ridgeline); SUMMIT_
   w.ensureSettings_();
   const defs = w.SP_MINIGAMES_ || vm.runInContext('SP_MINIGAMES_', w);
   const keys = Object.keys(defs);
-  assert.deepStrictEqual(keys, ['tap', 'react', 'memory', 'updraft', 'bounce', 'runner', 'slalom', 'stack', 'catch', 'dodge']);
+  assert.deepStrictEqual(keys, ['tap', 'react', 'memory', 'updraft', 'bounce', 'runner', 'slalom', 'stack', 'catch', 'sketch', 'dodge']);
+  const noKey = keys.filter(k => k !== 'sketch');
   keys.forEach(k => { const d = defs[k]; assert.ok(d.name && d.how && /^(high|low)$/.test(d.better) && d.max > 0 && d.unit && /^ph-/.test(d.icon), k + ' is complete'); });
   assert.deepStrictEqual(keys.filter(k => defs[k].from === 'Ridgeline'), ['updraft', 'bounce', 'runner', 'slalom', 'stack']);
-  assert.deepStrictEqual(w.spMinigameKeys_(), keys, 'ALL by default');
+  assert.deepStrictEqual(w.spMinigameKeys_(), noKey, 'ALL by default (Trail Sketch only with a Claude key)');
   w.setSettingValue_('SUMMIT_PARTY_MINIGAMES', 'updraft, Stack  dodge, nope');
   assert.deepStrictEqual(w.spMinigameKeys_(), ['updraft', 'stack', 'dodge'], 'a list keeps only those (any case, commas or spaces)');
   w.setSettingValue_('SUMMIT_PARTY_MINIGAMES', 'nope');
-  assert.deepStrictEqual(w.spMinigameKeys_(), keys, 'nothing valid = all of them');
+  assert.deepStrictEqual(w.spMinigameKeys_(), noKey, 'nothing valid = all of them');
   // A game with only Updraft switched on plays Updraft; scores are capped server-side.
   w.setSettingValue_('SUMMIT_PARTY', 'ON');
   w.setSettingValue_('SUMMIT_PARTY_AUTO_ROLL', '0');
+  w.setSettingValue_('SUMMIT_PARTY_TEAMS', 'OFF'); w.setSettingValue_('SUMMIT_PARTY_DUELS', 'OFF'); w.setSettingValue_('SUMMIT_PARTY_PRACTICE', 'OFF');
   w.setSettingValue_('SUMMIT_PARTY_MINIGAMES', 'updraft');
   w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade'], ['8001111', 'Ann L.', 'Gold', '7'], ['8002222', 'Bo K.', 'Grey', '8'], ['8003333', 'Cy D.', 'Purple', '7'], ['8004444', 'Di E.', 'Black', '8']];
   const ids = { GOLD: '8001111', GREY: '8002222', PURPLE: '8003333', BLACK: '8004444' };
@@ -3284,7 +3287,7 @@ test('Summit Party minigames: ten in the rotation (five from Ridgeline); SUMMIT_
   const box = { window: { matchMedia: () => ({ matches: false }), devicePixelRatio: 1 }, matchMedia: () => ({ matches: false }), Image: function () {}, S: { art: {} }, squad: 'GOLD', COLORS: { GOLD: '#ffd23f' }, FOCUS: {}, Math, String, parseFloat, Object };
   vm.createContext(box);
   vm.runInContext(html.slice(a, b) + '\nthis.GAMES = GAMES; this.rng = rng;', box);
-  const page = ['tap', 'react', 'memory'].concat(Object.keys(box.GAMES));
+  const page = ['tap', 'react', 'memory', 'sketch'].concat(Object.keys(box.GAMES));
   assert.deepStrictEqual(page.slice().sort(), keys.slice().sort(), 'the page has every minigame');
   function run(k, seed, presses) {
     const keysDown = {};
@@ -3305,6 +3308,134 @@ test('Summit Party minigames: ten in the rotation (five from Ridgeline); SUMMIT_
     assert.strictEqual(run(k, 1234, true), v, k + ': the same seed and the same play give the same score');
   });
   assert.ok(run('bounce', 9, true) > 0 && run('catch', 9, true) > 0, 'playing scores');
+});
+
+test('Summit Party extras: 2 vs 2, 1 vs 3 and Everyone vs Shady; duel spaces with bets; Ready starts early; a Showdown breaks a tie for first; Trail Sketch asks Claude with only the drawing and the word list; each one has a switch', () => {
+  const w = world();
+  w.ensureSettings_();
+  w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade'], ['8001111', 'Ann L.', 'Gold', '7'], ['8002222', 'Bo K.', 'Grey', '8'], ['8003333', 'Cy D.', 'Purple', '7'], ['8004444', 'Di E.', 'Black', '8']];
+  const ids = { GOLD: '8001111', GREY: '8002222', PURPLE: '8003333', BLACK: '8004444' };
+  const props = () => w.PropertiesService.getScriptProperties();
+  const peek = c => JSON.parse(props().getProperty('sp-game-' + c));
+  const poke = (c, fn) => { const g = peek(c); fn(g); props().setProperty('sp-game-' + c, JSON.stringify(g)); w.CacheService.getScriptCache().remove('sp-game-' + c); };
+  const go = (c, done) => poke(c, g => { if (g.mg) { g.mg.startAt = Date.now() - 1000; g.mg.endAt = done ? Date.now() - 600 : Date.now() + 60000; } });
+  ['SUMMIT_PARTY', 'ON'], w.setSettingValue_('SUMMIT_PARTY', 'ON');
+  w.setSettingValue_('SUMMIT_PARTY_AUTO_ROLL', '0'); w.setSettingValue_('SUMMIT_PARTY_LIVE', 'OFF'); w.setSettingValue_('SUMMIT_PARTY_MINIGAMES', 'tap');
+  const tok = login(w, 'oldpw');
+  const skipTo = (c) => { let s; for (let i = 0; i < 4; i++) s = JSON.parse(w.clashSummitSkip(tok, c)).game; return s; };
+  // Matchups: the mode comes from the round and the game's seed.
+  let code = JSON.parse(w.clashSummitStart(tok, 6, 'trail')).game.code;
+  poke(code, g => { g.seed = 1; g.squads.GOLD.flags = 3; g.squads.GREY.flags = 2; g.squads.PURPLE.flags = 1; });
+  let s = skipTo(code);
+  assert.strictEqual(s.mg.mode, '2v2');
+  assert.deepStrictEqual(s.mg.teams, [['GOLD', 'BLACK'], ['GREY', 'PURPLE']], 'the leader teams up with last place');
+  assert.ok(/2 vs 2/.test(s.host.text));
+  go(code);
+  [['GOLD', 50], ['BLACK', 50], ['GREY', 60], ['PURPLE', 30]].forEach(([q, v]) => w.clashSummitScore(ids[q], code, v));
+  let before = peek(code).squads;
+  s = JSON.parse(w.clashSummitSkip(tok, code)).game;
+  assert.deepStrictEqual(['GOLD', 'BLACK', 'GREY', 'PURPLE'].map(q => s.squads[q].coins - before[q].coins), [10, 10, 0, 0], 'team average 50 beats 45');
+  // Round 2 with seed 4: Everyone vs Shady (tap target 90).
+  poke(code, g => { g.seed = 4; });
+  s = skipTo(code);
+  assert.strictEqual(s.mg.mode, 'coop');
+  go(code);
+  ['GOLD', 'GREY', 'PURPLE', 'BLACK'].forEach(q => w.clashSummitScore(ids[q], code, 95));
+  before = peek(code).squads;
+  s = JSON.parse(w.clashSummitSkip(tok, code)).game;
+  assert.ok(s.mg.made && ['GOLD', 'GREY'].every(q => s.squads[q].coins - before[q].coins === 6), 'beat Shady together: +6 each');
+  // Round 3 with seed 1: 1 vs 3 against the leader.
+  poke(code, g => { g.seed = 1; });
+  s = skipTo(code);
+  assert.strictEqual(s.mg.mode, '1v3');
+  assert.deepStrictEqual(s.mg.teams[0], ['GOLD']);
+  go(code);
+  [['GOLD', 40], ['GREY', 60], ['PURPLE', 60], ['BLACK', 60]].forEach(([q, v]) => w.clashSummitScore(ids[q], code, v));
+  before = peek(code).squads;
+  s = JSON.parse(w.clashSummitSkip(tok, code)).game;
+  assert.deepStrictEqual(['GOLD', 'GREY'].map(q => s.squads[q].coins - before[q].coins), [0, 5], 'the three win: +5 each');
+  w.setSettingValue_('SUMMIT_PARTY_TEAMS', 'OFF');
+  poke(code, g => { g.seed = 1; });
+  s = skipTo(code);
+  assert.strictEqual(s.mg.mode, 'ffa', 'SUMMIT_PARTY_TEAMS = OFF: every squad for itself');
+  w.clashSummitEnd(tok, code, false);
+  // Ready: practice time until every squad taps Ready, then 3.5 seconds.
+  code = JSON.parse(w.clashSummitStart(tok, 4, 'trail')).game.code;
+  s = skipTo(code);
+  assert.ok(s.mg.startAt - Date.now() > 20000, 'up to 25 seconds to practice');
+  ['GOLD', 'GREY', 'PURPLE'].forEach(q => w.clashSummitReady(ids[q], code));
+  assert.ok(peek(code).mg.startAt - Date.now() > 20000, 'still waiting for one squad');
+  s = JSON.parse(w.clashSummitReady(ids.BLACK, code)).game;
+  assert.ok(s.mg.startAt - Date.now() <= 3600 && s.mg.endAt - s.mg.startAt === 20000, 'everyone ready: starts in 3.5 s');
+  w.clashSummitEnd(tok, code, false);
+  // Duels: land on a duel space, pick a squad and a bet; only those two play; the winner takes the bet.
+  code = JSON.parse(w.clashSummitStart(tok, 4, 'trail')).game.code;
+  const first = peek(code).order[0], opp = peek(code).order[1], third = peek(code).order[2];
+  poke(code, g => { g.squads[first].pos = 5; g.squads[first].items = ['compass']; g.squads[first].coins = 30; g.squads[opp].coins = 30; g.flagAt = 2; });
+  w.clashSummitItem(ids[first], code, 'compass', 1);
+  s = JSON.parse(w.clashSummitRoll(ids[first], code)).game;
+  assert.strictEqual(s.pending.kind, 'duel');
+  assert.deepStrictEqual(s.pending.bets, [5, 10, 20]);
+  assert.throws(() => w.clashSummitChoose(ids[first], code, first + ':10'), /challenge/);
+  assert.throws(() => w.clashSummitChoose(ids[first], code, opp + ':50'), /bet/);
+  s = JSON.parse(w.clashSummitChoose(ids[first], code, opp + ':10')).game;
+  assert.deepStrictEqual([s.phase, s.mg.mode, s.mg.squads, s.mg.bet], ['minigame', 'duel', [first, opp], 10]);
+  go(code, true);
+  assert.throws(() => w.clashSummitScore(ids[third], code, 99), /sits this one out/);
+  w.clashSummitScore(ids[first], code, 80); w.clashSummitScore(ids[opp], code, 20);
+  s = JSON.parse(w.clashSummitState(code, 0)).game;
+  assert.deepStrictEqual([s.phase, s.duelDone.winner, s.squads[first].coins, s.squads[opp].coins], ['turn', first, 40, 20], 'the winner takes 10 coins');
+  assert.strictEqual(s.order[s.turn], opp, 'then the next squad rolls');
+  w.clashSummitEnd(tok, code, false);
+  // Showdown: an exact tie for first at the end.
+  w.setSettingValue_('SUMMIT_PARTY_BONUS', 'OFF');
+  code = JSON.parse(w.clashSummitStart(tok, 1, 'trail')).game.code;
+  poke(code, g => { g.squads.GOLD.flags = 2; g.squads.GOLD.coins = 15; g.squads.GREY.flags = 2; g.squads.GREY.coins = 15; });
+  skipTo(code);
+  s = JSON.parse(w.clashSummitSkip(tok, code)).game;
+  assert.deepStrictEqual([s.status, s.mg.mode, s.mg.squads.slice().sort()], ['playing', 'showdown', ['GOLD', 'GREY']]);
+  go(code);
+  w.clashSummitScore(ids.GREY, code, 70);
+  s = JSON.parse(w.clashSummitSkip(tok, code)).game;
+  assert.deepStrictEqual([s.status, s.places[0]], ['ended', 'GREY'], 'the Showdown winner takes first');
+  // Duels OFF: a duel space is a blue space and there is no Showdown.
+  w.setSettingValue_('SUMMIT_PARTY_DUELS', 'OFF');
+  code = JSON.parse(w.clashSummitStart(tok, 1, 'trail')).game.code;
+  poke(code, g => { g.squads.GOLD.flags = 2; g.squads.GREY.flags = 2; g.squads.GOLD.coins = g.squads.GREY.coins = 15; g.squads.PURPLE.coins = g.squads.BLACK.coins = 0; });
+  skipTo(code);
+  assert.strictEqual(JSON.parse(w.clashSummitSkip(tok, code)).game.status, 'ended');
+  // Trail Sketch: off without a Claude key; with one, Claude sees only the drawing and the choices.
+  w.setSettingValue_('SUMMIT_PARTY_MINIGAMES', 'sketch');
+  assert.ok(w.spMinigameKeys_().indexOf('sketch') < 0, 'no key: skipped');
+  props().setProperty('CLAUDE_API_KEY', 'test-key');
+  assert.deepStrictEqual(w.spMinigameKeys_(), ['sketch']);
+  let answer = 'unsure', sent = null;
+  w.UrlFetchApp = { fetch: (url, o) => { sent = { url, body: JSON.parse(o.payload), key: o.headers['x-api-key'] }; return { getResponseCode: () => 200, getContentText: () => JSON.stringify({ content: [{ type: 'text', text: answer }] }) }; } };
+  code = JSON.parse(w.clashSummitStart(tok, 4, 'trail')).game.code;
+  s = skipTo(code);
+  assert.strictEqual(s.mg.game, 'sketch');
+  assert.ok(s.mg.choices.length === 10 && s.mg.choices.indexOf(s.mg.word) >= 0 && s.mg.secs === 45);
+  assert.ok(w.book.getSheetByName('Summit Sketch Words').rows.length > 20, 'the word list tab');
+  poke(code, g => { g.mg.startAt = Date.now() - 1000; g.mg.endAt = Date.now() + 30000; });
+  const img = 'data:image/jpeg;base64,' + 'A'.repeat(400);
+  assert.throws(() => w.clashSummitScore(ids.GOLD, code, 200), /scores itself/);
+  assert.throws(() => w.clashSummitGuess(ids.GOLD, code, 'javascript:alert(1)'), /could not be read/);
+  let r = JSON.parse(w.clashSummitGuess(ids.GOLD, code, img));
+  assert.deepStrictEqual([r.guess, r.right], ['unsure', false]);
+  assert.strictEqual(sent.url, 'https://api.anthropic.com/v1/messages');
+  assert.strictEqual(sent.key, 'test-key');
+  const content = sent.body.messages[0].content;
+  assert.deepStrictEqual([content[0].type, content[0].source.media_type], ['image', 'image/jpeg']);
+  assert.ok(!/800\d{4}|Ann L|GOLD|GREY|PURPLE|BLACK/.test(JSON.stringify(sent.body)), 'no names, 800#s or squads go to Claude');
+  assert.strictEqual(JSON.parse(w.clashSummitGuess(ids.GOLD, code, img)).wait, true, 'one guess every 3 seconds');
+  w.CacheService.getScriptCache().remove('sp-guess-' + code + '-GOLD');
+  answer = 'I think it is a ' + peek(code).mg.word + '.';
+  r = JSON.parse(w.clashSummitGuess(ids.GOLD, code, img));
+  assert.ok(r.right && r.score > 100 && r.score <= 200, 'a quick right guess scores high');
+  answer = 'a dragon';
+  assert.strictEqual(w.spAskClaude_('png', 'AAAA', ['tent', 'moon']), 'unsure', 'anything off the list counts as unsure');
+  w.setSettingValue_('SUMMIT_PARTY_DRAW', 'OFF');
+  assert.ok(w.spMinigameKeys_().indexOf('sketch') < 0, 'SUMMIT_PARTY_DRAW = OFF');
 });
 
 test('Summit Party: several games at once by code; any Staff Access role can run one; a squad that does not roll gets an auto-roll after SUMMIT_PARTY_AUTO_ROLL seconds', () => {
@@ -3333,6 +3464,7 @@ test('Summit Party: several games at once by code; any Staff Access role can run
   assert.ok(after.last.squad === waiting && after.last.auto, 'the board rolled for ' + waiting);
   assert.ok(/auto-roll|\(auto\)/.test(after.log.join(' ')));
   w.setSettingValue_('SUMMIT_PARTY_AUTO_ROLL', '0');
+  w.setSettingValue_('SUMMIT_PARTY_TEAMS', 'OFF'); w.setSettingValue_('SUMMIT_PARTY_DUELS', 'OFF'); w.setSettingValue_('SUMMIT_PARTY_PRACTICE', 'OFF');
   const g2 = JSON.parse(props.getProperty('sp-game-' + b.code)); g2.turnAt = Date.now() - 999000;
   props.setProperty('sp-game-' + b.code, JSON.stringify(g2)); w.CacheService.getScriptCache().remove('sp-game-' + b.code);
   assert.strictEqual(JSON.parse(w.clashSummitState(b.code, 0)).game.seq, g2.seq, '0 = never auto-roll');

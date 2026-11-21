@@ -35,7 +35,7 @@ const SP_GAME_HEADERS_ = ['Game', 'Status', 'Started', 'Ended', 'Rounds', 'Start
 const SP_POINT_HEADERS_ = ['Game', 'Ended', 'Result', 'BLACK', 'GOLD', 'GREY', 'PURPLE', 'Approved', 'Sent'];
 const SP_LIVE_HEADERS_ = ['Show', 'Kind', 'Challenge', 'How to play'];
 const SP_SPACES_ = { start: 'Base Camp (pass it: +3)', blue: 'Blue space (+3 coins)', red: 'Red space (-3 coins)', event: '? Trail event',
-  item: 'Item space', villain: 'Opponent space', avalanche: 'Avalanche (shake-up)', shop: 'Camp Store (buy an item)' };
+  item: 'Item space', villain: 'Opponent space', avalanche: 'Avalanche (shake-up)', shop: 'Camp Store (buy an item)', duel: 'Duel space (challenge a squad)' };
 const SP_ITEMS_ = {
   double: { name: 'Double Dice', price: 10, text: 'Roll two dice this turn.' },
   compass: { name: 'Golden Compass', price: 8, text: 'Pick exactly how far you move (1 to 6).' },
@@ -47,8 +47,8 @@ const SP_ITEMS_ = {
 // id, type, next and path; x and y (percent) place the spaces for the chosen look:
 //   trail  = the mountain island (16:10 board), round spaces along a winding trail
 //   frost  = Frostpeak at Night: a snowy summit under the stars, the trail in a different shape
-const SP_RING_ = ['start', 'blue', 'blue', 'event', 'blue', 'red', 'blue', 'item', 'blue', 'blue', 'villain', 'blue', 'event', 'shop', 'blue', 'red',
-  'blue', 'avalanche', 'blue', 'item', 'blue', 'red', 'blue', 'event', 'blue', 'villain', 'blue', 'item', 'red', 'blue', 'event', 'red'];
+const SP_RING_ = ['start', 'blue', 'blue', 'event', 'blue', 'red', 'duel', 'item', 'blue', 'blue', 'villain', 'blue', 'event', 'shop', 'blue', 'red',
+  'blue', 'avalanche', 'blue', 'item', 'blue', 'red', 'blue', 'event', 'duel', 'villain', 'blue', 'item', 'red', 'blue', 'event', 'red'];
 const SP_SHORTCUTS_ = [
   { from: 8, to: 13, types: ['red', 'event', 'blue'], name: 'Ridge Shortcut' },
   { from: 20, to: 25, types: ['red', 'item'], name: 'Lake Shortcut' },
@@ -127,12 +127,20 @@ const SP_MINIGAMES_ = {
   slalom: { name: 'Switchback Slalom', how: 'Ski down the mountain. Steer through the gold gates with the arrow keys (or hold a side). Most gates wins.', better: 'high', max: 60, unit: 'gates', icon: 'ph-snowflake', from: 'Ridgeline' },
   stack: { name: 'Cairn Stack', how: 'A stone slides back and forth. Tap or press space to drop it on the cairn. Only the part that lands stays. Tallest cairn wins.', better: 'high', max: 40, unit: 'stones', icon: 'ph-stack', from: 'Ridgeline' },
   catch: { name: 'Camp Snack Catch', how: 'Trail snacks fall from the pines. Steer your pack to catch them and dodge the rocks. Most snacks wins.', better: 'high', max: 150, unit: 'snacks', icon: 'ph-basket' },
+  sketch: { name: 'Trail Sketch', how: 'Draw the word on your screen. The AI watches and guesses as you draw. The sooner it guesses right, the more points.', better: 'high', max: 200, unit: 'pts', icon: 'ph-paint-brush', secs: 45, ai: true },
   dodge: { name: 'Avalanche Dodge', how: 'Snowballs roll down the slope. Steer to dodge them and grab gold flags. A hit drops a flag. Most flags wins.', better: 'high', max: 60, unit: 'flags', icon: 'ph-mountains' },
 };
 
+// Everyone vs Shady: the average score every squad must reach together (the low-is-better game: at or under).
+const SP_COOP_TARGET_ = { tap: 90, react: 450, memory: 5, updraft: 7, bounce: 110, runner: 5, slalom: 11, stack: 7, catch: 22, sketch: 100, dodge: 5 };
+const SP_MODES_ = ['ffa', '2v2', 'ffa', '1v3', 'ffa', 'coop'];
+function spSwitch_(k) { return String(getSetting_(k) || 'ON').toUpperCase() !== 'OFF'; }
+/** Trail Sketch needs its switch on and a Claude key (Script Property CLAUDE_API_KEY, the same one Follow-Up uses). */
+function spDrawOn_() { return spSwitch_('SUMMIT_PARTY_DRAW') && !!PropertiesService.getScriptProperties().getProperty('CLAUDE_API_KEY'); }
+
 /** The minigames in the rotation (Settings › SUMMIT_PARTY_MINIGAMES: ALL, or keys like updraft, bounce, tap). */
 function spMinigameKeys_() {
-  const all = Object.keys(SP_MINIGAMES_), raw = String(getSetting_('SUMMIT_PARTY_MINIGAMES') || 'ALL').trim().toLowerCase();
+  const all = Object.keys(SP_MINIGAMES_).filter(function (k) { return k !== 'sketch' || spDrawOn_(); }), raw = String(getSetting_('SUMMIT_PARTY_MINIGAMES') || 'ALL').trim().toLowerCase();
   if (!raw || raw === 'all') return all;
   const pick = raw.split(/[\s,]+/).filter(function (k) { return SP_MINIGAMES_[k]; });
   return pick.length ? all.filter(function (k) { return pick.indexOf(k) >= 0; }) : all;
@@ -358,6 +366,16 @@ function spLand_(g, board, s) {
     spLog_(g, v.name + ' ' + v.text);
     spHost_(g, 'Uh oh. ' + v.name + ' ' + v.text);
   }
+  else if (n.type === 'duel') {
+    if (spSwitch_('SUMMIT_PARTY_DUELS')) {
+      g.turnAt = Date.now();
+      g.pending = { kind: 'duel', squad: s, options: Object.keys(g.squads).filter(function (k) { return k !== s; }).map(function (k) { return { id: k, coins: g.squads[k].coins }; }),
+        bets: [5, 10, 20].filter(function (b) { return b <= me.coins; }) };
+      spHost_(g, 'A DUEL space! ' + spTitle_(s) + ', pick a squad to challenge and how many coins to bet.');
+      return;
+    }
+    spCoins_(g, s, 3 * x); spLog_(g, spTitle_(s) + ' landed on a duel space: +' + 3 * x + ' coins.');
+  }
   else if (n.type === 'avalanche') {
     const others = Object.keys(g.squads).filter(function (k) { return k !== s; }), other = others[Math.floor(Math.random() * others.length)];
     const pick = Math.floor(Math.random() * 3);
@@ -386,21 +404,64 @@ function spStartMinigame_(g) {
     g.mg = { round: g.round, live: true, kind: c.kind, name: c.name, how: c.how, scores: {} };
     spHost_(g, 'Minigame time! A LIVE ' + c.kind.toUpperCase() + ' challenge: ' + c.name + '. Staff, tap the winning squad.');
   } else {
-    const keys = spMinigameKeys_(), k = keys[(g.round - 1 + (g.seed || 0)) % keys.length], m = SP_MINIGAMES_[k];
-    const now = Date.now();
-    g.mg = { round: g.round, live: false, game: k, name: m.name, how: m.how, startAt: now + 9000, endAt: now + 29000, scores: {}, seed: Math.floor(Math.random() * 1e6) };
-    spHost_(g, 'Minigame time! ' + m.name + ': ' + m.how);
+    const keys = spMinigameKeys_(), k = keys[(g.round - 1 + (g.seed || 0)) % keys.length];
+    const mode = spSwitch_('SUMMIT_PARTY_TEAMS') ? SP_MODES_[(g.round - 1 + (g.seed || 0)) % SP_MODES_.length] : 'ffa';
+    spNewMg_(g, k, mode, Object.keys(g.squads));
+    spHost_(g, 'Minigame time! ' + spModeLine_(g) + g.mg.name + ': ' + g.mg.how);
   }
   spLog_(g, 'Minigame: ' + g.mg.name + '.');
 }
 
+// A Chromebook minigame for some squads. Practice ON = up to 25 seconds to practice, starting early once every squad taps Ready.
+function spNewMg_(g, k, mode, squads, extra) {
+  const m = SP_MINIGAMES_[k], now = Date.now(), wait = spSwitch_('SUMMIT_PARTY_PRACTICE') ? 25000 : 9000, secs = m.secs || 20;
+  g.mgCount = (g.mgCount || 0) + 1;
+  g.mg = { id: g.mgCount, round: g.round, live: false, game: k, name: m.name, how: m.how, mode: mode, squads: squads, secs: secs,
+    startAt: now + wait, endAt: now + wait + secs * 1000, scores: {}, ready: {}, seed: Math.floor(Math.random() * 1e6) };
+  if (mode === '2v2' || mode === '1v3') {
+    const p = spPlaces_(g);
+    g.mg.teams = mode === '2v2' ? [[p[0], p[3]], [p[1], p[2]]] : [[p[0]], [p[1], p[2], p[3]]];
+  }
+  if (mode === 'coop') g.mg.target = SP_COOP_TARGET_[k] || 1;
+  if (k === 'sketch') spSketchSetup_(g.mg);
+  if (extra) Object.keys(extra).forEach(function (x) { g.mg[x] = extra[x]; });
+  return g.mg;
+}
+function spModeLine_(g) {
+  const mg = g.mg, t = function (list) { return list.map(spTitle_).join(' + '); };
+  if (mg.mode === '2v2') return '2 vs 2! ' + t(mg.teams[0]) + ' against ' + t(mg.teams[1]) + '. ';
+  if (mg.mode === '1v3') return '1 vs 3! ' + spTitle_(mg.teams[0][0]) + ' takes on everyone. ';
+  if (mg.mode === 'coop') return 'Everyone vs Shady! Work together: every squad averages ' + mg.target + ' or Shady steals coins. ';
+  if (mg.mode === 'duel') return 'DUEL! ' + t(mg.squads) + ' for ' + mg.bet + ' coins each. ';
+  if (mg.mode === 'showdown') return 'SHOWDOWN! ' + t(mg.squads) + ' are tied for first. ';
+  return '';
+}
+// A squad's value: its score, or the worst score if it did not play.
+function spVal_(mg, s) { const d = SP_MINIGAMES_[mg.game]; return mg.scores[s] != null ? mg.scores[s] : d.better === 'low' ? d.max : 0; }
+function spBetter_(mg, a, b) { return SP_MINIGAMES_[mg.game].better === 'low' ? a < b : a > b; }
+function spAvg_(mg, list) { return list.reduce(function (n, s) { return n + spVal_(mg, s); }, 0) / list.length; }
+
 // Minigame coins by place; ties share the better place.
 function spResolveMinigame_(g) {
   const mg = g.mg, squads = Object.keys(g.squads);
+  if (mg.mode === 'duel') return spResolveDuel_(g);
+  if (mg.mode === 'showdown') return spResolveShowdown_(g);
   let prizes = {};
   if (mg.live) {
     squads.forEach(function (s) { prizes[s] = mg.winner === s ? 10 : 2; });
     if (mg.winner) g.squads[mg.winner].mgWins = (g.squads[mg.winner].mgWins || 0) + 1;
+  } else if (mg.mode === '2v2' || mg.mode === '1v3') {
+    const a = spAvg_(mg, mg.teams[0]), b = spAvg_(mg, mg.teams[1]);
+    const win = a === b ? -1 : spBetter_(mg, a, b) ? 0 : 1;
+    const pay = mg.mode === '2v2' ? [10, 10] : [15, 5];
+    squads.forEach(function (s) { prizes[s] = 0; });
+    if (win < 0) squads.forEach(function (s) { prizes[s] = 3; });
+    else mg.teams[win].forEach(function (s) { prizes[s] = pay[win]; g.squads[s].mgWins = (g.squads[s].mgWins || 0) + 1; });
+    mg.winTeam = win;
+  } else if (mg.mode === 'coop') {
+    const avg = spAvg_(mg, squads), made = SP_MINIGAMES_[mg.game].better === 'low' ? avg <= mg.target : avg >= mg.target;
+    squads.forEach(function (s) { prizes[s] = made ? 6 : -3; });
+    mg.made = made; mg.avg = Math.round(avg);
   } else {
     const def = SP_MINIGAMES_[mg.game], has = squads.filter(function (s) { return mg.scores[s] != null; });
     const sorted = has.sort(function (a, b) { return def.better === 'low' ? mg.scores[a] - mg.scores[b] : mg.scores[b] - mg.scores[a]; });
@@ -417,15 +478,20 @@ function spResolveMinigame_(g) {
   mg.prizes = prizes;
   mg.done = true;
   mg.resolvedAt = Date.now();
-  const top = squads.filter(function (s) { return prizes[s] === 10; });
-  spLog_(g, mg.name + ': ' + (top.length ? top.map(spTitle_).join(' and ') + ' won 10 coins.' : 'nobody played.'));
-  spHost_(g, top.length ? top.map(spTitle_).join(' and ') + ' wins ' + mg.name + '!' : 'Nobody played ' + mg.name + '. Next round!');
+  const best = Math.max.apply(null, squads.map(function (s) { return prizes[s]; })), top = squads.filter(function (s) { return best > 3 && prizes[s] === best; });
+  if (mg.mode === 'coop') {
+    spLog_(g, mg.name + ': ' + (mg.made ? 'everyone beat Shady! +6 coins each.' : 'Shady wins and steals 3 coins from each squad.'));
+    spHost_(g, mg.made ? 'Teamwork! You beat Shady together. 6 coins for every squad!' : 'Shady wins this one and grabs 3 coins from every squad. Next time!');
+  } else {
+    spLog_(g, mg.name + ': ' + (top.length ? top.map(spTitle_).join(' and ') + ' won ' + best + ' coins.' : 'no winner.'));
+    spHost_(g, top.length ? top.map(spTitle_).join(' and ') + ' win' + (top.length > 1 ? '' : 's') + ' ' + mg.name + '!' : 'No winner in ' + mg.name + '. Next round!');
+  }
   // On to the next round, the Final Climb, or the end.
   g.round++;
   g.phase = 'turn';
   g.turnAt = Date.now() + 6000; // the results show for a moment before the auto-roll clock starts
   g.last = { squad: '', roll: 0, path: [], events: [] };
-  if (g.round > g.rounds) { spBonus_(g); spFinish_(g, 'ended'); return; }
+  if (g.round > g.rounds) { spBonus_(g); if (spStartShowdown_(g)) return; spFinish_(g, 'ended'); return; }
   if (!g.final && g.round >= g.rounds - 2 && g.rounds >= 4) {
     g.final = true;
     const last = spPlaces_(g).slice(-1)[0];
@@ -434,6 +500,98 @@ function spResolveMinigame_(g) {
     spHost_(g, 'It is the FINAL CLIMB! Three rounds left. ' + spTitle_(last) + ', here are 10 coins. Blue and red spaces count DOUBLE!');
     g.finalNews = Date.now();
   }
+}
+
+// ── Duels (SUMMIT_PARTY_DUELS): the squad on a duel space bets coins against a squad it picks. ──
+function spBeginDuel_(g, s, opp, bet) {
+  const keys = spMinigameKeys_().filter(function (k) { return k !== 'sketch'; }), k = keys[((g.duels || 0) + (g.seed || 0)) % keys.length];
+  g.duels = (g.duels || 0) + 1;
+  const pot = Math.min(bet, g.squads[s].coins, g.squads[opp].coins);
+  g.pending = null;
+  g.phase = 'minigame';
+  spNewMg_(g, k, 'duel', [s, opp], { bet: pot, challenger: s });
+  spLog_(g, spTitle_(s) + ' challenged ' + spTitle_(opp) + ' to a duel for ' + pot + ' coins.');
+  spHost_(g, spModeLine_(g) + g.mg.name + '!');
+}
+function spResolveDuel_(g) {
+  const mg = g.mg, a = mg.squads[0], b = mg.squads[1], va = spVal_(mg, a), vb = spVal_(mg, b);
+  const win = va === vb ? '' : spBetter_(mg, va, vb) ? a : b, lose = win === a ? b : a;
+  if (win) {
+    const take = Math.min(mg.bet, g.squads[lose].coins);
+    spCoins_(g, lose, -take); spCoins_(g, win, mg.bet ? take : 5);
+    mg.prizes = {}; mg.prizes[win] = mg.bet ? take : 5; mg.prizes[lose] = -take;
+    spLog_(g, spTitle_(win) + ' won the duel' + (mg.bet ? ' and ' + take + ' coins from ' + spTitle_(lose) : ': +5 coins') + '.');
+    spHost_(g, spTitle_(win) + ' wins the duel!' + (mg.bet ? ' ' + take + ' coins change hands.' : ''));
+  } else { mg.prizes = {}; mg.prizes[a] = 0; mg.prizes[b] = 0; spLog_(g, 'The duel was a tie. Everyone keeps their coins.'); spHost_(g, 'A tie! Nobody loses coins.'); }
+  mg.winner = win; mg.done = true; mg.resolvedAt = Date.now();
+  g.duelDone = { id: mg.id, game: mg.game, name: mg.name, squads: mg.squads, scores: mg.scores, prizes: mg.prizes, winner: win, bet: mg.bet };
+  g.phase = 'turn';
+  spNextTurn_(g);
+  if (g.phase === 'turn') g.turnAt = Date.now() + 6000;
+}
+
+// ── Showdown: an exact tie for first (flags and coins) at the end is settled by one more minigame. ──
+function spStartShowdown_(g) {
+  if (!spSwitch_('SUMMIT_PARTY_DUELS') || g.showdownDone) return false;
+  const p = spPlaces_(g), top = g.squads[p[0]];
+  const tied = p.filter(function (s) { return g.squads[s].flags === top.flags && g.squads[s].coins === top.coins; });
+  if (tied.length < 2) return false;
+  const keys = spMinigameKeys_().filter(function (k) { return k !== 'sketch'; });
+  g.phase = 'minigame';
+  spNewMg_(g, keys[(g.seed || 0) % keys.length], 'showdown', tied);
+  spLog_(g, 'Showdown: ' + tied.map(spTitle_).join(', ') + ' are tied for first.');
+  spHost_(g, spModeLine_(g) + 'One more minigame decides it: ' + g.mg.name + '!');
+  return true;
+}
+function spResolveShowdown_(g) {
+  const mg = g.mg, order = mg.squads.slice().sort(function (a, b) { const va = spVal_(mg, a), vb = spVal_(mg, b); return va === vb ? mg.squads.indexOf(a) - mg.squads.indexOf(b) : spBetter_(mg, va, vb) ? -1 : 1; });
+  const win = order[0];
+  spCoins_(g, win, 1);
+  mg.prizes = {}; mg.squads.forEach(function (s) { mg.prizes[s] = s === win ? 1 : 0; });
+  mg.winner = win; mg.done = true; mg.resolvedAt = Date.now();
+  g.showdownDone = true;
+  spLog_(g, spTitle_(win) + ' won the Showdown!');
+  spFinish_(g, 'ended');
+}
+
+// ── Trail Sketch: every squad draws the same word; Claude guesses from a short list of choices. ──
+const SP_SKETCH_HEADERS_ = ['Show', 'Word'];
+const SP_SKETCH_SEED_ = ['tent', 'compass', 'campfire', 'mountain', 'pine tree', 'backpack', 'canoe', 'snowflake', 'moon', 'fish', 'flag', 'boot', 'map', 'sun', 'cabin',
+  'bear', 'owl', 'lantern', 'rope', 'cloud', 'river', 'bridge', 'star', 'deer', 'bicycle', 'mushroom', 'acorn', 'umbrella', 'kite', 'rainbow'].map(function (w) { return [true, w]; });
+function spSketchWords_() {
+  const rows = getSheetSafe_('Summit Sketch Words') ? sheetRows_('Summit Sketch Words').filter(function (r) { return ticked_(r['Show']) && String(r['Word'] || '').trim(); }) : [];
+  const list = rows.length ? rows.map(function (r) { return String(r['Word']).trim().toLowerCase(); }) : SP_SKETCH_SEED_.map(function (r) { return r[1]; });
+  return list.filter(function (w, i) { return list.indexOf(w) === i; });
+}
+function spSketchSetup_(mg) {
+  const words = spSketchWords_(), pick = function (i) { return (mg.seed * 7 + i * 13) % words.length; };
+  mg.word = words[mg.seed % words.length];
+  const choices = [mg.word];
+  for (let i = 0; choices.length < Math.min(10, words.length) && i < 200; i++) { const w = words[pick(i)]; if (choices.indexOf(w) < 0) choices.push(w); }
+  mg.choices = choices.sort();
+  mg.guesses = {};
+}
+// Only the drawing and the word list go to Claude: no names, no 800#s. The answer must be one of the choices.
+function spAskClaude_(type, data, choices) {
+  const key = PropertiesService.getScriptProperties().getProperty('CLAUDE_API_KEY');
+  if (!key) throw new Error('Trail Sketch needs the Claude key (Script Property CLAUDE_API_KEY).');
+  const res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+    payload: JSON.stringify({
+      model: String(getSetting_('SUMMIT_PARTY_DRAW_MODEL') || 'claude-haiku-5-5'), max_tokens: 20,
+      messages: [{ role: 'user', content: [
+        { type: 'image', source: { type: 'base64', media_type: 'image/' + type, data: data } },
+        { type: 'text', text: 'This is a quick sketch from a school drawing game. Which ONE of these words does it show: ' + choices.join(', ') + '? Answer with only that word, written exactly as in the list. If the page is blank or you cannot tell yet, answer: unsure' }] }]
+    })
+  });
+  if (res.getResponseCode() >= 300) { console.warn('Trail Sketch: Claude ' + res.getResponseCode() + ' ' + res.getContentText().slice(0, 200)); return 'unsure'; }
+  const body = JSON.parse(res.getContentText() || '{}');
+  const text = (body.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text; }).join(' ').toLowerCase().replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ').trim();
+  const exact = choices.filter(function (c) { return text === c; })[0];
+  if (exact) return exact;
+  const found = choices.filter(function (c) { return (' ' + text + ' ').indexOf(' ' + c + ' ') >= 0; }).sort(function (a, b) { return b.length - a.length; });
+  return found.length === 1 ? found[0] : 'unsure';
 }
 
 // End of game: bonus flags (ties all get one).
@@ -482,13 +640,15 @@ function spMakeTab_(name, headers, rows) {
 function ensureSummitPartyTabs_() {
   spGamesTab_(); spPointsTab_();
   if (!getSheetSafe_('Summit Live Challenges')) spMakeTab_('Summit Live Challenges', SP_LIVE_HEADERS_, SP_LIVE_SEED_);
+  if (!getSheetSafe_('Summit Sketch Words')) spMakeTab_('Summit Sketch Words', SP_SKETCH_HEADERS_, SP_SKETCH_SEED_);
 }
 
 // What the screen and the Chromebooks see.
 function spView_(g) {
   const layout = spLayoutOf_(g && g.layout);
   return { on: true, board: spBoard_(layout), layout: layout, art: spArt_(), spaces: SP_SPACES_, items: SP_ITEMS_, minigames: SP_MINIGAMES_,
-    flagCost: spFlagCost_(), autoRoll: spSetting_('SUMMIT_PARTY_AUTO_ROLL', 30), rounds: spSetting_('SUMMIT_PARTY_ROUNDS', 10), now: Date.now(), game: g };
+    flagCost: spFlagCost_(), autoRoll: spSetting_('SUMMIT_PARTY_AUTO_ROLL', 30),
+    opts: { practice: spSwitch_('SUMMIT_PARTY_PRACTICE'), relay: spSwitch_('SUMMIT_PARTY_RELAY'), sound: spSwitch_('SUMMIT_PARTY_SOUND'), soundPlay: spSwitch_('SUMMIT_PARTY_SOUND_CHROMEBOOK') }, rounds: spSetting_('SUMMIT_PARTY_ROUNDS', 10), now: Date.now(), game: g };
 }
 
 // The clock: auto-roll (or auto-pick) for a squad that waits too long; minigames that run out of time.
@@ -506,6 +666,7 @@ function spTick_(g) {
     if (cur.pending) {
       const s = cur.pending.squad;
       if (cur.pending.kind === 'shop') { spLog_(cur, spTitle_(s) + ' walked past the Camp Store.'); spContinue_(cur, board, s); }
+      else if (cur.pending.kind === 'duel') { const opp = cur.pending.options.slice().sort(function (a, b) { return b.coins - a.coins; })[0].id; spBeginDuel_(cur, s, opp, 5); }
       else { const opt = cur.pending.options[0]; spLog_(cur, spTitle_(s) + ' took the ' + opt.name + ' (auto).'); spTake_(cur, board, s, opt.id); }
     } else spRoll_(cur, board, cur.order[cur.turn], true);
     return spSave_(cur);
@@ -702,6 +863,13 @@ function clashSummitChoose(id, code, choice) {
     const g = spGame_(code), board = spBoard_(g.layout);
     if (g.status !== 'playing' || !g.pending) throw new Error('Nothing to choose right now.');
     if (g.pending.squad !== p.squad) throw new Error('It is ' + spTitle_(g.pending.squad) + '\'s choice.');
+    if (g.pending.kind === 'duel') {
+      const parts = String(choice).toUpperCase().split(':'), opp = parts[0], bet = Number(parts[1]) || 0;
+      if (opp === p.squad || !g.squads[opp]) throw new Error('Pick a squad to challenge.');
+      if ([0, 5, 10, 20].indexOf(bet) < 0 || bet > g.squads[p.squad].coins) throw new Error('Pick a bet you can pay.');
+      spBeginDuel_(g, p.squad, opp, bet);
+      return JSON.stringify(spView_(spSave_(g)));
+    }
     if (g.pending.kind === 'shop') {
       const me = g.squads[p.squad], k = String(choice);
       if (k !== 'skip') {
@@ -733,6 +901,8 @@ function clashSummitScore(id, code, score) {
     if (g.status !== 'playing' || g.phase !== 'minigame' || !mg || mg.live || mg.done) throw new Error('No minigame right now.');
     const now = Date.now();
     if (now < mg.startAt - 1000 || now > mg.endAt + 8000) throw new Error('Time is up!');
+    if ((mg.squads || Object.keys(g.squads)).indexOf(p.squad) < 0) throw new Error('Your squad sits this one out. Watch the big screen!');
+    if (mg.game === 'sketch') throw new Error('Trail Sketch scores itself when the AI guesses your drawing.');
     const def = SP_MINIGAMES_[mg.game];
     let v = Math.round(Number(score));
     if (!(v >= 0)) v = 0;
@@ -740,8 +910,51 @@ function clashSummitScore(id, code, score) {
     if (def.better === 'high') v = Math.min(v, def.max);
     const old = mg.scores[p.squad];
     if (old == null || (def.better === 'low' ? v < old : v > old)) mg.scores[p.squad] = v;
-    if (Object.keys(g.squads).every(function (s) { return mg.scores[s] != null; }) && now >= mg.endAt - 500) spResolveMinigame_(g);
+    if ((mg.squads || Object.keys(g.squads)).every(function (s) { return mg.scores[s] != null; }) && now >= mg.endAt - 500) spResolveMinigame_(g);
     return JSON.stringify(spView_(spSave_(g)));
+  });
+}
+
+/** Controller: Ready after practice. Once every squad in the minigame is ready, it starts in 3.5 seconds. */
+function clashSummitReady(id, code) {
+  const p = spPlayer_(id);
+  return spWithLock_(function () {
+    const g = spGame_(code), mg = g.mg;
+    if (g.status !== 'playing' || g.phase !== 'minigame' || !mg || mg.live || mg.done) throw new Error('No minigame right now.');
+    mg.ready = mg.ready || {};
+    mg.ready[p.squad] = true;
+    const now = Date.now();
+    if ((mg.squads || Object.keys(g.squads)).every(function (s) { return mg.ready[s]; }) && mg.startAt - now > 3500) {
+      mg.startAt = now + 3500; mg.endAt = mg.startAt + (mg.secs || 20) * 1000;
+    }
+    return JSON.stringify(spView_(spSave_(g)));
+  });
+}
+
+/** Controller: Trail Sketch. Sends the drawing (a small JPEG or PNG data URL); Claude guesses. At most one guess every 3 seconds per squad. */
+function clashSummitGuess(id, code, img) {
+  const p = spPlayer_(id), g0 = spGame_(code), mg0 = g0.mg;
+  if (g0.status !== 'playing' || g0.phase !== 'minigame' || !mg0 || mg0.game !== 'sketch' || mg0.done) throw new Error('No drawing game right now.');
+  if ((mg0.squads || Object.keys(g0.squads)).indexOf(p.squad) < 0) throw new Error('Your squad sits this one out.');
+  if (Date.now() < mg0.startAt - 500 || Date.now() > mg0.endAt + 1500) throw new Error('Time is up!');
+  if (mg0.scores[p.squad] != null) return JSON.stringify({ guess: mg0.word, right: true, score: mg0.scores[p.squad] });
+  const m = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+\/=]+)$/.exec(String(img || ''));
+  if (!m || m[2].length > 300000) throw new Error('That drawing could not be read.');
+  const cache = CacheService.getScriptCache(), ck = 'sp-guess-' + g0.code + '-' + p.squad;
+  if (Number(cache.get(ck) || 0) > Date.now() - 2500) return JSON.stringify({ guess: '', wait: true });
+  cache.put(ck, String(Date.now()), 10);
+  if (!spSwitch_('SUMMIT_PARTY_DRAW')) throw new Error('Trail Sketch is turned off.');
+  const guess = spAskClaude_(m[1], m[2], mg0.choices || []);
+  return spWithLock_(function () {
+    const g = spGame_(code), mg = g.mg;
+    if (!mg || mg.id !== mg0.id || mg.done) return JSON.stringify({ guess: guess, right: false, late: true });
+    mg.guesses = mg.guesses || {};
+    mg.guesses[p.squad] = guess;
+    const right = guess === mg.word && mg.scores[p.squad] == null && Date.now() <= mg.endAt + 1500;
+    if (right) mg.scores[p.squad] = Math.max(20, Math.min(200, Math.round(20 + Math.max(0, mg.endAt - Date.now()) / 1000 * 4)));
+    if ((mg.squads || Object.keys(g.squads)).every(function (s) { return mg.scores[s] != null; })) spResolveMinigame_(g);
+    spSave_(g);
+    return JSON.stringify({ guess: guess, right: right, score: mg.scores[p.squad] });
   });
 }
 
@@ -770,4 +983,4 @@ function serveSummitPlay_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_63_SummitParty = '7af068bbe1';
+var FILE_STAMP_63_SummitParty = '906a22c38a';

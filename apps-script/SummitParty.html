@@ -9,7 +9,7 @@
 <style>
   /* Summit Party: the squad party board game. Clash brand: purple #490e6f, gold #ffe100, Fraunces display (the Clash brand face). */
   :root { --bg:#14091f; --panel:#1f1133; --line:#3a2659; --ink:#f7f2ff; --mute:#bfaee0; --gold:#ffe100; --purple:#490e6f;
-    --t-start:#ffd23f; --t-blue:#2f8fff; --t-red:#ff4d4d; --t-event:#2fcf7a; --t-item:#ff9a1f; --t-villain:#6b2bb8; --t-avalanche:#bfe6ff; --t-shop:#ff6fb5;
+    --t-start:#ffd23f; --t-blue:#2f8fff; --t-red:#ff4d4d; --t-event:#2fcf7a; --t-item:#ff9a1f; --t-villain:#6b2bb8; --t-avalanche:#bfe6ff; --t-shop:#ff6fb5; --t-duel:#e0115f;
     --hop:300ms; }
   @media (prefers-reduced-motion: reduce) { :root { --hop:0ms; } }
   * { box-sizing:border-box; }
@@ -146,6 +146,9 @@
   .card-big .clock.hot { color:#ff6b6b; }
   .card-big .clock.tick { animation: tick .32s cubic-bezier(.34,1.56,.64,1); }
   @keyframes tick { from { transform: scale(1.18); } }
+  .card-big .mode { display:inline-block; margin-top:.6em; padding:.35em .9em; border-radius:999px; background:#e0115f; color:#fff; font:800 clamp(13px,1.3vw,22px)/1.2 'DM Sans',sans-serif; }
+  .card-big .word b { color:var(--gold); font-family:Fraunces,serif; font-size:1.3em; text-transform:uppercase; }
+  .mute { background:#ffffff14; border:1px solid #ffffff2a; color:#fff; border-radius:999px; font-size:clamp(16px,1.4vw,24px); padding:.3em .55em; margin-left:10px; cursor:pointer; }
   .sqc.in { animation: popin .45s cubic-bezier(.34,1.56,.64,1); }
   @keyframes popin { 0% { transform: scale(.8); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
   .results .sqc { animation: rise .5s cubic-bezier(.2,.8,.2,1) both; }
@@ -182,12 +185,12 @@
   var BASE = { BLACK: '#2b2633', GOLD: '#a87b00', GREY: '#5d6673', PURPLE: '#5b1a86' };
   var BASEDARK = { BLACK: '#141118', GOLD: '#5e4500', GREY: '#353b44', PURPLE: '#2f0c47' };
   var FOCUS = { BLACK: '47% 11%', GOLD: '72% 2%', GREY: '77% 11%', PURPLE: '69% 0%' };
-  var ICON = { start: 'ph-tent', blue: 'ph-plus', red: 'ph-minus', event: '', item: 'ph-gift', villain: 'ph-skull', avalanche: 'ph-snowflake', shop: 'ph-storefront' };
+  var ICON = { start: 'ph-tent', blue: 'ph-plus', red: 'ph-minus', event: '', item: 'ph-gift', villain: 'ph-skull', avalanche: 'ph-snowflake', shop: 'ph-storefront', duel: 'ph-sword' };
   var LABEL = { start: 'Base Camp', blue: '+3 coins', red: '-3 coins', event: 'Trail event', item: 'Item', villain: 'Opponent', avalanche: 'Avalanche', shop: 'Camp Store' };
   var ITEMICON = { double: 'ph-dice-two', compass: 'ph-compass', paws: 'ph-hand-grabbing', zipline: 'ph-arrows-left-right' };
   var VNAME = { troll: 'The Tardy Troll', litter: 'The Hallway Litter Beast', shady: 'Shady' };
   var S = null, seq = 0, token = '', busy = false, pieces = {}, flagEl = null, drawnLayout = '', drawnCode = '', code = '', LOGOS = {}, skew = 0;
-  var seenHost = 0, seenMg = '', seenResult = '', seenFinal = 0, seenEnd = '';
+  var seenHost = 0, seenMg = '', seenResult = '', seenFinal = 0, seenEnd = '', seenDuel = 0;
   try { code = sessionStorage.getItem('summit-code') || ''; token = sessionStorage.getItem('summit-admin') || ''; } catch (e) {}
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -195,6 +198,73 @@
   function run(fn) { var a = Array.prototype.slice.call(arguments, 1); return new Promise(function (ok, no) { var r = google.script.run.withSuccessHandler(function (t) { ok(JSON.parse(t)); }).withFailureHandler(no); r[fn].apply(r, a); }); }
   function msgOf(e) { return String(e && e.message || e).replace(/^Exception:\s{0,}/, ''); }
   function now() { return Date.now() + skew; }
+  // ── Sound: original effects made in the browser with Web Audio (no sound files). The speaker button mutes this page. ──
+  var SFX = (function () {
+    var ctx = null, muted = false, on = false, level = 1;
+    try { muted = localStorage.getItem('summit-mute') === '1'; } catch (e) {}
+    function ac() {
+      if (!ctx) { var A = window.AudioContext || window.webkitAudioContext; if (!A) return null; try { ctx = new A(); } catch (e) { return null; } }
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    }
+    function tone(f, t, d, type, vol, f2) {
+      var c = ac(); if (!c) return;
+      var o = c.createOscillator(), g = c.createGain(), s = c.currentTime + (t || 0);
+      o.type = type || 'square'; o.frequency.setValueAtTime(f, s);
+      if (f2) o.frequency.exponentialRampToValueAtTime(f2, s + d);
+      g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime((vol || .1) * level, s + .012); g.gain.exponentialRampToValueAtTime(0.0001, s + d);
+      o.connect(g); g.connect(c.destination); o.start(s); o.stop(s + d + .03);
+    }
+    function noise(t, d, vol) {
+      var c = ac(); if (!c) return;
+      var n = Math.floor(c.sampleRate * d), b = c.createBuffer(1, n, c.sampleRate), data = b.getChannelData(0);
+      for (var i = 0; i < n; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / n);
+      var src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), s = c.currentTime + (t || 0);
+      f.type = 'lowpass'; f.frequency.setValueAtTime(900, s); f.frequency.exponentialRampToValueAtTime(120, s + d);
+      g.gain.setValueAtTime((vol || .2) * level, s);
+      src.buffer = b; src.connect(f); f.connect(g); g.connect(c.destination); src.start(s);
+    }
+    function seq(notes, gap, d, type, vol) { notes.forEach(function (f, i) { tone(f, i * gap, d, type, vol); }); }
+    var LIB = {
+      tick: function () { tone(1500, 0, .025, 'square', .03); },
+      tap: function () { tone(900 + Math.random() * 120, 0, .045, 'triangle', .07); },
+      hop: function () { tone(600, 0, .07, 'triangle', .07, 900); },
+      dice: function () { for (var i = 0; i < 9; i++) tone(500 + Math.random() * 700, i * .07, .035, 'square', .05); },
+      land: function () { tone(523, 0, .09, 'triangle', .12); tone(784, .08, .18, 'triangle', .12); },
+      coin: function () { tone(988, 0, .07, 'square', .08); tone(1319, .06, .25, 'square', .08); },
+      lose: function () { tone(420, 0, .3, 'sawtooth', .07, 170); },
+      bonk: function () { tone(170, 0, .16, 'square', .1, 70); },
+      beep: function () { tone(660, 0, .11, 'square', .07); },
+      go: function () { tone(1046, 0, .4, 'square', .09); tone(1318, 0, .4, 'square', .05); },
+      ready: function () { tone(880, 0, .09, 'triangle', .1); tone(1175, .09, .16, 'triangle', .1); },
+      pass: function () { seq([784, 988, 1175], .09, .12, 'square', .07); },
+      pop: function () { tone(420, 0, .09, 'sine', .14, 950); },
+      spin: function () { tone(1200, 0, .03, 'triangle', .05); },
+      reveal: function () { seq([523, 659, 784, 1046], .08, .14, 'square', .08); },
+      guess: function () { tone(700, 0, .07, 'sine', .07, 760); },
+      flag: function () { seq([523, 659, 784, 1046], .11, .16, 'square', .09); tone(1046, .44, .55, 'triangle', .1); tone(1318, .44, .55, 'triangle', .06); },
+      item: function () { seq([784, 1046, 1318], .07, .12, 'triangle', .1); },
+      villain: function () { tone(233, 0, .28, 'sawtooth', .09, 117); tone(220, .26, .5, 'sawtooth', .09, 98); },
+      avalanche: function () { noise(0, 1.4, .3); tone(90, 0, 1.2, 'sawtooth', .06, 45); },
+      event: function () { seq([659, 880, 659, 988], .07, .1, 'triangle', .08); },
+      duel: function () { tone(330, 0, .18, 'sawtooth', .08); tone(330, .22, .18, 'sawtooth', .08); tone(494, .44, .4, 'sawtooth', .09); },
+      final: function () { [0, .18, .36, .54].forEach(function (t) { tone(98, t, .14, 'square', .12); }); tone(196, .75, .6, 'sawtooth', .08); },
+      win: function () { seq([784, 988, 1175, 1568], .12, .2, 'square', .09); seq([1175, 1568], .2, .5, 'triangle', .08); },
+      sad: function () { seq([392, 370, 349, 330], .18, .22, 'triangle', .08); }
+    };
+    return {
+      set: function (v, lv) { on = !!v; if (lv) level = lv; },
+      play: function (k) { if (!on || muted || !LIB[k]) return; try { LIB[k](); } catch (e) {} },
+      unlock: function () { if (on && !muted) ac(); },
+      muted: function () { return muted; },
+      toggle: function () { muted = !muted; try { localStorage.setItem('summit-mute', muted ? '1' : '0'); } catch (e) {} if (!muted) ac(); return muted; }
+    };
+  })();
+  document.addEventListener('pointerdown', function () { SFX.unlock(); });
+  document.addEventListener('keydown', function () { SFX.unlock(); });
+  function muteBtn() { return '<button class="mute" id="mute" title="Sound on or off" aria-label="Sound on or off"><i class="ph-fill ' + (SFX.muted() ? 'ph-speaker-slash' : 'ph-speaker-high') + '"></i></button>'; }
+  function wireMute() { var b = $('mute'); if (b) b.onclick = function (e) { e.preventDefault(); SFX.toggle(); b.innerHTML = '<i class="ph-fill ' + (SFX.muted() ? 'ph-speaker-slash' : 'ph-speaker-high') + '"></i>'; }; }
+  $('codeBig').parentNode.insertAdjacentHTML('afterend', muteBtn()); wireMute();
   function wait(ms) { return new Promise(function (r) { setTimeout(r, calm ? Math.min(ms, 400) : ms); }); }
   var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function logo(s, cls) { return LOGOS[s] ? '<span class="' + (cls || 'logo') + '" style="background:' + BASE[s] + '"><img src="' + LOGOS[s] + '" alt="' + esc(title(s)) + ' Squad logo"></span>' : '<span class="' + (cls || 'logo') + '" style="background:' + BASE[s] + '"></span>'; }
@@ -253,7 +323,7 @@
     box.insertAdjacentHTML('afterbegin', h);
     Object.keys(pieces).forEach(function (s) { pieces[s].remove(); }); pieces = {};
     if (flagEl) { flagEl.remove(); flagEl = null; }
-    $('legend').innerHTML = ['blue', 'red', 'event', 'item', 'shop', 'villain', 'avalanche'].map(function (k) { return '<span><i style="background:var(--t-' + k + ');color:' + (k === 'avalanche' ? '#2a4f7a' : '#fff') + '">' + (k === 'event' ? '?' : '<span class="ph-fill ' + ICON[k] + '"></span>') + '</i>' + esc(S.spaces[k] || k) + '</span>'; }).join('') +
+    $('legend').innerHTML = ['blue', 'red', 'event', 'item', 'shop', 'villain', 'avalanche'].concat(S.board && S.board.some(function (n) { return n.type === 'duel'; }) ? ['duel'] : []).map(function (k) { return '<span><i style="background:var(--t-' + k + ');color:' + (k === 'avalanche' ? '#2a4f7a' : '#fff') + '">' + (k === 'event' ? '?' : '<span class="ph-fill ' + ICON[k] + '"></span>') + '</i>' + esc(S.spaces[k] || k) + '</span>'; }).join('') +
       '<span><i style="background:#3a2659;color:var(--gold)"><span class="ph-fill ph-flag-pennant"></span></i>Summit Flag: pass it with ' + S.flagCost + ' coins</span>';
     if (S.art && S.art.cliff) $('cliffImg').src = S.art.cliff;
     drawnLayout = layout; drawnCode = S.game ? S.game.code : '';
@@ -306,43 +376,67 @@
   }
 
   // ── Minigame, results, Final Climb, bonus flags, winner ──
-  function squadCards(g, fill) { return '<div class="squads">' + g.order.map(function (s) { var f = fill(s); return '<div class="sqc ' + (f.cls || '') + '">' + logo(s) + '<b style="color:' + RING[s] + '">' + esc(f.big) + '</b><small>' + esc(f.small || title(s)) + '</small></div>'; }).join('') + '</div>'; }
+  function squadCards(g, fill, list) { return '<div class="squads">' + (list || g.order).map(function (s) { var f = fill(s); return '<div class="sqc ' + (f.cls || '') + '" data-s="' + s + '">' + logo(s) + '<b style="color:' + RING[s] + '">' + esc(f.big) + '</b><small>' + esc(f.small || title(s)) + '</small></div>'; }).join('') + '</div>'; }
   // The minigame card. Built once per minigame; after that only the clock and the squad chips change,
   // so the entrance plays once. A Chromebook minigame opens with a roulette that slows down and lands
-  // on the game (skipped under prefers-reduced-motion). Squads pop in as their scores arrive.
-  var mgBuilt = '', mgIn = {};
+  // on the game (skipped under prefers-reduced-motion). Squads show Practicing / Ready, then pop in as scores arrive.
+  var mgBuilt = '', mgIn = {}, mgClock = '', duelHold = 0;
   function mgIcon(mg) { var d = S.minigames && S.minigames[mg.game]; return d && d.icon ? d.icon : 'ph-game-controller'; }
+  function mgList(g) { return g.mg && g.mg.squads ? g.order.filter(function (s) { return g.mg.squads.indexOf(s) >= 0; }) : g.order; }
+  function modeLine(mg) {
+    var t = function (l) { return l.map(title).join(' + '); };
+    if (mg.mode === '2v2') return '2 vs 2 · ' + t(mg.teams[0]) + '  vs  ' + t(mg.teams[1]);
+    if (mg.mode === '1v3') return '1 vs 3 · ' + title(mg.teams[0][0]) + ' takes on everyone';
+    if (mg.mode === 'coop') return 'Everyone vs Shady · every squad averages ' + (mg.game === 'react' ? (mg.target / 1000).toFixed(2) + ' s' : mg.target) + ' or Shady steals coins';
+    if (mg.mode === 'duel') return 'Duel · ' + t(mg.squads) + ' · ' + mg.bet + ' coins on the line';
+    if (mg.mode === 'showdown') return 'Showdown · ' + t(mg.squads) + ' are tied for first';
+    return '';
+  }
+  function teamOf(mg, s) { if (!mg.teams) return ''; return mg.mode === '1v3' ? (mg.teams[0][0] === s ? 'Solo' : 'Team of 3') : mg.teams[0].indexOf(s) >= 0 ? 'Team A' : 'Team B'; }
   function minigameCard(g) {
-    var mg = g.mg, key = g.id + ':' + mg.round;
+    var mg = g.mg, key = g.id + ':' + (mg.id || mg.round);
+    if (Date.now() < duelHold) return;
     if (mg.live) {
       if (mgBuilt === key) return;
       mgBuilt = key;
       overlay('<div class="card-big"><div class="kicker">Minigame · live ' + esc(mg.kind) + ' challenge</div><h2 class="land">' + esc(mg.name) + '</h2><p>' + esc(mg.how) + '</p><p style="color:var(--gold);font-weight:800">Staff: tap the winning squad on the right.</p></div>');
+      SFX.play('reveal');
       return;
     }
     var t = mg.startAt - now(), left = Math.max(0, Math.ceil(t / 1000)), playing = t <= 0, remain = Math.max(0, Math.ceil((mg.endAt - now()) / 1000));
+    var practice = S.opts && S.opts.practice;
     if (mgBuilt !== key || !$('mgClock')) {
-      mgBuilt = key; mgIn = {};
-      var d = S.minigames && S.minigames[mg.game], from = d && d.from ? ' · from ' + d.from : '';
-      overlay('<div class="card-big"><div class="kicker">Minigame · everyone plays on their Chromebook' + esc(from) + '</div>' +
+      mgBuilt = key; mgIn = {}; mgClock = '';
+      var d = S.minigames && S.minigames[mg.game], from = d && d.from ? ' · from ' + d.from : '', ml = modeLine(mg);
+      overlay('<div class="card-big"><div class="kicker">Minigame · on the Chromebooks' + esc(from) + '</div>' + (ml ? '<div class="mode">' + esc(ml) + '</div>' : '') +
         '<div class="mgicon" id="mgIcon"><i class="ph-fill ' + mgIcon(mg) + '"></i></div><h2 id="mgName">' + esc(mg.name) + '</h2><div class="mgrest" id="mgRest"><p>' + esc(mg.how) + '</p>' +
+        (mg.game === 'sketch' ? '<p class="word">Everyone draws: <b>' + esc(mg.word) + '</b></p>' : '') +
         '<div class="clock" id="mgClock"></div>' +
-        squadCards(g, function (s) { return { big: 'Ready', cls: 'mgs' }; }) + '</div></div>');
+        squadCards(g, function (s) { return { big: 'Ready', cls: 'mgs', small: teamOf(mg, s) || title(s) }; }, mgList(g)) + '</div></div>');
+      if (mg.mode === 'duel' || mg.mode === 'showdown') SFX.play('duel');
       roulette(mg);
     }
-    var c = $('mgClock'), txt = playing ? (remain ? String(remain) : 'Time!') : 'Get ready... ' + left;
-    if (c && c.textContent !== txt) { c.textContent = txt; c.classList.toggle('hot', playing && remain > 0 && remain <= 5); if (!calm) { c.classList.remove('tick'); void c.offsetWidth; c.classList.add('tick'); } }
-    document.querySelectorAll('#overlay .sqc.mgs').forEach(function (el, i) {
-      var s = g.order[i], done = mg.scores && mg.scores[s] != null, b = el.querySelector('b');
-      var want = done ? 'In!' : playing ? 'Playing' : 'Ready';
-      if (b.textContent !== want) b.textContent = want;
-      if (done && !mgIn[s]) { mgIn[s] = true; el.classList.add('done', 'in'); }
+    var c = $('mgClock'), txt = playing ? (remain ? String(remain) : 'Time!') : (practice && left > 3 ? 'Practice time · ' : 'Get ready... ') + left;
+    if (c && c.textContent !== txt) {
+      c.textContent = txt; c.classList.toggle('hot', playing && remain > 0 && remain <= 5);
+      if (!calm) { c.classList.remove('tick'); void c.offsetWidth; c.classList.add('tick'); }
+      if (!playing && left <= 3 && left > 0) SFX.play('beep');
+      if (playing && mgClock.indexOf('Get') === 0) SFX.play('go');
+      if (playing && remain > 0 && remain <= 3) SFX.play('tick');
+      mgClock = txt;
+    }
+    document.querySelectorAll('#overlay .sqc.mgs').forEach(function (el) {
+      var s = el.getAttribute('data-s'), done = mg.scores && mg.scores[s] != null, b = el.querySelector('b'), sm = el.querySelector('small');
+      var want = done ? (mg.game === 'sketch' ? 'Got it!' : 'In!') : playing ? (mg.game === 'sketch' ? 'Drawing' : 'Playing') : mg.ready && mg.ready[s] ? 'Ready!' : practice ? 'Practicing' : 'Ready';
+      if (b.textContent !== want) { b.textContent = want; if (want === 'Ready!' && !calm) { el.classList.remove('in'); void el.offsetWidth; el.classList.add('in'); } if (want === 'Ready!') SFX.play('ready'); }
+      if (mg.game === 'sketch' && mg.guesses && mg.guesses[s] && !done) { var gs = 'AI: ' + (mg.guesses[s] === 'unsure' ? 'not sure' : mg.guesses[s] + '?'); if (sm.textContent !== gs) sm.textContent = gs; }
+      if (done && !mgIn[s]) { mgIn[s] = true; el.classList.add('done', 'in'); SFX.play('pop'); }
     });
   }
-  // Mario Party-style pick: names flick by, slow down, and land. About two seconds, well inside the 9-second ready time.
+  // Mario Party-style pick: names flick by, slow down, and land. About two seconds, well inside the ready time.
   function roulette(mg) {
     var name = $('mgName'), icon = $('mgIcon'), rest = $('mgRest'), all = S.minigames ? Object.keys(S.minigames) : [];
-    if (calm || all.length < 3 || mg.startAt - now() < 4000) { name.classList.add('land'); return; }
+    if (calm || all.length < 3 || mg.startAt - now() < 4000) { name.classList.add('land'); SFX.play('reveal'); return; }
     rest.classList.add('wait'); name.classList.add('spin');
     var steps = 14, i = 0, start = all.indexOf(mg.game) + 3;
     (function next() {
@@ -351,10 +445,12 @@
       if (i >= steps) {
         name.textContent = mg.name; icon.innerHTML = '<i class="ph-fill ' + mgIcon(mg) + '"></i>';
         name.classList.remove('spin'); name.classList.add('land'); icon.classList.add('land'); rest.classList.remove('wait'); rest.classList.add('show');
+        SFX.play('reveal');
         return;
       }
       var k = all[(start + i) % all.length], d = S.minigames[k];
       name.textContent = d.name; icon.innerHTML = '<i class="ph-fill ' + (d.icon || 'ph-game-controller') + '"></i>';
+      SFX.play('spin');
       setTimeout(next, 50 + Math.pow(i / steps, 3) * 320);
     })();
   }
@@ -362,26 +458,39 @@
     var d = S.minigames && S.minigames[mg.game];
     return mg.game === 'react' ? (v / 1000).toFixed(2) + ' s' : v + (d && d.unit ? ' ' + d.unit : '');
   }
+  function coinsText(p) { return (p < 0 ? '' : '+') + p + ' coins'; }
   function resultsCard(g) {
-    var mg = g.mg;
-    overlay('<div class="card-big results"><div class="kicker">Minigame results</div><h2>' + esc(mg.name) + '</h2>' +
+    var mg = g.mg, k = 'Minigame results';
+    if (mg.mode === '2v2' || mg.mode === '1v3') k = mg.winTeam < 0 ? 'A tie!' : (mg.mode === '1v3' ? (mg.winTeam === 0 ? title(mg.teams[0][0]) + ' beat everyone!' : 'The team of 3 wins!') : (mg.winTeam === 0 ? 'Team A' : 'Team B') + ' wins!');
+    if (mg.mode === 'coop') k = mg.made ? 'Teamwork! Shady loses' : 'Shady wins this one';
+    overlay('<div class="card-big results"><div class="kicker">' + esc(k) + '</div><h2>' + esc(mg.name) + '</h2>' +
       squadCards(g, function (s) {
         var p = mg.prizes[s] || 0, v = mg.scores && mg.scores[s];
-        var sc = mg.live ? (mg.winner === s ? 'Winner' : 'Played') : v == null ? 'No score' : resultText(mg, v);
-        return { big: '+' + p + ' coins', small: sc, cls: p === 10 ? 'win' : '' };
+        var sc = mg.live ? (mg.winner === s ? 'Winner' : 'Played') : v == null ? (mg.game === 'sketch' ? 'Not guessed' : 'No score') : resultText(mg, v);
+        return { big: coinsText(p), small: (teamOf(mg, s) ? teamOf(mg, s) + ' · ' : '') + sc, cls: p >= 10 || (mg.mode === '1v3' && p > 3) ? 'win' : '' };
       }) + '</div>', 5200);
     document.querySelectorAll('#overlay .results .sqc').forEach(function (el, i) { el.style.animationDelay = (i * 110) + 'ms'; });
+    SFX.play(mg.mode === 'coop' && !mg.made ? 'sad' : 'win');
+  }
+  function duelResults(d, g) {
+    duelHold = Date.now() + 4500;
+    overlay('<div class="card-big results"><div class="kicker">Duel results</div><h2>' + esc(d.winner ? title(d.winner) + ' wins the duel!' : 'A tie!') + '</h2>' +
+      squadCards(g, function (s) {
+        var v = d.scores && d.scores[s], p = (d.prizes || {})[s] || 0;
+        return { big: coinsText(p), small: v == null ? 'No score' : resultText(d, v), cls: d.winner === s ? 'win' : '' };
+      }, d.squads) + '</div>', 5000);
+    SFX.play(d.winner ? 'win' : 'land');
   }
   function endSequence(g) {
     var steps = [];
     (g.bonus || []).forEach(function (b) {
-      steps.push(function () { overlay('<div class="card-big"><div class="kicker">Bonus flag</div><h2>' + esc(b.name) + '</h2>' + '<div class="squads">' + b.squads.map(function (s) { return '<div class="sqc win">' + logo(s) + '<b style="color:' + RING[s] + '">+1 flag</b><small>' + esc(title(s)) + '</small></div>'; }).join('') + '</div></div>'); host('Bonus flag! ' + b.name + ' goes to ' + b.squads.map(title).join(' and ') + '!'); confetti(RING[b.squads[0]]); });
+      steps.push(function () { overlay('<div class="card-big"><div class="kicker">Bonus flag</div><h2>' + esc(b.name) + '</h2>' + '<div class="squads">' + b.squads.map(function (s) { return '<div class="sqc win">' + logo(s) + '<b style="color:' + RING[s] + '">+1 flag</b><small>' + esc(title(s)) + '</small></div>'; }).join('') + '</div></div>'); host('Bonus flag! ' + b.name + ' goes to ' + b.squads.map(title).join(' and ') + '!'); confetti(RING[b.squads[0]]); SFX.play('reveal'); });
     });
     steps.push(function () {
       var w = g.places[0];
       overlay('<div class="card-big"><div class="kicker">The winner of Summit Party</div>' + logo(w, 'blogo').replace('class="blogo"', 'class="blogo" style="font-size:clamp(60px,9vw,160px);background:' + BASE[w] + '"') + '<h2 style="color:' + RING[w] + '">' + esc(title(w)) + ' Squad!</h2>' +
         squadCards(g, function (s) { var i = g.places.indexOf(s); return { big: g.squads[s].flags + ' flags', small: ['1st', '2nd', '3rd', '4th'][i] + ' · ' + g.squads[s].coins + ' coins', cls: i === 0 ? 'win' : '' }; }) + '<p style="margin-top:1em">The squad points wait for a staff yes in Admin.</p></div>');
-      confetti(RING[w]);
+      confetti(RING[w]); SFX.play('win');
     });
     var i = 0; (function next() { if (i < steps.length) { steps[i++](); setTimeout(next, 3600); } })();
   }
@@ -440,8 +549,9 @@
     if (v.now) skew = v.now - Date.now();
     var prev = S && S.game;
     S = v; seq = v.game ? v.game.seq : 0;
+    SFX.set(v.opts && v.opts.sound, 1);
     var g = S.game, fresh = drawnLayout !== (S.layout || 'trail') || drawnCode !== (g ? g.code : '');
-    if (fresh) { drawBoard(); seenHost = 0; seenMg = ''; seenResult = ''; seenEnd = ''; seenFinal = g && g.finalNews || 0; closeOverlay(); }
+    if (fresh) { drawBoard(); seenHost = 0; seenMg = ''; seenResult = ''; seenEnd = ''; seenFinal = g && g.finalNews || 0; seenDuel = g && g.duelDone ? g.duelDone.id : 0; closeOverlay(); }
     if (g && g.code !== code) { code = g.code; try { sessionStorage.setItem('summit-code', code); } catch (e) {} }
     $('codeBig').textContent = g ? g.code : '····';
     if (!g) { side(); staff(); return; }
@@ -456,6 +566,7 @@
     if (L.roll && !continuing) {
       go = go.then(function () {
         var d = badge(L.squad, 'dice spin', '?'), n = 0;
+        SFX.play('dice');
         return new Promise(function (ok) {
           var spin = setInterval(function () { if (d) d.textContent = String(1 + (n++ % 6)); }, 70);
           setTimeout(function () { clearInterval(spin); if (d) { d.classList.remove('spin'); d.textContent = L.roll; } setTimeout(ok, calm ? 0 : 650); }, calm ? 0 : 900);
@@ -465,10 +576,12 @@
     go.then(function () {
       var left = continuing ? prev.pending.left : L.roll;
       (function step() {
-        if (i < hops.length) { place(L.squad, hops[i++]); left = Math.max(0, left - 1); badge(L.squad, left ? 'count' : '', left); setTimeout(step, hop); return; }
+        if (i < hops.length) { SFX.play('hop'); place(L.squad, hops[i++]); left = Math.max(0, left - 1); badge(L.squad, left ? 'count' : '', left); setTimeout(step, hop); return; }
         badge(L.squad, '', '');
         if (L.swap) L.swap.forEach(function (s) { place(s, g.squads[s].pos); });
         placeFlag(g.flagAt);
+        var landType = S.board && S.board[g.squads[L.squad].pos] ? S.board[g.squads[L.squad].pos].type : '';
+        SFX.play(L.flag ? 'flag' : L.villain ? 'villain' : L.avalanche ? 'avalanche' : L.event ? 'event' : L.item ? 'item' : landType === 'red' ? 'lose' : landType === 'duel' ? 'duel' : 'coin');
         if (L.flag) { banner('Summit Flag!', title(L.flag) + ' planted a flag', L.flag); confetti(RING[L.flag]); }
         else if (L.villain) overlay('<div class="card-big"><img class="villain" src="' + esc(S.art.villains[L.villain]) + '" alt=""><h2>' + esc(VNAME[L.villain]) + '!</h2><p>' + esc(L.events[L.events.length - 1] || '') + '</p></div>', 3400);
         else if (L.avalanche) { overlay('<div class="card-big"><div class="kicker">Avalanche!</div><h2>' + esc(L.avalanche) + '</h2></div>', 3000); }
@@ -483,10 +596,11 @@
   function after(g, prev) {
     side(); staff();
     if (g.host && g.host.at !== seenHost) { seenHost = g.host.at; host(g.host.text); }
-    var mgKey = g.mg ? g.id + ':' + g.mg.round : '';
+    var mgKey = g.mg ? g.id + ':' + (g.mg.id || g.mg.round) : '';
+    if (g.duelDone && g.duelDone.id !== seenDuel) { seenDuel = g.duelDone.id; duelResults(g.duelDone, g); }
     if (g.phase === 'minigame' && g.mg) { minigameCard(g); seenMg = mgKey; }
-    else if (g.mg && g.mg.done && seenResult !== mgKey) { seenResult = mgKey; if (seenMg === mgKey || (prev && prev.phase === 'minigame')) resultsCard(g); }
-    if (g.finalNews && g.finalNews !== seenFinal && g.status === 'playing') { seenFinal = g.finalNews; setTimeout(function () { overlay('<div class="card-big"><div class="kicker">Three rounds left</div><h2 style="color:#ff6b6b">The Final Climb!</h2><p>The squad in last place gets 10 coins. Blue and red spaces count double.</p></div>', 4200); }, 5400); }
+    else if (g.mg && g.mg.done && g.mg.mode !== 'duel' && seenResult !== mgKey) { seenResult = mgKey; if (seenMg === mgKey || (prev && prev.phase === 'minigame')) resultsCard(g); }
+    if (g.finalNews && g.finalNews !== seenFinal && g.status === 'playing') { seenFinal = g.finalNews; setTimeout(function () { SFX.play('final'); overlay('<div class="card-big"><div class="kicker">Three rounds left</div><h2 style="color:#ff6b6b">The Final Climb!</h2><p>The squad in last place gets 10 coins. Blue and red spaces count double.</p></div>', 4200); }, 5400); }
     if (g.status === 'ended' && seenEnd !== g.id) { seenEnd = g.id; setTimeout(function () { endSequence(g); }, 1500); }
     if (g.status === 'stopped') closeOverlay();
   }
@@ -506,4 +620,4 @@
 </script>
 </body>
 </html>
-<!-- file-stamp: 2e80bc69d5 -->
+<!-- file-stamp: 1d9087ee24 -->

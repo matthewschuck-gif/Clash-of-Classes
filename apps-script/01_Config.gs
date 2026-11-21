@@ -300,6 +300,14 @@ const DEFAULT_SETTINGS = [
   ['SUMMIT_PARTY_AUTO_ROLL', '30', 'Summit Party: seconds a squad has to roll (or pick a path) before the board rolls for it (Main Trail at forks), so a drop-in game keeps moving. 0 = never (staff press Skip).'],
   ['SUMMIT_PARTY_FLAG_COST', '20', 'Summit Party: coins to plant a Summit Flag.'],
   ['SUMMIT_PARTY_MINIGAMES', 'ALL', 'Summit Party: the Chromebook minigames in the rotation. ALL, or a list of keys: tap, react, memory, updraft, bounce, runner, slalom, stack, catch, dodge (updraft through stack come from Ridgeline).'],
+  ['SUMMIT_PARTY_PRACTICE', 'ON', 'Summit Party: ON = before each Chromebook minigame, squads practice (up to 25 seconds) and tap Ready; it starts once every squad is ready. OFF = a 9-second countdown.'],
+  ['SUMMIT_PARTY_RELAY', 'ON', 'Summit Party: ON = pass the Chromebook. Each minigame is split into 4 legs and the page tells the next teammate to step up. OFF = one player per squad.'],
+  ['SUMMIT_PARTY_TEAMS', 'ON', 'Summit Party: ON = some minigames are 2 vs 2, 1 vs 3 (the leader against everyone), or Everyone vs Shady (all squads together). OFF = every squad for itself.'],
+  ['SUMMIT_PARTY_DUELS', 'ON', 'Summit Party: ON = duel spaces (the squad picks a squad to challenge and bets coins) and a Showdown minigame when two squads tie for first. OFF = duel spaces act like blue spaces; no Showdown.'],
+  ['SUMMIT_PARTY_SOUND', 'ON', 'Summit Party: ON = sound effects on the big screen (dice, coins, flags, minigames, the winner). Every page also has its own mute button.'],
+  ['SUMMIT_PARTY_SOUND_CHROMEBOOK', 'ON', 'Summit Party: ON = quiet sound effects on the squad Chromebooks too. OFF = Chromebooks stay silent.'],
+  ['SUMMIT_PARTY_DRAW', 'ON', 'Summit Party: ON = Trail Sketch is in the minigame rotation (squads draw a word, the AI guesses). It also needs the Script Property CLAUDE_API_KEY; without it the game is skipped. Edit the words on the Summit Sketch Words tab.'],
+  ['SUMMIT_PARTY_DRAW_MODEL', 'claude-haiku-5-5', 'Summit Party: the Claude model that guesses Trail Sketch drawings. A fast model keeps guesses quick.'],
   ['SUMMIT_PARTY_LIVE', 'ON', 'Summit Party: ON = the minigame every third round is a live Move, Make or Talk challenge (the Summit Live Challenges tab; staff tap the winner). OFF = every minigame is on the Chromebooks.'],
   ['SUMMIT_PARTY_ITEMS', 'ON', 'Summit Party: ON = items (Double Dice, Golden Compass, Sticky Paws, Zipline), item spaces and the Camp Store. OFF = no items.'],
   ['SUMMIT_PARTY_BONUS', 'ON', 'Summit Party: ON = bonus flags at the end (Minigame Champ, Coin Keeper, Trail Explorer). OFF = none.'],
@@ -527,4 +535,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = 'eea0bc0b64';
+var FILE_STAMP_01_Config = '1f398e7f70';
