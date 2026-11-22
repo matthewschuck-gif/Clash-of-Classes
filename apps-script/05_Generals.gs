@@ -161,9 +161,15 @@ function clashGeneralsPreview(pw, squad) {
   }
   squad = squadOf_(squad);
   if (SQUAD_KEYS_.indexOf(squad) === -1) throw new Error('Pick a squad.');
+  return JSON.stringify({ token: hqPreviewToken_(squad), name: 'Staff preview', squad: squad });
+}
+// A staff-preview HQ session for one squad (also used by Admin › Preview as a student, 65_Preview.gs).
+function hqPreviewToken_(squad) {
+  squad = squadOf_(squad);
+  if (SQUAD_KEYS_.indexOf(squad) === -1) throw new Error('Pick a squad.');
   const token = Utilities.getUuid();
-  cache.put('hq-' + token, JSON.stringify({ id: '', name: 'Staff preview', squad: squad, preview: true }), 2 * 3600);
-  return JSON.stringify({ token: token, name: 'Staff preview', squad: squad });
+  CacheService.getScriptCache().put('hq-' + token, JSON.stringify({ id: '', name: 'Staff preview', squad: squad, preview: true }), 2 * 3600);
+  return token;
 }
 
 function hqSession_(token) {
@@ -305,4 +311,4 @@ function clashGeneralsService(token, progress) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_05_Generals = 'a584de3631';
+var FILE_STAMP_05_Generals = 'aad59df554';

@@ -479,8 +479,14 @@
     if (sp) sp.onclick = function () { act('clashGeneralsService', document.getElementById('hqProg').value); };
   }
 
-  function start() { if (el()) signIn(); }
+  // Admin › Preview as a student opens ?page=hq&pv=TICKET: that squad's HQ, no sign-in.
+  function start() {
+    if (!el()) return;
+    var pv = ''; try { pv = new URLSearchParams(window.location.search).get('pv') || ''; } catch (e) { pv = ''; }
+    if (!pv || !window.gasRun_) return signIn();
+    window.gasRun_('clashPreviewHq', pv).then(function (r) { token = r.token; load(); }).catch(function () { signIn(); });
+  }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script>
-<!-- file-stamp: 7ec9cc5ab0 -->
+<!-- file-stamp: 7e92a6bf41 -->

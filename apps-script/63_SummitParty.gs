@@ -151,6 +151,8 @@ function spMinigameKeys_() {
 
 function spOn_() { return String(getSetting_('SUMMIT_PARTY') || 'OFF').toUpperCase() === 'ON'; }
 function spRequireOn_() { if (!spOn_()) throw new Error('Summit Party is closed right now.'); }
+// A preview demo game (65_Preview.gs) runs even while SUMMIT_PARTY is OFF.
+function spRequireOnFor_(code) { if (!spOn_() && !(spCode_(code) && (spLoad_(code) || {}).demo)) throw new Error('Summit Party is closed right now.'); }
 function spSetting_(k, d) { const v = Number(getSetting_(k)); return String(getSetting_(k) || '').trim() !== '' && !isNaN(v) ? v : d; }
 
 // ── GAMES BY CODE ──────────────────────────────────────────────────
@@ -167,7 +169,7 @@ function spSetIndex_(list) { PropertiesService.getScriptProperties().setProperty
 function spTidy_() {
   const now = Date.now(), props = PropertiesService.getScriptProperties(), keep = [];
   spIndex_().forEach(function (x) {
-    if (now - Number(x.started || 0) > 12 * 3600000) { props.deleteProperty(spKey_(x.code)); CacheService.getScriptCache().remove(spKey_(x.code)); }
+    if (now - Number(x.started || 0) > (x.demo ? 2 : 12) * 3600000) { props.deleteProperty(spKey_(x.code)); CacheService.getScriptCache().remove(spKey_(x.code)); }
     else keep.push(x);
   });
   spSetIndex_(keep);
@@ -187,7 +189,7 @@ function spNewCode_(taken) {
 function spLoad_(code) {
   code = spCode_(code);
   if (!code) {
-    const live = spIndex_().filter(function (x) { return x.status === 'playing'; });
+    const live = spIndex_().filter(function (x) { return x.status === 'playing' && !x.demo; });
     if (live.length !== 1) return null;
     code = live[0].code;
   }
@@ -400,7 +402,7 @@ function spNextTurn_(g, board) {
 }
 
 function spStartMinigame_(g) {
-  const live = String(getSetting_('SUMMIT_PARTY_LIVE') || 'ON').toUpperCase() !== 'OFF' && g.round % 3 === 0 && g.round < g.rounds + 1;
+  const live = !g.demo && String(getSetting_('SUMMIT_PARTY_LIVE') || 'ON').toUpperCase() !== 'OFF' && g.round % 3 === 0 && g.round < g.rounds + 1;
   g.phase = 'minigame';
   if (live) {
     const list = spLiveChallenges_(), c = list[(Math.floor(g.round / 3) - 1 + (g.seed || 0)) % list.length];
@@ -434,6 +436,7 @@ function spNewMg_(g, k, mode, squads, extra) {
     g.order.filter(function (s) { return s !== hiker && squads.indexOf(s) >= 0; }).forEach(function (s, i) { g.mg.ghosts[s] = v[i % v.length]; });
   }
   if (extra) Object.keys(extra).forEach(function (x) { g.mg[x] = extra[x]; });
+  if (g.demo) squads.forEach(function (s) { if (s !== g.demo.mine) g.mg.ready[s] = true; }); // the computer squads are always ready
   return g.mg;
 }
 // Games a duel or the Showdown can use (not the AI or big-screen ones).
@@ -642,6 +645,7 @@ function spFinish_(g, status) {
   g.places = spPlaces_(g);
   const result = g.places.map(function (s, i) { return (i + 1) + '. ' + spTitle_(s) + ' (' + g.squads[s].flags + ' flags, ' + g.squads[s].coins + ' coins)'; }).join(' · ');
   if (status === 'ended') spHost_(g, 'And the winner of Summit Party is... ' + spTitle_(g.places[0]) + '!');
+  if (g.demo) return; // a preview demo game: nothing on the Summit tabs, never any points
   try {
     const sh = spGamesTab_(), r = sheetRows_('Summit Games').filter(function (x) { return String(x['Game']) === g.id; })[0];
     if (r) sh.getRange(r._row, 2, 1, 6).setValues([[status === 'ended' ? 'Finished' : 'Stopped', g.startedAt.slice(0, 10), todayYmd_(), g.rounds, String(r['Started By'] || ''), result]]);
@@ -678,17 +682,45 @@ function spView_(g) {
 }
 
 // The clock: auto-roll (or auto-pick) for a squad that waits too long; minigames that run out of time.
+// A preview demo game (g.demo = { mine }): the computer plays every other squad. Its turns go after
+// 2.5 seconds, it is always ready, and its minigame scores come in near the end of the clock.
+function spBot_(g, s) { return !!(g && g.demo && s && s !== g.demo.mine); }
+function spBotScore_(k) {
+  const d = SP_MINIGAMES_[k];
+  if (d.better === 'low') return Math.min(d.max, Math.round(240 + Math.random() * 260));
+  return Math.max(1, Math.round(d.max * (0.12 + Math.random() * 0.3)));
+}
+// Computer scores that are due now (fill = true writes them). Trail Chase is played on the big screen.
+function spBotScores_(g, t, fill) {
+  const mg = g.mg;
+  if (!g.demo || !mg || mg.live || mg.done || mg.game === 'chase' || t < mg.endAt - 900) return false;
+  const due = (mg.squads || Object.keys(g.squads)).filter(function (s) { return spBot_(g, s) && mg.scores[s] == null; });
+  if (fill) due.forEach(function (s) { mg.scores[s] = spBotScore_(mg.game); });
+  return due.length > 0;
+}
+function spAllScored_(g, t) {
+  const mg = g.mg;
+  return !!(g.demo && mg && !mg.live && mg.game !== 'chase' && t >= mg.endAt - 500 && (mg.squads || Object.keys(g.squads)).every(function (s) { return mg.scores[s] != null; }));
+}
+function spTickDue_(g, t, secs) {
+  if (g.phase === 'minigame') return !!(g.mg && !g.mg.live && (t > g.mg.endAt + 8000 || spBotScores_(g, t, false) || spAllScored_(g, t)));
+  if (g.phase !== 'turn') return false;
+  const wait = spBot_(g, g.pending ? g.pending.squad : g.order[g.turn]) ? 2500 : secs > 0 ? secs * 1000 : 0;
+  return wait > 0 && t - Number(g.turnAt || 0) >= wait;
+}
+
 function spTick_(g) {
   if (!g || g.status !== 'playing') return g;
-  const secs = spSetting_('SUMMIT_PARTY_AUTO_ROLL', 30), now = Date.now();
-  const mgDue = g.phase === 'minigame' && g.mg && !g.mg.live && now > g.mg.endAt + 8000;
-  const turnDue = g.phase === 'turn' && secs > 0 && now - Number(g.turnAt || 0) >= secs * 1000;
-  if (!mgDue && !turnDue) return g;
+  const secs = spSetting_('SUMMIT_PARTY_AUTO_ROLL', 30);
+  if (!spTickDue_(g, Date.now(), secs)) return g;
   return spWithLock_(function () {
-    const cur = spLoad_(g.code), board = spBoard_(cur && cur.layout);
-    if (!cur || cur.status !== 'playing') return cur;
-    if (cur.phase === 'minigame' && cur.mg && !cur.mg.live && Date.now() > cur.mg.endAt + 8000) { spResolveMinigame_(cur); return spSave_(cur); }
-    if (cur.phase !== 'turn' || !(secs > 0) || Date.now() - Number(cur.turnAt || 0) < secs * 1000) return cur;
+    const cur = spLoad_(g.code), board = spBoard_(cur && cur.layout), t = Date.now();
+    if (!cur || cur.status !== 'playing' || !spTickDue_(cur, t, secs)) return cur;
+    if (cur.phase === 'minigame') {
+      spBotScores_(cur, t, true);
+      if (t > cur.mg.endAt + 8000 || spAllScored_(cur, t)) spResolveMinigame_(cur);
+      return spSave_(cur);
+    }
     if (cur.pending) {
       const s = cur.pending.squad;
       if (cur.pending.kind === 'shop') { spLog_(cur, spTitle_(s) + ' walked past the Camp Store.'); spContinue_(cur, board, s); }
@@ -727,8 +759,8 @@ function spContinue_(g, board, s) {
 
 /** Public: one game for the screen and the controllers. sinceSeq = the page's last one ({ same: true } if nothing changed). */
 function clashSummitState(code, sinceSeq) {
-  if (!spOn_()) return JSON.stringify({ on: false });
   let g = spLoad_(code);
+  if (!spOn_() && !(g && g.demo && spCode_(code))) return JSON.stringify({ on: false });
   g = spTick_(g);
   if (g && Number(sinceSeq) && Number(sinceSeq) === g.seq) return JSON.stringify({ on: true, same: true, seq: g.seq, now: Date.now() });
   const v = spView_(g);
@@ -740,24 +772,31 @@ function clashSummitState(code, sinceSeq) {
 function clashSummitStart(token, rounds, layout) {
   const who = spStaff_(token);
   spRequireOn_();
+  return spCreate_(String(who.name || who.email || 'staff'), rounds, layout, null);
+}
+// A new game. demo = { mine: squad } for a preview demo game (65_Preview.gs): the computer plays the rest.
+function spCreate_(by, rounds, layout, demo) {
   return spWithLock_(function () {
-    ensureSummitPartyTabs_(); // first game: the Summit tabs, including the live challenges
+    if (!demo) ensureSummitPartyTabs_(); // first game: the Summit tabs, including the live challenges
     const list = spTidy_();
-    if (list.filter(function (x) { return x.status === 'playing'; }).length >= SP_MAX_GAMES_) throw new Error('There are already ' + SP_MAX_GAMES_ + ' games going. End one first.');
+    if (!demo && list.filter(function (x) { return x.status === 'playing' && !x.demo; }).length >= SP_MAX_GAMES_) throw new Error('There are already ' + SP_MAX_GAMES_ + ' games going. End one first.');
+    if (demo && list.filter(function (x) { return x.status === 'playing' && x.demo; }).length >= 10) throw new Error('Too many preview games right now. Try again in a little while.');
     const code = spNewCode_(list.map(function (x) { return x.code; }));
     const board = spBoard_(layout);
     const order = SQUAD_KEYS_.slice().sort(function () { return Math.random() - 0.5; });
     const g = { id: 'SP-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd-HHmm') + '-' + code, code: code, status: 'playing', phase: 'turn',
       startedAt: new Date().toISOString(), layout: spLayoutOf_(layout), seed: Math.floor(Math.random() * 6),
       rounds: Math.max(1, Math.min(30, Math.round(Number(rounds) || spSetting_('SUMMIT_PARTY_ROUNDS', 10)))), round: 1, turn: 0, order: order, turnAt: Date.now(),
-      squads: {}, flagAt: 0, pending: null, mg: null, log: [], seq: 0, last: { squad: '', roll: 0, path: [], events: [] }, by: String(who.name || who.email || 'staff') };
+      squads: {}, flagAt: 0, pending: null, mg: null, log: [], seq: 0, last: { squad: '', roll: 0, path: [], events: [] }, by: by };
+    if (demo) { g.demo = { mine: demo.mine }; g.id = 'DEMO-' + code; }
     order.forEach(function (s) { g.squads[s] = { pos: 0, coins: 10, peak: 10, flags: 0, items: [], mgWins: 0, events: 0, moved: 0 }; });
     spMoveFlag_(g, board);
     spLog_(g, 'A new Summit Party! Game code ' + code + '. ' + spTitle_(order[0]) + ' goes first.');
-    spHost_(g, 'Welcome to SUMMIT PARTY! I am Cliff, your host. Plant the most Summit Flags to win. ' + spTitle_(order[0]) + ', you are up first!');
-    list.push({ code: code, status: 'playing', started: Date.now() });
+    spHost_(g, 'Welcome to SUMMIT PARTY! I am Cliff, your host. Plant the most Summit Flags to win. ' + spTitle_(order[0]) + ', you are up first!' +
+      (demo ? ' (Preview: you are ' + spTitle_(demo.mine) + '. The computer plays the others. No points.)' : ''));
+    list.push(demo ? { code: code, status: 'playing', started: Date.now(), demo: true } : { code: code, status: 'playing', started: Date.now() });
     spSetIndex_(list);
-    spGamesTab_().appendRow([g.id, 'Playing', todayYmd_(), '', g.rounds, g.by, '']);
+    if (!demo) spGamesTab_().appendRow([g.id, 'Playing', todayYmd_(), '', g.rounds, g.by, '']);
     return JSON.stringify(spView_(spSave_(g)));
   });
 }
@@ -765,7 +804,7 @@ function clashSummitStart(token, rounds, layout) {
 /** Staff: skip the squad whose turn it is (nobody at their Chromebook), or end a live minigame with no winner. */
 function clashSummitSkip(token, code) {
   spStaff_(token);
-  spRequireOn_();
+  spRequireOnFor_(code);
   return spWithLock_(function () {
     const g = spGame_(code), board = spBoard_(g.layout);
     if (g.status !== 'playing') throw new Error('That game is over.');
@@ -781,7 +820,7 @@ function clashSummitSkip(token, code) {
 /** Staff: the winner of a live Move, Make or Talk challenge. */
 function clashSummitLiveWin(token, code, squad) {
   spStaff_(token);
-  spRequireOn_();
+  spRequireOnFor_(code);
   return spWithLock_(function () {
     const g = spGame_(code);
     if (g.status !== 'playing' || g.phase !== 'minigame' || !g.mg || !g.mg.live) throw new Error('No live challenge right now.');
@@ -808,7 +847,13 @@ function clashSummitEnd(token, code, finish) {
 }
 
 // A student at a squad's Chromebook: their 800# must be on the Student Board.
-function spPlayer_(id) {
+function spPlayer_(id, code) {
+  const sample = sampleSquad_(id); // the previewed squad in a preview demo game (65_Preview.gs)
+  if (sample) {
+    const dg = spLoad_(code);
+    if (!dg || !dg.demo || dg.demo.mine !== sample) throw new Error('Sample squads play only in a preview demo game.');
+    return { id: SAMPLE_ID_, squad: sample };
+  }
   spRequireOn_();
   const cache = CacheService.getScriptCache(), used = Number(cache.get('sp-calls')) || 0;
   if (used >= 6000) throw new Error('Summit Party is busy. Try again in a minute.');
@@ -824,7 +869,7 @@ function spPlayer_(id) {
 
 /** Controller: join a game (800# + the code on the big screen). */
 function clashSummitJoin(id, code) {
-  const p = spPlayer_(id), g = spGame_(code);
+  const p = spPlayer_(id, code), g = spGame_(code);
   return JSON.stringify({ squad: p.squad, code: g.code, state: JSON.parse(clashSummitState(g.code, 0)) });
 }
 
@@ -836,7 +881,7 @@ function spMyTurn_(g, squad) {
 
 /** Controller: roll for your squad (only on its turn). */
 function clashSummitRoll(id, code) {
-  const p = spPlayer_(id);
+  const p = spPlayer_(id, code);
   return spWithLock_(function () {
     const g = spGame_(code), board = spBoard_(g.layout);
     spMyTurn_(g, p.squad);
@@ -848,7 +893,7 @@ function clashSummitRoll(id, code) {
 
 /** Controller: use an item before rolling (one per turn). arg = the compass number. */
 function clashSummitItem(id, code, item, arg) {
-  const p = spPlayer_(id);
+  const p = spPlayer_(id, code);
   if (!spOnFlag_()) throw new Error('Items are turned off.');
   return spWithLock_(function () {
     const g = spGame_(code), board = spBoard_(g.layout), me = g.squads[p.squad];
@@ -884,7 +929,7 @@ function clashSummitItem(id, code, item, arg) {
 
 /** Controller: at a fork pick the path (a node id); at the Camp Store pick an item id or 'skip'. */
 function clashSummitChoose(id, code, choice) {
-  const p = spPlayer_(id);
+  const p = spPlayer_(id, code);
   return spWithLock_(function () {
     const g = spGame_(code), board = spBoard_(g.layout);
     if (g.status !== 'playing' || !g.pending) throw new Error('Nothing to choose right now.');
@@ -921,7 +966,7 @@ function clashSummitChoose(id, code, choice) {
 
 /** Controller: this squad's minigame score (the best one counts). */
 function clashSummitScore(id, code, score) {
-  const p = spPlayer_(id);
+  const p = spPlayer_(id, code);
   return spWithLock_(function () {
     const g = spGame_(code), mg = g.mg;
     if (g.status !== 'playing' || g.phase !== 'minigame' || !mg || mg.live || mg.done) throw new Error('No minigame right now.');
@@ -944,7 +989,7 @@ function clashSummitScore(id, code, score) {
 
 /** Controller: Trail Chase steering (U, D, L, R). Kept in the cache, not the game, so it is fast and needs no lock. */
 function clashSummitSteer(id, code, dir) {
-  const p = spPlayer_(id), g = spGame_(code), mg = g.mg, d = String(dir || '').toUpperCase();
+  const p = spPlayer_(id, code), g = spGame_(code), mg = g.mg, d = String(dir || '').toUpperCase();
   if (g.status !== 'playing' || g.phase !== 'minigame' || !mg || mg.game !== 'chase' || mg.done) throw new Error('No chase right now.');
   if (['U', 'D', 'L', 'R'].indexOf(d) < 0) throw new Error('Pick a direction.');
   if (mg.hiker !== p.squad && !mg.ghosts[p.squad]) throw new Error('Your squad sits this one out.');
@@ -953,7 +998,7 @@ function clashSummitSteer(id, code, dir) {
 }
 /** Big screen: every squad's latest steering, with how long ago it came in (ms). */
 function clashSummitSteers(code) {
-  spRequireOn_();
+  spRequireOnFor_(code);
   const g = spGame_(code), out = {}, c = CacheService.getScriptCache(), now = Date.now();
   Object.keys(g.squads).forEach(function (s) {
     const v = String(c.get('sp-steer-' + g.code + '-' + s) || '').split(':');
@@ -975,7 +1020,7 @@ function clashSummitChaseEnd(token, code, res) {
 }
 /** Controller: Rockslide. The running total of junk rows this squad has sent; every other squad takes them. */
 function clashSummitJunk(id, code, total) {
-  const p = spPlayer_(id);
+  const p = spPlayer_(id, code);
   return spWithLock_(function () {
     const g = spGame_(code), mg = g.mg;
     if (g.status !== 'playing' || g.phase !== 'minigame' || !mg || mg.game !== 'rockslide' || mg.done) throw new Error('No Rockslide right now.');
@@ -989,7 +1034,7 @@ function clashSummitJunk(id, code, total) {
 
 /** Controller: Ready after practice. Once every squad in the minigame is ready, it starts in 3.5 seconds. */
 function clashSummitReady(id, code) {
-  const p = spPlayer_(id);
+  const p = spPlayer_(id, code);
   return spWithLock_(function () {
     const g = spGame_(code), mg = g.mg;
     if (g.status !== 'playing' || g.phase !== 'minigame' || !mg || mg.live || mg.done) throw new Error('No minigame right now.');
@@ -1005,7 +1050,7 @@ function clashSummitReady(id, code) {
 
 /** Controller: Trail Sketch. Sends the drawing (a small JPEG or PNG data URL); Claude guesses. At most one guess every 3 seconds per squad. */
 function clashSummitGuess(id, code, img) {
-  const p = spPlayer_(id), g0 = spGame_(code), mg0 = g0.mg;
+  const p = spPlayer_(id, code), g0 = spGame_(code), mg0 = g0.mg;
   if (g0.status !== 'playing' || g0.phase !== 'minigame' || !mg0 || mg0.game !== 'sketch' || mg0.done) throw new Error('No drawing game right now.');
   if ((mg0.squads || Object.keys(g0.squads)).indexOf(p.squad) < 0) throw new Error('Your squad sits this one out.');
   if (Date.now() < mg0.startAt - 500 || Date.now() > mg0.endAt + 1500) throw new Error('Time is up!');
@@ -1055,4 +1100,4 @@ function serveSummitPlay_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_63_SummitParty = '42ee6c0fcc';
+var FILE_STAMP_63_SummitParty = '065bc1c147';

@@ -292,7 +292,7 @@ function clashHealth(token) {
     jobs: jobs, lastError: err ? Object.assign(err, { ago: ago(err.at) }) : null,
     studentBoard: { updated: boardUpdated, ok: !!boardUpdated }, squadBoard: squadBoard,
     metricsNote: 'Attendance, no-referral and no-F numbers fill in from Define a Climb-er\'s newest PowerSchool upload (its SQUAD_METRICS setting). Finalize in Admin › Metrics to award them.',
-    missing: missing, gameAwards: awardsOn_(), emailQuota: quota, usage: usageSince_(ymdShift_(todayYmd_(), -7)),
+    missing: missing, gameAwards: awardsOn_(), emailQuota: quota, usage: usageSince_(ymdShift_(todayYmd_(), -7)), preview: previewOn_(),
   });
 }
 
@@ -476,4 +476,4 @@ function clashVersion(token) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_22_Week = '0f5861dcdc';
+var FILE_STAMP_22_Week = '813a562fce';

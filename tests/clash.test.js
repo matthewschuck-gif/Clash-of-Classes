@@ -3280,7 +3280,7 @@ test('Summit Party minigames: ten in the rotation (five from Ridgeline); SUMMIT_
   assert.strictEqual(s.mg.scores.GOLD, 60, 'capped at max');
   // The page: run every canvas game for 20 seconds of frames with presses and steering, twice on one seed.
   const html = fs.readFileSync(path.join(dir, 'SummitPlay.html'), 'utf8');
-  const a = html.indexOf('  // ── Canvas minigames'), b = html.indexOf('  if (me) join(); else ask();');
+  const a = html.indexOf('  // ── Canvas minigames'), b = html.indexOf('  // ?pv=TICKET&mode=tryout');
   assert.ok(a > 0 && b > a, 'the canvas minigame block');
   const noop = () => {};
   const ctx = new Proxy({}, { get: (t, k) => k === 'createLinearGradient' ? () => ({ addColorStop: noop }) : k === 'measureText' ? () => ({ width: 10 }) : (k in t ? t[k] : noop), set: (t, k, v) => { t[k] = v; return true; } });
@@ -3493,6 +3493,64 @@ test('Summit Party: Trail Chase (a live big-screen maze: steering through the ca
   const seen = new Set([start.join()]), q = [start];
   while (q.length) { const [x, y] = q.shift(); [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => { const nx = x + dx, ny = y + dy; if (maze[ny][nx] !== '#' && !seen.has(nx + ',' + ny)) { seen.add(nx + ',' + ny); q.push([nx, ny]); } }); }
   maze.forEach((r, y) => r.split('').forEach((ch, x) => { if (ch !== '#') assert.ok(seen.has(x + ',' + y), 'cell ' + x + ',' + y + ' is reachable'); }));
+});
+
+test('Preview as a student: tickets, read-only real students, the minigame tryout list, and a demo game where the computer plays (no points, works with Summit Party OFF)', () => {
+  const w = world();
+  w.ensureSettings_();
+  w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade'], ['8001111', 'Ann L.', 'Gold', '7'], ['8002222', 'Bo K.', 'Grey', '8']];
+  const tok = login(w, 'oldpw');
+  assert.throws(() => w.clashPreviewTicket('nope', 'sample-GOLD'), /sign in/i);
+  assert.throws(() => w.clashPreviewTicket(tok, '8009999'), /not on the Student Board/);
+  const smp = JSON.parse(w.clashPreviewTicket(tok, 'sample-PURPLE'));
+  assert.deepStrictEqual([smp.squad, smp.real], ['PURPLE', false]);
+  assert.ok(smp.ticket && smp.ticket !== tok && smp.ticket.indexOf('8001') < 0, 'a random ticket, not the session or an 800#');
+  assert.deepStrictEqual(JSON.parse(w.clashPreviewOpen(smp.ticket)).id, 'sample-PURPLE');
+  assert.throws(() => w.clashPreviewOpen('deadbeef'), /run out/);
+  // A real student: read-only. Their page opens; anything that saves is refused.
+  const real = JSON.parse(w.clashPreviewTicket(tok, '8001111'));
+  const o = JSON.parse(w.clashPreviewOpen(real.ticket));
+  assert.deepStrictEqual([o.id, o.squad, o.real], ['view-8001111', 'GOLD', true]);
+  assert.strictEqual(w.meId_.length, 2);
+  const readCall = function clashMe() { return w.meId_(o.id, o.token); };
+  assert.strictEqual(readCall(), '8001111', 'clashMe can read');
+  const saveCall = function clashMeSaveLook() { return w.meId_(o.id, o.token); };
+  assert.throws(saveCall, /Read-only preview/, 'a save is refused');
+  // HQ preview for the squad
+  const hq = JSON.parse(w.clashPreviewHq(real.ticket));
+  assert.strictEqual(JSON.parse(w.CacheService.getScriptCache().get('hq-' + hq.token)).squad, 'GOLD');
+  // Tryout list: every minigame but the big-screen and AI ones
+  const tv = JSON.parse(w.clashPreviewSummit(smp.ticket));
+  assert.ok(tv.tryout.indexOf('chase') < 0 && tv.tryout.indexOf('sketch') < 0 && tv.tryout.indexOf('rockslide') >= 0 && tv.squad === 'PURPLE');
+  // Demo game, with SUMMIT_PARTY OFF
+  w.setSettingValue_('SUMMIT_PARTY', 'OFF'); w.setSettingValue_('SUMMIT_PARTY_MINIGAMES', 'tap'); w.setSettingValue_('SUMMIT_PARTY_DUELS', 'OFF');
+  const props = w.PropertiesService.getScriptProperties(), cache = w.CacheService.getScriptCache();
+  let s = JSON.parse(w.clashSummitDemo(smp.ticket, 2, 'trail')).game;
+  const code = s.code;
+  assert.deepStrictEqual([s.demo.mine, s.rounds, s.id.slice(0, 5)], ['PURPLE', 2, 'DEMO-']);
+  assert.ok(!w.book.getSheetByName('Summit Games') || w.book.getSheetByName('Summit Games').rows.length <= 1, 'not on the Summit Games tab');
+  assert.ok(!JSON.parse(w.clashSummitState('', 0)).game, 'a demo game is never "the one game being played"');
+  assert.throws(() => w.clashSummitJoin('8001111', code), /closed/, 'real students cannot join while Summit Party is OFF');
+  assert.throws(() => w.clashSummitJoin('sample-GOLD', code), /preview demo/, 'only the previewed squad');
+  assert.strictEqual(JSON.parse(w.clashSummitJoin('sample-PURPLE', code)).squad, 'PURPLE');
+  const age = (f) => { const g = JSON.parse(props.getProperty('sp-game-' + code)); f(g); props.setProperty('sp-game-' + code, JSON.stringify(g)); cache.remove('sp-game-' + code); };
+  // Play until the minigame: the computer rolls its own turns after 2.5 s; PURPLE rolls for itself.
+  for (let i = 0; i < 12 && s.phase === 'turn'; i++) {
+    const up = s.pending ? s.pending.squad : s.order[s.turn];
+    if (up === 'PURPLE' && !s.pending) s = JSON.parse(w.clashSummitRoll('sample-PURPLE', code)).game;
+    else { age(g => { g.turnAt = Date.now() - 3000; }); s = JSON.parse(w.clashSummitState(code, 0)).game; }
+  }
+  assert.strictEqual(s.phase, 'minigame', 'a full round went by');
+  assert.ok(['GOLD', 'GREY', 'BLACK'].every(q => s.mg.ready[q]), 'the computer squads are ready');
+  age(g => { g.mg.startAt = Date.now() - 20000; g.mg.endAt = Date.now() - 100; });
+  s = JSON.parse(w.clashSummitState(code, 0)).game;
+  assert.ok(['GOLD', 'GREY', 'BLACK'].every(q => s.mg.scores[q] > 0) || s.phase === 'turn', 'computer scores came in');
+  w.clashSummitEnd(tok, code, true);
+  s = JSON.parse(w.clashSummitState(code, 0)).game;
+  assert.strictEqual(s.status, 'ended');
+  assert.ok(!w.book.getSheetByName('Summit Party Points') || w.book.getSheetByName('Summit Party Points').rows.length <= 1, 'a demo game never earns points');
+  w.setSettingValue_('STUDENT_PREVIEW', 'OFF');
+  assert.throws(() => w.clashPreviewTicket(tok, 'sample-GOLD'), /STUDENT_PREVIEW/);
 });
 
 test('Summit Party: several games at once by code; any Staff Access role can run one; a squad that does not roll gets an auto-roll after SUMMIT_PARTY_AUTO_ROLL seconds', () => {

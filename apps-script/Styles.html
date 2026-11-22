@@ -1301,8 +1301,51 @@ footer { position:relative; z-index:10; border-top:1px solid var(--border); padd
 }
 .growth-legend-item { display: flex; align-items: center; gap: 5px; }
 .growth-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+/* Admin › System: Preview as a student (App.html renderPreviewCard / pvShow) */
+.pv-card { border:1px solid var(--border2); border-radius:14px; padding:14px 16px; margin-bottom:14px; background:linear-gradient(180deg,rgba(109,43,159,.16),transparent 70%); }
+.pv-h { font-weight:800; font-size:1.05rem; }
+.pv-sub { font-size:13px; color:var(--text2); margin:2px 0 10px; max-width:64ch; }
+.pv-who { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+.pv-who label { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--text3); font-weight:700; }
+.pv-who label[hidden] { display:none; }
+.pv-who select, .pv-who input { background:var(--surface2); color:var(--text); border:1px solid var(--border2); border-radius:10px; padding:8px 10px; font:inherit; font-size:14px; min-width:12em; }
+.pv-go { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
+.pv-tile { display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; background:var(--surface); color:var(--text); border:1px solid var(--border2); border-radius:12px; padding:10px 12px; cursor:pointer; font:inherit; transition:border-color .15s, transform .1s; }
+.pv-tile:hover { border-color:var(--purple-lt); }
+.pv-tile:active { transform:scale(.98); }
+.pv-tile:focus-visible, .pv-tab:focus-visible, .pv-tool:focus-visible, .pv-x:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+.pv-ic { font-size:22px; line-height:1; }
+.pv-tile b { font-size:14px; }
+.pv-tile small { font-size:12px; color:var(--text3); }
+.pv-msg { font-size:13px; margin-top:8px; color:#fca5a5; min-height:1em; }
+#pvOverlay { position:fixed; inset:0; z-index:100001; background:#120f0d; display:flex; flex-direction:column; opacity:0; transform:scale(.985); transition:opacity .16s ease-out, transform .16s ease-out; }
+#pvOverlay.on { opacity:1; transform:none; }
+.pv-bar { display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--bg2); border-bottom:1px solid var(--border2); flex-wrap:wrap; }
+.pv-title { display:flex; align-items:center; gap:8px; font-weight:800; font-size:14px; white-space:nowrap; }
+.pv-dot { width:12px; height:12px; border-radius:50%; box-shadow:0 0 0 2px rgba(255,255,255,.12); }
+.pv-tabs { display:flex; gap:4px; flex:1; overflow-x:auto; }
+.pv-tab { background:transparent; color:var(--text2); border:1px solid transparent; border-radius:999px; padding:6px 12px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; }
+.pv-tab:hover { color:var(--text); background:var(--surface); }
+.pv-tab.on { color:#1c1917; background:var(--gold); }
+.pv-tools { display:flex; gap:6px; align-items:center; }
+.pv-tool, .pv-x { background:var(--surface); color:var(--text); border:1px solid var(--border2); border-radius:10px; padding:6px 10px; font:inherit; font-size:13px; cursor:pointer; }
+.pv-x { font-size:15px; padding:6px 11px; }
+.pv-body { flex:1; display:flex; gap:10px; padding:10px; min-height:0; background:radial-gradient(ellipse at top,#2a1840,#120f0d 70%); }
+.pv-body.cb { justify-content:center; align-items:flex-start; overflow:auto; }
+.pv-body.cb .pv-frame { flex:0 0 auto; width:1366px; height:768px; max-width:none; }
+.pv-frame { flex:1; display:flex; flex-direction:column; min-width:0; }
+.pv-frame.narrow { flex:0 1 460px; margin:0 auto; }
+.pv-frame.board { flex:2.2; }
+.pv-frame.pad { flex:0 0 420px; }
+.pv-label { font-size:12px; color:var(--text3); font-weight:700; margin:0 0 4px 4px; }
+.pv-frame iframe { flex:1; width:100%; border:0; border-radius:12px; background:#1c1917; box-shadow:0 10px 30px rgba(0,0,0,.45); }
+.pv-body { position:relative; }
+.pv-note { position:absolute; top:14px; left:50%; transform:translateX(-50%); z-index:2; font-size:12px; background:#3a2a05; color:#fde68a; border:1px solid #a16207; border-radius:999px; padding:4px 12px; }
+.pv-load { margin:auto; color:var(--text2); }
+@media (max-width: 900px) { .pv-body { flex-direction:column; } .pv-frame.pad, .pv-frame.board { flex:1 1 50%; } }
+@media (prefers-reduced-motion: reduce) { #pvOverlay, .pv-tile { transition:none; } }
 /* Empty */
 .growth-empty { font-size: .8rem; color: #4b5563; font-style: italic; padding: 12px 0; text-align: center; }
 
 </style>
-<!-- file-stamp: d869270812 -->
+<!-- file-stamp: e3f52fda13 -->

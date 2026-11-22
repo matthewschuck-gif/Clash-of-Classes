@@ -344,6 +344,7 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
     var tabs = [['me', 'Me'], ['tickets', 'Tickets']].concat(D.hope ? [['hope', 'Hope']] : []).concat([['squad', 'My Squad'], ['map', 'Map'], ['game', 'Game'], ['arcade', 'Arcade']]);
     if (tab === 'hope' && !D.hope) tab = 'me';
     $('me').innerHTML = (D.sample ? '<div class="me-card" style="border-color:#fbbf24">Sample student on ' + esc(me.squad.charAt(0) + me.squad.slice(1).toLowerCase()) + ' with made-up numbers. Look around every tab; nothing you change here is saved. <a href="#" id="pvAnother">Another squad</a></div>'
+      : D.preview && preview && /^view-/.test(preview.id) ? '<div class="me-card" style="border-color:#fbbf24">Read-only preview of ' + esc(me.name) + ': exactly what they see. Nothing you tap here changes their account.</div>'
       : D.preview ? '<div class="me-card" style="border-color:#fbbf24">Staff preview of ' + esc(me.name) + '. Changing their creature, picking a boost or keeping tickets here changes their real account.</div>' : '') +
       '<section class="me-hero craft-lit craft-motes" style="' + sceneCss() + '"><div class="me-mascot">' + creatureImg(0, true) + '</div><div>' +
       '<h1>Hi, ' + esc(first) + '!</h1>' + (equipped('title') ? '<div style="font-family:DM Mono,monospace;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--pop-gold,#ffe100);margin-top:4px">' + esc(equipped('title').value || equipped('title').perk) + '</div>' : '') + '<div class="me-pills"><span class="me-pill">' + esc(title(me.squad)) + ' Squad</span>' +
@@ -708,7 +709,17 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
     };
   }
 
-  load();
+  // Admin › Preview as a student opens ?page=me&pv=TICKET(&tab=arcade): that student, no sign-in.
+  function boot(p) {
+    p = p || {};
+    if (!p.pv) return load();
+    run('clashPreviewOpen', p.pv).then(function (r) {
+      preview = { id: r.id, token: r.token };
+      if (/^(me|tickets|hope|squad|map|game|arcade)$/.test(p.tab || '')) tab = p.tab;
+      load();
+    }).catch(function (e) { $('me').innerHTML = '<div class="me-card me-err"><h2>Preview</h2><p class="me-sub">' + esc(msg(e)) + '</p></div>'; });
+  }
+  try { google.script.url.getLocation(function (loc) { boot(loc && loc.parameter); }); } catch (e) { boot({}); }
 })();
 </script>
 <style>[data-pw]{-webkit-text-security:disc;text-security:disc}</style>
@@ -723,4 +734,4 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 </script>
 </body>
 </html>
-<!-- file-stamp: 244601e186 -->
+<!-- file-stamp: 2834cf59aa -->

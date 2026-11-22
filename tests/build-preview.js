@@ -54,8 +54,11 @@ function build(page) {
     newDataValidation: function () { var b = new Proxy({}, { get: function () { return function () { return b; }; } }); return b; }, openById: function () { return { getSheetByName: function (n) {
     return n === 'reflections' ? makeSheet(n, [['insight_level', 'created_at'], ['High', new Date()], ['Medium', new Date()]]) : n === 'panel_sessions' ? makeSheet(n, [['clash_squad', 'status'], ['GOLD', 'complete']]) : null; } }; } };
   window.DriveApp = { getFileById: function () { return { getLastUpdated: function () { return new Date(updated); } }; } };
-  window.CacheService = { getScriptCache: function () { return { get: function (k) { return cache[k] || null; }, put: function (k, v) { cache[k] = v; }, remove: function (k) { delete cache[k]; } }; } };
-  window.PropertiesService = { getScriptProperties: function () { return { getProperty: function (k) { return props[k] || null; }, setProperty: function (k, v) { props[k] = v; } }; } };
+  // Cache and Script Properties live in localStorage, so the pages inside the Admin student preview (iframes) share them.
+  var shared = function (pre) { return { get: function (k) { try { return localStorage.getItem(pre + k); } catch (e) { return null; } }, put: function (k, v) { try { localStorage.setItem(pre + k, v); } catch (e) {} }, remove: function (k) { try { localStorage.removeItem(pre + k); } catch (e) {} } }; };
+  var sc = shared('pvc:'), sp = shared('pvp:');
+  window.CacheService = { getScriptCache: function () { return { get: sc.get, put: function (k, v) { sc.put(k, v); }, remove: sc.remove }; } };
+  window.PropertiesService = { getScriptProperties: function () { return { getProperty: sp.get, setProperty: sp.put, deleteProperty: sp.remove }; } };
   window.LockService = { getScriptLock: function () { return { waitLock: function () {}, releaseLock: function () {} }; } };
   window.Utilities = { getUuid: function () { return 'u' + Math.random().toString(36).slice(2); },
     computeDigest: function (a, s) { return s.split('').map(function (ch) { return ch.charCodeAt(0) % 128; }); }, // preview only
@@ -138,7 +141,7 @@ window.google = { script: { get run() {
       try { var r = window[name].apply(null, args); if (/^clash(Save|Vote|SetPassword)$/.test(name)) window.__previewTouch(); ok(r); } catch (e) { fail(e); } }, 30); };
   } });
   return runner;
-} } };
+}, url: { getLocation: function (cb) { var p = {}; new URLSearchParams(location.search).forEach(function (v, k) { p[k] = v; }); setTimeout(function () { cb({ parameter: p }); }, 0); } } } };
 </script>`;
   return html.replace('<head>', () => '<head>\n' + fake); // a function, so "$&" in the server code stays as written
 }

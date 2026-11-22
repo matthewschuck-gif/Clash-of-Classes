@@ -121,8 +121,19 @@ function withSample_(asId, fn) {
 function noSampleSave_(id) { if (id === SAMPLE_ID_) throw new Error('This is the sample student: nothing here is saved. Preview a real student to change their climb.'); }
 
 // Which student: the signed-in one, or (staff signed in as admin) any student to preview.
+// asId "view-8001234" (Admin › Preview as a student, 65_Preview.gs) is READ-ONLY: only the calls in
+// PREVIEW_READ_CALLS_ work, so nothing is changed for a real student.
+const PREVIEW_READ_CALLS_ = ['clashMe', 'clashArcade', 'clashSendoff', 'clashMeExtras'];
+function publicCaller_() {
+  const re = /^\s*at (?:[A-Za-z0-9_$]+\.)?(clash[A-Za-z0-9_$]*) \(/gm, m = re.exec(String(new Error().stack || ''));
+  return m ? m[1] : '';
+}
 function meId_(asId, adminToken) {
-  if (asId && adminToken) { requireAdmin_(adminToken); return sampleSquad_(asId) ? SAMPLE_ID_ : id800_(asId); }
+  if (asId && adminToken) {
+    requireAdmin_(adminToken);
+    if (/^view-/i.test(String(asId)) && PREVIEW_READ_CALLS_.indexOf(publicCaller_()) === -1) throw new Error('Read-only preview: nothing changes for a real student here. Pick a sample student to try things out.');
+    return sampleSquad_(asId) ? SAMPLE_ID_ : id800_(asId);
+  }
   if (!climbOpen_()) throw new Error('CLOSED: My Climb is open ' + String(getSetting_('MY_CLIMB_HOURS') || '07:00-16:00').replace('-', ' to ') + ' on school days. See you on the trail!');
   return signedInId_();
 }
@@ -343,4 +354,4 @@ function serveMe_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_16_Me = '952253ec52';
+var FILE_STAMP_16_Me = 'a6b285775d';

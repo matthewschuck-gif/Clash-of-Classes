@@ -3298,6 +3298,77 @@ function renderAccessCard(){
       r.rows.map(x=>'<div style="padding:5px 0;border-bottom:1px solid var(--border)"><b>'+esc(x.action)+'</b> · '+esc(x.who||'?')+' <span style="color:var(--text3)">'+esc(x.time)+(x.via?' · '+esc(x.via):'')+'</span>'+(x.detail?'<br><span style="color:var(--text2)">'+esc(x.detail)+'</span>':'')+'</div>').join('')+'</div></div>';
   }).catch(function(){ act.innerHTML=''; });
 }
+// Admin › System: Preview as a student (65_Preview.gs). One window shows every student page as a
+// made-up sample student (nothing saves) or a real 800# (read-only): My Climb, the Arcade, Summit Party
+// (minigame tryout + a demo game against the computer) and Generals HQ.
+var PV={ticket:'',who:'',url:'',squad:'',name:'',real:false,view:'me',size:'full',demo:''};
+function renderPreviewCard(){
+  var box=document.getElementById('pvCard'); if(!box||!window.gasRun_) return;
+  var opt=function(v,l){ return '<option value="'+v+'">'+l+'</option>'; };
+  box.innerHTML='<div class="pv-card"><div class="pv-h">👀 Preview as a student</div>'+
+    '<div class="pv-sub">See exactly what students see, without their sign-in. A sample student has made-up numbers and nothing saves. A real 800# is read-only.</div>'+
+    '<div class="pv-who"><label>Who<select id="pvWho">'+opt('sample-GOLD','Sample student · Gold')+opt('sample-PURPLE','Sample student · Purple')+opt('sample-GREY','Sample student · Grey')+opt('sample-BLACK','Sample student · Black')+opt('real','A real student (800#)')+'</select></label>'+
+    '<label id="pvRealWrap" hidden>800#<input id="pvReal" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="8001234"></label></div>'+
+    '<div class="pv-go">'+PV_VIEWS.map(function(v){ return '<button class="pv-tile" data-pv="'+v[0]+'"><span class="pv-ic">'+v[1]+'</span><b>'+v[2]+'</b><small>'+v[3]+'</small></button>'; }).join('')+'</div>'+
+    '<div class="pv-msg" id="pvMsg"></div></div>';
+  var who=document.getElementById('pvWho'), wrap=document.getElementById('pvRealWrap');
+  who.onchange=function(){ wrap.hidden=who.value!=='real'; if(!wrap.hidden) document.getElementById('pvReal').focus(); };
+  box.querySelectorAll('[data-pv]').forEach(function(b){ b.onclick=function(){ openStudentPreview(b.dataset.pv); }; });
+}
+var PV_VIEWS=[['me','🧗','My Climb','Every tab, as they see it'],['arcade','🕹️','Arcade','Play the three games'],['tryout','🎮','Minigame tryout','Any Summit Party minigame, alone'],
+  ['demo','🏔️','Summit Party demo','Board + Chromebook, computer plays 3 squads'],['hq','🛡️','Generals HQ','Their squad\'s HQ (real: it saves)']];
+function pvWho(){
+  var w=document.getElementById('pvWho'); if(!w) return PV.who||'sample-GOLD';
+  return w.value==='real'?String(document.getElementById('pvReal').value||'').replace(/\D/g,''):w.value;
+}
+function pvTicket(who){
+  if(PV.ticket&&PV.who===who) return Promise.resolve(PV);
+  return window.gasRun_('clashPreviewTicket',window.ADMIN_SESSION||'',who).then(function(r){ Object.assign(PV,r,{who:who,demo:''}); return PV; });
+}
+function openStudentPreview(view){
+  var msg=document.getElementById('pvMsg'), who=pvWho();
+  if(msg) msg.textContent='Opening…';
+  pvTicket(who).then(function(){ if(msg) msg.textContent=''; pvShow(view); }).catch(function(e){ if(msg) msg.textContent=e&&e.message||e; });
+}
+function pvSrc(q){ return PV.url+(PV.url.indexOf('?')>-1?'&':'?')+q+'&pv='+encodeURIComponent(PV.ticket); }
+function pvShow(view){
+  PV.view=view;
+  var ov=document.getElementById('pvOverlay');
+  if(!ov){ ov=document.createElement('div'); ov.id='pvOverlay'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true'); ov.setAttribute('aria-label','Student preview'); document.body.appendChild(ov);
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&document.getElementById('pvOverlay')) pvClose(); }); }
+  var nm=PV.real?PV.name+' (read-only)':'Sample student', sq=PV.squad.charAt(0)+PV.squad.slice(1).toLowerCase();
+  ov.innerHTML='<div class="pv-bar"><div class="pv-title"><span class="pv-dot" style="background:'+(SQ_HEX[PV.squad]||'#b583ff')+'"></span>'+pvEsc(nm)+' · '+sq+'</div>'+
+    '<div class="pv-tabs" role="tablist">'+PV_VIEWS.map(function(v){ return '<button role="tab" aria-selected="'+(v[0]===view)+'" class="pv-tab'+(v[0]===view?' on':'')+'" data-pvt="'+v[0]+'">'+v[1]+' '+v[2]+'</button>'; }).join('')+'</div>'+
+    '<div class="pv-tools"><button class="pv-tool" id="pvSize" title="Chromebook size (1366 × 768) or fill the screen">'+(PV.size==='cb'?'💻 Chromebook':'⤢ Full')+'</button>'+
+    (view==='demo'?'<button class="pv-tool" id="pvNewDemo">↻ New demo</button>':'')+
+    '<button class="pv-tool" id="pvReload" title="Reload this view">⟳</button><button class="pv-x" id="pvClose" aria-label="Close preview">✕</button></div></div>'+
+    '<div class="pv-body" id="pvBody"><div class="pv-load">Loading…</div></div>';
+  ov.classList.add('on'); document.body.style.overflow='hidden';
+  ov.querySelectorAll('[data-pvt]').forEach(function(b){ b.onclick=function(){ pvShow(b.dataset.pvt); }; });
+  document.getElementById('pvClose').onclick=pvClose;
+  document.getElementById('pvReload').onclick=function(){ pvShow(view); };
+  document.getElementById('pvSize').onclick=function(){ PV.size=PV.size==='cb'?'full':'cb'; pvShow(view); };
+  var nd=document.getElementById('pvNewDemo'); if(nd) nd.onclick=function(){ PV.demo=''; pvShow('demo'); };
+  var body=document.getElementById('pvBody'), frame=function(src,cls,label){ return '<div class="pv-frame '+(cls||'')+'"><div class="pv-label">'+label+'</div><iframe src="'+src+'" title="'+pvEsc(label)+'" allow="fullscreen"></iframe></div>'; };
+  body.className='pv-body'+(PV.size==='cb'&&view!=='demo'?' cb':'');
+  if(view==='me'||view==='arcade') body.innerHTML=frame(pvSrc('page=me'+(view==='arcade'?'&tab=arcade':'')),'',(view==='arcade'?'My Climb · Arcade tab':'My Climb'));
+  else if(view==='tryout') body.innerHTML=frame(pvSrc('page=summit-play&mode=tryout'),'narrow','Summit Party on a Chromebook · tryout');
+  else if(view==='hq') body.innerHTML=(PV.real?'':'<div class="pv-note">Generals HQ is the real HQ for '+sq+': sign-ups, checklist ticks and nominations made here are saved.</div>')+frame(pvSrc('page=hq'),'','Generals HQ · '+sq);
+  else if(view==='demo'){
+    var go=function(code){ body.innerHTML=frame(pvSrc('page=summit&code='+code),'board','Big screen')+frame(pvSrc('page=summit-play&code='+code),'pad','Your squad\'s Chromebook · '+sq); };
+    if(PV.demo) go(PV.demo);
+    else window.gasRun_('clashSummitDemo',PV.ticket,3,'trail').then(function(v){ PV.demo=v.game.code; go(PV.demo); })
+      .catch(function(e){ body.innerHTML='<div class="pv-load">'+pvEsc(e&&e.message||e)+'</div>'; });
+  }
+  var f=ov.querySelector('.pv-tab.on'); if(f) f.focus();
+}
+function pvClose(){
+  var ov=document.getElementById('pvOverlay'); if(!ov) return;
+  var gone=function(){ ov.remove(); document.body.style.overflow=''; };
+  ov.classList.remove('on');
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches) gone(); else setTimeout(gone,160);
+}
+function pvEsc(t){ return String(t==null?'':t).replace(/[<>&"]/g,function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]; }); }
 function renderSystem(){
   const box=document.getElementById('systemPanel');
   if(!box||!window.gasRun_) return;
@@ -3307,8 +3378,8 @@ function renderSystem(){
   Promise.all([window.gasRun_('clashHealth', window.ADMIN_SESSION||''), window.gasRun_('clashAnnouncement', window.ADMIN_SESSION||'').catch(()=>({text:''}))]).then(function(r){
     const h=r[0], a=r[1], ok=b=>b?'<span style="color:#86efac">✓</span>':'<span style="color:#fbbf24">⚠</span>';
     const jobs=h.jobs.map(j=>'<div style="display:grid;grid-template-columns:22px 1fr auto;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">'+ok(j.ok)+'<span>'+esc(j.label)+(j.expected?'':' <span style="color:var(--text3)">(off)</span>')+(j.expected&&!j.trigger?'<br><span style="color:#fbbf24">No trigger: run setup or its Turn on menu item.</span>':'')+'</span><span style="color:var(--text3)">'+(j.ago||'never')+'</span></div>').join('');
-    setTimeout(renderVersion,0); setTimeout(renderSelfCheck,0); setTimeout(renderWeekly,0); setTimeout(renderStaffCard,0);
-    box.innerHTML='<div id="staffCard"></div>'+tvCard+'<div id="weeklyCard"></div><div id="versionCard"></div><div id="selfCheckCard"></div>'+
+    setTimeout(renderVersion,0); setTimeout(renderSelfCheck,0); setTimeout(renderWeekly,0); setTimeout(renderStaffCard,0); if(h.preview!==false) setTimeout(renderPreviewCard,0);
+    box.innerHTML='<div id="pvCard"></div><div id="staffCard"></div>'+tvCard+'<div id="weeklyCard"></div><div id="versionCard"></div><div id="selfCheckCard"></div>'+
       '<div class="fr"><label>Automatic jobs</label>'+jobs+'</div>'+
       (h.lastError?'<div class="fr"><label>Last error</label><div style="font-size:13px;color:#fca5a5">'+esc(h.lastError.job)+': '+esc(h.lastError.message)+' <span style="color:var(--text3)">('+esc(h.lastError.ago)+')</span></div></div>':'')+
       '<div class="fr"><label>Data from Define a Climb-er</label><div style="font-size:13px">'+ok(h.studentBoard.ok)+' Student Board updated '+esc(h.studentBoard.updated||'never')+'<br><span style="color:var(--text3)">'+esc(h.squadBoard)+'</span><br><span style="color:var(--text3)">'+esc(h.metricsNote)+'</span></div></div>'+
@@ -5887,4 +5958,4 @@ window.__moduleReady=true;
 // Now that all functions are live, re-render whatever page the user navigated to
 goTo(window.__currentPage || currentPage);
 </script>
-<!-- file-stamp: 49f1fb9826 -->
+<!-- file-stamp: aa07754930 -->

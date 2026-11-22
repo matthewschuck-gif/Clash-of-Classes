@@ -107,6 +107,7 @@
   var BASE = { BLACK: '#2b2633', GOLD: '#a87b00', GREY: '#5d6673', PURPLE: '#5b1a86' };
   var FOCUS = { BLACK: '47% 11%', GOLD: '72% 2%', GREY: '77% 11%', PURPLE: '69% 0%' };
   var ITEMICON = { double: 'ph-dice-two', compass: 'ph-compass', paws: 'ph-hand-grabbing', zipline: 'ph-arrows-left-right' };
+  var TRY = false, PV = false, TRYN = 0; // Admin › Preview as a student: the minigame tryout, or a demo game against the computer
   var me = '', squad = '', S = null, seq = 0, acting = false, code = '', LOGOS = {}, skew = 0, compassOpen = false, play = null, duelOpp = '';
   try { me = localStorage.getItem('clash-my-800') || ''; code = sessionStorage.getItem('summit-code') || ''; } catch (e) {}
   function $(id) { return document.getElementById(id); }
@@ -195,7 +196,7 @@
   }
   function join() {
     run('clashSummitJoin', me, code).then(function (r) {
-      squad = r.squad; code = r.code; try { localStorage.setItem('clash-my-800', me); sessionStorage.setItem('summit-code', code); } catch (e) {}
+      squad = r.squad; code = r.code; if (!PV) try { localStorage.setItem('clash-my-800', me); sessionStorage.setItem('summit-code', code); } catch (e) {}
       document.documentElement.style.setProperty('--sq', COLORS[squad] || '#b583ff');
       take(r.state);
     }).catch(function (e) { ask(msgOf(e)); });
@@ -262,8 +263,41 @@
     if ($('cancelC')) $('cancelC').onclick = function () { compassOpen = false; draw(); };
     wireFoot();
   }
-  function foot() { return '<p class="small">Game ' + esc(code) + ' · not ' + esc(me) + '? <a href="#" id="change">Change</a> ' + muteBtn() + '</p>'; }
-  function wireFoot() { wireMute(); var c = $('change'); if (c) c.onclick = function (e) { e.preventDefault(); me = ''; try { localStorage.removeItem('clash-my-800'); } catch (x) {} ask(); }; }
+  function foot() {
+    if (TRY) return '<p class="small"><a href="#" id="tryBack">All minigames</a> ' + muteBtn() + '</p>';
+    if (PV) return '<p class="small">Preview · ' + esc(title(squad)) + ' Squad · game ' + esc(code) + ' · the computer plays the other squads ' + muteBtn() + '</p>';
+    return '<p class="small">Game ' + esc(code) + ' · not ' + esc(me) + '? <a href="#" id="change">Change</a> ' + muteBtn() + '</p>';
+  }
+  function wireFoot() {
+    wireMute();
+    var c = $('change'); if (c) c.onclick = function (e) { e.preventDefault(); me = ''; try { localStorage.removeItem('clash-my-800'); } catch (x) {} ask(); };
+    var t = $('tryBack'); if (t) t.onclick = function (e) { e.preventDefault(); tryList(); };
+  }
+  // ── Minigame tryout (preview): any minigame, alone, as often as you like. Nothing is sent. ──
+  function tryList() {
+    play = null; document.body.classList.remove('mgplay');
+    var M = S.minigames || {};
+    $('app').innerHTML = '<div class="card">' + head(null).replace(/^<div class="card">/, '') + '<p class="sub" style="margin:12px 0 4px">Minigame tryout: play any one alone, as often as you like. Nothing is saved.</p>' +
+      '<div class="items">' + (S.tryout || []).map(function (k) { var d = M[k] || {}; return '<button class="item" data-try="' + k + '"><i class="ph-fill ' + esc(d.icon || 'ph-game-controller') + '"></i>' + esc(d.name || k) + '<small>' + esc(d.how || '') + '</small></button>'; }).join('') + '</div>' +
+      '<p class="small">Trail Sketch and Trail Chase need the big screen: try them in the demo game. ' + muteBtn() + '</p></div>';
+    wireMute();
+    document.querySelectorAll('[data-try]').forEach(function (b) { b.onclick = function () { SFX.play('pop'); tryGame(b.getAttribute('data-try')); }; });
+  }
+  function tryGame(k) {
+    var d = S.minigames[k], t = now(), secs = d.secs || 20;
+    TRYN++;
+    S.game = { id: 'tryout', code: 'TRY', status: 'playing', phase: 'minigame', round: 1, rounds: 1, order: [squad], turn: 0, squads: {}, seq: TRYN,
+      mg: { id: TRYN, round: 1, live: false, game: k, name: d.name, how: d.how, mode: 'try', squads: [squad], secs: secs, startAt: t + 3500, endAt: t + 3500 + secs * 1000, scores: {}, ready: {}, seed: Math.floor(Math.random() * 1e6) } };
+    S.opts = { practice: false, relay: false, sound: true, soundPlay: true };
+    draw();
+  }
+  function tryDone(mg) {
+    $('app').innerHTML = head(S.game) + '<div class="mg"><h2>' + esc(mg.name) + '</h2>' + (mg.scores[squad] != null ? '<p class="wait">Your score</p><p class="sent">' + scoreText(mg, mg.scores[squad]) + '</p>' : '<p class="wait">Time is up.</p>') +
+      '<button class="go" id="tryAgain">Play again</button><button class="go" id="tryOther" style="margin-top:10px;background:#ffffff1a;color:var(--ink)">Pick another minigame</button></div></div>' + foot();
+    wireFoot();
+    $('tryAgain').onclick = function () { tryGame(mg.game); };
+    $('tryOther').onclick = function () { tryList(); };
+  }
   function act(p) {
     acting = true; document.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
     p.then(function (v) { acting = false; take(v); }).catch(function (e) { acting = false; draw(); if ($('msg')) $('msg').textContent = msgOf(e); });
@@ -280,6 +314,7 @@
     if (mg.mode === 'duel') return 'Duel · ' + t(mg.squads) + ' · ' + mg.bet + ' coins on the line';
     if (mg.mode === 'showdown') return 'Showdown for first place';
     if (mg.mode === 'chase') return 'Trail Chase · on the big screen';
+    if (mg.mode === 'try') return 'Tryout · just you, nothing saved';
     return 'Minigame · every squad for itself';
   }
   function minigame(g) {
@@ -287,6 +322,7 @@
     if (mg.squads && mg.squads.indexOf(squad) < 0) { el.innerHTML = head(g) + '<div class="mg"><div class="tag" style="margin-top:12px">' + esc(modeTag(mg)) + '</div><h2>' + esc(mg.name) + '</h2><p class="wait">Your squad sits this one out.</p><p class="sub">Watch the big screen and cheer!</p></div></div>' + foot(); return wireFoot(); }
     if (mg.live) { el.innerHTML = head(g) + '<div class="mg"><div class="tag" style="margin-top:12px">Live ' + esc(mg.kind) + ' challenge</div><h2>' + esc(mg.name) + '</h2><p class="sub">' + esc(mg.how) + '</p><p class="wait">Play it in the room. Staff pick the winner.</p></div></div>' + foot(); return wireFoot(); }
     var mine = mg.scores && mg.scores[squad] != null;
+    if (TRY && (mine || now() > mg.endAt + 300)) return tryDone(mg);
     if (mine) { el.innerHTML = head(g) + '<div class="mg"><h2>' + esc(mg.name) + '</h2><p class="wait">Score sent</p><p class="sent">' + scoreText(mg, mg.scores[squad]) + '</p><p class="sub">Results on the big screen in a moment.</p></div></div>' + foot(); return wireFoot(); }
     if (now() > mg.endAt) { el.innerHTML = head(g) + '<div class="mg"><h2>' + esc(mg.name) + '</h2><p class="wait">Time is up for this one.</p></div></div>' + foot(); return wireFoot(); }
     play = { key: key, game: mg.game, done: false, leg: 0, pausedUntil: 0 };
@@ -346,6 +382,7 @@
   function send(score) {
     if (!play || play.done) return;
     play.done = true;
+    if (TRY) { S.game.mg.scores[squad] = Math.round(score); play = null; SFX.play('reveal'); return draw(); }
     run('clashSummitScore', me, code, Math.round(score)).then(function (v) { play = null; take(v); }).catch(function (e) { play = null; draw(); if ($('msg')) $('msg').textContent = msgOf(e); });
   }
   function finish() { if (play && !play.done && play.score) send(play.score()); }
@@ -967,7 +1004,7 @@
       spawn();
       var G = {
         sendJunk: function () {
-          if (!E.key || E.practice || typeof run !== 'function') return;
+          if (!E.key || E.practice || TRY || typeof run !== 'function') return;
           run('clashSummitJunk', me, code, sent).then(function (r) { if (S && S.game && S.game.mg && r && r.junk) S.game.mg.junk = r.junk; }).catch(function () {});
         },
         key: function (k) {
@@ -1049,10 +1086,27 @@
     } }
   };
 
-  if (me) join(); else ask();
-  setInterval(function () { if (!acting && squad) run('clashSummitState', code, seq).then(take).catch(function () {}); }, 2000);
+  // ?pv=TICKET&mode=tryout | ?pv=TICKET&code=CODE (a demo game): from Admin › Preview as a student.
+  function boot(p) {
+    p = p || {};
+    if (!p.pv) { if (me) join(); else ask(); return; }
+    PV = true;
+    if (p.mode === 'tryout') {
+      TRY = true;
+      run('clashPreviewSummit', p.pv).then(function (v) {
+        S = v; squad = v.squad; SFX.set(true, .6);
+        document.documentElement.style.setProperty('--sq', COLORS[squad] || '#b583ff');
+        tryList();
+      }).catch(function (e) { $('app').innerHTML = '<div class="card"><p class="sub">' + esc(msgOf(e)) + '</p></div>'; });
+      return;
+    }
+    run('clashPreviewOpen', p.pv).then(function (r) { me = 'sample-' + r.squad; code = String(p.code || ''); join(); })
+      .catch(function (e) { $('app').innerHTML = '<div class="card"><p class="sub">' + esc(msgOf(e)) + '</p></div>'; });
+  }
+  try { google.script.url.getLocation(function (loc) { boot(loc && loc.parameter); }); } catch (e) { boot({}); }
+  setInterval(function () { if (!acting && squad && !TRY) run('clashSummitState', code, seq).then(take).catch(function () {}); }, 2000);
 })();
 </script>
 </body>
 </html>
-<!-- file-stamp: 7284d33351 -->
+<!-- file-stamp: 5df798a2d1 -->

@@ -680,6 +680,14 @@
       return;
     }
     var g = S.game, playing = g && g.status === 'playing', live = playing && g.phase === 'minigame' && g.mg && g.mg.live;
+    if (g && g.demo) { // Admin › Preview as a student: a demo game against the computer
+      el.innerHTML = '<h3>Preview demo</h3><p class="msg" style="margin:0 0 8px">You play <b style="color:' + RING[g.demo.mine] + '">' + esc(title(g.demo.mine)) + '</b> on the Chromebook view. The computer plays the other squads. No points, nothing saved.</p>' +
+        '<div class="row"><button class="ghost" id="skip"' + (playing ? '' : ' disabled') + '>' + (playing && g.phase === 'minigame' ? 'End the minigame' : 'Skip this turn') + '</button><button class="ghost" id="finish"' + (playing ? '' : ' disabled') + '>Jump to the end</button></div><div class="msg" id="smsg"></div>';
+      var dact = function (p) { p.then(take).catch(function (e) { $('smsg').textContent = msgOf(e); }); };
+      $('skip').onclick = function () { dact(run('clashSummitSkip', token, code)); };
+      $('finish').onclick = function () { dact(run('clashSummitEnd', token, code, true)); };
+      return;
+    }
     el.innerHTML = '<h3>Staff</h3>' +
       (live ? '<div style="font-weight:800;margin-bottom:6px">Who won ' + esc(g.mg.name) + '?</div><div class="row">' + g.order.map(function (s) { return '<button class="gold" data-win="' + s + '" style="background:' + RING[s] + '">' + esc(title(s)) + '</button>'; }).join('') + '</div>' : '') +
       '<div class="row"><label class="field">Rounds<input id="rounds" type="number" min="1" max="30" value="' + (S.rounds || 10) + '" style="width:5em"></label>' +
@@ -708,7 +716,7 @@
     SFX.set(v.opts && v.opts.sound, 1);
     var g = S.game, fresh = drawnLayout !== (S.layout || 'trail') || drawnCode !== (g ? g.code : '');
     if (fresh) { drawBoard(); seenHost = 0; seenMg = ''; seenResult = ''; seenEnd = ''; seenFinal = g && g.finalNews || 0; seenDuel = g && g.duelDone ? g.duelDone.id : 0; closeOverlay(); }
-    if (g && g.code !== code) { code = g.code; try { sessionStorage.setItem('summit-code', code); } catch (e) {} }
+    if (g && g.code !== code) { code = g.code; if (!g.demo) try { sessionStorage.setItem('summit-code', code); } catch (e) {} }
     $('codeBig').textContent = g ? g.code : '····';
     if (!g) { side(); staff(); return; }
     var L = g.last || { path: [] }, moved = !fresh && prev && prev.id === g.id && L.squad && (L.path.length || L.swap);
@@ -770,10 +778,20 @@
     a.textContent = left ? '(auto-roll in ' + left + 's)' : '(auto-rolling)';
   }, 1000);
   run('clashSquadLogos').then(function (l) { LOGOS = l || {}; if (S) side(); }).catch(function () {});
-  run('clashSummitState', code, 0).then(take).catch(function (e) { document.querySelector('.wrap').innerHTML = '<div class="closed">' + esc(msgOf(e)) + '</div>'; });
-  setInterval(poll, 1500);
+  function begin() {
+    run('clashSummitState', code, 0).then(take).catch(function (e) { document.querySelector('.wrap').innerHTML = '<div class="closed">' + esc(msgOf(e)) + '</div>'; });
+    setInterval(poll, 1500);
+  }
+  // ?pv=TICKET&code=CODE: Admin › Preview as a student shows its demo game here, already signed in.
+  function boot(p) {
+    p = p || {};
+    if (!p.pv) return begin();
+    run('clashPreviewOpen', p.pv).then(function (r) { token = r.token; code = String(p.code || ''); begin(); })
+      .catch(function (e) { document.querySelector('.wrap').innerHTML = '<div class="closed">' + esc(msgOf(e)) + '</div>'; });
+  }
+  try { google.script.url.getLocation(function (loc) { boot(loc && loc.parameter); }); } catch (e) { boot({}); }
 })();
 </script>
 </body>
 </html>
-<!-- file-stamp: ff878d1b96 -->
+<!-- file-stamp: 6994e28678 -->

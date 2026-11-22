@@ -325,6 +325,7 @@ const DEFAULT_SETTINGS = [
   ['PASSWORD_SIGN_IN', 'ON', 'ON = the shared admin password still works (logged as "Shared admin password"). Turn OFF once your admins are on the Staff Access tab: then only Google sign-in works.'],
   ['STAFF_EMAIL_DOMAIN', 'easdpa.org', 'Only accounts in this domain can sign in as staff (student accounts are a different domain). Comma separated for more than one.'],
   ['STUDENT_LINK', '', 'The student link (the second deployment, Anyone within EASD). The site\'s My Climb button opens it with ?page=me.'],
+  ['STUDENT_PREVIEW', 'ON', 'Admin › System › Preview as a student (65_Preview.gs): see My Climb, the Arcade, Summit Party (minigame tryout + a demo game against the computer) and Generals HQ as a sample student or a real 800#. OFF = the card is hidden.'],
   ['SCHOOL_START', '', 'First day of school (yyyy-mm-dd) for the home page day counts. Blank = the date set in the site\'s admin settings.'],
   ['NEXT_YEAR_START', '2027-08-30', 'The McCracken Countdown on the home page: the first day of NEXT school year (yyyy-mm-dd). It counts every calendar day until then.'],
   ['LAST_DAY', '', 'Last day of school (yyyy-mm-dd). Blank = the date set in the site\'s admin settings.'],
@@ -536,4 +537,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = 'f955d5436a';
+var FILE_STAMP_01_Config = '8aa81ee3b8';
