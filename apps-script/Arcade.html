@@ -11,6 +11,15 @@
 .arc-board { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
 .arc-board ol { margin: 4px 0 0 20px; padding: 0; font-size: 14px; }
 .arc-result { border-left: 4px solid var(--pop-gold, #ffe100); padding: 8px 12px; margin-top: 10px; }
+/* Pebbles: the Arcade's own currency (48_Arcade.gs). 100 = 1 squad point, cashed in by the student. */
+.arc-pouch { margin: 12px 0 4px; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(127, 127, 127, .35); background: rgba(127, 127, 127, .08); }
+.arc-pouch-h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.arc-peb { display: inline-block; width: 18px; height: 14px; border-radius: 50% 45% 52% 48% / 58% 55% 45% 42%; background: radial-gradient(circle at 35% 30%, #e9e4dc, #a39a8e 60%, #6f675e); box-shadow: inset -2px -2px 0 rgba(0,0,0,.18); transform: translateY(2px); }
+.arc-pouch-h b { font-size: 22px; font-variant-numeric: tabular-nums; }
+.arc-bar { height: 10px; border-radius: 999px; background: rgba(127, 127, 127, .25); overflow: hidden; margin: 8px 0 6px; }
+.arc-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #c9bfae, var(--pop-gold, #ffe100)); transition: width .5s cubic-bezier(.2, .8, .2, 1); }
+.arc-cash { margin-top: 6px; }
+@media (prefers-reduced-motion: reduce) { .arc-bar i { transition: none; } }
 </style>
 <script>
 (function () {
@@ -89,6 +98,27 @@
     cx.fillStyle = '#c0392b'; cx.fillRect(-9, -46, 18, 5);
     cx.fillStyle = '#3a2a1a'; cx.fillRect(-10, -8, 7, 8); cx.fillRect(3, -8, 7, 8);
     cx.restore();
+  }
+
+  // The Pebble pouch (My Climb and the site Arcade). P = pebblePouch_ from the server; squad = 'Gold'.
+  function pouch(P, squad, subClass) {
+    if (!P || !P.on) return '';
+    var full = Math.floor(P.balance / P.per), part = P.balance % P.per, pct = Math.round(100 * part / P.per);
+    return '<div class="arc-pouch"><div class="arc-pouch-h"><span class="arc-peb" aria-hidden="true"></span><b>' + P.balance.toLocaleString() + '</b> Pebbles' +
+      '<span class="' + subClass + '">· ' + part + ' of ' + P.per + ' toward the next squad point</span></div>' +
+      '<div class="arc-bar" role="progressbar" aria-valuemin="0" aria-valuemax="' + P.per + '" aria-valuenow="' + part + '" aria-label="Pebbles toward the next point"><i style="width:' + pct + '%"></i></div>' +
+      '<span class="' + subClass + '">This week +' + P.week + ' · every game earns 1 to ' + P.max + ' Pebbles · ' + P.per + ' Pebbles = 1 point for ' + squad + '</span>' +
+      (full ? '<div class="arc-cash"><button class="btn btn-gold craft-press" data-cash>Cash in ' + full + ' point' + (full === 1 ? '' : 's') + ' for ' + squad + '</button></div>' : '') + '</div>';
+  }
+  // The line under a game (rate) and after a game or a cash-in (result).
+  function rateLine(P, g) { return P && P.on ? g.pebble + ' = 1 Pebble' : g.per + ' = 1 squad point'; }
+  function resultLine(P, res, names, squad) {
+    if (!res) return '';
+    if (res.cashed) return '<div class="arc-result" role="status"><b>Cashed in ' + res.cashed + ' point' + (res.cashed === 1 ? '' : 's') + ' for ' + squad + '!</b> They are added tonight.</div>';
+    var head = '<b>' + (names[res.game] || '') + ': ' + Number(res.score || 0).toLocaleString() + '</b> · ';
+    if (!res.kept) return '<div class="arc-result" role="status">' + head + 'That score didn\'t count. Play a full game.</div>';
+    if (P && P.on) return '<div class="arc-result" role="status">' + head + '+' + res.pebbles + ' Pebble' + (res.pebbles === 1 ? '' : 's') + ' for your pouch</div>';
+    return '<div class="arc-result" role="status">' + head + (res.points ? '+' + res.points + ' for ' + squad + ' (added tonight)' : 'Keep going! A bigger score earns squad points.') + '</div>';
   }
 
   // Shared flow: tap to start, play, game over, then done(score).
@@ -275,7 +305,8 @@
       current.then(function (score) { current = null; onDone(score); });
     },
     stop: function () { if (current) { current.stop(); current = null; } },
+    pouch: pouch, rate: rateLine, result: resultLine,
   };
 })();
 </script>
-<!-- file-stamp: 66b9139f40 -->
+<!-- file-stamp: 8b27e68968 -->

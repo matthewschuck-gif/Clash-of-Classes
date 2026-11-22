@@ -33,13 +33,14 @@
     var w = A.wallet, r = A.rules, res = A.result, can = w.playsToday < w.daily && (w.freeLeft > 0 || w.tokens > 0), sq = title(A.squad);
     var names = {}; A.games.forEach(function (g) { names[g.key] = g.name; });
     var out = '<div class="sa-card"><h2>🕹️ Arcade · ' + esc(sq) + ' Squad</h2>' +
-      '<p class="sa-sub">Each game can add up to ' + A.maxPoints + ' squad point' + (A.maxPoints === 1 ? '' : 's') + ', added tonight. <a href="#" id="saSwitch" style="color:var(--gold-soft,#ffe100)">Not you?</a></p>' +
+      '<p class="sa-sub">' + (A.pebbles && A.pebbles.on ? 'Every game fills your Pebble pouch. Cash in ' + A.pebbles.per + ' Pebbles for 1 squad point.' : 'Each game can add up to ' + A.maxPoints + ' squad point' + (A.maxPoints === 1 ? '' : 's') + ', added tonight.') + ' <a href="#" id="saSwitch" style="color:var(--gold-soft,#ffe100)">Not you?</a></p>' +
+      (window.Arcade && Arcade.pouch ? Arcade.pouch(A.pebbles, esc(sq), 'sa-sub') : '') +
       '<div><span class="sa-pill">🪙 ' + w.tokens + ' token' + (w.tokens === 1 ? '' : 's') + '</span><span class="sa-pill">' + (w.freeLeft ? w.freeLeft + ' free play today' : 'Free play used') + '</span><span class="sa-pill">' + w.playsToday + ' of ' + w.daily + ' plays today</span></div>' +
       '<p class="sa-sub">Earn tokens: ' + r.dough + ' per Trait Dough bill, ' + r.service + ' per approved service' + (r.votes ? ', 1 for every ' + r.votes + ' Pulse votes' : '') + '.</p>' +
-      (res ? '<div class="arc-result" role="status"><b>' + esc(names[res.game] || '') + ': ' + res.score.toLocaleString() + '</b> · ' + (res.kept ? (res.points ? '+' + res.points + ' for ' + esc(sq) + ' (added tonight)' : 'Keep going! A bigger score earns squad points.') : 'That score didn\'t count. Play a full game.') + '</div>' : '') +
+      (window.Arcade && Arcade.result ? Arcade.result(A.pebbles, res, names, esc(sq)) : '') +
       '<div id="saStage"></div><p class="sa-sub" id="saMsg"></p><div class="arc-games">' +
       A.games.map(function (g) {
-        return '<div class="arc-g"><h3>' + esc(g.name) + '</h3><span class="sa-sub">' + esc(g.blurb) + '</span><span class="sa-sub">' + g.per + ' = 1 squad point' + (g.best ? ' · Your best: ' + g.best.toLocaleString() : '') + '</span>' +
+        return '<div class="arc-g"><h3>' + esc(g.name) + '</h3><span class="sa-sub">' + esc(g.blurb) + '</span><span class="sa-sub">' + (window.Arcade && Arcade.rate ? Arcade.rate(A.pebbles, g) : g.per + ' = 1 squad point') + (g.best ? ' · Your best: ' + g.best.toLocaleString() : '') + '</span>' +
           '<button class="btn btn-gold" data-sa-game="' + esc(g.key) + '"' + (can ? '' : ' disabled') + '>' + (can ? 'Play' : 'No plays left') + '</button></div>';
       }).join('') + '</div></div>';
     out += '<div class="sa-card"><h2>This week\'s best</h2><div class="arc-board">' + A.games.map(function (g) {
@@ -49,6 +50,13 @@
     b.innerHTML = out;
     document.getElementById('saSwitch').onclick = function (e) { e.preventDefault(); if (window.Arcade) Arcade.stop(); store(''); A = null; signIn(''); };
     b.querySelectorAll('[data-sa-game]').forEach(function (btn) { btn.onclick = function () { start(btn.getAttribute('data-sa-game')); }; });
+    b.querySelectorAll('[data-cash]').forEach(function (btn) {
+      btn.onclick = function () {
+        if (busy) return; busy = true; btn.disabled = true; btn.textContent = 'Cashing in…';
+        window.gasRun_('clashSiteArcadeCashIn', stored()).then(function (a) { A = a; busy = false; draw(); })
+          .catch(function (e) { busy = false; btn.disabled = false; btn.textContent = 'Cash in'; document.getElementById('saMsg').textContent = msg(e); });
+      };
+    });
   }
 
   function start(game) {
@@ -82,4 +90,4 @@
   window.stopSiteArcade = function () { if (window.Arcade) Arcade.stop(); busy = false; };
 })();
 </script>
-<!-- file-stamp: 217c3b88d9 -->
+<!-- file-stamp: f35ef2ce60 -->

@@ -23,7 +23,7 @@ const TAB_GROUPS_ = [
   ['Game & pages', '#ff9900', ['Plinko Slots', 'Hall of Fame', 'Wheel Slices', 'LRG Traits', 'Opponents', 'Round Goals', 'Engine Powers', 'Chance Cards', 'Evolution Boosts', 'Perks',
     'Destination Tickets', 'Lore Chapters', 'Squad Themes', 'Event Pages', 'Event Rows', 'Mindset Links', 'Tutorial Steps', 'School Calendar', 'Mayhem Checklist', 'Shirt Designs']],
   ['Written for you', '#999999', ['Poll Insights', 'Points Balance', 'How The Map Works', 'How My Climb Works', 'Admin Edits', 'Weekly Digest Log', 'Usage',
-    'Redemptions', 'Make It Right', 'Boost Ledger', 'Student Tickets', 'Squad Hand', 'Streak Banks', 'Arcade Plays', 'Shirt Votes', 'Shirt Orders', 'Squad Night']],
+    'Redemptions', 'Make It Right', 'Boost Ledger', 'Student Tickets', 'Squad Hand', 'Streak Banks', 'Arcade Plays', 'Pebble Cash-ins', 'Shirt Votes', 'Shirt Orders', 'Squad Night']],
   ['System', '#434343', ['Poll Votes', 'Avatars', 'Color Squads', 'metrics', 'app_data']],
 ];
 
@@ -52,4 +52,4 @@ function menuOrganizeTabs_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_49_TabOrder = '87180d8a4b';
+var FILE_STAMP_49_TabOrder = '352fbc0687';

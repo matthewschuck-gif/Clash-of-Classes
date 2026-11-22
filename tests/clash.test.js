@@ -2481,6 +2481,7 @@ test('tabs grouped, colored and ordered (Start here first, system tabs last); fa
 test('arcade: tokens from Trait Dough, one free play, daily limit, impossible scores count 0, points paid once a day per squad', () => {
   const w = world();
   w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureServiceTab_(); w.ensureDoughTabs_(); w.ensureArcadeTab_();
+  w.setSettingValue_('ARCADE_PEBBLES', 'OFF'); // the old way: games pay squad points (Pebbles have their own test)
   addStudentTabs(w);
   w.CacheService.getScriptCache().put('clash-admin-T', '1');
   const cache = w.CacheService.getScriptCache();
@@ -2521,6 +2522,41 @@ test('arcade: tokens from Trait Dough, one free play, daily limit, impossible sc
   w.setSettingValue_('ARCADE', 'OFF');
   assert.strictEqual(JSON.parse(w.clashArcade('8001234', 'T')).on, false);
   assert.throws(() => start('8001234', 'dash'), /closed/);
+});
+
+test('Arcade Pebbles: games fill a pouch (1 to 15 a game, by each game\'s rate), only whole points cash in (100 = 1), cash-ins are paid that night on their own tab, the sample student cannot cash in', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureServiceTab_(); w.ensureDoughTabs_(); w.ensureArcadeTab_();
+  addStudentTabs(w); // Ann 8001234 Gold (12 bills = 12 tokens)
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  w.setSettingValue_('ARCADE_DAILY', '99'); w.setSettingValue_('ARCADE_TOKENS', 'dough=5');
+  const cache = w.CacheService.getScriptCache();
+  const age = (play, sec) => { const p = JSON.parse(cache.get('arc-' + play)); p.at -= sec * 1000; cache.put('arc-' + play, JSON.stringify(p)); };
+  const play = (g, score, sec) => { const p = JSON.parse(w.clashArcadeStart(g, '8001234', 'T')).play; age(p, sec); return JSON.parse(w.clashArcadeFinish(p, score, '8001234', 'T')); };
+  let a = JSON.parse(w.clashArcade('8001234', 'T'));
+  assert.deepStrictEqual([a.pebbles.on, a.pebbles.balance, a.pebbles.per, a.games.find(g => g.key === 'dash').pebble], [true, 0, 100, 120]);
+  a = play('dash', 1500, 40);
+  assert.deepStrictEqual([a.result.pebbles, a.result.points], [12, 0], '1500 / 120 = 12 Pebbles, no squad points');
+  assert.strictEqual(play('catch', 300, 45).result.pebbles, 6, 'an average Dough Catch: 6');
+  assert.strictEqual(play('stack', 2, 20).result.pebbles, 1, 'a counted game always earns at least 1');
+  assert.strictEqual(play('dash', 7900, 110).result.pebbles, 15, 'at most 15');
+  assert.strictEqual(play('catch', 900, 5).result.pebbles, 0, 'a score that cannot be real earns nothing');
+  a = JSON.parse(w.clashArcade('8001234', 'T'));
+  assert.strictEqual(a.pebbles.balance, 34);
+  assert.throws(() => w.clashArcadeCashIn('8001234', 'T'), /need 100 Pebbles for 1 point\. You have 34/);
+  for (let i = 0; i < 12; i++) play('stack', 30, 25); // 15 each
+  a = JSON.parse(w.clashArcade('8001234', 'T'));
+  assert.strictEqual(a.pebbles.balance, 214);
+  a = JSON.parse(w.clashArcadeCashIn('8001234', 'T'));
+  assert.deepStrictEqual([a.result.cashed, a.pebbles.balance], [2, 14], 'only whole points; 14 stay in the pouch');
+  assert.strictEqual(a.wallet.playsToday, 17, 'a cash-in is not a play');
+  w.payArcade_(); w.payArcade_();
+  const rows = events(w).filter(r => r[2] === 'arcade');
+  assert.strictEqual(rows.length, 1);
+  assert.deepStrictEqual([rows[0][1], rows[0][7]], ['Arcade: 1 Pebble cash-in', 2], 'Gold +2, once');
+  assert.throws(() => w.clashArcadeCashIn('sample-GOLD', 'T'), /sample student/);
+  w.setSettingValue_('ARCADE_PEBBLES', 'OFF');
+  assert.throws(() => w.clashArcadeCashIn('8001234', 'T'), /closed/);
 });
 
 test('weather days pay the extra once; expeditions go to the first squad there; announcement and home carry them', () => {
@@ -2995,6 +3031,7 @@ test('weekly map: the Staff Challenge (Front Office) is read from the events tab
 test('Arcade on the main site: by 800# on the Student Board, the same wallet and plays as My Climb, ARCADE_ON_SITE OFF', () => {
   const w = world();
   w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureServiceTab_(); w.ensureDoughTabs_(); w.ensureArcadeTab_();
+  w.setSettingValue_('ARCADE_PEBBLES', 'OFF');
   addStudentTabs(w);
   w.climbOpen_ = () => true;
   assert.throws(() => w.clashSiteArcade('12'), /800 number/);

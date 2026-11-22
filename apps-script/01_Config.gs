@@ -272,7 +272,11 @@ const DEFAULT_SETTINGS = [
   ['ARCADE_DAILY', '3', 'Arcade: plays a day per student (free play included).'],
   ['ARCADE_FREE_DAILY', '1', 'Arcade: free plays a day per student before tokens are needed.'],
   ['ARCADE_TOKENS', 'dough=1, service=2, family=2, votes=5', 'Arcade tokens: dough = tokens per Trait Dough bill, service / family = per approved one, votes = poll votes for 1 token.'],
-  ['ARCADE_MAX_POINTS', '3', 'Arcade: most squad points one play can earn (paid once a day, one Arcade row per squad).'],
+  ['ARCADE_MAX_POINTS', '3', 'Arcade: most squad points one play can earn (paid once a day, one Arcade row per squad). Only used when ARCADE_PEBBLES is OFF.'],
+  ['ARCADE_PEBBLES', 'ON', 'Arcade Pebbles (48_Arcade.gs): ON = games earn Pebbles instead of squad points, and students Cash in every full ARCADE_PEBBLES_PER_POINT Pebbles for 1 point for their squad (paid that night). OFF = each game pays squad points directly (ARCADE_MAX_POINTS).'],
+  ['ARCADE_PEBBLES_PER_POINT', '100', 'Arcade: how many Pebbles make 1 Clash point. Only whole points cash in; the rest stays in the pouch.'],
+  ['ARCADE_PEBBLE_RATES', 'dash=120, catch=50, stack=2', 'Arcade: the score for 1 Pebble in each game (Summit Dash, Dough Catch, Peak Stack). An average game earns about 6, a strong one about 12. Bigger number = slower.'],
+  ['ARCADE_PEBBLE_MAX', '15', 'Arcade: the most Pebbles one game can earn (every counted game earns at least 1).'],
   ['PLINKO_ROWS', '8', 'Plinko: rows of pegs (4 to 12). The Plinko Slots tab needs one more slot than rows.'],
   ['TV_SECONDS', '9', 'TV (clashofclasses.org/?tv=1): seconds each slide stays up.'],
   ['TV_SLIDES', 'all', 'TV: which slides run. all, or a list of: standings, podium, categories, metrics, challenges, feed, summit, map, opponent, pulse, polls.'],
@@ -541,4 +545,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = '176fc26dec';
+var FILE_STAMP_01_Config = 'a1f94b0d42';

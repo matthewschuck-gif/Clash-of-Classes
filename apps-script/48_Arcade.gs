@@ -9,8 +9,20 @@
  *   game's "per"), paid once a day as one Arcade row per squad.
  *   A score is only kept if the game ran long enough and the score is possible for that game.
  *   The week's best scores show first name + last initial only when LEADERBOARD_NAMES is ON.
- * ARCADE PLAYS tab: When | 800# | Name | Squad | Game | Score | Points | Free | Paid.
+ * ARCADE PLAYS tab: When | 800# | Name | Squad | Game | Score | Points | Free | Paid | Pebbles.
  * ARCADE OFF hides it.
+ *
+ * PEBBLES (ARCADE_PEBBLES ON, the default): instead of squad points, each game earns the student
+ * Pebbles, the Arcade's own currency. ARCADE_PEBBLES_PER_POINT (100) Pebbles = 1 Clash point, and
+ * only whole points move: the student taps Cash in on the Arcade, the Pebbles come out of their
+ * pouch, and the points go to their squad in that night's Arcade row. Leftover Pebbles stay.
+ *   Earning (ARCADE_PEBBLE_RATES, score for 1 Pebble): Summit Dash 120, Dough Catch 50, Peak Stack 2,
+ *   so an average game earns about 6 and a strong one about 12. Every game that counts earns at
+ *   least 1; at most ARCADE_PEBBLE_MAX (15). With 3 plays a day, a strong daily player fills a point
+ *   in about a week, an average one in about two.
+ *   PEBBLE CASH-INS tab: When | 800# | Squad | Pebbles | Points | Paid (its own tab, so a cash-in
+ *   never counts as a play for badges, goals or the Team League).
+ * ARCADE_PEBBLES OFF = the old way (each game pays up to ARCADE_MAX_POINTS squad points).
  */
 
 const ARCADE_GAMES_ = {
@@ -19,16 +31,51 @@ const ARCADE_GAMES_ = {
   catch: { name: 'Dough Catch', blurb: 'Catch Trait Dough, grab the gold, dodge the snowballs. 45 seconds.', max: 1500, per: 100, minSec: 40, rate: 40 },
   stack: { name: 'Peak Stack', blurb: 'Drop each block on the one below. Line it up perfectly to keep it wide.', max: 80, per: 6, minSec: 1, rate: 3 },
 };
-const ARCADE_HEADERS_ = ['When', '800#', 'Name', 'Squad', 'Game', 'Score', 'Points', 'Free', 'Paid'];
+const ARCADE_HEADERS_ = ['When', '800#', 'Name', 'Squad', 'Game', 'Score', 'Points', 'Free', 'Paid', 'Pebbles'];
+const CASHIN_HEADERS_ = ['When', '800#', 'Squad', 'Pebbles', 'Points', 'Paid'];
+
+function pebblesOn_() { return String(getSetting_('ARCADE_PEBBLES') || 'ON').toUpperCase() !== 'OFF'; }
+function pebblesPerPoint_() { return Math.max(1, settingNum_('ARCADE_PEBBLES_PER_POINT', 100)); }
+function pebbleRates_() {
+  const out = { dash: 120, catch: 50, stack: 2 };
+  String(getSetting_('ARCADE_PEBBLE_RATES') || '').split(',').forEach(function (p) { const m = p.trim().match(/^(\w+)\s*=\s*([\d.]+)$/); if (m && out[m[1]] !== undefined && Number(m[2]) > 0) out[m[1]] = Number(m[2]); });
+  return out;
+}
+// Pebbles for one kept game: score / the game's rate, at least 1, at most ARCADE_PEBBLE_MAX.
+function pebblesFor_(game, score) {
+  const rate = pebbleRates_()[game] || 100;
+  return Math.max(1, Math.min(Math.max(1, settingNum_('ARCADE_PEBBLE_MAX', 15)), Math.floor(score / rate)));
+}
+// { balance, earned, cashed, per, max, rates, week } for one student.
+function pebblePouch_(id) {
+  const mon = mondayOf_(todayYmd_());
+  let earned = 0, cashed = 0, week = 0;
+  sheetRows_('Arcade Plays').forEach(function (p) { if (id800_(p['800#']) !== id) return; const n = Number(p['Pebbles']) || 0; earned += n; if (String(p['When']).slice(0, 10) >= mon) week += n; });
+  sheetRows_('Pebble Cash-ins').forEach(function (c) { if (id800_(c['800#']) === id) cashed += Number(c['Pebbles']) || 0; });
+  return { on: pebblesOn_(), balance: Math.max(0, earned - cashed), earned: earned, cashed: cashed, week: week, per: pebblesPerPoint_(),
+    max: Math.max(1, settingNum_('ARCADE_PEBBLE_MAX', 15)), rates: pebbleRates_() };
+}
 
 function arcadeOn_() { return String(getSetting_('ARCADE') || 'ON').toUpperCase() === 'ON'; }
 
 function ensureArcadeTab_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (ss.getSheetByName('Arcade Plays')) return;
-  const sh = ss.insertSheet('Arcade Plays');
-  sh.getRange(1, 1, 1, ARCADE_HEADERS_.length).setValues([ARCADE_HEADERS_]).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
-  sh.setFrozenRows(1);
+  [['Arcade Plays', ARCADE_HEADERS_], ['Pebble Cash-ins', CASHIN_HEADERS_]].forEach(function (t) {
+    const have = ss.getSheetByName(t[0]);
+    if (have) { // an older tab: add any missing header at the end (Pebbles)
+      const h = have.getRange(1, 1, 1, Math.max(1, have.getLastColumn())).getValues()[0].map(function (x) { return String(x).trim(); });
+      t[1].forEach(function (k) { if (h.indexOf(k) === -1) { h.push(k); have.getRange(1, h.length).setValue(k).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff'); } });
+      return;
+    }
+    const sh = ss.insertSheet(t[0]);
+    sh.getRange(1, 1, 1, t[1].length).setValues([t[1]]).setFontWeight('bold').setBackground('#490e6f').setFontColor('#ffffff');
+    sh.setFrozenRows(1);
+  });
+}
+// Appends one row by header name (the tab's own column order).
+function appendByHeader_(name, o) {
+  const sh = getSheet_(name), h = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function (x) { return String(x).trim(); });
+  sh.appendRow(h.map(function (k) { return o[k] === undefined ? '' : o[k]; }));
 }
 
 function arcadeTokenRules_() {
@@ -76,8 +123,9 @@ function arcadeView_(id) {
   {
     const mine = sheetRows_('Arcade Plays').filter(function (p) { return id800_(p['800#']) === id; }), best = {};
     mine.forEach(function (p) { const g = String(p['Game']); best[g] = Math.max(best[g] || 0, Number(p['Score']) || 0); });
-    return JSON.stringify({ on: true, wallet: arcadeWallet_(id), rules: arcadeTokenRules_(), maxPoints: settingNum_('ARCADE_MAX_POINTS', 3),
-      games: Object.keys(ARCADE_GAMES_).map(function (k) { const g = ARCADE_GAMES_[k]; return { key: k, name: g.name, blurb: g.blurb, per: g.per, best: best[k] || 0 }; }),
+    const pouch = pebblePouch_(id);
+    return JSON.stringify({ on: true, wallet: arcadeWallet_(id), rules: arcadeTokenRules_(), maxPoints: settingNum_('ARCADE_MAX_POINTS', 3), pebbles: pouch,
+      games: Object.keys(ARCADE_GAMES_).map(function (k) { const g = ARCADE_GAMES_[k]; return { key: k, name: g.name, blurb: g.blurb, per: g.per, pebble: pouch.rates[k], best: best[k] || 0 }; }),
       board: arcadeBoard_(), sample: id === SAMPLE_ID_, look: seasonLook_() });
   }
 }
@@ -143,30 +191,65 @@ function arcadeFinish_(play, score, id) {
     score = Math.max(0, Math.floor(Number(score) || 0));
     const secs = (Date.now() - p.at) / 1000;
     const kept = secs >= g.minSec && score <= g.max && score <= (secs + 2) * g.rate;
-    const points = kept ? Math.min(settingNum_('ARCADE_MAX_POINTS', 3), Math.floor(score / g.per)) : 0;
+    const peb = pebblesOn_();
+    const points = kept && !peb ? Math.min(settingNum_('ARCADE_MAX_POINTS', 3), Math.floor(score / g.per)) : 0;
+    const pebbles = kept && peb ? pebblesFor_(p.game, score) : 0;
     if (id !== SAMPLE_ID_) { // every play uses its token; a score that can't be real is kept as 0
       ensureArcadeTab_();
       const b = boardRows_().filter(function (r) { return id800_(r['800#']) === id; })[0] || {};
-      getSheet_('Arcade Plays').appendRow([Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'), id, String(b['Name'] || ''), squadOf_(b['Squad']), p.game, kept ? score : 0, points, !!p.free, '']);
+      appendByHeader_('Arcade Plays', { 'When': Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'), '800#': id, 'Name': String(b['Name'] || ''),
+        'Squad': squadOf_(b['Squad']), 'Game': p.game, 'Score': kept ? score : 0, 'Points': points, 'Free': !!p.free, 'Paid': '', 'Pebbles': pebbles });
     }
     const out = JSON.parse(arcadeView_(id));
-    out.result = { game: p.game, score: score, points: points, kept: kept };
+    out.result = { game: p.game, score: score, points: points, kept: kept, pebbles: pebbles };
     return JSON.stringify(out);
   }
 }
 
-// Once a day: the day's arcade points, one row per squad.
+/** Cash in: every full ARCADE_PEBBLES_PER_POINT Pebbles become 1 point for the student's squad (paid tonight). */
+function clashArcadeCashIn(asId, adminToken) {
+  return withSample_(asId, function () { return arcadeCashIn_(meId_(asId, adminToken)); });
+}
+function clashSiteArcadeCashIn(id) {
+  const me = siteArcadeId_(id);
+  return withSquad_(arcadeCashIn_(me.id), me.squad);
+}
+function arcadeCashIn_(id) {
+  if (!arcadeOn_() || !pebblesOn_()) throw new Error('Cash in is closed right now.');
+  if (id === SAMPLE_ID_) throw new Error('This is the sample student: Pebbles are pretend here, so nothing cashes in.');
+  const lock = LockService.getScriptLock(); lock.waitLock(15000);
+  let pts = 0;
+  try {
+    ensureArcadeTab_();
+    const pouch = pebblePouch_(id);
+    pts = Math.floor(pouch.balance / pouch.per);
+    if (pts < 1) throw new Error('You need ' + pouch.per + ' Pebbles for 1 point. You have ' + pouch.balance + '.');
+    const b = boardRows_().filter(function (r) { return id800_(r['800#']) === id; })[0] || {}, squad = squadOf_(b['Squad']);
+    if (SQUAD_KEYS_.indexOf(squad) === -1) throw new Error('You are not on a squad yet. Ask your homeroom teacher.');
+    appendByHeader_('Pebble Cash-ins', { 'When': Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'), '800#': id, 'Squad': squad, 'Pebbles': pts * pouch.per, 'Points': pts, 'Paid': '' });
+  } finally { lock.releaseLock(); }
+  const out = JSON.parse(arcadeView_(id));
+  out.result = { cashed: pts };
+  return JSON.stringify(out);
+}
+
+// Once a day: the day's arcade points (games, and Pebble cash-ins), one row per squad.
 function payArcade_() {
-  const sh = getSheetSafe_('Arcade Plays');
-  if (!sh) return 0;
-  const rows = sheetRows_('Arcade Plays').filter(function (r) { return !String(r['Paid'] || '').trim() && (Number(r['Points']) || 0) > 0 && SQUAD_KEYS_.indexOf(squadOf_(r['Squad'])) > -1; });
-  if (!rows.length) return 0;
-  const pts = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 }, today = todayYmd_();
-  rows.forEach(function (r) { pts[squadOf_(r['Squad'])] += Number(r['Points']) || 0; });
-  getSheet_('events').appendRow(['', 'Arcade: ' + rows.length + ' game' + (rows.length === 1 ? '' : 's'), 'arcade', today, '', '', pts.BLACK || '', pts.GOLD || '', pts.GREY || '', pts.PURPLE || '']);
-  const c = headerCol_(sh, 'Paid');
-  rows.forEach(function (r) { if (c) sh.getRange(r._row, c).setValue(today); });
-  return rows.length;
+  const pts = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 }, today = todayYmd_(), marks = [];
+  let games = 0, cash = 0;
+  [['Arcade Plays', function () { games++; }], ['Pebble Cash-ins', function () { cash++; }]].forEach(function (t) {
+    const sh = getSheetSafe_(t[0]);
+    if (!sh) return;
+    const rows = sheetRows_(t[0]).filter(function (r) { return !String(r['Paid'] || '').trim() && (Number(r['Points']) || 0) > 0 && SQUAD_KEYS_.indexOf(squadOf_(r['Squad'])) > -1; });
+    rows.forEach(function (r) { pts[squadOf_(r['Squad'])] += Number(r['Points']) || 0; t[1](); });
+    const c = headerCol_(sh, 'Paid');
+    if (c) rows.forEach(function (r) { marks.push([sh, r._row, c]); });
+  });
+  if (!games && !cash) return 0;
+  const name = 'Arcade: ' + [games ? games + ' game' + (games === 1 ? '' : 's') : '', cash ? cash + ' Pebble cash-in' + (cash === 1 ? '' : 's') : ''].filter(String).join(', ');
+  getSheet_('events').appendRow(['', name, 'arcade', today, '', '', pts.BLACK || '', pts.GOLD || '', pts.GREY || '', pts.PURPLE || '']);
+  marks.forEach(function (m) { m[0].getRange(m[1], m[2]).setValue(today); });
+  return games + cash;
 }
 
 function maybePayArcade_() {
@@ -177,4 +260,4 @@ function maybePayArcade_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_48_Arcade = 'cf5a90d3a8';
+var FILE_STAMP_48_Arcade = '9f5b7e9ca3';
