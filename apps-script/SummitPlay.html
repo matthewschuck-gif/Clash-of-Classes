@@ -107,7 +107,8 @@
   var BASE = { BLACK: '#2b2633', GOLD: '#a87b00', GREY: '#5d6673', PURPLE: '#5b1a86' };
   var FOCUS = { BLACK: '47% 11%', GOLD: '72% 2%', GREY: '77% 11%', PURPLE: '69% 0%' };
   var ITEMICON = { double: 'ph-dice-two', compass: 'ph-compass', paws: 'ph-hand-grabbing', zipline: 'ph-arrows-left-right' };
-  var TRY = false, PV = false, TRYN = 0; // Admin › Preview as a student: the minigame tryout, or a demo game against the computer
+  var TRY = false, PV = false, TRYN = 0;
+  var HOST = '', HOSTMG = null; // one screen: the play panel on the big screen acts for whichever squad is up // Admin › Preview as a student: the minigame tryout, or a demo game against the computer
   var me = '', squad = '', S = null, seq = 0, acting = false, code = '', LOGOS = {}, skew = 0, compassOpen = false, play = null, duelOpp = '';
   try { me = localStorage.getItem('clash-my-800') || ''; code = sessionStorage.getItem('summit-code') || ''; } catch (e) {}
   function $(id) { return document.getElementById(id); }
@@ -206,6 +207,10 @@
     if (!v || v.same) return;
     if (!v.on) { $('app').innerHTML = '<div class="card"><p class="sub">Summit Party is closed right now.</p></div>'; return; }
     S = v; seq = v.game ? v.game.seq : 0;
+    if (HOST && S.game) {
+      var up = actor(S.game);
+      if (up !== squad) { squad = up; me = 'host~' + HOST + '~' + up; document.documentElement.style.setProperty('--sq', COLORS[up] || '#b583ff'); }
+    }
     SFX.set(v.opts && v.opts.soundPlay, .6);
     if (play && S.game && S.game.phase === 'minigame' && S.game.mg && play.key === mgKey(S.game)) return; // keep playing
     play = null;
@@ -265,6 +270,7 @@
   }
   function foot() {
     if (TRY) return '<p class="small"><a href="#" id="tryBack">All minigames</a> ' + muteBtn() + '</p>';
+    if (HOST) return '<p class="small">Big screen · game ' + esc(code) + ' · each squad takes its turn here ' + muteBtn() + '</p>';
     if (PV) return '<p class="small">Preview · ' + esc(title(squad)) + ' Squad · game ' + esc(code) + ' · the computer plays the other squads ' + muteBtn() + '</p>';
     return '<p class="small">Game ' + esc(code) + ' · not ' + esc(me) + '? <a href="#" id="change">Change</a> ' + muteBtn() + '</p>';
   }
@@ -304,8 +310,18 @@
   }
 
   // ── Minigames: 20 seconds, every squad at once ──
-  function mgKey(g) { return g.id + ':' + (g.mg.id || g.mg.round); }
-  function curMg(key) { var g = S && S.game; return g && g.mg && mgKey(g) === key ? g.mg : null; }
+  function mgKey(g) { return g.id + ':' + (g.mg.id || g.mg.round) + (HOST ? ':' + squad : ''); }
+  function curMg(key) { if (HOST && HOSTMG && HOSTMG.key === key) return HOSTMG.mg; var g = S && S.game; return g && g.mg && mgKey(g) === key ? g.mg : null; }
+  // One screen: who acts now. A turn: the squad that is up. A minigame: the next squad without a score.
+  function actor(g) {
+    if (!g || !g.order) return squad || 'GOLD';
+    if (g.phase === 'minigame' && g.mg && !g.mg.live) {
+      var list = g.mg.squads || g.order;
+      for (var i = 0; i < list.length; i++) if (g.mg.scores[list[i]] == null) return list[i];
+      return list[0];
+    }
+    return g.pending ? g.pending.squad : g.order[g.turn];
+  }
   function modeTag(mg) {
     var t = function (l) { return l.map(title).join(' + '); }, mineT = mg.teams && mg.teams.filter(function (x) { return x.indexOf(squad) >= 0; })[0];
     if (mg.mode === '2v2') return '2 vs 2 · your team: ' + t(mineT || []);
@@ -323,10 +339,24 @@
     if (mg.live) { el.innerHTML = head(g) + '<div class="mg"><div class="tag" style="margin-top:12px">Live ' + esc(mg.kind) + ' challenge</div><h2>' + esc(mg.name) + '</h2><p class="sub">' + esc(mg.how) + '</p><p class="wait">Play it in the room. Staff pick the winner.</p></div></div>' + foot(); return wireFoot(); }
     var mine = mg.scores && mg.scores[squad] != null;
     if (TRY && (mine || now() > mg.endAt + 300)) return tryDone(mg);
+    if (HOST && !mine) {
+      if (mg.game === 'chase') { el.innerHTML = head(g) + '<div class="mg"><h2>' + esc(mg.name) + '</h2><p class="wait">On the big screen!</p><p class="sub">Click the maze, then steer the hiker with the arrow keys. The computer moves the ghosts.</p></div></div>' + foot(); return wireFoot(); }
+      if (!HOSTMG || HOSTMG.key !== key) {
+        el.innerHTML = head(g) + '<div class="mg"><div class="tag" style="margin-top:10px">' + esc(modeTag(mg)) + '</div><h2>' + esc(mg.name) + '</h2><p class="sub">' + esc(mg.how) + '</p>' +
+          '<p class="wait">' + esc(title(squad)) + ' Squad, you are up!</p><p class="sub">Pass the keyboard to ' + esc(title(squad)) + '.</p><button class="go" id="hostGo">Start</button></div></div>' + foot();
+        wireFoot();
+        $('hostGo').onclick = function () {
+          var t = now(), secs = mg.secs || 20, local = Object.assign({}, mg, { startAt: t + 3000, endAt: t + 3000 + secs * 1000 });
+          HOSTMG = { key: key, mg: local }; SFX.play('pop'); draw();
+        };
+        return;
+      }
+      mg = HOSTMG.mg;
+    }
     if (mine) { el.innerHTML = head(g) + '<div class="mg"><h2>' + esc(mg.name) + '</h2><p class="wait">Score sent</p><p class="sent">' + scoreText(mg, mg.scores[squad]) + '</p><p class="sub">Results on the big screen in a moment.</p></div></div>' + foot(); return wireFoot(); }
     if (now() > mg.endAt) { el.innerHTML = head(g) + '<div class="mg"><h2>' + esc(mg.name) + '</h2><p class="wait">Time is up for this one.</p></div></div>' + foot(); return wireFoot(); }
     play = { key: key, game: mg.game, done: false, leg: 0, pausedUntil: 0 };
-    var opts = S.opts || {}, relay = opts.relay && ['react', 'memory', 'escape', 'chase'].indexOf(mg.game) < 0;
+    var opts = HOST ? { soundPlay: (S.opts || {}).soundPlay } : S.opts || {}, relay = opts.relay && ['react', 'memory', 'escape', 'chase'].indexOf(mg.game) < 0;
     el.innerHTML = head(g) + '<div class="mg"><div class="tag" style="margin-top:10px">' + esc(modeTag(mg)) + '</div><h2>' + esc(mg.name) + '</h2><p class="sub">' + esc(mg.how) + '</p>' +
       (relay ? '<p class="sub"><b style="color:var(--gold)">Pass the Chromebook:</b> 4 legs, a new teammate each time the page says so.</p>' : '') +
       '<div class="clock" id="clock"></div><div id="readyBox"></div><div id="arena"></div><div class="relay" id="relay" hidden></div></div></div>' + foot();
@@ -1089,6 +1119,12 @@
   // ?pv=TICKET&mode=tryout | ?pv=TICKET&code=CODE (a demo game): from Admin › Preview as a student.
   function boot(p) {
     p = p || {};
+    if (p.host) { // one screen: the play panel inside the big-screen board
+      HOST = String(p.host);
+      run('clashSummitHostOpen', HOST).then(function (r) { code = r.code; take(r.state); })
+        .catch(function (e) { $('app').innerHTML = '<div class="card"><p class="sub">' + esc(msgOf(e)) + '</p></div>'; });
+      return;
+    }
     if (!p.pv) { if (me) join(); else ask(); return; }
     PV = true;
     if (p.mode === 'tryout') {
@@ -1109,4 +1145,4 @@
 </script>
 </body>
 </html>
-<!-- file-stamp: 5df798a2d1 -->
+<!-- file-stamp: d035d88dc6 -->

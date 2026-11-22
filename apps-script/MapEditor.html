@@ -94,7 +94,7 @@
       '<div><label>&nbsp;</label><label style="text-transform:none;font-size:13px;color:var(--text)"><input type="checkbox" data-f="summit"' + (z.summit ? ' checked' : '') + '> 👑 Summit (King of the Mountain, pays x2)</label>' +
       '<label style="text-transform:none;font-size:13px;color:var(--text)"><input type="checkbox" data-f="show"' + (z.show ? ' checked' : '') + '> Show on the map</label></div>' +
       (z.conquerBy ? '' : '<div class="wide"><label>Claimed By (old way: event types or words, * = everything)</label><input type="text" data-f="claimedBy" value="' + esc(z.claimedBy) + '"></div>') +
-      '<div class="wide"><label style="text-transform:none;font-size:13px;color:var(--text)"><input type="checkbox" data-f="locked"' + (z.locked ? ' checked' : '') + '> 🔒 Lock holder: keep whoever is in "Held by" until I unlock it (no automatic changes)</label></div>' +
+      '<div class="wide"><label style="text-transform:none;font-size:13px;color:var(--text)"><input type="checkbox" data-f="locked"' + (z.locked ? ' checked' : '') + '> 🔒 Lock holder: keep whoever is in "Held by" (weekly map: until the next Monday turn; monthly map: until I unlock it)</label></div>' +
       overrideBox(z) +
       '<div class="wide"><label>Extra borders (zones it connects to that don\'t touch, comma-separated)</label><input type="text" data-f="borders" value="' + esc(z.borders) + '">' +
       '<div class="me-hint">Next to: ' + esc(nb.join(', ') || 'nothing yet') + (rule ? ' · ' + esc(rule.text) : '') + '</div></div>' +
@@ -266,4 +266,4 @@
   window.MapEditor = { open: function () { if (!st.loaded || !st.dirty) load(); else render(); } };
 })();
 </script>
-<!-- file-stamp: 770000ae63 -->
+<!-- file-stamp: 98679aabe3 -->

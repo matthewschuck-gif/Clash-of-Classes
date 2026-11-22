@@ -164,18 +164,20 @@ function clashGeneralsPreview(pw, squad) {
   return JSON.stringify({ token: hqPreviewToken_(squad), name: 'Staff preview', squad: squad });
 }
 // A staff-preview HQ session for one squad (also used by Admin › Preview as a student, 65_Preview.gs).
-function hqPreviewToken_(squad) {
+function hqPreviewToken_(squad, pvTicket) {
   squad = squadOf_(squad);
   if (SQUAD_KEYS_.indexOf(squad) === -1) throw new Error('Pick a squad.');
   const token = Utilities.getUuid();
-  CacheService.getScriptCache().put('hq-' + token, JSON.stringify({ id: '', name: 'Staff preview', squad: squad, preview: true }), 2 * 3600);
+  CacheService.getScriptCache().put('hq-' + token, JSON.stringify({ id: '', name: 'Staff preview', squad: squad, preview: true, pv: pvTicket || '' }), 2 * 3600);
   return token;
 }
 
 function hqSession_(token) {
   const s = token ? CacheService.getScriptCache().get('hq-' + token) : null;
   if (!s) throw new Error('Please sign in to Generals HQ again.');
-  return JSON.parse(s);
+  const o = JSON.parse(s);
+  if (o.pv) pvApplyTicket_(o.pv); // opened from Admin › Preview as a student: its switches
+  return o;
 }
 
 // ── HQ DATA ─────────────────────────────────────────────────────────
@@ -311,4 +313,4 @@ function clashGeneralsService(token, progress) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_05_Generals = 'aad59df554';
+var FILE_STAMP_05_Generals = 'f6e3d7115d';

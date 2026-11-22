@@ -44,8 +44,10 @@ function serveSite_(e) {
   t.config = JSON.stringify({ pollMs: Math.max(3, Number(getSetting_('POLL_SECONDS')) || 5) * 1000,
     passwordSignIn: passwordSignInOn_(), staffLink: String(getSetting_('STAFF_LINK') || getSetting_('STUDENT_LINK') || '') });
   // The first load rides inside the page, so it shows without a second trip to the server.
-  let boot = 'null';
-  try { boot = cachedPublicLoad_().replace(/</g, '\\u003c'); } catch (err) { console.warn('Boot data: ' + err.message); }
+  let boot = 'null', pvSite = false;
+  // Admin › Preview as a student › The site (?pv=TICKET): the page as it loads with that preview's switches.
+  if (e && e.parameter && e.parameter.pv) { try { pvApplyTicket_(e.parameter.pv); pvSite = !!PV_OVERRIDES_; } catch (err) { pvSite = false; } }
+  try { boot = (pvSite ? JSON.stringify(publicLoad_(false)) : cachedPublicLoad_()).replace(/</g, '\\u003c'); } catch (err) { console.warn('Boot data: ' + err.message); }
   t.boot = boot;
   return t.evaluate()
     .setTitle(getSetting_('SITE_TITLE') || 'Clash of Classes — Ephrata Middle School')
@@ -67,6 +69,8 @@ function publicLoad_(raw) {
     maybeCheckThaws_(); // thaws a freeze whose goals are met (14_Thaw.gs), at most every 5 minutes
     maybeGameTick_(); // map claims and engine unlocks (15_Game.gs), at most every 10 minutes
     res.value.studentLink = String(getSetting_('STUDENT_LINK') || '');
+    res.value.summitOn = spOn_(); // the Summit Party tab (63_SummitParty.gs)
+    res.value.siteUrl = String(getSetting_('SITE_URL') || 'https://clashofclasses.org');
     res.value.apps = programApps_(); // Trait Dough, Student of the Month, Mindset web apps
     mergeMindsetLinks_(res.value); // the Mindset Links tab fills any month the site has no link for (23_Drive.gs)
     res.value.freezes = activeFreezes_(); // read-only, from the Point Freezes tab
@@ -489,4 +493,4 @@ function saveSummary_(before, after, keptFromOthers) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_03_Web = '4a8eb73603';
+var FILE_STAMP_03_Web = 'a6a3e4b43d';

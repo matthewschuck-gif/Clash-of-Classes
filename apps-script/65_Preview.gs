@@ -54,18 +54,56 @@ function previewTicket_(ticket) {
 /** The preview pages: who to show. My Climb uses token + id exactly like its own staff preview. */
 function clashPreviewOpen(ticket) {
   const pv = previewTicket_(ticket);
-  return JSON.stringify({ token: pv.token, id: pv.asId, squad: pv.squad, name: pv.name, real: pv.real });
+  return JSON.stringify({ token: pv.token, id: pv.asId + '~' + String(ticket).replace(/[^A-Za-z0-9]/g, ''), squad: pv.squad, name: pv.name, real: pv.real });
+}
+
+// ── PREVIEW SWITCHES: try any ON/OFF Settings row in this preview only ──
+// Never offered: sign-in, alerts, backups and tracking (they are about staff, not what students see).
+const PV_NO_SWITCH_ = ['PASSWORD_SIGN_IN', 'SECURITY_ALERTS', 'NIGHTLY_BACKUP', 'USAGE_TRACKING', 'STUDENT_PREVIEW', 'DIGEST', 'FROST_CHECK'];
+function previewSwitchList_() {
+  const saved = PV_OVERRIDES_; PV_OVERRIDES_ = null;
+  try {
+    return DEFAULT_SETTINGS.filter(function (r) { return /^(ON|OFF)$/i.test(String(r[1])) && PV_NO_SWITCH_.indexOf(r[0]) === -1; }).map(function (r) {
+      const v = String(getSetting_(r[0]) || r[1]).trim().toUpperCase();
+      return { key: r[0], sheet: v === 'OFF' ? 'OFF' : 'ON', about: String(r[2] || '').slice(0, 220) };
+    });
+  } finally { PV_OVERRIDES_ = saved; }
+}
+/** The preview window's Switches panel: every ON/OFF row, what the Sheet says, and what this preview uses. */
+function clashPreviewSwitches(ticket) {
+  const pv = previewTicket_(ticket);
+  return JSON.stringify({ list: previewSwitchList_(), settings: pv.settings || {} });
+}
+/** Save this preview's switches ({ KEY: 'ON' | 'OFF' }); only rows that differ from the Sheet are kept. */
+function clashPreviewSetSwitches(ticket, settings) {
+  const pv = previewTicket_(ticket), want = settings || {}, out = {};
+  previewSwitchList_().forEach(function (s) {
+    const v = String(want[s.key] || '').toUpperCase();
+    if ((v === 'ON' || v === 'OFF') && v !== s.sheet) out[s.key] = v;
+  });
+  pv.settings = out;
+  CacheService.getScriptCache().put('pv-' + String(ticket).replace(/[^A-Za-z0-9]/g, '').slice(0, 64), JSON.stringify(pv), PV_HOURS_ * 3600);
+  return JSON.stringify({ settings: out, changed: Object.keys(out).length });
+}
+function pvApplyTicket_(ticket) { const pv = previewTicket_(ticket); PV_OVERRIDES_ = pv.settings && Object.keys(pv.settings).length ? pv.settings : null; }
+// asId "sample-GOLD~TICKET" / "view-8001234~TICKET": the preview's switches for this request.
+function pvApplyAsId_(asId) {
+  const t = String(asId || '').split('~')[1];
+  if (!t) return;
+  try { pvApplyTicket_(t); } catch (e) { /* an old ticket: the Sheet's switches */ }
 }
 
 /** Generals HQ for the previewed student's squad (the real HQ: what you do there is saved). */
 function clashPreviewHq(ticket) {
   const pv = previewTicket_(ticket);
-  return JSON.stringify({ token: hqPreviewToken_(pv.squad), squad: pv.squad, name: 'Staff preview' });
+  return JSON.stringify({ token: hqPreviewToken_(pv.squad, ticket), squad: pv.squad, name: 'Staff preview' });
 }
 
 /** Summit Party minigame tryout: the art and minigames, and which ones can be tried alone. */
 function clashPreviewSummit(ticket) {
-  const pv = previewTicket_(ticket), v = spView_(null);
+  const pv = previewTicket_(ticket);
+  PV_OVERRIDES_ = pv.settings && Object.keys(pv.settings).length ? pv.settings : null;
+  const v = spView_(null);
   v.on = true;
   v.squad = pv.squad;
   v.tryout = Object.keys(SP_MINIGAMES_).filter(function (k) { return k !== 'chase' && k !== 'sketch'; });
@@ -75,11 +113,12 @@ function clashPreviewSummit(ticket) {
 /** Summit Party demo game: the previewed squad plays; the computer plays the other three. No points. */
 function clashSummitDemo(ticket, rounds, layout) {
   const pv = previewTicket_(ticket);
-  return spCreate_('Preview (' + pv.name + ')', Math.max(1, Math.min(10, Math.round(Number(rounds) || 3))), layout, { mine: pv.squad });
+  return spCreate_('Preview (' + pv.name + ')', Math.max(1, Math.min(10, Math.round(Number(rounds) || 3))), layout,
+    { mine: pv.squad, settings: pv.settings && Object.keys(pv.settings).length ? pv.settings : null });
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
 var FILE_STAMP_65_Preview = '';
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_65_Preview = 'a7912929d4';
+var FILE_STAMP_65_Preview = 'cf5112cdb0';

@@ -1108,6 +1108,7 @@ test('monthly zones: last calendar month, highest/lowest numbers from Squad Mont
   const w = world();
   w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_();
   w.setSettingValue_('POLL_APPROVAL', 'OFF'); // votes typed straight onto Poll Votes count here
+  w.book.getSheetByName('metrics').rows.splice(1); // no metrics tab numbers: this test is about Squad Monthly
   const lm = w.monthBounds_(-1), ym = lm[0].slice(0, 7), mid = lm[0].slice(0, 8) + '15', thisMonth = w.todayYmd_();
   const ev = w.book.getSheetByName('events'), mz = w.book.getSheetByName('Map Zones');
   // A fresh setup seeds the monthly set: every building zone points at its monthly rule.
@@ -2935,6 +2936,33 @@ test('weekly map: every area judged on last week; holders only move in the Monda
   assert.ok(/monthly/.test(w.weeklyMapTurn_(true)));
 });
 
+test('weekly map: attendance, grades and behavior come from the metrics tab when Squad Monthly is blank; a staff-locked holder stands until the next Monday turn', () => {
+  const w = world({ weeklyMap: true });
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_();
+  w.applyMonthlyRules_(true);
+  const lw = J(w.lastWeekBounds_(w.todayYmd_()));
+  // metrics (world): attendance 90..93, referral 80..83, grades 70..73 for BLACK, GOLD, GREY, PURPLE.
+  assert.deepStrictEqual(J(w.measureScores_('attendance', lw[0], lw[1], [], false, false, true)), { BLACK: 90, GOLD: 91, GREY: 92, PURPLE: 93 });
+  assert.deepStrictEqual(J(w.measureScores_('failing', lw[0], lw[1], [], true, true, true)), { BLACK: 30, GOLD: 29, GREY: 28, PURPLE: 27 }, 'failing = 100 - passing %, not divided by squad size');
+  assert.deepStrictEqual(J(w.measureScores_('interventions_teacher, interventions_admin', lw[0], lw[1], [], true, true, true)), { BLACK: 20, GOLD: 19, GREY: 18, PURPLE: 17 }, 'teacher + admin count once');
+  const mz = w.book.getSheetByName('Map Zones'), H = mz.rows[0];
+  const row = by => mz.rows.find(r => r[H.indexOf('Conquer By')] === by);
+  ['Attendance', 'Passing Grades', 'Fewest Interventions'].forEach(by => { const r = row(by); assert.ok(r, by); r[H.indexOf('Holder')] = ''; });
+  // Staff set Attendance to Black and lock it: it stands between turns...
+  row('Attendance')[H.indexOf('Holder')] = 'BLACK'; row('Attendance')[H.indexOf('Locked')] = true;
+  let zs = J(w.mapZones_(null, true));
+  assert.strictEqual(zs.find(z => z.rule === 'Attendance').holder, 'BLACK', 'the staff holder stands for the week');
+  // ...and the Monday turn judges it again and unlocks it.
+  w.weeklyMapTurn_(true);
+  zs = J(w.mapZones_(null, false));
+  assert.deepStrictEqual(['Attendance', 'Passing Grades', 'Fewest Interventions'].map(r => zs.find(z => z.rule === r).holder), ['PURPLE', 'PURPLE', 'PURPLE']);
+  assert.strictEqual(row('Attendance')[H.indexOf('Locked')], false, 'unlocked by the turn');
+  // A metrics change shows up at the next turn.
+  w.book.getSheetByName('metrics').rows[1][1] = 99; // BLACK attendance
+  w.weeklyMapTurn_(true);
+  assert.strictEqual(J(w.mapZones_(null, false)).find(z => z.rule === 'Attendance').holder, 'BLACK');
+});
+
 test('Arcade on the main site: by 800# on the Student Board, the same wallet and plays as My Climb, ARCADE_ON_SITE OFF', () => {
   const w = world();
   w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureServiceTab_(); w.ensureDoughTabs_(); w.ensureArcadeTab_();
@@ -3505,12 +3533,24 @@ test('Preview as a student: tickets, read-only real students, the minigame tryou
   const smp = JSON.parse(w.clashPreviewTicket(tok, 'sample-PURPLE'));
   assert.deepStrictEqual([smp.squad, smp.real], ['PURPLE', false]);
   assert.ok(smp.ticket && smp.ticket !== tok && smp.ticket.indexOf('8001') < 0, 'a random ticket, not the session or an 800#');
-  assert.deepStrictEqual(JSON.parse(w.clashPreviewOpen(smp.ticket)).id, 'sample-PURPLE');
+  assert.strictEqual(JSON.parse(w.clashPreviewOpen(smp.ticket)).id.split('~')[0], 'sample-PURPLE');
+  // Switches: this preview only. The Sheet says SUMMIT_PARTY OFF; the preview turns it ON.
+  w.setSettingValue_('SUMMIT_PARTY', 'OFF');
+  const sw = JSON.parse(w.clashPreviewSwitches(smp.ticket));
+  assert.ok(sw.list.some(x => x.key === 'SUMMIT_PARTY' && x.sheet === 'OFF') && !sw.list.some(x => x.key === 'PASSWORD_SIGN_IN'), 'every ON/OFF row but sign-in and alerts');
+  assert.strictEqual(JSON.parse(w.clashPreviewSetSwitches(smp.ticket, { SUMMIT_PARTY: 'ON', HOPE: 'ON', NOT_A_ROW: 'ON' })).changed, 1, 'only rows that differ from the Sheet are kept');
+  const pid = JSON.parse(w.clashPreviewOpen(smp.ticket));
+  w.PV_OVERRIDES_ = null;
+  const seen = (function clashMe() { w.meId_(pid.id, pid.token); return w.getSetting_('SUMMIT_PARTY'); })();
+  assert.strictEqual(seen, 'ON', 'the preview sees its own switch');
+  w.PV_OVERRIDES_ = null;
+  assert.strictEqual(w.getSetting_('SUMMIT_PARTY'), 'OFF', 'everyone else sees the Sheet');
+  w.clashPreviewSetSwitches(smp.ticket, {});
   assert.throws(() => w.clashPreviewOpen('deadbeef'), /run out/);
   // A real student: read-only. Their page opens; anything that saves is refused.
   const real = JSON.parse(w.clashPreviewTicket(tok, '8001111'));
   const o = JSON.parse(w.clashPreviewOpen(real.ticket));
-  assert.deepStrictEqual([o.id, o.squad, o.real], ['view-8001111', 'GOLD', true]);
+  assert.deepStrictEqual([o.id.split('~')[0], o.squad, o.real], ['view-8001111', 'GOLD', true]);
   assert.strictEqual(w.meId_.length, 2);
   const readCall = function clashMe() { return w.meId_(o.id, o.token); };
   assert.strictEqual(readCall(), '8001111', 'clashMe can read');
@@ -3551,6 +3591,38 @@ test('Preview as a student: tickets, read-only real students, the minigame tryou
   assert.ok(!w.book.getSheetByName('Summit Party Points') || w.book.getSheetByName('Summit Party Points').rows.length <= 1, 'a demo game never earns points');
   w.setSettingValue_('STUDENT_PREVIEW', 'OFF');
   assert.throws(() => w.clashPreviewTicket(tok, 'sample-GOLD'), /STUDENT_PREVIEW/);
+});
+
+test('Summit Party on one screen: the board\'s play panel rolls and plays for each squad in turn; no Chromebooks, no Trail Sketch, the minigame ends when every squad has played', () => {
+  const w = world();
+  w.ensureSettings_();
+  w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade'], ['8001111', 'Ann L.', 'Gold', '7']];
+  w.setSettingValue_('SUMMIT_PARTY', 'ON'); w.setSettingValue_('SUMMIT_PARTY_AUTO_ROLL', '0'); w.setSettingValue_('SUMMIT_PARTY_LIVE', 'OFF');
+  w.setSettingValue_('SUMMIT_PARTY_TEAMS', 'OFF'); w.setSettingValue_('SUMMIT_PARTY_DUELS', 'OFF'); w.setSettingValue_('SUMMIT_PARTY_MINIGAMES', 'sketch, tap');
+  const tok = login(w, 'oldpw');
+  let s = JSON.parse(w.clashSummitStart(tok, 3, 'trail', true)).game;
+  const code = s.code;
+  assert.strictEqual(s.screen, true);
+  assert.throws(() => w.clashSummitHostTicket('nope', code), /sign in/i);
+  const t = JSON.parse(w.clashSummitHostTicket(tok, code)).ticket;
+  assert.strictEqual(JSON.parse(w.clashSummitHostOpen(t)).code, code);
+  assert.throws(() => w.clashSummitRoll('host~bad~GOLD', code), /ran out/);
+  const as = q => 'host~' + t + '~' + q;
+  for (let i = 0; i < 12 && s.phase === 'turn'; i++) {
+    const up = s.pending ? s.pending.squad : s.order[s.turn];
+    if (s.pending && s.pending.kind === 'shop') s = JSON.parse(w.clashSummitChoose(as(up), code, 'skip')).game;
+    else if (s.pending) s = JSON.parse(w.clashSummitChoose(as(up), code, s.pending.options[0].id)).game;
+    else s = JSON.parse(w.clashSummitRoll(as(up), code)).game;
+  }
+  assert.strictEqual(s.phase, 'minigame');
+  assert.strictEqual(s.mg.game, 'tap', 'no Trail Sketch on one screen');
+  assert.ok(s.mg.endAt - s.mg.startAt > 4 * 20000, 'time for every squad to take a turn');
+  s.order.forEach((q, i) => { s = JSON.parse(w.clashSummitScore(as(q), code, 10 + i)).game; });
+  assert.strictEqual(s.phase, 'turn', 'resolved as soon as the last squad played');
+  // A Chromebook game refuses a host ticket.
+  const cb = JSON.parse(w.clashSummitStart(tok, 3, 'trail', false)).game.code;
+  assert.throws(() => w.clashSummitHostTicket(tok, cb), /Chromebooks/);
+  assert.throws(() => w.clashSummitRoll(as('GOLD'), cb), /another game/);
 });
 
 test('Summit Party: several games at once by code; any Staff Access role can run one; a squad that does not roll gets an auto-roll after SUMMIT_PARTY_AUTO_ROLL seconds', () => {

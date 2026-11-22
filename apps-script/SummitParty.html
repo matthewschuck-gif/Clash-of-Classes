@@ -17,6 +17,12 @@
   body { background: radial-gradient(1200px 700px at 28% -12%, #3b1a66 0%, transparent 62%), var(--bg); }
   .wrap { min-height:100dvh; display:grid; grid-template-columns: minmax(0,1fr) minmax(280px, 23%); gap:1.6vw; padding:1.8vh 1.8vw; align-items:start; }
   @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; padding:16px; } }
+  /* One screen: the play panel in the side column; it grows to the middle of the screen for a minigame. */
+  .hostdock iframe { display:block; width:100%; height:min(560px,62vh); border:0; border-radius:14px; background:#140a24; }
+  .hostdock h3 small { font-weight:700; opacity:.7; }
+  .hostdock.big { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); width:min(560px,94vw); z-index:30; box-shadow:0 30px 90px #000d; }
+  .hostdock.big iframe { height:min(860px,88vh); }
+  .hostdock.big h3 { display:none; }
   .head { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:1.2vh; }
   .head h1 { margin:0; font-family:Fraunces,Georgia,serif; font-weight:900; font-size:clamp(28px,3.2vw,56px); letter-spacing:-.02em; line-height:1.05; }
   .round-pill { font:800 clamp(13px,1.2vw,20px)/1 'DM Sans',sans-serif; background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:.55em 1em; }
@@ -177,9 +183,10 @@
   </main>
   <aside class="side">
     <div class="card"><div class="turnline" id="turnline">Summit Party</div></div>
+    <div class="card hostdock" id="hostDock" hidden><h3>Play here <small id="hostWho"></small></h3><iframe id="hostFrame" title="Summit Party play panel" allow="fullscreen"></iframe></div>
     <div class="card"><h3>Flags and coins</h3><div id="standings"></div></div>
     <div class="card log"><h3>On the trail</h3><div id="log"></div></div>
-    <div class="card"><h3>Play on a Chromebook</h3><div class="join">One Chromebook per squad: open <b>clashofclasses.org/?page=summit-play</b>, type the game code and your 800#. Roll on your turn and play every minigame.</div></div>
+    <div class="card" id="joinCard"><h3>Play on a Chromebook</h3><div class="join">One Chromebook per squad: open <b>clashofclasses.org/?page=summit-play</b>, type the game code and your 800#. Roll on your turn and play every minigame.</div></div>
     <div class="card" id="staff"></div>
   </aside>
 </div>
@@ -435,6 +442,9 @@
     var mk = function (s, pos, speed) { return { s: s, x: pos[0], y: pos[1], tx: pos[0], ty: pos[1], p: 0, dir: '', speed: speed, home: pos.slice() }; };
     var hiker = mk(mg.hiker, hs, 4.6), ghosts = Object.keys(mg.ghosts).map(function (s, i) { var a = mk(s, gs[i % gs.length], 3.9); a.v = mg.ghosts[s]; return a; });
     var eaten = 0, bonus = 0, scared = 0, over = false, alive = true, steer = {}, polling = false, lastPoll = 0, last = performance.now(), endMsg = '';
+    var keyDir = '', KEYS = { ArrowUp: 'U', ArrowDown: 'D', ArrowLeft: 'L', ArrowRight: 'R', w: 'U', s: 'D', a: 'L', d: 'R' };
+    var onKey = function (e) { if (!(S && S.game && S.game.screen) || !KEYS[e.key]) return; e.preventDefault(); keyDir = KEYS[e.key]; };
+    window.addEventListener('keydown', onKey);
     var imgs = {}, img = function (src) { if (!src) return null; if (!imgs[src]) { imgs[src] = new Image(); imgs[src].src = src; } return imgs[src]; };
     var open = function (a, d) { return !!d && !wall(a.x + D[d][0], a.y + D[d][1]); };
     var pos = function (a) { return [a.x + (a.tx - a.x) * a.p, a.y + (a.ty - a.y) * a.p]; };
@@ -498,6 +508,7 @@
       var m = S && S.game && S.game.mg, endAt = m && m.id === mg.id ? m.endAt : mg.endAt, left = Math.max(0, endAt - now());
       if (!over) {
         if (ts - lastPoll > 400 && !polling) { polling = true; lastPoll = ts; run('clashSummitSteers', code).then(function (v) { steer = v || {}; polling = false; }).catch(function () { polling = false; }); }
+        if (keyDir) steer[hiker.s] = { dir: keyDir, ago: 0 }; // one screen: the arrow keys steer the hiker
         if (scared > 0) scared -= dt;
         move(hiker, dt, false);
         if (now() - mg.startAt > 3000) ghosts.forEach(function (gh) { move(gh, dt, true); });
@@ -542,7 +553,8 @@
       if (mm) mm.textContent = (eaten + bonus) + ' markers · ' + Object.keys(dots).length + ' left' + (scared > 0 ? ' · LANTERN!' : '');
       requestAnimationFrame(frame);
     }
-    chase = { key: key, stop: function () { alive = false; } };
+    chase = { key: key, stop: function () { alive = false; window.removeEventListener('keydown', onKey); } };
+    if (g.screen) host(title(mg.hiker) + ' is the hiker: steer with the arrow keys. The computer moves the ghosts.');
     SFX.play('go');
     requestAnimationFrame(frame);
   }
@@ -662,12 +674,34 @@
     var nowSq = g.order[g.turn];
     $('turnline').innerHTML = g.status !== 'playing' ? (g.places ? '<b style="color:' + RING[g.places[0]] + '">' + esc(title(g.places[0])) + '</b> wins Summit Party!' : 'Stopped.')
       : g.phase === 'minigame' ? 'Minigame time: <b>' + esc(g.mg.name) + '</b>'
-      : (g.pending ? '<b style="color:' + RING[g.pending.squad] + '">' + esc(title(g.pending.squad)) + '</b> is ' + (g.pending.kind === 'shop' ? 'shopping at the Camp Store.' : 'picking a path.') : 'Your turn: <b style="color:' + RING[nowSq] + '">' + esc(title(nowSq)) + '</b>. Roll on your Chromebook.') + ' <span class="auto" id="auto"></span>';
+      : (g.pending ? '<b style="color:' + RING[g.pending.squad] + '">' + esc(title(g.pending.squad)) + '</b> is ' + (g.pending.kind === 'shop' ? 'shopping at the Camp Store.' : 'picking a path.') : 'Your turn: <b style="color:' + RING[nowSq] + '">' + esc(title(nowSq)) + '</b>. ' + (g.screen ? 'Roll in the play panel.' : 'Roll on your Chromebook.')) + ' <span class="auto" id="auto"></span>';
+    hostPanel(g);
     $('standings').innerHTML = places.map(function (s) { var q = g.squads[s];
       return '<div class="sq">' + logo(s) + '<div><div class="name" style="color:' + RING[s] + '">' + esc(title(s)) + '</div><div class="bag">' + (q.items || []).map(function (k) { return '<i class="ph-fill ' + ITEMICON[k] + '" title="' + esc(S.items[k].name) + '"></i>'; }).join('') + '</div></div>' +
         '<div class="nums"><div class="f"><i class="ph-fill ph-flag-pennant"></i>' + q.flags + '</div><div class="c"><i class="ph-fill ph-coins"></i>' + q.coins + '</div></div></div>'; }).join('');
     $('log').innerHTML = (g.log || []).slice(0, 8).map(function (t) { return '<div>' + esc(t) + '</div>'; }).join('');
     Object.keys(pieces).forEach(function (s) { pieces[s].classList.toggle('turn', g.status === 'playing' && g.phase === 'turn' && s === (g.pending ? g.pending.squad : nowSq)); });
+  }
+  // One screen (g.screen): a play panel (the Chromebook page in host mode) rolls and plays for whichever squad is up.
+  var hostFor = '', hostT = '';
+  function hostPanel(g) {
+    var dock = $('hostDock'), join = $('joinCard');
+    if (join) join.hidden = !!(g && g.screen);
+    if (!dock) return;
+    if (!(g && g.screen && g.status === 'playing' && token)) { dock.hidden = true; dock.classList.remove('big'); return; }
+    if (hostFor !== g.code) {
+      hostFor = g.code; hostT = '';
+      run('clashSummitHostTicket', token, g.code).then(function (r) {
+        hostT = r.ticket;
+        $('hostFrame').src = (r.url ? r.url + (r.url.indexOf('?') > -1 ? '&' : '?') : '?') + 'page=summit-play&host=' + encodeURIComponent(hostT);
+        hostPanel(S.game);
+      }).catch(function (e) { hostFor = ''; if ($('smsg')) $('smsg').textContent = 'Play panel: ' + msgOf(e); });
+    }
+    dock.hidden = !hostT;
+    var mg = g.phase === 'minigame' && g.mg && !g.mg.live && g.mg.game !== 'chase' && !g.mg.done;
+    dock.classList.toggle('big', !!mg);
+    var up = g.phase === 'turn' ? (g.pending ? g.pending.squad : g.order[g.turn]) : '';
+    $('hostWho').textContent = up ? '· ' + title(up) + ' is up' : '';
   }
   function staff() {
     var el = $('staff');
@@ -692,14 +726,15 @@
       (live ? '<div style="font-weight:800;margin-bottom:6px">Who won ' + esc(g.mg.name) + '?</div><div class="row">' + g.order.map(function (s) { return '<button class="gold" data-win="' + s + '" style="background:' + RING[s] + '">' + esc(title(s)) + '</button>'; }).join('') + '</div>' : '') +
       '<div class="row"><label class="field">Rounds<input id="rounds" type="number" min="1" max="30" value="' + (S.rounds || 10) + '" style="width:5em"></label>' +
       '<label class="field">Board<select id="layout"><option value="trail"' + (S.layout !== 'frost' ? ' selected' : '') + '>Mountain Island</option><option value="frost"' + (S.layout === 'frost' ? ' selected' : '') + '>Frostpeak at Night</option></select></label>' +
+      '<label class="field">Play on<select id="playOn"><option value="cb">Chromebooks (one per squad)</option><option value="screen"' + (g && g.screen ? ' selected' : '') + '>This screen only</option></select></label>' +
       '<button class="gold" id="start">' + (playing ? 'New game' : 'Start a game') + '</button></div>' +
       '<div class="row"><button class="ghost" id="skip"' + (playing ? '' : ' disabled') + '>' + (playing && g.phase === 'minigame' ? 'End the minigame' : 'Skip this turn') + '</button><button class="ghost" id="finish"' + (playing ? '' : ' disabled') + '>End and score</button><button class="ghost" id="stop"' + (playing ? '' : ' disabled') + '>Stop, no points</button></div><div class="msg" id="smsg"></div>';
     var act = function (p) { p.then(function (v) { take(v); }).catch(function (e) { if (/sign in|password|session/i.test(msgOf(e))) { token = ''; try { sessionStorage.removeItem('summit-admin'); } catch (x) {} staff(); } $('smsg').textContent = msgOf(e); }); };
     el.querySelectorAll('[data-win]').forEach(function (b) { b.onclick = function () { act(run('clashSummitLiveWin', token, code, b.getAttribute('data-win'))); }; });
     $('start').onclick = function () {
-      var rounds = Number($('rounds').value) || 10, layout = $('layout').value;
+      var rounds = Number($('rounds').value) || 10, layout = $('layout').value, screen = $('playOn').value === 'screen';
       if (playing && !confirm('Stop this game (no points) and start a new one?')) return;
-      act((playing ? run('clashSummitEnd', token, code, false) : Promise.resolve()).then(function () { return run('clashSummitStart', token, rounds, layout); }));
+      act((playing ? run('clashSummitEnd', token, code, false) : Promise.resolve()).then(function () { return run('clashSummitStart', token, rounds, layout, screen); }));
     };
     $('skip').onclick = function () { act(run('clashSummitSkip', token, code)); };
     $('finish').onclick = function () { if (confirm('End now and score it? The points wait for a yes in Admin.')) act(run('clashSummitEnd', token, code, true)); };
@@ -794,4 +829,4 @@
 </script>
 </body>
 </html>
-<!-- file-stamp: 6994e28678 -->
+<!-- file-stamp: 3cdbdeeea6 -->

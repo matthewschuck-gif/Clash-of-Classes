@@ -659,7 +659,7 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
     if (tab === 'me') loadExtra();
     // Sample student: "Another squad" steps to the next squad's sample (same staff sign-in).
     var pa = $('pvAnother');
-    if (pa) pa.onclick = function (ev) { ev.preventDefault(); var sq = ['BLACK', 'GOLD', 'GREY', 'PURPLE']; preview.id = 'sample-' + sq[(sq.indexOf(D.me.squad) + 1) % 4]; load(); };
+    if (pa) pa.onclick = function (ev) { ev.preventDefault(); var sq = ['BLACK', 'GOLD', 'GREY', 'PURPLE']; var tail = preview.id.indexOf('~') > -1 ? preview.id.slice(preview.id.indexOf('~')) : ''; preview.id = 'sample-' + sq[(sq.indexOf(D.me.squad) + 1) % 4] + tail; load(); };
     var saveCreature = function (choice) {
       if ($('crMsg')) $('crMsg').textContent = 'Saving…';
       run.apply(null, ['clashMeSaveCreature', choice].concat(who())).then(function (d) { D = d; render(); }).catch(function (e) { if ($('crMsg')) $('crMsg').textContent = msg(e); });
@@ -734,4 +734,4 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 </script>
 </body>
 </html>
-<!-- file-stamp: 2834cf59aa -->
+<!-- file-stamp: fc37955360 -->

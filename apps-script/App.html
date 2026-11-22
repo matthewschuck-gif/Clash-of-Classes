@@ -233,6 +233,7 @@ const PAGES_DEF = [
   { id:'homerooms',  icon:'🏠', label:'Homerooms'      },
   { id:'generals',   icon:'⚔️', label:'Generals'       },
   { id:'hq',         icon:'🛡️', label:'Generals HQ'    },
+  { id:'summit',     icon:'🎲', label:'Summit Party'   },
 ];
 
 const TRAITS = [
@@ -705,6 +706,7 @@ function buildNav(){
     PAGES_DEF.forEach(p=>{ if(!D.navOrder.includes(p.id)) reordered.push(p); });
     orderedPages=reordered;
   }
+  orderedPages=orderedPages.filter(p=>p.id!=='summit'||(D&&D.summitOn)); // the Summit Party tab shows while SUMMIT_PARTY is ON
   tabs.innerHTML=orderedPages.map(p=>{
     const icon=(D&&D.navIcons&&D.navIcons[p.id])||p.icon;
     const label=(D&&D.navLabels&&D.navLabels[p.id])||p.label;
@@ -762,6 +764,7 @@ function goTo(id){
   else if(id==='staff'){ renderStaffLinks(); }
   else if(id==='spin'){ renderSpinPage(); }
   else if(id==='generals'){ renderGenerals(); }
+  else if(id==='summit'){ renderSummitPage(); }
   else if(id.startsWith('squad-')){ renderSquadDetail(id.replace('squad-','')); }
 }
 
@@ -3302,6 +3305,29 @@ function renderAccessCard(){
 // made-up sample student (nothing saves) or a real 800# (read-only): My Climb, the Arcade, Summit Party
 // (minigame tryout + a demo game against the computer) and Generals HQ.
 var PV={ticket:'',who:'',url:'',squad:'',name:'',real:false,view:'me',size:'full',demo:''};
+// ── SUMMIT PARTY: the site tab (63_SummitParty.gs) ──
+function summitUrl(page){ var base=(D&&D.siteUrl)||'https:\/\/clashofclasses.org'; return base.replace(/\/+$/,'')+'/?page='+page; }
+function renderSummitPage(){
+  var box=document.getElementById('summitPage'); if(!box) return;
+  var on=D&&D.summitOn;
+  box.innerHTML=on?'<div class="sp-tiles">'+
+    '<a class="sp-tile" href="'+summitUrl('summit')+'" target="_blank" rel="noopener"><span class="sp-ic">🖥️</span><b>The big screen</b><small>Staff: open the board on the projector, sign in, pick the rounds and where squads play: on Chromebooks, or all on this one screen (no Chromebooks needed).</small><span class="sp-go">Open the board ↗</span></a>'+
+    '<a class="sp-tile" href="'+summitUrl('summit-play')+'" target="_top"><span class="sp-ic">💻</span><b>Join on a Chromebook</b><small>One Chromebook per squad. Type the game code from the big screen and your 800 number.</small><span class="sp-go">Join my squad →</span></a></div>'+
+    '<div class="sp-how"><b>How it works</b> Squads roll, collect coins and buy Summit Flags for 20 coins. Every round ends with a minigame. The squad with the most flags at the end wins Summit Party, and staff approve the points.</div>'
+    :'<div class="sp-how">Summit Party is closed right now.</div>';
+}
+// Admin › System: Summit Party at a glance (games going now, links, a demo).
+function renderSummitAdmin(){
+  var box=document.getElementById('spCard'); if(!box||!window.gasRun_) return;
+  window.gasRun_('clashSummitAdmin',window.ADMIN_SESSION||'').then(function(r){
+    var g=r.games||[];
+    box.innerHTML='<div class="pv-card"><div class="pv-h">🎲 Summit Party <span style="font-size:12px;font-weight:700;color:'+(r.on?'#86efac':'#fbbf24')+'">'+(r.on?'ON':'OFF (Settings › SUMMIT_PARTY)')+'</span></div>'+
+      '<div class="pv-sub">Open the board to start a game: squads play on Chromebooks or all on the big screen. The site tab shows while it is ON.</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-sm" href="'+summitUrl('summit')+'" target="_blank" rel="noopener">Open the board ↗</a><a class="btn btn-sm" href="'+summitUrl('summit-play')+'" target="_blank" rel="noopener">Chromebook page ↗</a><button class="btn btn-sm" id="spDemo">Try a demo game</button></div>'+
+      '<div style="margin-top:10px;font-size:13px">'+(g.length?'<b>Games going now</b>'+g.map(function(x){ return '<div style="padding:6px 0;border-top:1px solid var(--border)"><b style="letter-spacing:.1em">'+pvEsc(x.code)+'</b> · round '+x.round+' of '+x.rounds+' · '+(x.screen?'one screen':'Chromebooks')+' · by '+pvEsc(x.by)+'</div>'; }).join(''):'<span style="color:var(--text3)">No games going right now.</span>')+'</div></div>';
+    document.getElementById('spDemo').onclick=function(){ openStudentPreview('demo'); };
+  }).catch(function(e){ box.innerHTML='<div style="color:#fca5a5;margin-bottom:14px">Summit Party: '+pvEsc(e&&e.message||e)+'</div>'; });
+}
 function renderPreviewCard(){
   var box=document.getElementById('pvCard'); if(!box||!window.gasRun_) return;
   var opt=function(v,l){ return '<option value="'+v+'">'+l+'</option>'; };
@@ -3315,7 +3341,7 @@ function renderPreviewCard(){
   who.onchange=function(){ wrap.hidden=who.value!=='real'; if(!wrap.hidden) document.getElementById('pvReal').focus(); };
   box.querySelectorAll('[data-pv]').forEach(function(b){ b.onclick=function(){ openStudentPreview(b.dataset.pv); }; });
 }
-var PV_VIEWS=[['me','🧗','My Climb','Every tab, as they see it'],['arcade','🕹️','Arcade','Play the three games'],['tryout','🎮','Minigame tryout','Any Summit Party minigame, alone'],
+var PV_VIEWS=[['site','🏠','The site','The home page and tabs'],['me','🧗','My Climb','Every tab, as they see it'],['arcade','🕹️','Arcade','Play the three games'],['tryout','🎮','Minigame tryout','Any Summit Party minigame, alone'],
   ['demo','🏔️','Summit Party demo','Board + Chromebook, computer plays 3 squads'],['hq','🛡️','Generals HQ','Their squad\'s HQ (real: it saves)']];
 function pvWho(){
   var w=document.getElementById('pvWho'); if(!w) return PV.who||'sample-GOLD';
@@ -3323,7 +3349,7 @@ function pvWho(){
 }
 function pvTicket(who){
   if(PV.ticket&&PV.who===who) return Promise.resolve(PV);
-  return window.gasRun_('clashPreviewTicket',window.ADMIN_SESSION||'',who).then(function(r){ Object.assign(PV,r,{who:who,demo:''}); return PV; });
+  return window.gasRun_('clashPreviewTicket',window.ADMIN_SESSION||'',who).then(function(r){ Object.assign(PV,r,{who:who,demo:'',changed:0}); return PV; });
 }
 function openStudentPreview(view){
   var msg=document.getElementById('pvMsg'), who=pvWho();
@@ -3339,19 +3365,21 @@ function pvShow(view){
   var nm=PV.real?PV.name+' (read-only)':'Sample student', sq=PV.squad.charAt(0)+PV.squad.slice(1).toLowerCase();
   ov.innerHTML='<div class="pv-bar"><div class="pv-title"><span class="pv-dot" style="background:'+(SQ_HEX[PV.squad]||'#b583ff')+'"></span>'+pvEsc(nm)+' · '+sq+'</div>'+
     '<div class="pv-tabs" role="tablist">'+PV_VIEWS.map(function(v){ return '<button role="tab" aria-selected="'+(v[0]===view)+'" class="pv-tab'+(v[0]===view?' on':'')+'" data-pvt="'+v[0]+'">'+v[1]+' '+v[2]+'</button>'; }).join('')+'</div>'+
-    '<div class="pv-tools"><button class="pv-tool" id="pvSize" title="Chromebook size (1366 × 768) or fill the screen">'+(PV.size==='cb'?'💻 Chromebook':'⤢ Full')+'</button>'+
+    '<div class="pv-tools"><button class="pv-tool" id="pvSw" title="Turn pieces on or off for this preview only">⚙ Switches'+(PV.changed?' <span class="pv-badge">'+PV.changed+'</span>':'')+'</button><button class="pv-tool" id="pvSize" title="Chromebook size (1366 × 768) or fill the screen">'+(PV.size==='cb'?'💻 Chromebook':'⤢ Full')+'</button>'+
     (view==='demo'?'<button class="pv-tool" id="pvNewDemo">↻ New demo</button>':'')+
     '<button class="pv-tool" id="pvReload" title="Reload this view">⟳</button><button class="pv-x" id="pvClose" aria-label="Close preview">✕</button></div></div>'+
     '<div class="pv-body" id="pvBody"><div class="pv-load">Loading…</div></div>';
   ov.classList.add('on'); document.body.style.overflow='hidden';
   ov.querySelectorAll('[data-pvt]').forEach(function(b){ b.onclick=function(){ pvShow(b.dataset.pvt); }; });
   document.getElementById('pvClose').onclick=pvClose;
+  document.getElementById('pvSw').onclick=pvSwitches;
   document.getElementById('pvReload').onclick=function(){ pvShow(view); };
   document.getElementById('pvSize').onclick=function(){ PV.size=PV.size==='cb'?'full':'cb'; pvShow(view); };
   var nd=document.getElementById('pvNewDemo'); if(nd) nd.onclick=function(){ PV.demo=''; pvShow('demo'); };
   var body=document.getElementById('pvBody'), frame=function(src,cls,label){ return '<div class="pv-frame '+(cls||'')+'"><div class="pv-label">'+label+'</div><iframe src="'+src+'" title="'+pvEsc(label)+'" allow="fullscreen"></iframe></div>'; };
   body.className='pv-body'+(PV.size==='cb'&&view!=='demo'?' cb':'');
-  if(view==='me'||view==='arcade') body.innerHTML=frame(pvSrc('page=me'+(view==='arcade'?'&tab=arcade':'')),'',(view==='arcade'?'My Climb · Arcade tab':'My Climb'));
+  if(view==='site') body.innerHTML=frame(pvSrc('page=home'),'','The site'+(PV.changed?' · with your preview switches (as the page loads)':''));
+  else if(view==='me'||view==='arcade') body.innerHTML=frame(pvSrc('page=me'+(view==='arcade'?'&tab=arcade':'')),'',(view==='arcade'?'My Climb · Arcade tab':'My Climb'));
   else if(view==='tryout') body.innerHTML=frame(pvSrc('page=summit-play&mode=tryout'),'narrow','Summit Party on a Chromebook · tryout');
   else if(view==='hq') body.innerHTML=(PV.real?'':'<div class="pv-note">Generals HQ is the real HQ for '+sq+': sign-ups, checklist ticks and nominations made here are saved.</div>')+frame(pvSrc('page=hq'),'','Generals HQ · '+sq);
   else if(view==='demo'){
@@ -3361,6 +3389,35 @@ function pvShow(view){
       .catch(function(e){ body.innerHTML='<div class="pv-load">'+pvEsc(e&&e.message||e)+'</div>'; });
   }
   var f=ov.querySelector('.pv-tab.on'); if(f) f.focus();
+}
+// The Switches panel: every ON/OFF Settings row. Changes apply to this preview only (65_Preview.gs).
+function pvSwitches(){
+  var ov=document.getElementById('pvOverlay'), d=document.getElementById('pvDrawer');
+  if(d){ d.remove(); return; }
+  d=document.createElement('div'); d.id='pvDrawer'; d.className='pv-drawer'; d.setAttribute('role','dialog'); d.setAttribute('aria-label','Preview switches');
+  d.innerHTML='<div class="pv-load">Loading…</div>'; ov.appendChild(d);
+  window.gasRun_('clashPreviewSwitches',PV.ticket).then(function(r){
+    var cur=r.settings||{};
+    d.innerHTML='<div class="pv-dh"><b>Switches for this preview</b><button class="pv-x" id="pvSwX" aria-label="Close switches">✕</button></div>'+
+      '<div class="pv-sub">Try any piece on or off. Only this preview sees it: the Sheet and students don\'t change.</div>'+
+      '<div class="pv-dbtns"><button class="pv-tool" id="pvAllOn">Turn everything on</button><button class="pv-tool" id="pvSheet">Back to the Sheet</button></div>'+
+      '<input id="pvSwQ" class="pv-q" placeholder="Find a switch (arcade, family, summit…)" aria-label="Find a switch">'+
+      '<div class="pv-list">'+r.list.map(function(s){ var v=cur[s.key]||s.sheet; return '<label class="pv-sw" data-k="'+s.key.toLowerCase()+' '+pvEsc(s.about.toLowerCase())+'"><input type="checkbox" data-sw="'+s.key+'" data-sheet="'+s.sheet+'"'+(v==='ON'?' checked':'')+'><span><b>'+pvEsc(s.key)+'</b><small>'+pvEsc(s.about)+'</small></span><em data-em="'+s.key+'"></em></label>'; }).join('')+'</div>'+
+      '<div class="pv-dfoot"><span id="pvSwN"></span><button class="pv-apply" id="pvApply">Use these and reload</button></div>';
+    var boxes=[].slice.call(d.querySelectorAll('[data-sw]'));
+    var mark=function(){ var n=0; boxes.forEach(function(b){ var diff=(b.checked?'ON':'OFF')!==b.dataset.sheet; if(diff) n++; b.closest('.pv-sw').classList.toggle('changed',diff); d.querySelector('[data-em="'+b.dataset.sw+'"]').textContent=diff?'preview: '+(b.checked?'ON':'OFF'):'Sheet: '+b.dataset.sheet; }); document.getElementById('pvSwN').textContent=n?n+' different from the Sheet':'Same as the Sheet'; };
+    boxes.forEach(function(b){ b.onchange=mark; }); mark();
+    document.getElementById('pvSwX').onclick=function(){ d.remove(); };
+    document.getElementById('pvAllOn').onclick=function(){ boxes.forEach(function(b){ b.checked=true; }); mark(); };
+    document.getElementById('pvSheet').onclick=function(){ boxes.forEach(function(b){ b.checked=b.dataset.sheet==='ON'; }); mark(); };
+    document.getElementById('pvSwQ').oninput=function(){ var q=this.value.trim().toLowerCase(); d.querySelectorAll('.pv-sw').forEach(function(l){ l.hidden=q&&l.dataset.k.indexOf(q)<0; }); };
+    document.getElementById('pvApply').onclick=function(){
+      var want={}; boxes.forEach(function(b){ want[b.dataset.sw]=b.checked?'ON':'OFF'; });
+      this.disabled=true; this.textContent='Saving…';
+      window.gasRun_('clashPreviewSetSwitches',PV.ticket,want).then(function(x){ PV.changed=x.changed; PV.demo=''; pvShow(PV.view); })
+        .catch(function(e){ document.getElementById('pvSwN').textContent=e&&e.message||e; });
+    };
+  }).catch(function(e){ d.innerHTML='<div class="pv-load">'+pvEsc(e&&e.message||e)+'</div>'; });
 }
 function pvClose(){
   var ov=document.getElementById('pvOverlay'); if(!ov) return;
@@ -3378,8 +3435,8 @@ function renderSystem(){
   Promise.all([window.gasRun_('clashHealth', window.ADMIN_SESSION||''), window.gasRun_('clashAnnouncement', window.ADMIN_SESSION||'').catch(()=>({text:''}))]).then(function(r){
     const h=r[0], a=r[1], ok=b=>b?'<span style="color:#86efac">✓</span>':'<span style="color:#fbbf24">⚠</span>';
     const jobs=h.jobs.map(j=>'<div style="display:grid;grid-template-columns:22px 1fr auto;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">'+ok(j.ok)+'<span>'+esc(j.label)+(j.expected?'':' <span style="color:var(--text3)">(off)</span>')+(j.expected&&!j.trigger?'<br><span style="color:#fbbf24">No trigger: run setup or its Turn on menu item.</span>':'')+'</span><span style="color:var(--text3)">'+(j.ago||'never')+'</span></div>').join('');
-    setTimeout(renderVersion,0); setTimeout(renderSelfCheck,0); setTimeout(renderWeekly,0); setTimeout(renderStaffCard,0); if(h.preview!==false) setTimeout(renderPreviewCard,0);
-    box.innerHTML='<div id="pvCard"></div><div id="staffCard"></div>'+tvCard+'<div id="weeklyCard"></div><div id="versionCard"></div><div id="selfCheckCard"></div>'+
+    setTimeout(renderVersion,0); setTimeout(renderSelfCheck,0); setTimeout(renderWeekly,0); setTimeout(renderStaffCard,0); if(h.preview!==false) setTimeout(renderPreviewCard,0); setTimeout(renderSummitAdmin,0);
+    box.innerHTML='<div id="pvCard"></div><div id="spCard"></div><div id="staffCard"></div>'+tvCard+'<div id="weeklyCard"></div><div id="versionCard"></div><div id="selfCheckCard"></div>'+
       '<div class="fr"><label>Automatic jobs</label>'+jobs+'</div>'+
       (h.lastError?'<div class="fr"><label>Last error</label><div style="font-size:13px;color:#fca5a5">'+esc(h.lastError.job)+': '+esc(h.lastError.message)+' <span style="color:var(--text3)">('+esc(h.lastError.ago)+')</span></div></div>':'')+
       '<div class="fr"><label>Data from Define a Climb-er</label><div style="font-size:13px">'+ok(h.studentBoard.ok)+' Student Board updated '+esc(h.studentBoard.updated||'never')+'<br><span style="color:var(--text3)">'+esc(h.squadBoard)+'</span><br><span style="color:var(--text3)">'+esc(h.metricsNote)+'</span></div></div>'+
@@ -5958,4 +6015,4 @@ window.__moduleReady=true;
 // Now that all functions are live, re-render whatever page the user navigated to
 goTo(window.__currentPage || currentPage);
 </script>
-<!-- file-stamp: aa07754930 -->
+<!-- file-stamp: d8ffb9be26 -->

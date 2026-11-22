@@ -34,7 +34,8 @@
  * WINDOW DAYS "this month" = the month so far (the Front Office: last Friday's staff challenge winner
  *   takes it right away).
  * STAFF OVERRIDES (Admin › Map, or the tabs):
- *   Locked (Map Zones): ticked = the holder never changes on its own. Staff set Holder themselves.
+ *   Locked (Map Zones): ticked = staff set the Holder. Weekly cycle: it stands until the next Monday turn,
+ *     which judges the zone fresh and unticks it. Monthly cycle: it stays until staff untick it.
  *   ZONE OVERRIDES tab: Month | Zone | Squad | Score | Note | Set By | Set At. A Score here replaces that
  *     squad's computed number for that zone that month (whatever it came from: Climb-er, check-ins,
  *     points). Month = the month the zone is judged on (last month for the monthly rules). The newest
@@ -222,7 +223,7 @@ function mapZones_(events, write, opts) {
   const held = {}, count = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
   zones.forEach(function (z) { held[z.zone] = z.holder; if (z.holder) count[z.holder]++; });
   const battles = [];
-  const hCol = sheet ? headerCol_(sheet, 'Holder') : 0, sCol = sheet ? headerCol_(sheet, 'Since') : 0;
+  const hCol = sheet ? headerCol_(sheet, 'Holder') : 0, sCol = sheet ? headerCol_(sheet, 'Since') : 0, lCol = sheet ? headerCol_(sheet, 'Locked') : 0;
   const lastMonth = monthBounds_(-1);
   zones.forEach(function (z) {
     let from = z.month ? lastMonth[0] : z.thisMonth ? today.slice(0, 8) + '01' : ymdShift_(today, -z.days + 1), to = z.month ? lastMonth[1] : today;
@@ -241,7 +242,11 @@ function mapZones_(events, write, opts) {
     const ov = overrides[z.judged + '|' + z.zone.toLowerCase()] || {};
     Object.keys(ov).forEach(function (s) { z.score[s] = ov[s]; z.overridden.push(s); });
     z.neighbors = nb[z.zone];
-    if (z.method === 'staff pick' || z.locked) return; // staff decide; nothing moves on its own
+    if (z.method === 'staff pick') return; // staff decide; nothing moves on its own
+    // Locked = staff set the holder. Weekly: it stands until the next Monday turn, which judges the zone
+    // again and unlocks it. Monthly cycle: it stays until staff untick it.
+    if (z.locked && !(weekly && turn)) return;
+    if (z.locked && sheet && lCol) { sheet.getRange(z.row, lCol).setValue(false); z.locked = false; }
     if (!turn) return; // weekly cycle: holders only change in the Monday 7:00 turn
     // Highest/lowest number: nothing changes until every squad has a number for the month.
     if (SQUAD_KEYS_.some(function (s) { return z.score[s] === null || z.score[s] === undefined; })) return;
@@ -361,8 +366,8 @@ function checkInsBy_(from, to, spec) {
 // Each measure: its Squad Monthly column; poll_votes = Poll Votes rows; attendance = a finalized
 // month (Admin › Metrics); for highest-number rules only, how many events rows match its name.
 function measureScores_(spec, from, to, events, per100, low, weekly) {
-  let ym = from.slice(0, 7), monthly = squadMonthly_(ym);
-  const out = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
+  let ym = from.slice(0, 7), monthly = squadMonthly_(ym), pct = false;
+  const out = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 }, usedMetric = {};
   const add = function (s, v) { if (out[s] !== null) out[s] = v === null || v === undefined ? null : out[s] + v; };
   const names = listOf_(spec).map(measureKey_);
   if (!names.length) return { BLACK: null, GOLD: null, GREY: null, PURPLE: null };
@@ -401,12 +406,18 @@ function measureScores_(spec, from, to, events, per100, low, weekly) {
       SQUAD_KEYS_.forEach(function (s) { add(s, c[s]); });
       return;
     }
-    if (n === 'attendance' || n === 'referral' || n === 'grades') {
-      let months = [];
-      try { months = (loadAppData_('coc').value || {}).monthlyMetrics || []; } catch (e) { months = []; }
-      const m = months.filter(function (x) { return ymOf_(x.month) === ym; }).pop();
-      SQUAD_KEYS_.forEach(function (s) { add(s, m && m[n] && m[n][s] !== undefined && m[n][s] !== '' ? Number(m[n][s]) : null); });
-      return;
+    // Attendance, grades and behavior with no Squad Monthly number: the metrics tab (Admin › Metrics,
+    // kept up to date by Define a Climb-er), so the map follows the newest numbers every week.
+    // failing = 100 - passing %; interventions = 100 - referral-free % (teacher + admin count once).
+    const alias = METRIC_FALLBACK_[n];
+    if (alias) {
+      if (usedMetric[alias[0]]) return;
+      const mt = metricsForMap_(ym);
+      if (mt && SQUAD_KEYS_.every(function (s) { return mt[alias[0]] && mt[alias[0]][s] > 0; })) {
+        usedMetric[alias[0]] = true; pct = true;
+        SQUAD_KEYS_.forEach(function (s) { const v = mt[alias[0]][s]; add(s, alias[1] ? Math.round((100 - v) * 10) / 10 : v); });
+        return;
+      }
     }
     if (low) { SQUAD_KEYS_.forEach(function (s) { add(s, null); }); return; } // a missing count is never "zero problems"
     const forms = [n, n.replace(/_/g, ' '), n.replace(/s$/, ''), n.replace(/s$/, '').replace(/_/g, ' ')];
@@ -417,7 +428,22 @@ function measureScores_(spec, from, to, events, per100, low, weekly) {
     });
     SQUAD_KEYS_.forEach(function (s) { add(s, tally.rows[s]); });
   });
-  return per100 ? per100_(out, ym, monthly) : out;
+  return per100 && !pct ? per100_(out, ym, monthly) : out; // a percent from the metrics tab is already "per 100"
+}
+
+// Measure → [metrics column, flip (100 - value, so lower is better)].
+const METRIC_FALLBACK_ = { attendance: ['attendance', false], referral: ['referral', false], grades: ['grades', false],
+  failing: ['grades', true], interventions: ['referral', true], interventions_teacher: ['referral', true], interventions_admin: ['referral', true] };
+// The metrics tab now (attendance %, referral-free %, passing %), else the newest saved month at or before ym.
+function metricsForMap_(ym) {
+  try { const t = readMetricsTab_(); if (t && SQUAD_KEYS_.some(function (s) { return t.attendance[s] > 0 || t.grades[s] > 0; })) return t; } catch (e) { /* no tab */ }
+  let months = [];
+  try { months = (loadAppData_('coc').value || {}).monthlyMetrics || []; } catch (e) { months = []; }
+  const m = months.filter(function (x) { const k = ymOf_(x.month); return k && k <= ym; }).sort(function (a, b) { return ymOf_(a.month) < ymOf_(b.month) ? -1 : 1; }).pop();
+  if (!m) return null;
+  const out = {};
+  ['attendance', 'referral', 'grades'].forEach(function (k) { out[k] = {}; SQUAD_KEYS_.forEach(function (s) { out[k][s] = m[k] && m[k][s] !== '' ? Number(m[k][s]) || 0 : 0; }); });
+  return out;
 }
 
 function recentBattles_(n) {
@@ -631,7 +657,7 @@ function setupMapGuideTab_() {
     '     X, Y, W, H    -- where the zone sits on the grid and how big it is (the Map editor sets these).',
     '     Borders       -- zones it connects to that do not touch on the map, comma-separated (a hallway).',
     '     Holder, Since -- filled in automatically. Only type a Holder on a Staff Pick or Locked zone.',
-    '     Locked        -- tick to freeze the holder: nothing changes it automatically until you untick it.',
+    '     Locked        -- tick to keep the Holder you typed. Weekly map: it stands until the next Monday turn, which judges the area again. Monthly map: until you untick it.',
     'Conquest Rules -- one row per way to win a zone (see HOW A ZONE CHANGES HANDS).',
     'Map Battles -- every capture, written automatically. Shown under the map. Do not type here.',
     'Engine Powers -- lasting powers a squad unlocks; the "rent" ones pay extra for every zone held.',
@@ -778,4 +804,4 @@ function setupMapGuideTab_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_18_Conquest = '912825ddec';
+var FILE_STAMP_18_Conquest = '75c510c4ec';

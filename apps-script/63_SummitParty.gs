@@ -194,11 +194,13 @@ function spLoad_(code) {
     code = live[0].code;
   }
   const cache = CacheService.getScriptCache(), hit = cache.get(spKey_(code));
-  if (hit) { try { return JSON.parse(hit); } catch (e) { /* read the property */ } }
+  if (hit) { try { return spDemoSwitches_(JSON.parse(hit)); } catch (e) { /* read the property */ } }
   const raw = PropertiesService.getScriptProperties().getProperty(spKey_(code));
   if (!raw) return null;
-  try { cache.put(spKey_(code), raw, 600); return JSON.parse(raw); } catch (e) { return null; }
+  try { cache.put(spKey_(code), raw, 600); return spDemoSwitches_(JSON.parse(raw)); } catch (e) { return null; }
 }
+// A preview demo game plays with the switches its preview chose (65_Preview.gs).
+function spDemoSwitches_(g) { if (g && g.demo && g.demo.settings) PV_OVERRIDES_ = g.demo.settings; return g; }
 function spSave_(g) {
   g.seq = (Number(g.seq) || 0) + 1;
   const raw = JSON.stringify(g);
@@ -409,7 +411,10 @@ function spStartMinigame_(g) {
     g.mg = { round: g.round, live: true, kind: c.kind, name: c.name, how: c.how, scores: {} };
     spHost_(g, 'Minigame time! A LIVE ' + c.kind.toUpperCase() + ' challenge: ' + c.name + '. Staff, tap the winning squad.');
   } else {
-    const keys = spMinigameKeys_(), k = keys[(g.round - 1 + (g.seed || 0)) % keys.length];
+    let keys = spMinigameKeys_();
+    if (g.screen) keys = keys.filter(function (x) { return x !== 'sketch'; }); // one screen: no Trail Sketch (one drawing pad)
+    if (!keys.length) keys = ['tap'];
+    const k = keys[(g.round - 1 + (g.seed || 0)) % keys.length];
     const mode = k === 'chase' ? 'chase' : spSwitch_('SUMMIT_PARTY_TEAMS') ? SP_MODES_[(g.round - 1 + (g.seed || 0)) % SP_MODES_.length] : 'ffa';
     spNewMg_(g, k, mode, Object.keys(g.squads));
     spHost_(g, 'Minigame time! ' + spModeLine_(g) + g.mg.name + ': ' + g.mg.how);
@@ -419,10 +424,14 @@ function spStartMinigame_(g) {
 
 // A Chromebook minigame for some squads. Practice ON = up to 25 seconds to practice, starting early once every squad taps Ready.
 function spNewMg_(g, k, mode, squads, extra) {
-  const m = SP_MINIGAMES_[k], now = Date.now(), wait = k === 'chase' ? 12000 : spSwitch_('SUMMIT_PARTY_PRACTICE') ? 25000 : 9000, secs = m.secs || 20;
+  const m = SP_MINIGAMES_[k], now = Date.now(), secs = m.secs || 20;
+  // One screen (g.screen): squads take turns at the big screen, so the clock is long enough for all of them.
+  const wait = g.screen ? (k === 'chase' ? 6000 : 0) : k === 'chase' ? 12000 : spSwitch_('SUMMIT_PARTY_PRACTICE') ? 25000 : 9000;
+  const span = g.screen && k !== 'chase' ? (squads.length * (secs + 25) + 60) : secs;
   g.mgCount = (g.mgCount || 0) + 1;
   g.mg = { id: g.mgCount, round: g.round, live: false, game: k, name: m.name, how: m.how, mode: mode, squads: squads, secs: secs,
-    startAt: now + wait, endAt: now + wait + secs * 1000, scores: {}, ready: {}, seed: Math.floor(Math.random() * 1e6) };
+    startAt: now + wait, endAt: now + wait + span * 1000, scores: {}, ready: {}, seed: Math.floor(Math.random() * 1e6) };
+  if (g.screen) g.mg.screen = true;
   if (mode === '2v2' || mode === '1v3') {
     const p = spPlaces_(g);
     g.mg.teams = mode === '2v2' ? [[p[0], p[3]], [p[1], p[2]]] : [[p[0]], [p[1], p[2], p[3]]];
@@ -769,13 +778,13 @@ function clashSummitState(code, sinceSeq) {
 }
 
 /** Staff: start a new game; it gets its own code. */
-function clashSummitStart(token, rounds, layout) {
+function clashSummitStart(token, rounds, layout, screen) {
   const who = spStaff_(token);
   spRequireOn_();
-  return spCreate_(String(who.name || who.email || 'staff'), rounds, layout, null);
+  return spCreate_(String(who.name || who.email || 'staff'), rounds, layout, null, !!screen);
 }
 // A new game. demo = { mine: squad } for a preview demo game (65_Preview.gs): the computer plays the rest.
-function spCreate_(by, rounds, layout, demo) {
+function spCreate_(by, rounds, layout, demo, screen) {
   return spWithLock_(function () {
     if (!demo) ensureSummitPartyTabs_(); // first game: the Summit tabs, including the live challenges
     const list = spTidy_();
@@ -788,7 +797,8 @@ function spCreate_(by, rounds, layout, demo) {
       startedAt: new Date().toISOString(), layout: spLayoutOf_(layout), seed: Math.floor(Math.random() * 6),
       rounds: Math.max(1, Math.min(30, Math.round(Number(rounds) || spSetting_('SUMMIT_PARTY_ROUNDS', 10)))), round: 1, turn: 0, order: order, turnAt: Date.now(),
       squads: {}, flagAt: 0, pending: null, mg: null, log: [], seq: 0, last: { squad: '', roll: 0, path: [], events: [] }, by: by };
-    if (demo) { g.demo = { mine: demo.mine }; g.id = 'DEMO-' + code; }
+    if (demo) { g.demo = { mine: demo.mine }; g.id = 'DEMO-' + code; if (demo.settings) g.demo.settings = demo.settings; }
+    if (screen) g.screen = true; // one screen: every squad plays at the big screen, no Chromebooks
     order.forEach(function (s) { g.squads[s] = { pos: 0, coins: 10, peak: 10, flags: 0, items: [], mgWins: 0, events: 0, moved: 0 }; });
     spMoveFlag_(g, board);
     spLog_(g, 'A new Summit Party! Game code ' + code + '. ' + spTitle_(order[0]) + ' goes first.');
@@ -848,6 +858,8 @@ function clashSummitEnd(token, code, finish) {
 
 // A student at a squad's Chromebook: their 800# must be on the Student Board.
 function spPlayer_(id, code) {
+  const host = spHostPlayer_(id, code); // one screen: the big screen plays for whichever squad is up
+  if (host) return host;
   const sample = sampleSquad_(id); // the previewed squad in a preview demo game (65_Preview.gs)
   if (sample) {
     const dg = spLoad_(code);
@@ -974,7 +986,7 @@ function clashSummitScore(id, code, score) {
     if ((mg.squads || Object.keys(g.squads)).indexOf(p.squad) < 0) throw new Error('Your squad sits this one out. Watch the big screen!');
     if (mg.game === 'sketch') throw new Error('Trail Sketch scores itself when the AI guesses your drawing.');
     if (mg.game === 'chase') throw new Error('Trail Chase is scored on the big screen.');
-    if (now < mg.startAt - 1000 || now > mg.endAt + 8000) throw new Error('Time is up!');
+    if (!mg.screen && (now < mg.startAt - 1000 || now > mg.endAt + 8000)) throw new Error('Time is up!');
     const def = SP_MINIGAMES_[mg.game];
     let v = Math.round(Number(score));
     if (!(v >= 0)) v = 0;
@@ -982,7 +994,7 @@ function clashSummitScore(id, code, score) {
     if (def.better === 'high') v = Math.min(v, def.max);
     const old = mg.scores[p.squad];
     if (old == null || (def.better === 'low' ? v < old : v > old)) mg.scores[p.squad] = v;
-    if ((mg.squads || Object.keys(g.squads)).every(function (s) { return mg.scores[s] != null; }) && now >= mg.endAt - 500) spResolveMinigame_(g);
+    if ((mg.squads || Object.keys(g.squads)).every(function (s) { return mg.scores[s] != null; }) && (mg.screen || now >= mg.endAt - 500)) spResolveMinigame_(g);
     return JSON.stringify(spView_(spSave_(g)));
   });
 }
@@ -1030,6 +1042,44 @@ function clashSummitJunk(id, code, total) {
     spSave_(g);
     return JSON.stringify({ junk: mg.junk });
   });
+}
+
+// ── ONE SCREEN ─────────────────────────────────────────────────────
+// A game started with "Play on: this screen" (g.screen) needs no Chromebooks: the board shows a play
+// panel that rolls, shops and plays every minigame for whichever squad is up (squads take turns at
+// the keyboard; Trail Chase is played on the board with the arrow keys). The panel gets a host ticket
+// from a signed-in staff member, so only the big screen can act for the squads.
+function clashSummitHostTicket(token, code) {
+  spStaff_(token);
+  const g = spGame_(code);
+  if (!g.screen) throw new Error('This game is played on Chromebooks.');
+  const t = Utilities.getUuid().replace(/-/g, '');
+  CacheService.getScriptCache().put('sp-host-' + t, JSON.stringify({ token: token, code: g.code }), 12 * 3600);
+  let url = '';
+  try { url = ScriptApp.getService().getUrl() || ''; } catch (e) { url = ''; }
+  return JSON.stringify({ ticket: t, url: url });
+}
+function spHostTicket_(t) {
+  const raw = t ? CacheService.getScriptCache().get('sp-host-' + String(t).replace(/[^A-Za-z0-9]/g, '').slice(0, 64)) : null;
+  if (!raw) throw new Error('Sign in on the board again (the play panel ran out).');
+  const h = JSON.parse(raw);
+  spStaff_(h.token);
+  return h;
+}
+/** The play panel opens: its game and state. */
+function clashSummitHostOpen(t) {
+  const h = spHostTicket_(t);
+  return JSON.stringify({ code: h.code, state: JSON.parse(clashSummitState(h.code, 0)) });
+}
+// id "host~TICKET~GOLD": the play panel acting for Gold in its own one-screen game.
+function spHostPlayer_(id, code) {
+  const m = String(id || '').match(/^host~([A-Za-z0-9]{1,64})~(BLACK|GOLD|GREY|PURPLE)$/);
+  if (!m) return null;
+  const h = spHostTicket_(m[1]);
+  if (h.code !== spCode_(code)) throw new Error('That play panel is for another game.');
+  const g = spGame_(code);
+  if (!g.screen || !g.squads[m[2]]) throw new Error('That squad is not in this game.');
+  return { id: 'host', squad: m[2] };
 }
 
 /** Controller: Ready after practice. Once every squad in the minigame is ready, it starts in 3.5 seconds. */
@@ -1090,6 +1140,16 @@ function decideSummitPoints_(row, yes) {
   sh.getRange(r._row, SP_POINT_HEADERS_.indexOf('Sent') + 1).setValue(todayYmd_());
 }
 
+/** Admin › System: is Summit Party on, and the games going now (not preview demos). */
+function clashSummitAdmin(token) {
+  requireAdmin_(token, { noLog: true });
+  const games = spIndex_().filter(function (x) { return x.status === 'playing' && !x.demo; }).map(function (x) {
+    const g = spLoad_(x.code);
+    return g ? { code: g.code, round: Math.min(g.round, g.rounds), rounds: g.rounds, screen: !!g.screen, by: String(g.by || '') } : null;
+  }).filter(Boolean);
+  return JSON.stringify({ on: spOn_(), games: games });
+}
+
 function serveSummitParty_() {
   return HtmlService.createHtmlOutputFromFile('SummitParty').setTitle('Summit Party · Clash of Classes')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
@@ -1100,4 +1160,4 @@ function serveSummitPlay_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_63_SummitParty = '065bc1c147';
+var FILE_STAMP_63_SummitParty = '2976d0743d';

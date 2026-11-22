@@ -92,7 +92,7 @@ function climbOpen_(now) {
 // to the Sheet, and anything that would save (creature, boost, tickets, look) is refused.
 const SAMPLE_ID_ = '8000000';
 function sampleSquad_(asId) {
-  const m = String(asId || '').match(/^sample-(BLACK|GOLD|GREY|PURPLE)$/i);
+  const m = String(asId || '').split('~')[0].match(/^sample-(BLACK|GOLD|GREY|PURPLE)$/i); // "~TICKET": a preview's switches
   return m ? m[1].toUpperCase() : '';
 }
 function sampleRow_(squad) {
@@ -102,6 +102,7 @@ function sampleRow_(squad) {
     'Updated': todayYmd_(), 'Attendance %': 96, 'Email': '' };
 }
 function withSample_(asId, fn) {
+  pvApplyAsId_(asId); // 65_Preview.gs: the preview's own switches, if any
   const squad = sampleSquad_(asId);
   if (!squad) return fn();
   const real = getSheetSafe_, tab = getSetting_('STUDENT_BOARD_TAB') || 'Student Board', row = sampleRow_(squad);
@@ -131,6 +132,8 @@ function publicCaller_() {
 function meId_(asId, adminToken) {
   if (asId && adminToken) {
     requireAdmin_(adminToken);
+    pvApplyAsId_(asId);
+    asId = String(asId).split('~')[0];
     if (/^view-/i.test(String(asId)) && PREVIEW_READ_CALLS_.indexOf(publicCaller_()) === -1) throw new Error('Read-only preview: nothing changes for a real student here. Pick a sample student to try things out.');
     return sampleSquad_(asId) ? SAMPLE_ID_ : id800_(asId);
   }
@@ -354,4 +357,4 @@ function serveMe_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_16_Me = 'a6b285775d';
+var FILE_STAMP_16_Me = '8957f61e25';

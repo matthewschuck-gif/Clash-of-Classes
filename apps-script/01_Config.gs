@@ -380,7 +380,11 @@ function settingsMap_() {
   return map;
 }
 
+// Admin › Preview as a student can try switches without changing the Sheet: for that preview's own
+// requests only, PV_OVERRIDES_ (65_Preview.gs) answers first. It is null for everyone else.
+var PV_OVERRIDES_ = null;
 function getSetting_(key) {
+  if (PV_OVERRIDES_ && Object.prototype.hasOwnProperty.call(PV_OVERRIDES_, key)) return PV_OVERRIDES_[key];
   const map = settingsMap_();
   if (key in map) return key.slice(-3) === '_ID' ? extractSheetId_(map[key]) : map[key];
   const d = DEFAULT_SETTINGS.filter(function (x) { return x[0] === key; })[0];
@@ -537,4 +541,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = '8aa81ee3b8';
+var FILE_STAMP_01_Config = '176fc26dec';
