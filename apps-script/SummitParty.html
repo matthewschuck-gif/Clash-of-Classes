@@ -820,7 +820,7 @@
   run('clashSquadLogos').then(function (l) { LOGOS = l || {}; if (S) side(); }).catch(function () {});
   function begin() {
     run('clashSummitState', code, 0).then(take).catch(function (e) { document.querySelector('.wrap').innerHTML = '<div class="closed">' + esc(msgOf(e)) + '</div>'; });
-    setInterval(poll, 1500);
+    (function next() { setTimeout(function () { poll(); next(); }, S && S.busy ? 3000 : 1500); })(); // slower when 3+ games are going
   }
   // ?pv=TICKET&code=CODE: Admin › Preview as a student shows its demo game here, already signed in.
   function boot(p) {
@@ -834,4 +834,4 @@
 </script>
 </body>
 </html>
-<!-- file-stamp: c25820ad9f -->
+<!-- file-stamp: ac0c594840 -->

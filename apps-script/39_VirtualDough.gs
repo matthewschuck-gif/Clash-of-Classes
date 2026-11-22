@@ -58,7 +58,8 @@ function doughTraits_() {
 /** The sign-in screen: teacher names only (never squads or passwords). */
 function clashDoughStart() {
   return JSON.stringify({ teachers: doughTeachers_().map(function (t) { return t.name; }).sort(), points: doughPoints_(), traits: doughTraits_(),
-    shoutouts: (function () { try { return settingOn_('SHOUTOUTS', 'ON'); } catch (e) { return false; } })() }); // 56_Shoutouts.gs
+    shoutouts: (function () { try { return settingOn_('SHOUTOUTS', 'ON'); } catch (e) { return false; } })(), // 56_Shoutouts.gs
+    pebbles: teacherPebblesOn_() ? { amount: teacherPebbleAmount_(), daily: Math.max(1, settingNum_('PEBBLE_TEACHER_DAILY', 10)) } : null });
 }
 
 function doughSession_(token) {
@@ -102,6 +103,33 @@ function clashDoughFind(token, query) {
   }).slice(0, 15).map(function (r) {
     return { id: id800_(r['800#']), name: String(r['First Name'] || '').trim() + ' ' + String(r['Last Name'] || '').trim(), grade: String(r['Grade'] || ''), squad: squadOf_(r['Squad']) };
   }));
+}
+
+// ── Teachers give Pebbles (PEBBLE_TEACHER, with ARCADE_PEBBLES on) ──
+// A small "nice job" for something that doesn't need a whole Trait Dough bill: PEBBLE_TEACHER_AMOUNT (5)
+// Pebbles to a student in another squad, PEBBLE_TEACHER_DAILY (10) gifts a day per teacher, one a day per
+// student. They go to the student's pouch (Pebble Bonuses tab, From "Teacher: name").
+function teacherPebblesOn_() { return String(getSetting_('PEBBLE_TEACHER') || 'ON').toUpperCase() !== 'OFF' && pebblesOn_(); }
+function teacherPebbleAmount_() { return Math.max(1, Math.min(50, settingNum_('PEBBLE_TEACHER_AMOUNT', 5))); }
+function clashDoughPebbles(token, id, why) {
+  const me = doughSession_(token);
+  if (!teacherPebblesOn_()) throw new Error('Pebbles from teachers are off right now.');
+  const sid = id800_(id), stu = sheetRows_('Students').filter(function (r) { return id800_(r['800#']) === sid; })[0];
+  if (!sid || !stu) throw new Error('Pick a student from the list.');
+  const squad = squadOf_(stu['Squad']);
+  if (SQUAD_KEYS_.indexOf(squad) === -1) throw new Error('That student has no squad yet.');
+  if (squad === me.squad) throw new Error('Pebbles go to students in the other squads, not your own.');
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    ensureArcadeTab_();
+    const today = todayYmd_(), from = 'Teacher: ' + me.name, max = Math.max(1, settingNum_('PEBBLE_TEACHER_DAILY', 10));
+    const mine = sheetRows_('Pebble Bonuses').filter(function (b) { const f = String(b['From'] || ''); return (f === from || f.indexOf(from + ' · ') === 0) && String(b['When']).slice(0, 10) === today; }); // the note follows ' · '
+    if (mine.length >= max) throw new Error('That\'s all ' + max + ' Pebble gifts for today. More tomorrow!');
+    if (mine.some(function (b) { return id800_(b['800#']) === sid; })) throw new Error('You already gave that student Pebbles today.');
+    const n = teacherPebbleAmount_(), first = String(stu['First Name'] || '').trim(), last = String(stu['Last Name'] || '').trim();
+    appendByHeader_('Pebble Bonuses', { 'When': Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'), '800#': sid, 'Squad': squad, 'Pebbles': n, 'From': from + (String(why || '').trim() ? ' · ' + String(why).trim().slice(0, 80) : '') });
+    return JSON.stringify({ ok: true, student: first + (last ? ' ' + last.charAt(0) + '.' : ''), pebbles: n, left: max - mine.length - 1 });
+  } finally { lock.releaseLock(); }
 }
 
 /** Gives one bill. */
@@ -202,4 +230,4 @@ function maybeDoughNudge_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_39_VirtualDough = '6b48d03bc1';
+var FILE_STAMP_39_VirtualDough = '8c72558e5f';

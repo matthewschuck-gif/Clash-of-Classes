@@ -255,6 +255,7 @@
             else {
               cx.rotate(Math.sin(it.spin) * 0.35);
               cx.fillStyle = it.kind === 'gold' ? '#ffe100' : '#7bd389'; cx.fillRect(-15, -9, 30, 18);
+              if (it.kind === 'gold') { cx.fillStyle = '#3a2a05'; cx.beginPath(); for (var si = 0; si < 10; si++) { var sa = -Math.PI / 2 + si * Math.PI / 5, sr = si % 2 ? 2.6 : 6; cx.lineTo(Math.cos(sa) * sr, Math.sin(sa) * sr); } cx.closePath(); cx.fill(); } // a star: gold without color
               cx.strokeStyle = 'rgba(0,0,0,.35)'; cx.lineWidth = 2; cx.strokeRect(-12, -6, 24, 12);
               say(cx, it.kind === 'gold' ? '★' : 'D', 0, 1, 11, '#1b1036');
             }
@@ -334,4 +335,4 @@
   };
 })();
 </script>
-<!-- file-stamp: fe5f82ef32 -->
+<!-- file-stamp: 75c63f27e6 -->

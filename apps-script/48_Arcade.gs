@@ -33,7 +33,8 @@ const ARCADE_GAMES_ = {
 };
 const ARCADE_HEADERS_ = ['When', '800#', 'Name', 'Squad', 'Game', 'Score', 'Points', 'Free', 'Paid', 'Pebbles'];
 const CASHIN_HEADERS_ = ['When', '800#', 'Squad', 'Pebbles', 'Points', 'Paid'];
-const PEBBLE_BONUS_HEADERS_ = ['When', '800#', 'Squad', 'Pebbles', 'From']; // Pebbles from outside the Arcade (Summit Party)
+const PEBBLE_BONUS_HEADERS_ = ['When', '800#', 'Squad', 'Pebbles', 'From']; // Pebbles from outside the Arcade (Summit Party, teachers)
+const PEBBLE_SPEND_HEADERS_ = ['When', '800#', 'Item', 'Pebbles']; // the Pebble Shop (19_Evolve.gs perks with Unlock When "shop: N")
 
 // CLASS TIME (ARCADE_CLASS_TIMES, e.g. "08:15-11:15, 12:33-14:05"): no Arcade games during instruction.
 // Cash in still works. Blank = no class-time lock (My Climb's own hours still apply).
@@ -75,7 +76,9 @@ function pebblePouch_(id) {
   sheetRows_('Arcade Plays').forEach(function (p) { if (id800_(p['800#']) !== id) return; const n = Number(p['Pebbles']) || 0; earned += n; if (String(p['When']).slice(0, 10) >= mon) week += n; });
   sheetRows_('Pebble Bonuses').forEach(function (p) { if (id800_(p['800#']) !== id) return; const n = Number(p['Pebbles']) || 0; earned += n; if (String(p['When']).slice(0, 10) >= mon) week += n; });
   sheetRows_('Pebble Cash-ins').forEach(function (c) { if (id800_(c['800#']) === id) cashed += Number(c['Pebbles']) || 0; });
-  return { on: pebblesOn_(), balance: Math.max(0, earned - cashed), earned: earned, cashed: cashed, week: week, per: pebblesPerPoint_(),
+  let spent = 0;
+  sheetRows_('Pebble Spends').forEach(function (c) { if (id800_(c['800#']) === id) spent += Number(c['Pebbles']) || 0; });
+  return { on: pebblesOn_(), balance: Math.max(0, earned - cashed - spent), earned: earned, cashed: cashed, spent: spent, week: week, per: pebblesPerPoint_(),
     max: Math.max(1, settingNum_('ARCADE_PEBBLE_MAX', 15)), rates: pebbleRates_() };
 }
 
@@ -83,7 +86,7 @@ function arcadeOn_() { return String(getSetting_('ARCADE') || 'ON').toUpperCase(
 
 function ensureArcadeTab_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  [['Arcade Plays', ARCADE_HEADERS_], ['Pebble Cash-ins', CASHIN_HEADERS_], ['Pebble Bonuses', PEBBLE_BONUS_HEADERS_]].forEach(function (t) {
+  [['Arcade Plays', ARCADE_HEADERS_], ['Pebble Cash-ins', CASHIN_HEADERS_], ['Pebble Bonuses', PEBBLE_BONUS_HEADERS_], ['Pebble Spends', PEBBLE_SPEND_HEADERS_]].forEach(function (t) {
     const have = ss.getSheetByName(t[0]);
     if (have) { // an older tab: add any missing header at the end (Pebbles)
       const h = have.getRange(1, 1, 1, Math.max(1, have.getLastColumn())).getValues()[0].map(function (x) { return String(x).trim(); });
@@ -252,6 +255,15 @@ function arcadeCashIn_(id) {
     const pouch = pebblePouch_(id);
     pts = Math.floor(pouch.balance / pouch.per);
     if (pts < 1) throw new Error('You need ' + pouch.per + ' Pebbles for 1 point. You have ' + pouch.balance + '.');
+    // ARCADE_CASHIN_WEEKLY_MAX: the most points one student can cash in a week (blank = no limit).
+    const cap = String(getSetting_('ARCADE_CASHIN_WEEKLY_MAX') || '').trim();
+    if (cap !== '' && Number(cap) >= 0) {
+      const mon = mondayOf_(todayYmd_());
+      const done = sheetRows_('Pebble Cash-ins').filter(function (c) { return id800_(c['800#']) === id && String(c['When']).slice(0, 10) >= mon; }).reduce(function (n, c) { return n + (Number(c['Points']) || 0); }, 0);
+      const room = Math.max(0, Number(cap) - done);
+      if (!room) throw new Error('That\'s the most you can cash in this week (' + cap + ' point' + (Number(cap) === 1 ? '' : 's') + '). Your Pebbles are safe in your pouch until Monday.');
+      pts = Math.min(pts, room);
+    }
     const b = boardRows_().filter(function (r) { return id800_(r['800#']) === id; })[0] || {}, squad = squadOf_(b['Squad']);
     if (SQUAD_KEYS_.indexOf(squad) === -1) throw new Error('You are not on a squad yet. Ask your homeroom teacher.');
     appendByHeader_('Pebble Cash-ins', { 'When': Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'), '800#': id, 'Squad': squad, 'Pebbles': pts * pouch.per, 'Points': pts, 'Paid': '' });
@@ -260,6 +272,54 @@ function arcadeCashIn_(id) {
   out.result = { cashed: pts };
   return JSON.stringify(out);
 }
+
+/** Admin › System › Pebble watch: this week's top earners, scores near the top of a game, cash-ins and teacher gifts by squad. */
+function clashPebbleWatch(token) {
+  requireAdmin_(token, { noLog: true });
+  const mon = mondayOf_(todayYmd_()), names = {}, earned = {}, squadOf = {};
+  boardRows_().forEach(function (b) { const id = id800_(b['800#']); names[id] = shortName_(String(b['Name'] || '')); squadOf[id] = squadOf_(b['Squad']); });
+  const flags = [];
+  sheetRows_('Arcade Plays').forEach(function (p) {
+    if (String(p['When']).slice(0, 10) < mon) return;
+    const id = id800_(p['800#']), g = ARCADE_GAMES_[String(p['Game'])], sc = Number(p['Score']) || 0;
+    earned[id] = (earned[id] || 0) + (Number(p['Pebbles']) || 0);
+    if (g && sc >= 0.8 * g.max) flags.push({ who: names[id] || id, squad: squadOf[id] || '', game: g.name, score: sc, when: String(p['When']) });
+  });
+  const gifts = {}, cash = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 }, fromSummit = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
+  sheetRows_('Pebble Bonuses').forEach(function (b) {
+    if (String(b['When']).slice(0, 10) < mon) return;
+    const id = id800_(b['800#']), n = Number(b['Pebbles']) || 0, from = String(b['From'] || '');
+    earned[id] = (earned[id] || 0) + n;
+    if (/^Teacher/.test(from)) { const t = from.replace(/^Teacher:\s*/, '').split(' · ')[0]; gifts[t] = (gifts[t] || 0) + n; } // one line per teacher, whatever the note
+    else if (cash[squadOf_(b['Squad'])] !== undefined) fromSummit[squadOf_(b['Squad'])] += n;
+  });
+  sheetRows_('Pebble Cash-ins').forEach(function (c) { if (String(c['When']).slice(0, 10) >= mon && cash[squadOf_(c['Squad'])] !== undefined) cash[squadOf_(c['Squad'])] += Number(c['Points']) || 0; });
+  const top = Object.keys(earned).sort(function (a, b) { return earned[b] - earned[a]; }).slice(0, 8).map(function (id) { return { who: names[id] || 'Student ' + id.slice(-3), squad: squadOf[id] || '', pebbles: earned[id] }; });
+  return JSON.stringify({ week: mon, top: top, flags: flags.slice(-8).reverse(), cash: cash, summit: fromSummit,
+    gifts: Object.keys(gifts).map(function (t) { return { teacher: t, pebbles: gifts[t] }; }), cap: String(getSetting_('ARCADE_CASHIN_WEEKLY_MAX') || '') });
+}
+
+/** My Climb › Perks › Pebble Shop: buy a perk whose Unlock When is "shop: N" (19_Evolve.gs). */
+function clashMeBuyPerk(perk, asId, adminToken) {
+  return withSample_(asId, function () {
+    const id = meId_(asId, adminToken);
+    noSampleSave_(id); // 16_Me.gs
+    if (!pebblesOn_() || String(getSetting_('PEBBLE_SHOP') || 'ON').toUpperCase() === 'OFF') throw new Error('The Pebble Shop is closed right now.');
+    const p = perkDefs_().filter(function (x) { return x.perk === String(perk || ''); })[0], m = p && /^shop\s*:\s*(\d+)$/i.exec(p.rule);
+    if (!m) throw new Error('That is not in the Pebble Shop.');
+    const cost = Number(m[1]);
+    const lock = LockService.getScriptLock(); lock.waitLock(15000);
+    try {
+      ensureArcadeTab_();
+      if (pebbleOwned_(id).indexOf(p.perk) > -1) throw new Error('You already have ' + p.perk + '.');
+      const pouch = pebblePouch_(id);
+      if (pouch.balance < cost) throw new Error(p.perk + ' costs ' + cost + ' Pebbles. You have ' + pouch.balance + '.');
+      appendByHeader_('Pebble Spends', { 'When': Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'), '800#': id, 'Item': p.perk, 'Pebbles': cost });
+      return JSON.stringify({ ok: true, perk: p.perk, balance: pouch.balance - cost });
+    } finally { lock.releaseLock(); }
+  });
+}
+function pebbleOwned_(id) { return sheetRows_('Pebble Spends').filter(function (s) { return id800_(s['800#']) === id; }).map(function (s) { return String(s['Item']); }); }
 
 // Once a day: the day's arcade points (games, and Pebble cash-ins), one row per squad.
 function payArcade_() {
@@ -288,4 +348,4 @@ function maybePayArcade_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_48_Arcade = 'adc1c1d193';
+var FILE_STAMP_48_Arcade = '1599ad79a5';

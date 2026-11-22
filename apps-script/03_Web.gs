@@ -173,6 +173,7 @@ function backgroundTick() {
   try { maybePayCairns_(); } catch (e) { noteError_('cairn points', e); } // 58_Cairns.gs, hourly
   try { maybeQueuePolls_(); } catch (e) { noteError_('pulse points', e); } // 06_Polls.gs, hourly: closed polls wait for a yes
   try { maybeWeeklyMapTurn_(); } catch (e) { noteError_('weekly map', e); } // 59_MapWeek.gs: Mondays from 7:00 if the trigger missed it
+  try { maybeSummitCupHall_(); } catch (e) { noteError_('summit cup', e); } // 63_SummitParty.gs: last month's winner on the Hall of Fame
   try { cachedPublicLoad_(true); cachedGame_(true); } catch (e) { noteError_('warm cache', e); }
 }
 
@@ -493,4 +494,4 @@ function saveSummary_(before, after, keptFromOthers) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_03_Web = 'a6a3e4b43d';
+var FILE_STAMP_03_Web = '245c1409b1';

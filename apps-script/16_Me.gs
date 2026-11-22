@@ -321,6 +321,7 @@ function clashMePage_(asId, adminToken) {
   page.game = JSON.parse(cachedGame_()); // 15_Game.gs, cached
   try { page.hope = hopeFor_(id); } catch (e) { page.hope = null; console.warn('My Hope: ' + e); } // 62_Hope.gs
   page.preview = !!(asId && adminToken);
+  try { page.pebbles = pebblesOn_() ? pebblePouch_(id).balance : null; } catch (e) { page.pebbles = null; } // 48_Arcade.gs (the Pebble Shop)
   page.sample = id === SAMPLE_ID_; // made-up student: nothing saves
   return JSON.stringify(page);
 }
@@ -357,4 +358,4 @@ function serveMe_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_16_Me = '8957f61e25';
+var FILE_STAMP_16_Me = '5141155642';

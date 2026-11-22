@@ -19,7 +19,7 @@
 const ROLLOVER_CLEAR_ = ['events', 'Daily Polls', 'Poll Votes', 'Poll Insights', 'You Said We Did', 'Squad Monthly', 'Zone Overrides', 'Map Battles',
   'Point Freezes', 'Frost Log', 'Avalanche', 'Virtual Dough', 'Service Submissions', 'Squad Spotlight', 'Event Check-ins', 'Sign-ups', 'Homeroom Points',
   'Nominations', 'General Letters', 'Shirt Designs', 'Shirt Votes', 'Shirt Orders', 'Squad Night', 'Boost Ledger', 'Student Tickets', 'Squad Hand',
-  'Streak Banks', 'Redemptions', 'Make It Right', 'Usage', 'Admin Edits', 'Weekly Digest Log', 'Points Balance', 'Student Board', 'Squad Board', 'Arcade Plays', 'Pebble Cash-ins', 'Pebble Bonuses', 'Family Pick Votes', 'Staff Shout-outs', 'Squad Goals', 'Helping Hands', 'Team League'];
+  'Streak Banks', 'Redemptions', 'Make It Right', 'Usage', 'Admin Edits', 'Weekly Digest Log', 'Points Balance', 'Student Board', 'Squad Board', 'Arcade Plays', 'Pebble Cash-ins', 'Pebble Bonuses', 'Pebble Spends', 'Family Pick Votes', 'Staff Shout-outs', 'Squad Goals', 'Helping Hands', 'Team League'];
 
 function schoolYearLabel_(ymd) {
   const y = Number(ymd.slice(0, 4)), m = Number(ymd.slice(5, 7));
@@ -98,4 +98,4 @@ function menuRollover_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_43_Rollover = 'f64a921eab';
+var FILE_STAMP_43_Rollover = 'd57daa04db';

@@ -92,7 +92,7 @@
         '<label for="sq">Student</label><input id="sq" type="search" placeholder="Type a name or 800 number" autocomplete="off"><div class="list" id="sres"></div>' +
         '<label for="smsg">Shout-out</label><textarea id="smsg" maxlength="160" placeholder="Stayed after class to help clean up the science lab."></textarea>' +
         '<label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="smir" style="width:auto"> 🤝 This is about making something right (a repaired relationship)</label>' +
-        '<button class="go" id="shout" disabled>⭐ Send shout-out</button><div class="err" id="e3"></div></div>' : ''));
+        '<button class="go" id="shout" disabled>⭐ Send shout-out</button><div class="err" id="e3"></div></div>' : '') + pebbleCard());
     var stimer = null, sq = document.getElementById('sq');
     if (sq) {
       sq.oninput = function () {
@@ -130,6 +130,29 @@
     }).catch(function () {});
     document.getElementById('tr').onchange = check;
     document.getElementById('wh').oninput = check;
+    wirePebbles();
+  }
+  // Give Pebbles (39_VirtualDough.gs clashDoughPebbles): a small "nice job", other squads only.
+  function pebbleCard() {
+    var P = S.start.pebbles; if (!P) return '';
+    return '<div class="card"><h2 style="margin:0 0 4px">🪨 Give Pebbles</h2><div class="hint">A small "nice job" that doesn\'t need a whole bill: ' + P.amount + ' Pebbles for their Arcade pouch (100 Pebbles = 1 squad point when they cash in). Other squads only · one a day per student · ' + P.daily + ' gifts a day.</div>' +
+      '<label for="pq">Student</label><input id="pq" type="search" placeholder="Type a name or 800 number" autocomplete="off"><div class="list" id="pres"></div>' +
+      '<label for="pwhy">What for (optional)</label><input id="pwhy" maxlength="80" placeholder="Great question in class">' +
+      '<button class="go" id="pgive" disabled>🪨 Give ' + P.amount + ' Pebbles</button><div class="err" id="e4"></div></div>';
+  }
+  function wirePebbles() {
+    var pq = document.getElementById('pq'), ptimer = null; if (!pq) return;
+    pq.oninput = function () {
+      clearTimeout(ptimer); S.pebTo = null; document.getElementById('pgive').disabled = true;
+      ptimer = setTimeout(function () {
+        if (pq.value.trim().length < 2) { document.getElementById('pres').innerHTML = ''; return; }
+        run('clashDoughFind', S.me.token, pq.value).then(function (list) {
+          document.getElementById('pres').innerHTML = list.length ? list.map(function (s) {
+            return '<button class="pst" data-id="' + esc(s.id) + '" data-name="' + esc(s.name) + '"><span>' + esc(s.name) + ' <small>gr ' + esc(s.grade) + '</small></span><span class="sq ' + s.squad + '">' + title(s.squad) + '</span></button>';
+          }).join('') : '<div class="hint">No student in the other squads matches.</div>';
+        }).catch(function () {});
+      }, 250);
+    };
   }
   function checkShout() {
     var b = document.getElementById('shout');
@@ -144,6 +167,22 @@
     var t = e.target.closest && e.target.closest('button');
     if (!t) return;
     if (t.id === 'out') { S.me = null; sessionStorage.removeItem('dough-me'); signIn(); return; }
+    if (t.classList.contains('pst')) {
+      Array.prototype.forEach.call(document.querySelectorAll('.pst'), function (x) { x.classList.toggle('on', x === t); });
+      S.pebTo = { id: t.getAttribute('data-id'), name: t.getAttribute('data-name') }; document.getElementById('pgive').disabled = false; return;
+    }
+    if (t.id === 'pgive') {
+      t.disabled = true; msg('e4', '');
+      run('clashDoughPebbles', S.me.token, S.pebTo.id, document.getElementById('pwhy').value).then(function (r) {
+        msg('e4', '✓ ' + r.pebbles + ' Pebbles to ' + r.student + ' · ' + r.left + ' gifts left today'); document.getElementById('e4').style.color = 'var(--green)';
+        document.getElementById('pwhy').value = ''; S.pebTo = null;
+        Array.prototype.forEach.call(document.querySelectorAll('.pst'), function (x) { x.classList.remove('on'); });
+      }).catch(function (err) {
+        if (/sign in/i.test(err && err.message)) { S.me = null; sessionStorage.removeItem('dough-me'); signIn(); return; }
+        t.disabled = false; document.getElementById('e4').style.color = ''; msg('e4', err && err.message);
+      });
+      return;
+    }
     if (t.classList.contains('sst')) {
       Array.prototype.forEach.call(document.querySelectorAll('.sst'), function (x) { x.classList.toggle('on', x === t); });
       S.shoutTo = { id: t.getAttribute('data-id'), name: t.getAttribute('data-name') }; checkShout(); return;
@@ -201,4 +240,4 @@
 </script>
 </body>
 </html>
-<!-- file-stamp: 8b432461ac -->
+<!-- file-stamp: 2ed6ffb78a -->

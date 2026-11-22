@@ -527,6 +527,11 @@
     s = s || 1; g.save(); g.translate(x, y); g.scale(s, s);
     g.strokeStyle = '#efe6f7'; g.lineWidth = 2.5; g.lineCap = 'round'; g.beginPath(); g.moveTo(0, 14); g.lineTo(0, -16); g.stroke();
     g.fillStyle = col; g.beginPath(); g.moveTo(1, -16); g.lineTo(17, -10); g.lineTo(1, -4); g.closePath(); g.fill();
+    if (col === ARC.gold) { // a star on the gold flags, so they don't depend on color alone
+      g.fillStyle = '#3a2a05'; g.beginPath();
+      for (var i = 0; i < 10; i++) { var a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? 1.6 : 3.6; g.lineTo(7 + Math.cos(a) * rr, -10 + Math.sin(a) * rr); }
+      g.closePath(); g.fill();
+    }
     g.restore();
   }
   function drawRock(g, x, y, r, spin) {
@@ -1150,9 +1155,10 @@
       .catch(function (e) { $('app').innerHTML = '<div class="card"><p class="sub">' + esc(msgOf(e)) + '</p></div>'; });
   }
   try { google.script.url.getLocation(function (loc) { boot(loc && loc.parameter); }); } catch (e) { boot({}); }
-  setInterval(function () { if (!acting && squad && !TRY) run('clashSummitState', code, seq).then(take).catch(function () {}); }, 2000);
+  // Check in every 2 seconds, every 4 when 3+ games are going (view.busy), so Google keeps up.
+  (function tick() { setTimeout(function () { if (!acting && squad && !TRY) run('clashSummitState', code, seq).then(take).catch(function () {}); tick(); }, S && S.busy ? 4000 : 2000); })();
 })();
 </script>
 </body>
 </html>
-<!-- file-stamp: 833caf0a21 -->
+<!-- file-stamp: f12dad0c0a -->

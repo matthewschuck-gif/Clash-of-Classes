@@ -73,6 +73,52 @@ function weeklyMapTurn_(force) {
   }
 }
 
+// MAP NEWS (MAP_NEWS ON): the day the map turns, the morning announcement (and the Morning Clash) says what moved.
+function mapNewsLine_() {
+  if (String(getSetting_('MAP_NEWS') || 'ON').toUpperCase() === 'OFF' || !mapWeekly_()) return '';
+  const today = todayYmd_();
+  if (PropertiesService.getScriptProperties().getProperty('map-turn-week') !== mondayOf_(today) || today !== mondayOf_(today)) return '';
+  const moved = sheetRows_('Map Battles').filter(function (b) { return String(b['Date'] || '').slice(0, 10) === today; });
+  const zones = sheetRows_('Map Zones').filter(function (r) { return ticked_(r['Show']) && String(r['Zone'] || '').trim(); });
+  const held = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
+  zones.forEach(function (r) { const s = squadOf_(r['Holder']); if (held[s] !== undefined) held[s]++; });
+  const lead = SQUAD_KEYS_.slice().sort(function (a, b) { return held[b] - held[a]; })[0];
+  return 'The map turned this morning: ' + (moved.length ? moved.map(function (b) { return titleSquad_(squadOf_(b['Taken By'])) + ' took the ' + b['Zone'] + (b['Rule'] ? ' (' + b['Rule'] + ')' : ''); }).join(', ') : 'every area stayed with its squad') +
+    '.' + (held[lead] ? ' ' + titleSquad_(lead) + ' holds the most areas, ' + held[lead] + '.' : '');
+}
+
+// MAP DATA CHECK (Admin › System): for every area, what it reads, how fresh that is, and whether every squad has a number.
+function clashMapDataCheck(token) {
+  requireAdmin_(token, { noLog: true });
+  const zones = mapZones_(null, false), today = todayYmd_(), lw = lastWeekBounds_(today);
+  const sm = sheetRows_(MONTHLY_TAB_), newest = {};
+  sm.forEach(function (r) { const m = ymOf_(r['Month']); Object.keys(r).forEach(function (k) { const key = measureKey_(k); if (m && r[k] !== '' && r[k] != null && !isNaN(Number(String(r[k]).replace(/[%,\s]/g, '')))) newest[key] = !newest[key] || m > newest[key].m ? { m: m, upd: String(r['Updated'] || '') } : newest[key]; }); });
+  const src = function (n) {
+    if (n === 'shout_outs') { const c = shoutoutCounts_(lw[0], lw[1]); return 'Approved Cairns + staff shout-outs last week: ' + SQUAD_KEYS_.map(function (s) { return titleSquad_(s) + ' ' + c[s]; }).join(', '); }
+    if (n === 'lrr_ld') return getSetting_('LRR_SHEET') ? 'LRRs + LDs from the Follow-Up sheets, counted each week' : 'Squad Monthly (no LRR_SHEET set)';
+    if (newest[n]) return 'Squad Monthly, ' + newest[n].m + (newest[n].upd ? ' (updated ' + newest[n].upd + ')' : '');
+    if (METRIC_FALLBACK_[n]) { const t = readMetricsTab_(); return t ? 'The metrics tab (' + METRIC_FALLBACK_[n][0] + ', the newest Climb-er upload)' : 'Nothing yet: no Squad Monthly number and an empty metrics tab'; }
+    if (n === 'poll_votes') return 'Pulse votes (approved polls)';
+    if (n === 'event_participants' || n === 'squad_event_points') return 'Move / Make / Talk check-ins and squad event points';
+    if (n === 'pride_day') return 'Pride Day check-ins';
+    return 'Events tab (' + n + ')';
+  };
+  const out = zones.map(function (z) {
+    const names = listOf_(z.claimedBy).map(measureKey_);
+    let reads, latest = '';
+    if (MEASURE_METHODS_.indexOf(z.method) > -1) reads = names.map(src).filter(function (x, i, a) { return a.indexOf(x) === i; }).join(' + ');
+    else {
+      const m = eventMatcher_(z.claimedBy), evs = readEventsTab_().filter(function (e) { return !m || m(e); }).sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
+      reads = z.method === 'staff pick' ? 'Staff pick (Admin › Map)' : 'Events tab: ' + (z.claimedBy || 'every point');
+      latest = evs[0] ? 'Latest: ' + String(evs[0].date).slice(0, 10) + ' ' + publicEvent_(evs[0]).name : 'No matching events yet';
+    }
+    const missing = z.method === 'staff pick' ? [] : SQUAD_KEYS_.filter(function (s) { return z.score[s] === null || z.score[s] === undefined; });
+    return { zone: z.zone, rule: z.rule || 'Most points', holder: z.holder, locked: !!z.locked, window: z.window || '', reads: reads, latest: latest,
+      score: z.score, ok: !missing.length, missing: missing.map(titleSquad_) };
+  });
+  return JSON.stringify({ zones: out, turned: PropertiesService.getScriptProperties().getProperty('map-turn-week') || '', weekly: mapWeekly_() });
+}
+
 // The trigger's handler (Mondays at 7).
 function weeklyMapTurn() { noteRun_('weeklyMapTurn'); return weeklyMapTurn_(false); }
 
@@ -98,4 +144,4 @@ function menuWeeklyMapTurn_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_59_MapWeek = '964df319d8';
+var FILE_STAMP_59_MapWeek = 'd12647f04e';

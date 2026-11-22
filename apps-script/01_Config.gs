@@ -116,6 +116,7 @@ function setupSpreadsheet() {
   ensureMeTabs_();
   ensureHopeTabs_(); // 62_Hope.gs: My Hope
   ensureSummitPartyTabs_(); // 63_SummitParty.gs: Summit Games, Summit Party Points, Summit Live Challenges
+  try { ensureShopPerks_(); } catch (e) { console.warn('Pebble Shop perks: ' + e.message); } // 19_Evolve.gs: the Pebble Shop's starting items
   ensureRosterTab_();
   ensureTourTab_(); // 20_Tour.gs
   ensureWeekTabs_(); // 22_Week.gs
@@ -278,6 +279,15 @@ const DEFAULT_SETTINGS = [
   ['ARCADE_PEBBLE_RATES', 'dash=120, catch=50, stack=2', 'Arcade: the score for 1 Pebble in each game (Summit Dash, Dough Catch, Peak Stack). An average game earns about 6, a strong one about 12. Bigger number = slower.'],
   ['ARCADE_CLASS_TIMES', '08:15-11:15, 12:33-14:05', 'Arcade: no games during these class times (24-hour clock, comma between times). Cash in still works. Blank = no class-time lock.'],
   ['ARCADE_PEBBLE_WHY', '', 'Arcade: the "Why Pebbles?" paragraph on the Arcade. Blank = the built-in one (cairns: small stones that stack up to mark the trail).'],
+  ['ARCADE_CASHIN_WEEKLY_MAX', '', 'Arcade: the most squad points one student can cash in a week (blank = no limit). Their extra Pebbles wait in the pouch.'],
+  ['PEBBLE_SHOP', 'ON', 'The Pebble Shop on My Climb › Perks: perks whose Unlock When is "shop: N" cost N Pebbles. Edit, price or hide them on the Perks tab. OFF = the shop is hidden.'],
+  ['PEBBLE_TEACHER', 'ON', 'Teachers can give Pebbles on the Virtual Trait Dough page (to students in other squads, one gift a day per student). OFF = hidden.'],
+  ['PEBBLE_TEACHER_AMOUNT', '5', 'Pebbles in one teacher gift.'],
+  ['PEBBLE_TEACHER_DAILY', '10', 'Pebble gifts a teacher can give in a day.'],
+  ['MAP_NEWS', 'ON', 'The morning announcement (and the Morning Clash) says what moved when the map turns on Monday.'],
+  ['SUMMIT_PARTY_MAX_GAMES', '4', 'Summit Party: the most games at once (preview demos do not count). With 3 or more going, the pages check in less often.'],
+  ['SUMMIT_CUP', 'ON', 'The Summit Cup: every scored Summit Party game this month adds cup points by place (SUMMIT_CUP_POINTS); the month\'s winner goes on the Hall of Fame.'],
+  ['SUMMIT_CUP_POINTS', '4,3,2,1', 'Summit Cup points per game by place (1st,2nd,3rd,4th).'],
   ['ARCADE_PEBBLE_MAX', '15', 'Arcade: the most Pebbles one game can earn (every counted game earns at least 1).'],
   ['PLINKO_ROWS', '8', 'Plinko: rows of pegs (4 to 12). The Plinko Slots tab needs one more slot than rows.'],
   ['TV_SECONDS', '9', 'TV (clashofclasses.org/?tv=1): seconds each slide stays up.'],
@@ -550,4 +560,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = '16d20fd1a5';
+var FILE_STAMP_01_Config = 'd05d7a02fc';

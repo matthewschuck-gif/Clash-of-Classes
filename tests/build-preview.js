@@ -98,7 +98,7 @@ getSheet_('Sign-up Events').appendRow(['Squad Bowl (trivia)', '2027-03-16', 4, t
 getSheet_('Sign-up Events').appendRow(['Tug-o-war', '2027-03-19', 15, true, 'Squad Night', 'Active', false]);
 getSheet_('events').appendRow([104, 'Paper Chain Challenge', 'mayhem_week', '2026-10-30', '', '', 3, 5, 1, 2]);
 getSheet_('events').appendRow([105, 'Penny Tower Race', 'mayhem_week', '2026-10-31', '', '', 2, 0, 4, 1]);
-ensureGameTabs_(); ensureMeTabs_(); ensureTourTab_(); ensureMindsetLinksTab_(); ensureYearPlanTab_(); ensureHomeroomTabs_();
+ensureGameTabs_(); ensureMeTabs_(); ensureEvolveTabs_(); ensureShopPerks_(); ensureTourTab_(); ensureMindsetLinksTab_(); ensureYearPlanTab_(); ensureHomeroomTabs_();
 setSettingValue_('MY_CLIMB_HOURS', '00:00-23:59'); setSettingValue_('MY_CLIMB_SCHOOL_DAYS', 'OFF'); // preview only: always open
 setSettingValue_('SUMMIT_PARTY', 'ON'); // preview only: Summit Party on
 // 54-57 samples (made-up students): teams, a Dough teacher (password preview), banners, a shout-out, a planned event,

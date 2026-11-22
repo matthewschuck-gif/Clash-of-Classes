@@ -159,7 +159,9 @@ function spSetting_(k, d) { const v = Number(getSetting_(k)); return String(getS
 // Each game has a 4-letter code (shown on its board). Several can run at once (classrooms, the
 // cafeteria, an assembly). Each game lives in its own Script Property; 'sp-games' lists them.
 const SP_LETTERS_ = 'ACDEFGHJKMNPQRTUVWXY'; // no B/I/L/O/S/Z: easy to read off a screen
-const SP_MAX_GAMES_ = 20;
+// SUMMIT_PARTY_MAX_GAMES (4): games at once (preview demos don't count). Google answers about 30 requests at a
+// time, so with more games the pages check in less often (view.busy).
+function spMaxGames_() { return Math.max(1, Math.min(20, spSetting_('SUMMIT_PARTY_MAX_GAMES', 4))); }
 function spCode_(code) { return String(code || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4); }
 function spKey_(code) { return 'sp-game-' + code; }
 function spIndex_() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('sp-games') || '[]'); } catch (e) { return []; } }
@@ -743,7 +745,9 @@ function spView_(g) {
   const layout = spLayoutOf_(g && g.layout);
   // The page never sees 800#s: only how many students play for each squad.
   if (g && g.players) { const count = {}; Object.keys(g.players).forEach(function (s) { count[s] = g.players[s].length; }); g = Object.assign({}, g, { players: undefined, playerCount: count }); }
-  return { on: true, board: spBoard_(layout), layout: layout, art: spArt_(), spaces: SP_SPACES_, items: SP_ITEMS_, minigames: SP_MINIGAMES_,
+  let busy = false;
+  try { busy = spIndex_().filter(function (x) { return x.status === 'playing'; }).length >= 3; } catch (e) { busy = false; }
+  return { on: true, busy: busy, board: spBoard_(layout), layout: layout, art: spArt_(), spaces: SP_SPACES_, items: SP_ITEMS_, minigames: SP_MINIGAMES_,
     flagCost: spFlagCost_(), autoRoll: spSetting_('SUMMIT_PARTY_AUTO_ROLL', 30),
     opts: { practice: spSwitch_('SUMMIT_PARTY_PRACTICE'), relay: spSwitch_('SUMMIT_PARTY_RELAY'), sound: spSwitch_('SUMMIT_PARTY_SOUND'), soundPlay: spSwitch_('SUMMIT_PARTY_SOUND_CHROMEBOOK') }, rounds: spSetting_('SUMMIT_PARTY_ROUNDS', 10), now: Date.now(), game: g };
 }
@@ -846,7 +850,7 @@ function spCreate_(by, rounds, layout, demo, screen, players) {
   return spWithLock_(function () {
     if (!demo) ensureSummitPartyTabs_(); // first game: the Summit tabs, including the live challenges
     const list = spTidy_();
-    if (!demo && list.filter(function (x) { return x.status === 'playing' && !x.demo; }).length >= SP_MAX_GAMES_) throw new Error('There are already ' + SP_MAX_GAMES_ + ' games going. End one first.');
+    if (!demo && list.filter(function (x) { return x.status === 'playing' && !x.demo; }).length >= spMaxGames_()) throw new Error('There are already ' + spMaxGames_() + ' games going (Settings › SUMMIT_PARTY_MAX_GAMES). End one first.');
     if (demo && list.filter(function (x) { return x.status === 'playing' && x.demo; }).length >= 10) throw new Error('Too many preview games right now. Try again in a little while.');
     const code = spNewCode_(list.map(function (x) { return x.code; }));
     const board = spBoard_(layout);
@@ -1221,6 +1225,43 @@ function decideSummitPoints_(row, yes) {
   sh.getRange(r._row, SP_POINT_HEADERS_.indexOf('Sent') + 1).setValue(todayYmd_());
 }
 
+// ── SUMMIT CUP (SUMMIT_CUP ON): every scored game this month adds cup points by place (SUMMIT_CUP_POINTS 4,3,2,1).
+// The site's Summit Party tab and Admin show the standings; when a month ends, its winner goes on the Hall of Fame.
+function summitCup_(ym) {
+  const pts = spPebbleList_('SUMMIT_CUP_POINTS', '4,3,2,1'), cup = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 }, wins = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
+  let games = 0;
+  sheetRows_('Summit Games').forEach(function (r) {
+    if (String(r['Status']) !== 'Finished' || ymOf_(r['Ended']) !== ym) return;
+    const order = (String(r['Result'] || '').match(/\d\.\s*(Black|Gold|Grey|Purple)/gi) || []).map(function (x) { return x.replace(/^\d\.\s*/, '').toUpperCase(); });
+    if (!order.length) return;
+    games++;
+    order.forEach(function (s, i) { if (cup[s] !== undefined) cup[s] += pts[Math.min(i, pts.length - 1)] || 0; });
+    if (wins[order[0]] !== undefined) wins[order[0]]++;
+  });
+  const standings = SQUAD_KEYS_.slice().sort(function (a, b) { return cup[b] - cup[a] || wins[b] - wins[a]; }).map(function (s) { return { squad: s, cup: cup[s], wins: wins[s] }; });
+  return { month: ym, games: games, standings: standings };
+}
+/** Public: this month's Summit Cup (and last month's winner). */
+function clashSummitCup() {
+  if (String(getSetting_('SUMMIT_CUP') || 'ON').toUpperCase() === 'OFF') return JSON.stringify({ on: false });
+  const now = todayYmd_().slice(0, 7), last = monthBounds_(-1)[0].slice(0, 7), prev = summitCup_(last);
+  return JSON.stringify({ on: true, cup: summitCup_(now), last: prev.games ? { month: last, squad: prev.standings[0].squad, cup: prev.standings[0].cup } : null });
+}
+// Once a month (backgroundTick): last month's winner onto the Hall of Fame tab.
+function maybeSummitCupHall_() {
+  if (String(getSetting_('SUMMIT_CUP') || 'ON').toUpperCase() === 'OFF') return;
+  const props = PropertiesService.getScriptProperties(), last = monthBounds_(-1)[0].slice(0, 7);
+  if (props.getProperty('summit-cup-hall') === last) return;
+  props.setProperty('summit-cup-hall', last);
+  const c = summitCup_(last);
+  if (!c.games || !c.standings[0].cup) return;
+  const top = c.standings[0], tie = c.standings[1] && c.standings[1].cup === top.cup && c.standings[1].wins === top.wins;
+  if (tie) return; // a tie: no trophy (staff can add one on the tab)
+  const label = Utilities.formatDate(new Date(last + '-15T12:00:00'), Session.getScriptTimeZone(), 'MMMM yyyy');
+  ensureLegacyTabs_(); // 52_Legacy.gs
+  getSheet_('Hall of Fame').appendRow([true, schoolYearLabel_(last + '-15'), 'Summit Cup · ' + label, titleSquad_(top.squad) + ' Squad', top.squad, c.games + ' games, ' + top.cup + ' cup points, ' + top.wins + ' wins']);
+}
+
 /** Admin › System: is Summit Party on, and the games going now (not preview demos). */
 function clashSummitAdmin(token) {
   requireAdmin_(token, { noLog: true });
@@ -1228,7 +1269,9 @@ function clashSummitAdmin(token) {
     const g = spLoad_(x.code);
     return g ? { code: g.code, round: Math.min(g.round, g.rounds), rounds: g.rounds, screen: !!g.screen, by: String(g.by || '') } : null;
   }).filter(Boolean);
-  return JSON.stringify({ on: spOn_(), games: games });
+  let cup = null;
+  try { cup = JSON.parse(clashSummitCup()); } catch (e) { cup = null; }
+  return JSON.stringify({ on: spOn_(), games: games, max: spMaxGames_(), cup: cup });
 }
 
 function serveSummitParty_() {
@@ -1241,4 +1284,4 @@ function serveSummitPlay_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_63_SummitParty = '00ef076cfb';
+var FILE_STAMP_63_SummitParty = '66ddd7fbc3';

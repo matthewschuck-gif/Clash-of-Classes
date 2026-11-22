@@ -175,6 +175,7 @@ function announcementScript_() {
   parts.push(titleSquad_(lead[0]) + ' leads Clash of Classes, ' + (totals[lead[0]] - totals[lead[1]]).toLocaleString() + ' points ahead of ' + titleSquad_(lead[1]) + '.');
   const caps = sheetRows_('Map Battles').filter(function (b) { return String(b['Date'] || '').slice(0, 10) === y; });
   if (caps.length) parts.push('On the map: ' + caps.map(function (b) { return titleSquad_(squadOf_(b['Taken By'])) + ' took the ' + b['Zone']; }).join(', ') + '.');
+  try { const news = mapNewsLine_(); if (news) parts.push(news); } catch (e) { /* no map news */ } // 59_MapWeek.gs: the Monday turn
   try {
     const m = monster_(events);
     if (m) parts.push(m.defeated ? 'We defeated ' + m.name + '! Every squad earns ' + m.reward + ' points.' : m.name + ' is ' + Math.round(100 * (1 - m.health)) + '% defeated. Keep it up to beat it together.');
@@ -476,4 +477,4 @@ function clashVersion(token) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_22_Week = '813a562fce';
+var FILE_STAMP_22_Week = '7d27f1c2b4';

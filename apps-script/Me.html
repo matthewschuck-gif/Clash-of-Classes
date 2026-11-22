@@ -308,6 +308,7 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
       var list = p.list.filter(function (x) { return x.kind === kind; }); if (!list.length) return '';
       return '<div class="me-perk-row"><b>' + label + '</b><div class="me-chips">' + list.map(function (x) {
         var sw = kind === 'frame' ? '<i style="background:' + (x.value.toLowerCase() === 'aurora' ? 'linear-gradient(90deg,#7dffc4,#9b7bff)' : /^#/.test(x.value) ? esc(x.value) : 'var(--squad,#bb8ef5)') + '"></i>' : '';
+        if (!x.open && x.shop) return '<button class="me-chip shop craft-press" data-buy="' + esc(x.perk) + '" data-cost="' + x.shop + '" title="' + esc(x.text) + '"' + (D.pebbles != null && D.pebbles < x.shop ? ' aria-disabled="true"' : '') + '>' + sw + '<span class="arc-peb" aria-hidden="true"></span>' + x.shop + ' · ' + esc(x.perk) + '</button>';
         return x.open ? '<button class="me-chip craft-press" data-perk="' + esc(x.perk) + '" aria-pressed="' + (p.equipped[kind] === x.perk) + '" title="' + esc(x.text) + '">' + sw + esc(x.perk) + '</button>'
           : '<span class="me-chip locked" title="' + esc(x.text) + '">🔒 ' + esc(x.perk) + '</span>';
       }).join('') + '</div></div>';
@@ -315,7 +316,9 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
     var rewards = p.list.filter(function (x) { return x.kind === 'reward'; }).map(function (x) {
       return '<div class="me-reward' + (x.open ? '' : ' locked') + '">' + (x.open ? '🎁 <b>' + esc(x.perk) + '</b>: ' + esc(x.value || x.text) : '🔒 <b>' + esc(x.perk) + '</b>: ' + esc(x.text)) + '</div>';
     }).join('');
-    return '<h3 style="font-family:Fraunces,serif;margin:16px 0 6px">Perks</h3><p class="me-sub" style="margin-bottom:8px">Unlock them as you climb. Tap one to wear it, tap again to take it off.</p>' +
+    var hasShop = p.list.some(function (x) { return x.shop; });
+    return '<h3 style="font-family:Fraunces,serif;margin:16px 0 6px">Perks</h3><p class="me-sub" style="margin-bottom:8px">Unlock them as you climb. Tap one to wear it, tap again to take it off.' +
+      (hasShop && D.pebbles != null ? ' <b>Pebble Shop:</b> the ones with a price are for sale. You have ' + D.pebbles + ' Pebbles.' : '') + '</p><p class="me-sub" id="shopMsg" role="status"></p>' +
       '<div class="me-perks">' + row('title', 'Title') + row('frame', 'Frame') + row('scene', 'Scene') + (rewards ? '<div class="me-perk-row"><b>Rewards</b><div class="me-perks">' + rewards + '</div></div>' : '') + '</div>';
   }
 
@@ -675,6 +678,16 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
     };
     document.querySelectorAll('[data-show]').forEach(function (b) { b.onclick = function () { saveCreature({ show: Number(b.getAttribute('data-show')) }); }; });
     document.querySelectorAll('[data-perk]').forEach(function (b) { b.onclick = function () { saveCreature({ perk: b.getAttribute('data-perk') }); }; });
+    document.querySelectorAll('[data-buy]').forEach(function (b) {
+      b.onclick = function () {
+        var name = b.getAttribute('data-buy'), cost = Number(b.getAttribute('data-cost')), m = $('shopMsg');
+        if (D.pebbles != null && D.pebbles < cost) { if (m) m.textContent = name + ' costs ' + cost + ' Pebbles. You have ' + D.pebbles + '. Play the Arcade to earn more!'; return; }
+        if (!confirm('Spend ' + cost + ' Pebbles on ' + name + '? Pebbles you spend here do not become squad points.')) return;
+        b.disabled = true;
+        run.apply(null, ['clashMeBuyPerk', name].concat(who())).then(function () { load(); })
+          .catch(function (e) { b.disabled = false; if (m) m.textContent = msg(e); });
+      };
+    });
     document.querySelectorAll('[data-version]').forEach(function (b) { b.onclick = function () { if (b.getAttribute('aria-pressed') !== 'true') saveCreature({ version: Number(b.getAttribute('data-version')) }); }; });
     document.querySelectorAll('[data-gear]').forEach(function (b) {
       b.onclick = function () {
@@ -731,7 +744,10 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
   try { google.script.url.getLocation(function (loc) { boot(loc && loc.parameter); }); } catch (e) { boot({}); }
 })();
 </script>
-<style>[data-pw]{-webkit-text-security:disc;text-security:disc}</style>
+<style>[data-pw]{-webkit-text-security:disc;text-security:disc}
+.me-chip.shop { border-style: dashed; }
+.me-chip.shop[aria-disabled="true"] { opacity: .55; }
+.me-chip.shop .arc-peb { width: 12px; height: 10px; margin-right: 4px; }</style>
 <script>
 /* Password boxes are plain text boxes drawn as dots, so Chrome, Safari and password managers never offer to save or fill them. Browsers that can't draw the dots get a password box that asks not to be filled. */
 (function () {
@@ -743,4 +759,4 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 </script>
 </body>
 </html>
-<!-- file-stamp: be4f58d029 -->
+<!-- file-stamp: f7d8b493b4 -->

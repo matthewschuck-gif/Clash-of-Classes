@@ -34,7 +34,7 @@ function ensureLegacyTabs_() {
 function hallCapture_() {
   ensureLegacyTabs_();
   const win = seasonWindow_(), year = schoolYearLabel_(win.to);
-  if (sheetRows_('Hall of Fame').some(function (r) { return String(r['Year']) === year; })) return 0;
+  if (sheetRows_('Hall of Fame').some(function (r) { return String(r['Year']) === year && !/^Summit Cup/.test(String(r['Award'] || '')); })) return 0; // monthly Summit Cup rows (63) don't count
   const totals = squadTotals_(), order = SQUAD_KEYS_.slice().sort(function (a, b) { return totals[b] - totals[a]; });
   const rows = [[true, year, 'Clash Bash Champion', titleSquad_(order[0]) + ' Squad', order[0], (totals[order[0]] || 0).toLocaleString() + ' points']];
   (yearAwards_(win) || []).forEach(function (a) { rows.push([true, year, a.title, shortName_(a.who), a.squad || '', a.detail || '']); });
@@ -128,4 +128,4 @@ function seasonLook_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_52_Legacy = '4bdbddf8eb';
+var FILE_STAMP_52_Legacy = '41642e292f';

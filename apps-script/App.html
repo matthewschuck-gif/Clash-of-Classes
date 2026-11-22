@@ -3313,8 +3313,9 @@ function renderSummitPage(){
   box.innerHTML=on?'<div class="sp-tiles">'+
     '<a class="sp-tile" href="'+summitUrl('summit')+'" target="_blank" rel="noopener"><span class="sp-ic">🖥️</span><b>The big screen</b><small>Staff: open the board on the projector, sign in, pick the rounds and where squads play: on Chromebooks, or all on this one screen (no Chromebooks needed).</small><span class="sp-go">Open the board ↗</span></a>'+
     '<a class="sp-tile" href="'+summitUrl('summit-play')+'" target="_top"><span class="sp-ic">💻</span><b>Join on a Chromebook</b><small>One Chromebook per squad. Type the game code from the big screen and your 800 number.</small><span class="sp-go">Join my squad →</span></a></div>'+
-    '<div class="sp-how"><b>How it works</b> Squads roll, collect coins and buy Summit Flags for 20 coins. Every round ends with a minigame. The squad with the most flags at the end wins Summit Party, and staff approve the points.</div>'
+    '<div id="spCupBox"></div><div class="sp-how"><b>How it works</b> Squads roll, collect coins and buy Summit Flags for 20 coins. Every round ends with a minigame. The squad with the most flags at the end wins Summit Party, and staff approve the points.</div>'
     :'<div class="sp-how">Summit Party is closed right now.</div>';
+  if(on&&window.gasRun_) window.gasRun_('clashSummitCup').then(function(c){ var b=document.getElementById('spCupBox'); if(b) b.innerHTML=cupHtml(c); }).catch(function(){});
 }
 // Admin › System: Summit Party at a glance (games going now, links, a demo).
 function renderSummitAdmin(){
@@ -3324,9 +3325,45 @@ function renderSummitAdmin(){
     box.innerHTML='<div class="pv-card"><div class="pv-h">🎲 Summit Party <span style="font-size:12px;font-weight:700;color:'+(r.on?'#86efac':'#fbbf24')+'">'+(r.on?'ON':'OFF (Settings › SUMMIT_PARTY)')+'</span></div>'+
       '<div class="pv-sub">Open the board to start a game: squads play on Chromebooks or all on the big screen. The site tab shows while it is ON.</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-sm" href="'+summitUrl('summit')+'" target="_blank" rel="noopener">Open the board ↗</a><a class="btn btn-sm" href="'+summitUrl('summit-play')+'" target="_blank" rel="noopener">Chromebook page ↗</a><button class="btn btn-sm" id="spDemo">Try a demo game</button></div>'+
-      '<div style="margin-top:10px;font-size:13px">'+(g.length?'<b>Games going now</b>'+g.map(function(x){ return '<div style="padding:6px 0;border-top:1px solid var(--border)"><b style="letter-spacing:.1em">'+pvEsc(x.code)+'</b> · round '+x.round+' of '+x.rounds+' · '+(x.screen?'one screen':'Chromebooks')+' · by '+pvEsc(x.by)+'</div>'; }).join(''):'<span style="color:var(--text3)">No games going right now.</span>')+'</div></div>';
+      cupHtml(r.cup)+'<div style="margin-top:10px;font-size:13px">'+(g.length?'<b>Games going now ('+g.length+' of '+r.max+' at once)</b>'+g.map(function(x){ return '<div style="padding:6px 0;border-top:1px solid var(--border)"><b style="letter-spacing:.1em">'+pvEsc(x.code)+'</b> · round '+x.round+' of '+x.rounds+' · '+(x.screen?'one screen':'Chromebooks')+' · by '+pvEsc(x.by)+'</div>'; }).join(''):'<span style="color:var(--text3)">No games going right now.</span>')+'</div></div>';
     document.getElementById('spDemo').onclick=function(){ openStudentPreview('demo'); };
   }).catch(function(e){ box.innerHTML='<div style="color:#fca5a5;margin-bottom:14px">Summit Party: '+pvEsc(e&&e.message||e)+'</div>'; });
+}
+// Admin › System › Map data check (59_MapWeek.gs clashMapDataCheck): what each area reads, how fresh, every squad has a number.
+function renderMapCheck(){
+  var box=document.getElementById('mcCard'); if(!box||!window.gasRun_) return;
+  var nm=s=>s?s.charAt(0)+s.slice(1).toLowerCase():'nobody';
+  window.gasRun_('clashMapDataCheck',window.ADMIN_SESSION||'').then(function(r){
+    var bad=r.zones.filter(z=>!z.ok).length;
+    box.innerHTML='<details class="pv-card"'+(bad?' open':'')+'><summary class="pv-h" style="cursor:pointer">🗺️ Map data check '+(bad?'<span style="color:#fbbf24;font-size:13px">· '+bad+' area'+(bad===1?'':'s')+' missing numbers</span>':'<span style="color:#86efac;font-size:13px">· every area has its numbers</span>')+'</summary>'+
+      '<div class="pv-sub">'+(r.weekly?'The map turns every Monday at 7:00'+(r.turned?' (last turn: week of '+pvEsc(r.turned)+')':'')+'.':'The map changes as numbers come in (MAP_CYCLE monthly).')+' Each area: what it reads and what each squad has right now.</div>'+
+      r.zones.map(function(z){ return '<div style="padding:8px 0;border-top:1px solid var(--border);font-size:13px"><div><b>'+(z.ok?'✓':'⚠')+' '+pvEsc(z.zone)+'</b> · '+pvEsc(z.rule)+' · held by '+pvEsc(nm(z.holder))+(z.locked?' 🔒':'')+(z.window?' <span style="color:var(--text3)">('+pvEsc(z.window)+')</span>':'')+'</div>'+
+        '<div style="color:var(--text3)">'+pvEsc(z.reads)+(z.latest?' · '+pvEsc(z.latest):'')+'</div>'+
+        '<div>'+['BLACK','GOLD','GREY','PURPLE'].map(function(s){ var v=z.score[s]; return '<span style="color:'+(SQ_HEX[s]||'inherit')+';font-weight:700">'+nm(s)+'</span> '+(v===null||v===undefined?'<span style="color:#fbbf24">none</span>':pvEsc(Math.round(v*10)/10)); }).join(' · ')+'</div>'+
+        (z.ok?'':'<div style="color:#fbbf24">Missing for '+pvEsc(z.missing.join(', '))+': this area waits until every squad has a number.</div>')+'</div>'; }).join('')+'</details>';
+  }).catch(function(e){ box.innerHTML='<div style="color:#fca5a5;margin-bottom:14px">Map data check: '+pvEsc(e&&e.message||e)+'</div>'; });
+}
+// Admin › System › Pebble watch (48_Arcade.gs clashPebbleWatch).
+function renderPebbleWatch(){
+  var box=document.getElementById('pwCard'); if(!box||!window.gasRun_) return;
+  var nm=s=>s?s.charAt(0)+s.slice(1).toLowerCase():'';
+  window.gasRun_('clashPebbleWatch',window.ADMIN_SESSION||'').then(function(r){
+    var row=function(o){ return ['BLACK','GOLD','GREY','PURPLE'].map(function(s){ return '<span style="color:'+(SQ_HEX[s]||'inherit')+';font-weight:700">'+nm(s)+'</span> '+(o[s]||0); }).join(' · '); };
+    box.innerHTML='<details class="pv-card"><summary class="pv-h" style="cursor:pointer">🪨 Pebble watch <span style="font-size:13px;color:var(--text3)">· week of '+pvEsc(r.week)+'</span></summary>'+
+      '<div class="pv-sub">Who is earning, scores near the top of a game, and where the points are going. Weekly cash-in limit: '+(r.cap!==''?pvEsc(r.cap)+' point'+(r.cap==='1'?'':'s')+' a student':'none')+' (Settings › ARCADE_CASHIN_WEEKLY_MAX).</div>'+
+      '<div style="font-size:13px"><b>Cashed in this week (squad points):</b> '+row(r.cash)+'</div>'+
+      '<div style="font-size:13px;margin-top:4px"><b>Summit Party Pebbles this week:</b> '+row(r.summit)+'</div>'+
+      '<div style="font-size:13px;margin-top:8px"><b>Top earners</b>'+(r.top.length?'<ol style="margin:4px 0 0 18px;padding:0">'+r.top.map(function(t){ return '<li>'+pvEsc(t.who)+' · <span style="color:'+(SQ_HEX[t.squad]||'inherit')+'">'+nm(t.squad)+'</span> · '+t.pebbles+'</li>'; }).join('')+'</ol>':' none yet')+'</div>'+
+      '<div style="font-size:13px;margin-top:8px"><b>Scores near the top of a game</b> (worth a look)'+(r.flags.length?'<ul style="margin:4px 0 0 18px;padding:0">'+r.flags.map(function(f){ return '<li>'+pvEsc(f.who)+' · '+pvEsc(f.game)+' '+Number(f.score).toLocaleString()+' · '+pvEsc(f.when)+'</li>'; }).join('')+'</ul>':': none')+'</div>'+
+      '<div style="font-size:13px;margin-top:8px"><b>Teacher gifts</b>'+(r.gifts.length?': '+r.gifts.map(function(g){ return pvEsc(g.teacher)+' '+g.pebbles; }).join(' · '):': none this week')+'</div></details>';
+  }).catch(function(e){ box.innerHTML='<div style="color:#fca5a5;margin-bottom:14px">Pebble watch: '+pvEsc(e&&e.message||e)+'</div>'; });
+}
+function cupHtml(c){
+  if(!c||!c.on) return '';
+  var nm=s=>s.charAt(0)+s.slice(1).toLowerCase(), cup=c.cup, label=new Date(cup.month+'-15T12:00:00').toLocaleString('en-US',{month:'long'});
+  return '<div class="sp-cup"><b>🏆 Summit Cup · '+label+'</b> <span>'+cup.games+' game'+(cup.games===1?'':'s')+' so far · cup points by place each game</span><div class="sp-cup-row">'+
+    cup.standings.map(function(s,i){ return '<span style="color:'+(SQ_HEX[s.squad]||'inherit')+'">'+(i+1)+'. '+nm(s.squad)+' <b>'+s.cup+'</b></span>'; }).join('')+'</div>'+
+    (c.last?'<div class="sp-cup-last">Last month\'s Summit Cup: '+nm(c.last.squad)+' ('+c.last.cup+' cup points), on the Hall of Fame.</div>':'')+'</div>';
 }
 function renderPreviewCard(){
   var box=document.getElementById('pvCard'); if(!box||!window.gasRun_) return;
@@ -3435,8 +3472,8 @@ function renderSystem(){
   Promise.all([window.gasRun_('clashHealth', window.ADMIN_SESSION||''), window.gasRun_('clashAnnouncement', window.ADMIN_SESSION||'').catch(()=>({text:''}))]).then(function(r){
     const h=r[0], a=r[1], ok=b=>b?'<span style="color:#86efac">✓</span>':'<span style="color:#fbbf24">⚠</span>';
     const jobs=h.jobs.map(j=>'<div style="display:grid;grid-template-columns:22px 1fr auto;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">'+ok(j.ok)+'<span>'+esc(j.label)+(j.expected?'':' <span style="color:var(--text3)">(off)</span>')+(j.expected&&!j.trigger?'<br><span style="color:#fbbf24">No trigger: run setup or its Turn on menu item.</span>':'')+'</span><span style="color:var(--text3)">'+(j.ago||'never')+'</span></div>').join('');
-    setTimeout(renderVersion,0); setTimeout(renderSelfCheck,0); setTimeout(renderWeekly,0); setTimeout(renderStaffCard,0); if(h.preview!==false) setTimeout(renderPreviewCard,0); setTimeout(renderSummitAdmin,0);
-    box.innerHTML='<div id="pvCard"></div><div id="spCard"></div><div id="staffCard"></div>'+tvCard+'<div id="weeklyCard"></div><div id="versionCard"></div><div id="selfCheckCard"></div>'+
+    setTimeout(renderVersion,0); setTimeout(renderSelfCheck,0); setTimeout(renderWeekly,0); setTimeout(renderStaffCard,0); if(h.preview!==false) setTimeout(renderPreviewCard,0); setTimeout(renderSummitAdmin,0); setTimeout(renderMapCheck,0); setTimeout(renderPebbleWatch,0);
+    box.innerHTML='<div id="pvCard"></div><div id="spCard"></div><div id="mcCard"></div><div id="pwCard"></div><div id="staffCard"></div>'+tvCard+'<div id="weeklyCard"></div><div id="versionCard"></div><div id="selfCheckCard"></div>'+
       '<div class="fr"><label>Automatic jobs</label>'+jobs+'</div>'+
       (h.lastError?'<div class="fr"><label>Last error</label><div style="font-size:13px;color:#fca5a5">'+esc(h.lastError.job)+': '+esc(h.lastError.message)+' <span style="color:var(--text3)">('+esc(h.lastError.ago)+')</span></div></div>':'')+
       '<div class="fr"><label>Data from Define a Climb-er</label><div style="font-size:13px">'+ok(h.studentBoard.ok)+' Student Board updated '+esc(h.studentBoard.updated||'never')+'<br><span style="color:var(--text3)">'+esc(h.squadBoard)+'</span><br><span style="color:var(--text3)">'+esc(h.metricsNote)+'</span></div></div>'+
@@ -6015,4 +6052,4 @@ window.__moduleReady=true;
 // Now that all functions are live, re-render whatever page the user navigated to
 goTo(window.__currentPage || currentPage);
 </script>
-<!-- file-stamp: d8ffb9be26 -->
+<!-- file-stamp: 3404223152 -->

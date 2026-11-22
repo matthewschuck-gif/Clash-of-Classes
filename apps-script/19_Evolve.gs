@@ -45,6 +45,26 @@ const PERK_KINDS_ = ['title', 'frame', 'scene', 'reward'];
 // Counts this Sheet keeps itself, usable as a boost's Student Board Column.
 const BUILT_IN_COUNTS_ = ['Poll Votes', 'Tickets Completed', 'Event Sign-ups'];
 
+// The Pebble Shop's starting items, added once to the Perks tab (edit, hide or price them there).
+const SHOP_PERK_SEED_ = [
+  [true, 'Pebble Pocket', 'title', '', 'A title from the Pebble Shop.', 'shop: 60'],
+  [true, 'Cairn Builder', 'title', '', 'A title from the Pebble Shop.', 'shop: 150'],
+  [true, 'Trail Legend', 'title', '', 'A title from the Pebble Shop.', 'shop: 300'],
+  [true, 'Gold Glow', 'frame', '#ffe100', 'A gold glow around your creature, from the Pebble Shop.', 'shop: 120'],
+  [true, 'Northern Lights', 'frame', 'aurora', 'A northern-lights glow, from the Pebble Shop.', 'shop: 250'],
+  [true, 'Sunrise Camp', 'scene', 'sunrise', 'A sunrise behind your creature, from the Pebble Shop.', 'shop: 100'],
+  [true, 'Starry Night', 'scene', 'night', 'A night sky behind your creature, from the Pebble Shop.', 'shop: 100'],
+  [true, 'Aurora Sky', 'scene', 'aurora', 'An aurora sky behind your creature, from the Pebble Shop.', 'shop: 200'],
+];
+function ensureShopPerks_() {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('shop-perks-seeded')) return;
+  const sh = getSheetSafe_('Perks');
+  if (!sh) return;
+  const have = sheetRows_('Perks').map(function (r) { return String(r['Perk'] || '').trim(); });
+  SHOP_PERK_SEED_.filter(function (r) { return have.indexOf(r[1]) === -1; }).forEach(function (r) { sh.appendRow(r); });
+  props.setProperty('shop-perks-seeded', '1');
+}
 function ensureEvolveTabs_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   [['Evolution Boosts', BOOST_HEADERS_, [
@@ -228,7 +248,13 @@ function perkDefs_() {
 
 // { list: [{ perk, kind, value, text, rule, open }], equipped: { title, frame, scene } }
 function perksFor_(vals, look) {
-  const list = perkDefs_().map(function (p) { return Object.assign(p, { open: perkUnlocked_(p.rule, vals) }); });
+  // Pebble Shop perks (Unlock When "shop: N"): open once bought (vals.owned); hidden when PEBBLE_SHOP or ARCADE_PEBBLES is OFF.
+  const shopOn = String(getSetting_('PEBBLE_SHOP') || 'ON').toUpperCase() !== 'OFF' && pebblesOn_();
+  const list = perkDefs_().map(function (p) {
+    const m = /^shop\s*:\s*(\d+)$/i.exec(p.rule);
+    if (m) return Object.assign(p, { shop: Number(m[1]), open: (vals.owned || []).indexOf(p.perk) > -1 });
+    return Object.assign(p, { open: perkUnlocked_(p.rule, vals) });
+  }).filter(function (p) { return !p.shop || shopOn; });
   const equipped = {};
   ['title', 'frame', 'scene'].forEach(function (k) {
     const want = (look && look[k]) || '';
@@ -248,7 +274,9 @@ function cliffInfo_() {
 // ── STUDENT ACTIONS ─────────────────────────────────────────────────
 function climbVals_(id, page) {
   const me = page.me;
-  return { bills: me.bills, mindset: me.mindset, shoutouts: me.shoutouts, star: me.star, streak: me.streak, buddy: me.ambassador, journal: me.journal, redemption: me.redemption || 0,
+  let owned = [];
+  try { owned = pebbleOwned_(String(id)); } catch (e) { owned = []; } // 48_Arcade.gs: Pebble Shop buys
+  return { owned: owned, bills: me.bills, mindset: me.mindset, shoutouts: me.shoutouts, star: me.star, streak: me.streak, buddy: me.ambassador, journal: me.journal, redemption: me.redemption || 0,
     tickets: (page.tickets || []).filter(function (t) { return t.status === 'Completed'; }).length,
     passport: page.passport && page.passport.complete ? 1 : 0 };
 }
@@ -442,4 +470,4 @@ function setupClimbGuideTab_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_19_Evolve = '07c0faea71';
+var FILE_STAMP_19_Evolve = '816cf3af50';

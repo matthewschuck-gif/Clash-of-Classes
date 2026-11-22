@@ -3757,6 +3757,92 @@ test('Summit Party Pebbles: each minigame pays by coins won (20/15/10/6, ties sh
   assert.strictEqual(J(w.sheetRows_('Pebble Bonuses')).length, 3, 'stopped: no Pebbles');
 });
 
+test('Pebble Shop, teacher Pebbles, weekly cash-in limit, Pebble watch: buy a shop perk with Pebbles (only once, only with enough), a teacher gives 5 to another squad (once a day per student), the cap holds extra Pebbles in the pouch', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureServiceTab_(); w.ensureDoughTabs_(); w.ensureArcadeTab_(); w.ensureEvolveTabs_(); w.ensureMeTabs_();
+  addStudentTabs(w); // Ann 8001234 Gold, Bo 8005678 Grey
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  w.ensureShopPerks_();
+  const perks = J(w.sheetRows_('Perks'));
+  assert.ok(perks.some(p => p.Perk === 'Cairn Builder' && p['Unlock When'] === 'shop: 150'), 'shop items on the Perks tab');
+  const n = perks.length; w.ensureShopPerks_(); assert.strictEqual(J(w.sheetRows_('Perks')).length, n, 'added once');
+  const give = (id, sq, k) => w.appendByHeader_('Pebble Bonuses', { 'When': w.todayYmd_() + ' 09:00', '800#': id, 'Squad': sq, 'Pebbles': k, 'From': 'Summit Party TEST' });
+  give('8001234', 'GOLD', 130);
+  assert.throws(() => w.clashMeBuyPerk('Cairn Builder', '8001234', 'T'), /costs 150 Pebbles\. You have 130/);
+  assert.throws(() => w.clashMeBuyPerk('Trailhead Rookie', '8001234', 'T'), /not in the Pebble Shop/);
+  assert.strictEqual(JSON.parse(w.clashMeBuyPerk('Gold Glow', '8001234', 'T')).balance, 10);
+  assert.throws(() => w.clashMeBuyPerk('Gold Glow', '8001234', 'T'), /already have/);
+  assert.strictEqual(J(w.pebblePouch_('8001234')).balance, 10, 'spent Pebbles leave the pouch');
+  const pk = J(w.perksFor_({ owned: w.pebbleOwned_('8001234') }, {})).list;
+  assert.deepStrictEqual([pk.find(p => p.perk === 'Gold Glow').open, pk.find(p => p.perk === 'Aurora Sky').open, pk.find(p => p.perk === 'Aurora Sky').shop], [true, false, 200]);
+  assert.throws(() => w.clashMeBuyPerk('Aurora Sky', 'sample-GOLD', 'T'), /sample student/);
+  w.setSettingValue_('PEBBLE_SHOP', 'OFF');
+  assert.ok(!J(w.perksFor_({}, {})).list.some(p => p.shop), 'PEBBLE_SHOP OFF hides the shop');
+  w.setSettingValue_('PEBBLE_SHOP', 'ON');
+  // Teacher Pebbles: Ms. Preview teaches Grey (password preview).
+  w.book.getSheetByName('Dough Teachers').rows.push([true, 'Ms. Grey', 'GREY', 'room9', '']);
+  w.ensureRosterTab_(); w.book.getSheetByName('Students').rows.push(['8001234', 'Ann', 'Lee', '7', '', 'GOLD', 'M'], ['8005678', 'Bo', 'Kim', '8', '', 'GREY', 'O']);
+  const tok = JSON.parse(w.clashDoughSignIn('Ms. Grey', 'room9')).token;
+  assert.strictEqual(JSON.parse(w.clashDoughStart()).pebbles.amount, 5);
+  assert.throws(() => w.clashDoughPebbles(tok, '8005678', ''), /other squads/);
+  const r = JSON.parse(w.clashDoughPebbles(tok, '8001234', 'Great question'));
+  assert.deepStrictEqual([r.pebbles, r.left], [5, 9]);
+  assert.throws(() => w.clashDoughPebbles(tok, '8001234', ''), /already gave/);
+  assert.strictEqual(J(w.pebblePouch_('8001234')).balance, 15);
+  // Weekly cash-in limit: 1 point a week.
+  give('8001234', 'GOLD', 300);
+  w.setSettingValue_('ARCADE_CASHIN_WEEKLY_MAX', '1');
+  let a = JSON.parse(w.clashArcadeCashIn('8001234', 'T'));
+  assert.deepStrictEqual([a.result.cashed, a.pebbles.balance], [1, 215], 'only 1 this week; the rest waits');
+  assert.throws(() => w.clashArcadeCashIn('8001234', 'T'), /most you can cash in this week \(1 point\)/);
+  const pw = JSON.parse(w.clashPebbleWatch('T'));
+  assert.strictEqual(pw.cash.GOLD, 1);
+  assert.ok(pw.top[0].pebbles >= 435 && pw.gifts[0].teacher.indexOf('Ms. Grey') === 0 && pw.cap === '1');
+});
+
+test('Map data check, Monday map news, Summit Cup (and its Hall of Fame row), the game limit', () => {
+  const w = world({ weeklyMap: true });
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureShoutoutTabs_();
+  w.applyMonthlyRules_(true);
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  const dc = JSON.parse(w.clashMapDataCheck('T'));
+  const att = dc.zones.find(z => z.rule === 'Attendance');
+  assert.ok(att.ok && /metrics tab/.test(att.reads), 'attendance reads the metrics tab: ' + att.reads);
+  assert.ok(/Cairns/.test(dc.zones.find(z => z.rule === 'Shout-out Storm').reads));
+  assert.ok(/Events tab/.test(dc.zones.find(z => z.rule === 'Staff Challenge').reads));
+  // Map news: the morning of the Monday turn.
+  const mon = w.mondayOf_(w.todayYmd_());
+  w.todayYmd_ = () => mon;
+  w.weeklyMapTurn_(true);
+  const line = w.mapNewsLine_();
+  assert.ok(/^The map turned this morning: /.test(line), line);
+  assert.ok(w.announcementScript_().indexOf('The map turned this morning') > -1);
+  w.setSettingValue_('MAP_NEWS', 'OFF');
+  assert.strictEqual(w.mapNewsLine_(), '');
+  // Summit Cup from finished games this month: 4/3/2/1 by place.
+  w.ensureSummitPartyTabs_();
+  const ym = mon.slice(0, 7), sg = w.book.getSheetByName('Summit Games');
+  sg.rows.push(['SP-1', 'Finished', mon, mon, 3, 'x', '1. Gold (2 flags) · 2. Grey · 3. Black · 4. Purple'], ['SP-2', 'Finished', mon, mon, 3, 'x', '1. Grey · 2. Gold · 3. Purple · 4. Black'], ['SP-3', 'Stopped', mon, mon, 3, 'x', '1. Black · 2. Gold']);
+  const cup = J(w.summitCup_(ym));
+  assert.deepStrictEqual([cup.games, cup.standings.map(s => s.squad + s.cup).join(' ')], [2, 'GOLD7 GREY7 BLACK3 PURPLE3'], 'Gold ahead of Grey on the tie (same cup, same wins: order kept)');
+  // Last month's winner goes on the Hall of Fame once, and it doesn't block the year-end Hall.
+  const last = w.monthBounds_(-1)[0];
+  sg.rows.push(['SP-4', 'Finished', last, last, 3, 'x', '1. Purple · 2. Gold · 3. Grey · 4. Black']);
+  w.ensureLegacyTabs_();
+  w.maybeSummitCupHall_(); w.maybeSummitCupHall_();
+  const hall = J(w.sheetRows_('Hall of Fame'));
+  assert.strictEqual(hall.filter(h => /^Summit Cup/.test(h.Award)).length, 1);
+  assert.strictEqual(hall[0].Squad, 'PURPLE');
+  assert.ok(JSON.parse(w.clashSummitCup()).last.squad === 'PURPLE');
+  // The game limit.
+  w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade']];
+  w.setSettingValue_('SUMMIT_PARTY', 'ON'); w.setSettingValue_('SUMMIT_PARTY_MAX_GAMES', '2');
+  const tok = login(w, 'oldpw');
+  w.clashSummitStart(tok, 3, 'trail'); w.clashSummitStart(tok, 3, 'trail');
+  assert.throws(() => w.clashSummitStart(tok, 3, 'trail'), /already 2 games going/);
+  assert.strictEqual(JSON.parse(w.clashSummitAdmin('T')).max, 2);
+});
+
 test('Summit Party: several games at once by code; any Staff Access role can run one; a squad that does not roll gets an auto-roll after SUMMIT_PARTY_AUTO_ROLL seconds', () => {
   const w = world();
   w.ensureSettings_();
