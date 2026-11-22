@@ -34,6 +34,27 @@ const ARCADE_GAMES_ = {
 const ARCADE_HEADERS_ = ['When', '800#', 'Name', 'Squad', 'Game', 'Score', 'Points', 'Free', 'Paid', 'Pebbles'];
 const CASHIN_HEADERS_ = ['When', '800#', 'Squad', 'Pebbles', 'Points', 'Paid'];
 
+// CLASS TIME (ARCADE_CLASS_TIMES, e.g. "08:15-11:15, 12:33-14:05"): no Arcade games during instruction.
+// Cash in still works. Blank = no class-time lock (My Climb's own hours still apply).
+function arcadeClassTimes_() {
+  return String(getSetting_('ARCADE_CLASS_TIMES') || '').split(',').map(function (p) {
+    const m = p.trim().match(/^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$/);
+    return m ? [('0' + m[1]).slice(-2) + ':' + m[2], ('0' + m[3]).slice(-2) + ':' + m[4]] : null;
+  }).filter(Boolean);
+}
+function clock12_(hm) { const h = Number(hm.slice(0, 2)), m = hm.slice(3); return ((h + 11) % 12 + 1) + ':' + m; }
+// { closed, until, text } right now.
+function arcadeClassTime_(now) {
+  const list = arcadeClassTimes_(), hm = Utilities.formatDate(now || new Date(), Session.getScriptTimeZone(), 'HH:mm');
+  const hit = list.filter(function (w) { return hm >= w[0] && hm < w[1]; })[0];
+  return { closed: !!hit, until: hit ? clock12_(hit[1]) : '', text: list.map(function (w) { return clock12_(w[0]) + '–' + clock12_(w[1]); }).join(' and ') };
+}
+// The "What are Pebbles?" card: the why is a Settings row (ARCADE_PEBBLE_WHY), the how is built from the settings.
+function pebbleAbout_() {
+  return String(getSetting_('ARCADE_PEBBLE_WHY') || '').trim() ||
+    'Hikers mark the trail with cairns: stacks of small stones. One pebble does not look like much, but stack enough and everyone can see the way. Pebbles work the same way: lots of small games add up to something real for your squad.';
+}
+
 function pebblesOn_() { return String(getSetting_('ARCADE_PEBBLES') || 'ON').toUpperCase() !== 'OFF'; }
 function pebblesPerPoint_() { return Math.max(1, settingNum_('ARCADE_PEBBLES_PER_POINT', 100)); }
 function pebbleRates_() {
@@ -124,7 +145,10 @@ function arcadeView_(id) {
     const mine = sheetRows_('Arcade Plays').filter(function (p) { return id800_(p['800#']) === id; }), best = {};
     mine.forEach(function (p) { const g = String(p['Game']); best[g] = Math.max(best[g] || 0, Number(p['Score']) || 0); });
     const pouch = pebblePouch_(id);
-    return JSON.stringify({ on: true, wallet: arcadeWallet_(id), rules: arcadeTokenRules_(), maxPoints: settingNum_('ARCADE_MAX_POINTS', 3), pebbles: pouch,
+    pouch.why = pebbleAbout_();
+    const hours = arcadeClassTime_();
+    if (id === SAMPLE_ID_) hours.closed = false; // staff previews can always play
+    return JSON.stringify({ on: true, wallet: arcadeWallet_(id), rules: arcadeTokenRules_(), maxPoints: settingNum_('ARCADE_MAX_POINTS', 3), pebbles: pouch, hours: hours,
       games: Object.keys(ARCADE_GAMES_).map(function (k) { const g = ARCADE_GAMES_[k]; return { key: k, name: g.name, blurb: g.blurb, per: g.per, pebble: pouch.rates[k], best: best[k] || 0 }; }),
       board: arcadeBoard_(), sample: id === SAMPLE_ID_, look: seasonLook_() });
   }
@@ -138,6 +162,8 @@ function arcadeStart_(game, id) {
   {
     if (!arcadeOn_()) throw new Error('The Arcade is closed right now.');
     if (!ARCADE_GAMES_[game]) throw new Error('Pick a game.');
+    const ct = arcadeClassTime_();
+    if (ct.closed && id !== SAMPLE_ID_) throw new Error('It\'s class time, so the Arcade is resting. It opens again at ' + ct.until + '.');
     const w = arcadeWallet_(id);
     if (id !== SAMPLE_ID_) {
       if (w.playsToday >= w.daily) throw new Error('That\'s all ' + w.daily + ' plays for today. Come back tomorrow!');
@@ -260,4 +286,4 @@ function maybePayArcade_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_48_Arcade = '9f5b7e9ca3';
+var FILE_STAMP_48_Arcade = '027ae35a2e';

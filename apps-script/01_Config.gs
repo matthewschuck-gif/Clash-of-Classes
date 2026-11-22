@@ -276,6 +276,8 @@ const DEFAULT_SETTINGS = [
   ['ARCADE_PEBBLES', 'ON', 'Arcade Pebbles (48_Arcade.gs): ON = games earn Pebbles instead of squad points, and students Cash in every full ARCADE_PEBBLES_PER_POINT Pebbles for 1 point for their squad (paid that night). OFF = each game pays squad points directly (ARCADE_MAX_POINTS).'],
   ['ARCADE_PEBBLES_PER_POINT', '100', 'Arcade: how many Pebbles make 1 Clash point. Only whole points cash in; the rest stays in the pouch.'],
   ['ARCADE_PEBBLE_RATES', 'dash=120, catch=50, stack=2', 'Arcade: the score for 1 Pebble in each game (Summit Dash, Dough Catch, Peak Stack). An average game earns about 6, a strong one about 12. Bigger number = slower.'],
+  ['ARCADE_CLASS_TIMES', '08:15-11:15, 12:33-14:05', 'Arcade: no games during these class times (24-hour clock, comma between times). Cash in still works. Blank = no class-time lock.'],
+  ['ARCADE_PEBBLE_WHY', '', 'Arcade: the "Why Pebbles?" paragraph on the Arcade. Blank = the built-in one (cairns: small stones that stack up to mark the trail).'],
   ['ARCADE_PEBBLE_MAX', '15', 'Arcade: the most Pebbles one game can earn (every counted game earns at least 1).'],
   ['PLINKO_ROWS', '8', 'Plinko: rows of pegs (4 to 12). The Plinko Slots tab needs one more slot than rows.'],
   ['TV_SECONDS', '9', 'TV (clashofclasses.org/?tv=1): seconds each slide stays up.'],
@@ -545,4 +547,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = 'a1f94b0d42';
+var FILE_STAMP_01_Config = '2c11505332';

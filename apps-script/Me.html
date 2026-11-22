@@ -551,18 +551,18 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
       return '<section class="me-card"><p class="me-sub">Opening the Arcade…</p></section>';
     }
     if (!AR.on) return '<section class="me-card"><h2>🕹️ Arcade</h2><p class="me-sub">' + esc(AR.err || 'The Arcade is closed right now. Check back soon.') + '</p></section>';
-    var w = AR.wallet, r = AR.rules, res = AR.result, can = AR.sample || (w.playsToday < w.daily && (w.freeLeft > 0 || w.tokens > 0));
+    var w = AR.wallet, r = AR.rules, res = AR.result, shut = AR.hours && AR.hours.closed, can = AR.sample || (!shut && w.playsToday < w.daily && (w.freeLeft > 0 || w.tokens > 0));
     var names = {}; AR.games.forEach(function (g) { names[g.key] = g.name; });
     var P = AR.pebbles, sqT = esc(title(D.me.squad));
     var out = '<section class="me-card"><h2>🕹️ Arcade</h2><p class="me-sub">Play for the ' + sqT + ' Squad. ' + (P && P.on ? 'Every game fills your Pebble pouch. Cash in ' + P.per + ' Pebbles for 1 squad point.' : 'Each game can add up to ' + AR.maxPoints + ' squad point' + (AR.maxPoints === 1 ? '' : 's') + ', counted once a day.') + '</p>' +
-      (window.Arcade && Arcade.pouch ? Arcade.pouch(P, sqT, 'me-sub') : '') +
+      (window.Arcade && Arcade.pouch ? Arcade.pouch(P, sqT, 'me-sub') + (Arcade.about ? Arcade.about(P, AR.hours, sqT) : '') : '') +
       '<div class="arc-wallet"><span class="me-pill">🪙 ' + w.tokens + ' token' + (w.tokens === 1 ? '' : 's') + '</span><span class="me-pill alt">' + (w.freeLeft ? w.freeLeft + ' free play today' : 'Free play used') + '</span><span class="me-pill alt">' + w.playsToday + ' of ' + w.daily + ' plays today</span></div>' +
       '<p class="me-sub">Earn tokens: ' + r.dough + ' per Trait Dough bill, ' + r.service + ' per approved service' + (r.votes ? ', 1 for every ' + r.votes + ' poll votes' : '') + '.</p>' +
       (window.Arcade && Arcade.result ? Arcade.result(P, res, names, sqT) : '') +
       '<div id="arcStage"></div><p class="me-sub" id="arcMsg"></p><div class="arc-games">';
     out += AR.games.map(function (g) {
       return '<div class="arc-g"><h3>' + esc(g.name) + '</h3><span class="me-sub">' + esc(g.blurb) + '</span><span class="me-sub">' + (window.Arcade && Arcade.rate ? Arcade.rate(P, g) : g.per + ' = 1 squad point') + (g.best ? ' · Your best: ' + g.best.toLocaleString() : '') + '</span>' +
-        '<button class="btn btn-gold craft-press" data-arcade="' + esc(g.key) + '"' + (can ? '' : ' disabled') + '>' + (can ? 'Play' : 'No plays left') + '</button></div>';
+        '<button class="btn btn-gold craft-press" data-arcade="' + esc(g.key) + '"' + (can ? '' : ' disabled') + '>' + (can ? 'Play' : shut ? 'Opens at ' + esc(AR.hours.until) : 'No plays left') + '</button></div>';
     }).join('') + '</div></section>';
     var board = AR.games.map(function (g) {
       var rows = (AR.board[g.key] || []).map(function (b) { return '<li>' + (b.who ? esc(b.who) + ' · ' : '') + esc(title(b.squad)) + ' · ' + b.score.toLocaleString() + '</li>'; }).join('');
@@ -743,4 +743,4 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 </script>
 </body>
 </html>
-<!-- file-stamp: 1ea745dbee -->
+<!-- file-stamp: be4f58d029 -->

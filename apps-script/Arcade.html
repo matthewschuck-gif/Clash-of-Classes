@@ -19,6 +19,17 @@
 .arc-bar { height: 10px; border-radius: 999px; background: rgba(127, 127, 127, .25); overflow: hidden; margin: 8px 0 6px; }
 .arc-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #c9bfae, var(--pop-gold, #ffe100)); transition: width .5s cubic-bezier(.2, .8, .2, 1); }
 .arc-cash { margin-top: 6px; }
+.arc-about { margin: 10px 0 0; border-radius: 12px; border: 1px solid rgba(127, 127, 127, .3); }
+.arc-about summary { cursor: pointer; padding: 10px 14px; font-weight: 800; list-style: none; display: flex; align-items: center; gap: 8px; }
+.arc-about summary::-webkit-details-marker { display: none; }
+.arc-about summary::after { content: '+'; margin-left: auto; font-size: 18px; opacity: .7; }
+.arc-about[open] summary::after { content: '–'; }
+.arc-about summary:focus-visible { outline: 2px solid var(--pop-gold, #ffe100); outline-offset: 2px; border-radius: 12px; }
+.arc-about-b { padding: 0 14px 12px; line-height: 1.5; }
+.arc-about-b p { margin: 0 0 8px; }
+.arc-about-b ol { margin: 0 0 8px; padding-left: 20px; }
+.arc-about-b li { margin: 3px 0; }
+.arc-closed { margin: 10px 0 0; padding: 10px 14px; border-radius: 12px; background: rgba(127, 127, 127, .12); border-left: 4px solid #9aa5b8; font-weight: 700; }
 @media (prefers-reduced-motion: reduce) { .arc-bar i { transition: none; } }
 </style>
 <script>
@@ -109,6 +120,20 @@
       '<div class="arc-bar" role="progressbar" aria-valuemin="0" aria-valuemax="' + P.per + '" aria-valuenow="' + part + '" aria-label="Pebbles toward the next point"><i style="width:' + pct + '%"></i></div>' +
       '<span class="' + subClass + '">This week +' + P.week + ' · every game earns 1 to ' + P.max + ' Pebbles · ' + P.per + ' Pebbles = 1 point for ' + squad + '</span>' +
       (full ? '<div class="arc-cash"><button class="btn btn-gold craft-press" data-cash>Cash in ' + full + ' point' + (full === 1 ? '' : 's') + ' for ' + squad + '</button></div>' : '') + '</div>';
+  }
+  // "What are Pebbles?" (why + how) and the class-time note. H = { closed, until, text }.
+  function about(P, H, squad) {
+    var out = '';
+    if (H && H.closed) out += '<div class="arc-closed" role="status">It\'s class time, so the Arcade is resting. Games open again at ' + H.until + '. You can still cash in.</div>';
+    if (!P || !P.on) return out;
+    return out + '<details class="arc-about"><summary><span class="arc-peb" aria-hidden="true"></span>What are Pebbles?</summary><div class="arc-about-b">' +
+      '<p><b>Why Pebbles?</b> ' + String(P.why || '').replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }) + '</p>' +
+      '<p><b>How it works</b></p><ol>' +
+      '<li>Play a game in your free time. Every game that counts drops 1 to ' + P.max + ' Pebbles in your pouch. Better games earn more.</li>' +
+      '<li>Collect ' + P.per + ' Pebbles. That takes about a week of good games, so keep at it.</li>' +
+      '<li>Tap <b>Cash in</b>. Every ' + P.per + ' Pebbles become 1 point for ' + squad + ', added tonight. Leftover Pebbles stay in your pouch.</li></ol>' +
+      '<p><b>Good to know</b> ' + (H && H.text ? 'Games are closed during class (' + H.text + '). ' : '') + 'A score that is too fast to be real earns nothing, and Pebbles only turn into whole points.</p>' +
+      '</div></details>';
   }
   // The line under a game (rate) and after a game or a cash-in (result).
   function rateLine(P, g) { return P && P.on ? g.pebble + ' = 1 Pebble' : g.per + ' = 1 squad point'; }
@@ -305,8 +330,8 @@
       current.then(function (score) { current = null; onDone(score); });
     },
     stop: function () { if (current) { current.stop(); current = null; } },
-    pouch: pouch, rate: rateLine, result: resultLine,
+    pouch: pouch, rate: rateLine, result: resultLine, about: about,
   };
 })();
 </script>
-<!-- file-stamp: 8b27e68968 -->
+<!-- file-stamp: ef925bb31b -->

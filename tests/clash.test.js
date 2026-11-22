@@ -2482,6 +2482,7 @@ test('arcade: tokens from Trait Dough, one free play, daily limit, impossible sc
   const w = world();
   w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureServiceTab_(); w.ensureDoughTabs_(); w.ensureArcadeTab_();
   w.setSettingValue_('ARCADE_PEBBLES', 'OFF'); // the old way: games pay squad points (Pebbles have their own test)
+  w.setSettingValue_('ARCADE_CLASS_TIMES', ''); // any time of day (class time has its own test)
   addStudentTabs(w);
   w.CacheService.getScriptCache().put('clash-admin-T', '1');
   const cache = w.CacheService.getScriptCache();
@@ -2529,7 +2530,7 @@ test('Arcade Pebbles: games fill a pouch (1 to 15 a game, by each game\'s rate),
   w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureServiceTab_(); w.ensureDoughTabs_(); w.ensureArcadeTab_();
   addStudentTabs(w); // Ann 8001234 Gold (12 bills = 12 tokens)
   w.CacheService.getScriptCache().put('clash-admin-T', '1');
-  w.setSettingValue_('ARCADE_DAILY', '99'); w.setSettingValue_('ARCADE_TOKENS', 'dough=5');
+  w.setSettingValue_('ARCADE_DAILY', '99'); w.setSettingValue_('ARCADE_TOKENS', 'dough=5'); w.setSettingValue_('ARCADE_CLASS_TIMES', '');
   const cache = w.CacheService.getScriptCache();
   const age = (play, sec) => { const p = JSON.parse(cache.get('arc-' + play)); p.at -= sec * 1000; cache.put('arc-' + play, JSON.stringify(p)); };
   const play = (g, score, sec) => { const p = JSON.parse(w.clashArcadeStart(g, '8001234', 'T')).play; age(p, sec); return JSON.parse(w.clashArcadeFinish(p, score, '8001234', 'T')); };
@@ -2557,6 +2558,30 @@ test('Arcade Pebbles: games fill a pouch (1 to 15 a game, by each game\'s rate),
   assert.throws(() => w.clashArcadeCashIn('sample-GOLD', 'T'), /sample student/);
   w.setSettingValue_('ARCADE_PEBBLES', 'OFF');
   assert.throws(() => w.clashArcadeCashIn('8001234', 'T'), /closed/);
+});
+
+test('Arcade class time: no games during ARCADE_CLASS_TIMES (default 8:15-11:15 and 12:33-2:05), cash in still works, the sample student can still play; the Pebbles card explains why and how', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureServiceTab_(); w.ensureDoughTabs_(); w.ensureArcadeTab_();
+  addStudentTabs(w);
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  assert.strictEqual(w.getSetting_('ARCADE_CLASS_TIMES'), '08:15-11:15, 12:33-14:05');
+  const at = hm => { const d = new Date(); const [h, m] = hm.split(':'); d.setUTCHours(Number(h), Number(m), 0, 0); return d; }; // tests: UTC is the school's time zone
+  const ct = hm => J(w.arcadeClassTime_(at(hm)));
+  assert.deepStrictEqual(ct('08:14'), { closed: false, until: '', text: '8:15–11:15 and 12:33–2:05' });
+  assert.deepStrictEqual([ct('08:15').closed, ct('11:14').closed, ct('11:15').closed, ct('12:40').until, ct('14:05').closed], [true, true, false, '2:05', false]);
+  // Right now, during class:
+  w.setSettingValue_('ARCADE_CLASS_TIMES', '00:00-23:59');
+  assert.throws(() => w.clashArcadeStart('dash', '8001234', 'T'), /class time.*opens again at 11:59/);
+  const a = JSON.parse(w.clashArcade('8001234', 'T'));
+  assert.strictEqual(a.hours.closed, true);
+  assert.ok(/cairns/.test(a.pebbles.why), 'the built-in why');
+  assert.ok(JSON.parse(w.clashArcadeStart('dash', 'sample-GOLD', 'T')).play, 'staff previews can always play');
+  assert.strictEqual(JSON.parse(w.clashArcade('sample-GOLD', 'T')).hours.closed, false);
+  w.setSettingValue_('ARCADE_PEBBLE_WHY', 'Our own reason.');
+  assert.strictEqual(JSON.parse(w.clashArcade('8001234', 'T')).pebbles.why, 'Our own reason.');
+  w.setSettingValue_('ARCADE_CLASS_TIMES', '');
+  assert.ok(JSON.parse(w.clashArcadeStart('dash', '8001234', 'T')).play, 'blank = no class-time lock');
 });
 
 test('weather days pay the extra once; expeditions go to the first squad there; announcement and home carry them', () => {
@@ -3031,7 +3056,7 @@ test('weekly map: the Staff Challenge (Front Office) is read from the events tab
 test('Arcade on the main site: by 800# on the Student Board, the same wallet and plays as My Climb, ARCADE_ON_SITE OFF', () => {
   const w = world();
   w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureServiceTab_(); w.ensureDoughTabs_(); w.ensureArcadeTab_();
-  w.setSettingValue_('ARCADE_PEBBLES', 'OFF');
+  w.setSettingValue_('ARCADE_PEBBLES', 'OFF'); w.setSettingValue_('ARCADE_CLASS_TIMES', '');
   addStudentTabs(w);
   w.climbOpen_ = () => true;
   assert.throws(() => w.clashSiteArcade('12'), /800 number/);
