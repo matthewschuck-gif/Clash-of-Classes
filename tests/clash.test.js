@@ -2963,6 +2963,35 @@ test('weekly map: attendance, grades and behavior come from the metrics tab when
   assert.strictEqual(J(w.mapZones_(null, false)).find(z => z.rule === 'Attendance').holder, 'BLACK');
 });
 
+test('weekly map: the Staff Challenge (Front Office) is read from the events tab, judged on the month so far and moves as soon as a winner is in; the 60s Hall counts Cairns + staff shout-outs each week', () => {
+  const w = world({ weeklyMap: true });
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureShoutoutTabs_(); w.ensureCairnTab_ && w.ensureCairnTab_();
+  w.applyMonthlyRules_(true);
+  const today = w.todayYmd_(), lw = J(w.lastWeekBounds_(today));
+  const mz = w.book.getSheetByName('Map Zones'), H = mz.rows[0];
+  const row = by => mz.rows.find(r => r[H.indexOf('Conquer By')] === by);
+  row('Staff Challenge')[H.indexOf('Holder')] = ''; row('Shout-out Storm')[H.indexOf('Holder')] = '';
+  // A staff challenge winner typed as a plain event named "First Friday Coffee Staff Challenge" (any type), 1 point to Grey.
+  w.book.getSheetByName('events').rows.push(['', 'First Friday Coffee Staff Challenge', 'event', today, '', '', '', '', 1, '']);
+  let zs = J(w.mapZones_(null, true));
+  const fo = zs.find(z => z.rule === 'Staff Challenge');
+  assert.strictEqual(fo.holder, 'GREY', 'no Monday wait: it changes hands as soon as the winner is in');
+  assert.strictEqual(fo.window, today.slice(0, 7) + ' so far');
+  // Shout-outs: Cairns on the ledger + approved staff shout-outs, last week.
+  const led = w.book.getSheetByName('Cairn Points') || w.book.insertSheet('Cairn Points');
+  if (!led.rows.length) led.rows.push(['Key', 'Cairn Date', 'Squad', 'Points', 'Sent']);
+  led.rows.push(['k1', w.ymdShift_(lw[0], 1), 'PURPLE', 2, today], ['k2', w.ymdShift_(lw[0], 2), 'PURPLE', 2, today], ['k3', w.ymdShift_(lw[0], 2), 'GOLD', 2, today]);
+  const so = w.book.getSheetByName('Staff Shout-outs'), SH = so.rows[0];
+  const shout = (sq, ok) => { const r = SH.map(() => ''); r[SH.indexOf('When')] = w.ymdShift_(lw[0], 3); r[SH.indexOf('Squad')] = sq; r[SH.indexOf('Approved')] = ok; so.rows.push(r); };
+  shout('GOLD', true); shout('GOLD', true); shout('GOLD', false);
+  assert.deepStrictEqual(J(w.shoutoutCounts_(lw[0], lw[1])), { BLACK: 0, GOLD: 3, GREY: 0, PURPLE: 2 }, 'unapproved staff shout-outs do not count');
+  assert.strictEqual(J(w.mapZones_(null, true)).find(z => z.rule === 'Shout-out Storm').holder, '', 'waits for the Monday turn');
+  w.weeklyMapTurn_(true);
+  zs = J(w.mapZones_(null, false));
+  assert.strictEqual(zs.find(z => z.rule === 'Shout-out Storm').holder, 'GOLD');
+  assert.strictEqual(zs.find(z => z.rule === 'Staff Challenge').holder, 'GREY', 'the Staff Challenge holds for the month');
+});
+
 test('Arcade on the main site: by 800# on the Student Board, the same wallet and plays as My Climb, ARCADE_ON_SITE OFF', () => {
   const w = world();
   w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureServiceTab_(); w.ensureDoughTabs_(); w.ensureArcadeTab_();

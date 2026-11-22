@@ -128,7 +128,8 @@ function eventMatcher_(spec) {
   if (!words.length || words.indexOf('*') > -1) return null;
   return function (e) {
     const type = String(e.type || '').toLowerCase(), name = String(e.name || '').toLowerCase();
-    return words.some(function (w) { return type === w || name.indexOf(w) > -1; });
+    // "staff_challenge" also matches an event named "... Staff Challenge ..." (any type), and so on.
+    return words.some(function (w) { return type === w || name.indexOf(w) > -1 || (w.indexOf('_') > -1 && name.indexOf(w.replace(/_/g, ' ')) > -1); });
   };
 }
 
@@ -577,4 +578,4 @@ function hqGame_(squad) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_15_Game = '203832644f';
+var FILE_STAMP_15_Game = 'fa72d6e520';

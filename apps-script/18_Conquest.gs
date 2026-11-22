@@ -65,7 +65,7 @@ const BUILDING_RULES_ = [
   [true, 'Clean Cafeteria', 'The fewest LRRs and lunch detentions per 100 students last month.', 'lowest number', 'lrr_ld', 'last month', false, 0, '', true],
   [true, 'Wheel & Poll Turnout', 'The most Pulse votes (approved polls) plus wheel spins last month.', 'highest number', 'poll_votes, wheel', 'last month', false, 0, '', false],
   [true, 'Attendance', 'The highest attendance rate last month.', 'highest number', 'attendance', 'last month', false, 0, '', false],
-  [true, 'Shout-out Storm', 'The most shout-outs last month.', 'highest number', 'shout_outs', 'last month', false, 0, '', false],
+  [true, 'Shout-out Storm', 'The most shout-outs: approved Cairns plus staff shout-outs.', 'highest number', 'shout_outs', 'last month', false, 0, '', false],
   [true, 'Growth Grind', 'The most STAR growth and Mountaineer Mindset summit points last month.', 'most points', 'star_growth, mountaineer_mindset', 'last month', false, 0, '', false],
   [true, 'Staff Challenge', 'Your squad\'s staff won the most First Friday Coffee staff challenges this month (it changes hands the day a winner is entered).', 'most entries', 'staff_challenge', 'this month', false, 0, '', false],
   [true, 'Passing Grades', 'The fewest failing grades per 100 students last month.', 'lowest number', 'failing', 'last month', false, 0, '', true],
@@ -228,7 +228,10 @@ function mapZones_(events, write, opts) {
   zones.forEach(function (z) {
     let from = z.month ? lastMonth[0] : z.thisMonth ? today.slice(0, 8) + '01' : ymdShift_(today, -z.days + 1), to = z.month ? lastMonth[1] : today;
     z.window = z.month ? lastMonth[0].slice(0, 7) : '';
-    if (weekly) { from = lastWeek[0]; to = lastWeek[1]; z.window = 'week of ' + from; z.weekly = true; }
+    // Weekly cycle: every area is judged on last week, except a "this month" rule (the Front Office's
+    // Staff Challenge): month so far, and it changes hands as soon as a winner is entered, then holds.
+    if (weekly && !z.thisMonth) { from = lastWeek[0]; to = lastWeek[1]; z.window = 'week of ' + from; z.weekly = true; }
+    if (z.thisMonth) z.window = today.slice(0, 7) + ' so far';
     if (MEASURE_METHODS_.indexOf(z.method) > -1) z.score = measureScores_(z.claimedBy, from, to, events, z.per100, z.low, weekly);
     else {
       const tally = pointsBy_(events, from, to, eventMatcher_(z.claimedBy));
@@ -236,7 +239,7 @@ function mapZones_(events, write, opts) {
       if (z.per100) z.score = per100_(z.score, from.slice(0, 7));
     }
     // Staff overrides for the month this zone is judged on (Zone Overrides tab / Admin › Map).
-    z.judged = weekly ? from.slice(0, 7) : z.month ? z.window : today.slice(0, 7);
+    z.judged = z.thisMonth ? today.slice(0, 7) : weekly ? from.slice(0, 7) : z.month ? z.window : today.slice(0, 7);
     z.computed = Object.assign({}, z.score);
     z.overridden = [];
     const ov = overrides[z.judged + '|' + z.zone.toLowerCase()] || {};
@@ -247,7 +250,7 @@ function mapZones_(events, write, opts) {
     // again and unlocks it. Monthly cycle: it stays until staff untick it.
     if (z.locked && !(weekly && turn)) return;
     if (z.locked && sheet && lCol) { sheet.getRange(z.row, lCol).setValue(false); z.locked = false; }
-    if (!turn) return; // weekly cycle: holders only change in the Monday 7:00 turn
+    if (!turn && !z.thisMonth) return; // weekly cycle: holders only change in the Monday 7:00 turn (a "this month" rule: any time)
     // Highest/lowest number: nothing changes until every squad has a number for the month.
     if (SQUAD_KEYS_.some(function (s) { return z.score[s] === null || z.score[s] === undefined; })) return;
     const low = z.low;
@@ -372,6 +375,13 @@ function measureScores_(spec, from, to, events, per100, low, weekly) {
   const names = listOf_(spec).map(measureKey_);
   if (!names.length) return { BLACK: null, GOLD: null, GREY: null, PURPLE: null };
   names.forEach(function (n) {
+    // Shout-outs: approved Cairns (Cairn Points tab, one row per Cairn) plus approved staff shout-outs,
+    // counted for the window itself, so the 60s Hall moves every week with no one typing numbers.
+    if (n === 'shout_outs' && (weekly || !SQUAD_KEYS_.some(function (s) { return monthly[s] && monthly[s][n] !== undefined; }))) {
+      const c = shoutoutCounts_(from, to);
+      SQUAD_KEYS_.forEach(function (s) { add(s, c[s]); });
+      return;
+    }
     // Weekly: the Cafeteria's LRRs + LDs are counted for the week itself (27_FollowUpStats.gs).
     if (weekly && n === 'lrr_ld') {
       const wk = weeklyLrrCounts_(from, to);
@@ -429,6 +439,14 @@ function measureScores_(spec, from, to, events, per100, low, weekly) {
     SQUAD_KEYS_.forEach(function (s) { add(s, tally.rows[s]); });
   });
   return per100 && !pct ? per100_(out, ym, monthly) : out; // a percent from the metrics tab is already "per 100"
+}
+
+// Approved shout-outs per squad between from and to: Cairns (the writer's squad, 58_Cairns.gs) + staff shout-outs (the student's squad, 56).
+function shoutoutCounts_(from, to) {
+  const c = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
+  sheetRows_('Cairn Points').forEach(function (r) { const d = ymdOfCell_(r['Cairn Date']), s = squadOf_(r['Squad']); if (d && d >= from && d <= to && c[s] !== undefined) c[s]++; });
+  sheetRows_('Staff Shout-outs').forEach(function (r) { const d = ymdOfCell_(r['When']), s = squadOf_(r['Squad']); if (ticked_(r['Approved']) && d && d >= from && d <= to && c[s] !== undefined) c[s]++; });
+  return c;
 }
 
 // Measure → [metrics column, flip (100 - value, so lower is better)].
@@ -804,4 +822,4 @@ function setupMapGuideTab_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_18_Conquest = '75c510c4ec';
+var FILE_STAMP_18_Conquest = 'e61b1f86f2';

@@ -9,6 +9,10 @@
  * lowest number, per 100 students, Must Border, Defense %); only the window changed.
  *   - Points, entries, Pulse votes (approved polls), check-ins, squad events: last week's.
  *   - The Cafeteria's LRRs + LDs: counted for last week from the Follow-Up sheets (27).
+ *   - Shout-outs (60s Hall): approved Cairns + approved staff shout-outs from last week.
+ *   - The one exception: a "this month" rule (the Front Office's Staff Challenge, read from the events
+ *     tab: type staff_challenge or a name with "Staff Challenge") is judged on the month so far and
+ *     changes hands as soon as a winner is entered, then holds for the month.
  *   - Numbers that only come monthly (attendance, failing grades, interventions, Pride Day from
  *     Squad Monthly): the newest month on file. Those areas change hands when new numbers arrive.
  * The turn: a time trigger Monday at 7 (made by Run setup), and the background tick catches it
@@ -94,4 +98,4 @@ function menuWeeklyMapTurn_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_59_MapWeek = 'ffda1ad076';
+var FILE_STAMP_59_MapWeek = '964df319d8';
