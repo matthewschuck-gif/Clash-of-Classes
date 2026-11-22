@@ -678,7 +678,8 @@
     hostPanel(g);
     $('standings').innerHTML = places.map(function (s) { var q = g.squads[s];
       return '<div class="sq">' + logo(s) + '<div><div class="name" style="color:' + RING[s] + '">' + esc(title(s)) + '</div><div class="bag">' + (q.items || []).map(function (k) { return '<i class="ph-fill ' + ITEMICON[k] + '" title="' + esc(S.items[k].name) + '"></i>'; }).join('') + '</div></div>' +
-        '<div class="nums"><div class="f"><i class="ph-fill ph-flag-pennant"></i>' + q.flags + '</div><div class="c"><i class="ph-fill ph-coins"></i>' + q.coins + '</div></div></div>'; }).join('');
+        '<div class="nums"><div class="f"><i class="ph-fill ph-flag-pennant"></i>' + q.flags + '</div><div class="c"><i class="ph-fill ph-coins"></i>' + q.coins + '</div>' +
+        (g.pebbles ? '<div class="c" title="Pebbles each player earns from this game so far" style="opacity:.8"><i class="ph-fill ph-circles-three"></i>' + (g.pebbles[s] || 0) + '</div>' : '') + '</div></div>'; }).join('');
     $('log').innerHTML = (g.log || []).slice(0, 8).map(function (t) { return '<div>' + esc(t) + '</div>'; }).join('');
     Object.keys(pieces).forEach(function (s) { pieces[s].classList.toggle('turn', g.status === 'playing' && g.phase === 'turn' && s === (g.pending ? g.pending.squad : nowSq)); });
   }
@@ -728,14 +729,18 @@
       '<label class="field">Board<select id="layout"><option value="trail"' + (S.layout !== 'frost' ? ' selected' : '') + '>Mountain Island</option><option value="frost"' + (S.layout === 'frost' ? ' selected' : '') + '>Frostpeak at Night</option></select></label>' +
       '<label class="field">Play on<select id="playOn"><option value="cb">Chromebooks (one per squad)</option><option value="screen"' + (g && g.screen ? ' selected' : '') + '>This screen only</option></select></label>' +
       '<button class="gold" id="start">' + (playing ? 'New game' : 'Start a game') + '</button></div>' +
+      '<div id="playersBox" hidden><div class="msg" style="margin:4px 0 6px">One screen: type each squad\'s players\' 800 numbers (optional) so they earn the Pebbles.</div>' +
+        SQ.map(function (s) { return '<label class="field">' + esc(title(s)) + '<input data-pl="' + s + '" inputmode="numeric" autocomplete="off" placeholder="800#s, comma between"></label>'; }).join('') + '</div>' +
       '<div class="row"><button class="ghost" id="skip"' + (playing ? '' : ' disabled') + '>' + (playing && g.phase === 'minigame' ? 'End the minigame' : 'Skip this turn') + '</button><button class="ghost" id="finish"' + (playing ? '' : ' disabled') + '>End and score</button><button class="ghost" id="stop"' + (playing ? '' : ' disabled') + '>Stop, no points</button></div><div class="msg" id="smsg"></div>';
     var act = function (p) { p.then(function (v) { take(v); }).catch(function (e) { if (/sign in|password|session/i.test(msgOf(e))) { token = ''; try { sessionStorage.removeItem('summit-admin'); } catch (x) {} staff(); } $('smsg').textContent = msgOf(e); }); };
     el.querySelectorAll('[data-win]').forEach(function (b) { b.onclick = function () { act(run('clashSummitLiveWin', token, code, b.getAttribute('data-win'))); }; });
     $('start').onclick = function () {
-      var rounds = Number($('rounds').value) || 10, layout = $('layout').value, screen = $('playOn').value === 'screen';
+      var rounds = Number($('rounds').value) || 10, layout = $('layout').value, screen = $('playOn').value === 'screen', players = {};
+      if (screen) el.querySelectorAll('[data-pl]').forEach(function (i) { if (i.value.trim()) players[i.getAttribute('data-pl')] = i.value; });
       if (playing && !confirm('Stop this game (no points) and start a new one?')) return;
-      act((playing ? run('clashSummitEnd', token, code, false) : Promise.resolve()).then(function () { return run('clashSummitStart', token, rounds, layout, screen); }));
+      act((playing ? run('clashSummitEnd', token, code, false) : Promise.resolve()).then(function () { return run('clashSummitStart', token, rounds, layout, screen, players); }));
     };
+    var po = $('playOn'), pb = $('playersBox'); if (po && pb) { var sync = function () { pb.hidden = po.value !== 'screen'; }; po.onchange = sync; sync(); }
     $('skip').onclick = function () { act(run('clashSummitSkip', token, code)); };
     $('finish').onclick = function () { if (confirm('End now and score it? The points wait for a yes in Admin.')) act(run('clashSummitEnd', token, code, true)); };
     $('stop').onclick = function () { if (confirm('Stop the game with no points?')) act(run('clashSummitEnd', token, code, false)); };
@@ -829,4 +834,4 @@
 </script>
 </body>
 </html>
-<!-- file-stamp: 3cdbdeeea6 -->
+<!-- file-stamp: c25820ad9f -->

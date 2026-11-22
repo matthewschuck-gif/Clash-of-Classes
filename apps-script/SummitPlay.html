@@ -222,7 +222,8 @@
     return '<div class="card"><div class="who">' + (LOGOS[squad] ? '<span class="slogo" style="background:' + BASE[squad] + '"><img src="' + LOGOS[squad] + '" alt="' + esc(title(squad)) + ' Squad logo"></span>' : '') +
       (art ? '<span class="spiece" style="background-image:url(&quot;' + art + '&quot;);background-position:' + FOCUS[squad] + '" role="img" aria-label="Your squad piece"></span>' : '') + '</div>' +
       '<div style="font-family:Fraunces,serif;font-weight:900;font-size:26px;color:var(--sq)">' + esc(title(squad)) + ' Squad</div>' +
-      (mine ? '<div class="stats"><div>' + mine.flags + '<span>FLAGS</span></div><div>' + mine.coins + '<span>COINS</span></div><div>' + (mine.items || []).length + '<span>ITEMS</span></div></div>' : '');
+      (mine ? '<div class="stats"><div>' + mine.flags + '<span>FLAGS</span></div><div>' + mine.coins + '<span>COINS</span></div><div>' + (mine.items || []).length + '<span>ITEMS</span></div>' +
+        (g.pebbles && !TRY ? '<div>' + (g.pebbles[squad] || 0) + '<span>PEBBLES</span></div>' : '') + '</div>' : '');
   }
   function draw() {
     var g = S.game, el = $('app');
@@ -272,12 +273,21 @@
     if (TRY) return '<p class="small"><a href="#" id="tryBack">All minigames</a> ' + muteBtn() + '</p>';
     if (HOST) return '<p class="small">Big screen · game ' + esc(code) + ' · each squad takes its turn here ' + muteBtn() + '</p>';
     if (PV) return '<p class="small">Preview · ' + esc(title(squad)) + ' Squad · game ' + esc(code) + ' · the computer plays the other squads ' + muteBtn() + '</p>';
-    return '<p class="small">Game ' + esc(code) + ' · not ' + esc(me) + '? <a href="#" id="change">Change</a> ' + muteBtn() + '</p>';
+    var n = S && S.game && S.game.playerCount ? S.game.playerCount[squad] || 0 : 0;
+    return '<p class="small">Game ' + esc(code) + ' · not ' + esc(me) + '? <a href="#" id="change">Change</a> · ' + n + ' playing for ' + esc(title(squad)) + ' <a href="#" id="addMate">Add a teammate</a> ' + muteBtn() + '</p>' +
+      '<div id="mateBox" hidden style="margin-top:8px"><label class="field">Teammate\'s 800 number (they earn the Pebbles too)<input id="mateId" inputmode="numeric" autocomplete="off" maxlength="10"></label><button class="go" id="mateGo" style="margin-top:8px">Add</button><div class="msg" id="mateMsg"></div></div>';
   }
   function wireFoot() {
     wireMute();
     var c = $('change'); if (c) c.onclick = function (e) { e.preventDefault(); me = ''; try { localStorage.removeItem('clash-my-800'); } catch (x) {} ask(); };
     var t = $('tryBack'); if (t) t.onclick = function (e) { e.preventDefault(); tryList(); };
+    var am = $('addMate'); if (am) am.onclick = function (e) { e.preventDefault(); $('mateBox').hidden = !$('mateBox').hidden; if (!$('mateBox').hidden) $('mateId').focus(); };
+    var mg = $('mateGo'); if (mg) mg.onclick = function () {
+      var v = $('mateId').value.replace(/\D/g, ''); if (!v) return;
+      mg.disabled = true; $('mateMsg').textContent = 'Adding…';
+      run('clashSummitAddPlayer', me, code, v).then(function (r) { mg.disabled = false; $('mateId').value = ''; $('mateMsg').textContent = 'Added! ' + r.players + ' playing for ' + title(squad) + '.'; })
+        .catch(function (e) { mg.disabled = false; $('mateMsg').textContent = msgOf(e); });
+    };
   }
   // ── Minigame tryout (preview): any minigame, alone, as often as you like. Nothing is sent. ──
   function tryList() {
@@ -1145,4 +1155,4 @@
 </script>
 </body>
 </html>
-<!-- file-stamp: d035d88dc6 -->
+<!-- file-stamp: 833caf0a21 -->

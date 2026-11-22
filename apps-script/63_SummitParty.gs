@@ -469,7 +469,60 @@ function spBetter_(mg, a, b) { return SP_MINIGAMES_[mg.game].better === 'low' ? 
 function spAvg_(mg, list) { return list.reduce(function (n, s) { return n + spVal_(mg, s); }, 0) / list.length; }
 
 // Minigame coins by place; ties share the better place.
+// ── PEBBLES (SUMMIT_PARTY_PEBBLES, with ARCADE_PEBBLES on) ─────────
+// Every minigame pays Pebbles by how many coins each squad won in it (1st 20, 2nd 15, 3rd 10, 4th 6;
+// ties share the better place; SUMMIT_PARTY_PEBBLES_MG), and the end of the game pays a bonus by
+// final place (40, 30, 20, 15; SUMMIT_PARTY_PEBBLES_END). They add up per squad during the game and
+// go, when the game ends and is scored, to every student who played for that squad (g.players: the
+// 800#s that joined or were added on the squad's Chromebook, or typed in for a one-screen game), on
+// the Pebble Bonuses tab (48_Arcade.gs). A stopped game or a preview demo pays no Pebbles.
+function spPebblesOn_(g) { return !(g && g.demo) && spSwitch_('SUMMIT_PARTY_PEBBLES') && pebblesOn_(); }
+function spPebbleList_(k, d) { return String(getSetting_(k) || d).split(',').map(function (x) { return Math.max(0, Math.round(Number(x) || 0)); }); }
 function spResolveMinigame_(g) {
+  const mg = g.mg, before = {};
+  Object.keys(g.squads).forEach(function (s) { before[s] = g.squads[s].coins; });
+  g.resolving = true; // the last minigame can end the game: pay the end Pebbles after this one's
+  let out;
+  try { out = spResolveMinigameCore_(g); } finally { delete g.resolving; }
+  try { spMinigamePebbles_(g, mg, before); if (g.status === 'ended') spPayPebbles_(g); } catch (e) { console.warn('Summit Pebbles: ' + e.message); }
+  return out;
+}
+function spMinigamePebbles_(g, mg, before) {
+  if (!mg || mg.pebbled || !spPebblesOn_(g)) return;
+  mg.pebbled = true;
+  const who = (mg.live ? Object.keys(g.squads) : (mg.squads || Object.keys(g.squads))).filter(function (s) { return g.squads[s]; });
+  const gain = {}, pay = spPebbleList_('SUMMIT_PARTY_PEBBLES_MG', '20,15,10,6');
+  who.forEach(function (s) { gain[s] = g.squads[s].coins - (before[s] || 0); });
+  g.pebbles = g.pebbles || {};
+  who.forEach(function (s) {
+    const place = who.filter(function (o) { return gain[o] > gain[s]; }).length; // ties share the better place
+    g.pebbles[s] = (g.pebbles[s] || 0) + (pay[Math.min(place, pay.length - 1)] || 0);
+  });
+}
+// The end: the game's Pebbles plus the place bonus, to each player of each squad.
+function spPayPebbles_(g) {
+  if (!spPebblesOn_(g) || g.pebblesPaid) return;
+  const end = spPebbleList_('SUMMIT_PARTY_PEBBLES_END', '40,30,20,15'), when = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
+  g.pebblesPaid = {};
+  ensureArcadeTab_();
+  (g.places || []).forEach(function (s, i) {
+    const total = ((g.pebbles || {})[s] || 0) + (end[Math.min(i, end.length - 1)] || 0);
+    g.pebblesPaid[s] = total;
+    ((g.players || {})[s] || []).forEach(function (id) { appendByHeader_('Pebble Bonuses', { 'When': when, '800#': id, 'Squad': s, 'Pebbles': total, 'From': 'Summit Party ' + g.code }); });
+  });
+}
+// Adds a student (800# on the Student Board, on that squad) to the squad's players for this game.
+function spAddPlayer_(g, squad, id) {
+  id = id800_(id);
+  if (!id || id === SAMPLE_ID_ || !g.squads[squad]) return false;
+  const row = boardRows_().filter(function (r) { return id800_(r['800#']) === id; })[0];
+  if (!row || squadOf_(row['Squad']) !== squad) return false;
+  g.players = g.players || {};
+  g.players[squad] = g.players[squad] || [];
+  if (g.players[squad].indexOf(id) === -1) g.players[squad].push(id);
+  return true;
+}
+function spResolveMinigameCore_(g) {
   const mg = g.mg, squads = Object.keys(g.squads);
   if (mg.mode === 'duel') return spResolveDuel_(g);
   if (mg.mode === 'showdown') return spResolveShowdown_(g);
@@ -654,7 +707,8 @@ function spFinish_(g, status) {
   g.places = spPlaces_(g);
   const result = g.places.map(function (s, i) { return (i + 1) + '. ' + spTitle_(s) + ' (' + g.squads[s].flags + ' flags, ' + g.squads[s].coins + ' coins)'; }).join(' · ');
   if (status === 'ended') spHost_(g, 'And the winner of Summit Party is... ' + spTitle_(g.places[0]) + '!');
-  if (g.demo) return; // a preview demo game: nothing on the Summit tabs, never any points
+  if (g.demo) return;
+  if (status === 'ended' && !g.resolving) { try { spPayPebbles_(g); } catch (e) { console.warn('Summit Pebbles: ' + e.message); } } // a preview demo game: nothing on the Summit tabs, never any points
   try {
     const sh = spGamesTab_(), r = sheetRows_('Summit Games').filter(function (x) { return String(x['Game']) === g.id; })[0];
     if (r) sh.getRange(r._row, 2, 1, 6).setValues([[status === 'ended' ? 'Finished' : 'Stopped', g.startedAt.slice(0, 10), todayYmd_(), g.rounds, String(r['Started By'] || ''), result]]);
@@ -677,6 +731,8 @@ function spMakeTab_(name, headers, rows) {
   return sh;
 }
 function ensureSummitPartyTabs_() {
+  // 11/22: Summit Party pays a bit more. A Sheet still on the old default moves to the new one.
+  if (String(getSetting_('SUMMIT_PARTY_POINTS') || '').replace(/\s/g, '') === '25,15,10,5') setSettingValue_('SUMMIT_PARTY_POINTS', '30,20,15,10');
   spGamesTab_(); spPointsTab_();
   if (!getSheetSafe_('Summit Live Challenges')) spMakeTab_('Summit Live Challenges', SP_LIVE_HEADERS_, SP_LIVE_SEED_);
   if (!getSheetSafe_('Summit Sketch Words')) spMakeTab_('Summit Sketch Words', SP_SKETCH_HEADERS_, SP_SKETCH_SEED_);
@@ -685,6 +741,8 @@ function ensureSummitPartyTabs_() {
 // What the screen and the Chromebooks see.
 function spView_(g) {
   const layout = spLayoutOf_(g && g.layout);
+  // The page never sees 800#s: only how many students play for each squad.
+  if (g && g.players) { const count = {}; Object.keys(g.players).forEach(function (s) { count[s] = g.players[s].length; }); g = Object.assign({}, g, { players: undefined, playerCount: count }); }
   return { on: true, board: spBoard_(layout), layout: layout, art: spArt_(), spaces: SP_SPACES_, items: SP_ITEMS_, minigames: SP_MINIGAMES_,
     flagCost: spFlagCost_(), autoRoll: spSetting_('SUMMIT_PARTY_AUTO_ROLL', 30),
     opts: { practice: spSwitch_('SUMMIT_PARTY_PRACTICE'), relay: spSwitch_('SUMMIT_PARTY_RELAY'), sound: spSwitch_('SUMMIT_PARTY_SOUND'), soundPlay: spSwitch_('SUMMIT_PARTY_SOUND_CHROMEBOOK') }, rounds: spSetting_('SUMMIT_PARTY_ROUNDS', 10), now: Date.now(), game: g };
@@ -778,13 +836,13 @@ function clashSummitState(code, sinceSeq) {
 }
 
 /** Staff: start a new game; it gets its own code. */
-function clashSummitStart(token, rounds, layout, screen) {
+function clashSummitStart(token, rounds, layout, screen, players) {
   const who = spStaff_(token);
   spRequireOn_();
-  return spCreate_(String(who.name || who.email || 'staff'), rounds, layout, null, !!screen);
+  return spCreate_(String(who.name || who.email || 'staff'), rounds, layout, null, !!screen, players);
 }
 // A new game. demo = { mine: squad } for a preview demo game (65_Preview.gs): the computer plays the rest.
-function spCreate_(by, rounds, layout, demo, screen) {
+function spCreate_(by, rounds, layout, demo, screen, players) {
   return spWithLock_(function () {
     if (!demo) ensureSummitPartyTabs_(); // first game: the Summit tabs, including the live challenges
     const list = spTidy_();
@@ -800,8 +858,16 @@ function spCreate_(by, rounds, layout, demo, screen) {
     if (demo) { g.demo = { mine: demo.mine }; g.id = 'DEMO-' + code; if (demo.settings) g.demo.settings = demo.settings; }
     if (screen) g.screen = true; // one screen: every squad plays at the big screen, no Chromebooks
     order.forEach(function (s) { g.squads[s] = { pos: 0, coins: 10, peak: 10, flags: 0, items: [], mgWins: 0, events: 0, moved: 0 }; });
+    // Players typed in at the start (one screen): { GOLD: '8001234, 8005678', ... }. Wrong squad or unknown 800#s are skipped.
+    g.players = {}; g.pebbles = {};
+    let skipped = 0;
+    if (players && typeof players === 'object') Object.keys(players).forEach(function (s) {
+      const sq = squadOf_(s);
+      String(players[s] || '').split(/[^0-9]+/).filter(String).forEach(function (id) { if (!g.squads[sq] || !spAddPlayer_(g, sq, id)) skipped++; });
+    });
     spMoveFlag_(g, board);
     spLog_(g, 'A new Summit Party! Game code ' + code + '. ' + spTitle_(order[0]) + ' goes first.');
+    if (skipped) spLog_(g, skipped + ' 800 number' + (skipped === 1 ? ' was' : 's were') + ' skipped (not on that squad, or not on the Student Board).');
     spHost_(g, 'Welcome to SUMMIT PARTY! I am Cliff, your host. Plant the most Summit Flags to win. ' + spTitle_(order[0]) + ', you are up first!' +
       (demo ? ' (Preview: you are ' + spTitle_(demo.mine) + '. The computer plays the others. No points.)' : ''));
     list.push(demo ? { code: code, status: 'playing', started: Date.now(), demo: true } : { code: code, status: 'playing', started: Date.now() });
@@ -881,8 +947,23 @@ function spPlayer_(id, code) {
 
 /** Controller: join a game (800# + the code on the big screen). */
 function clashSummitJoin(id, code) {
-  const p = spPlayer_(id, code), g = spGame_(code);
-  return JSON.stringify({ squad: p.squad, code: g.code, state: JSON.parse(clashSummitState(g.code, 0)) });
+  const p = spPlayer_(id, code), g0 = spGame_(code);
+  // The student who joins plays for their squad (Pebbles at the end).
+  if (p.id !== 'host' && p.id !== SAMPLE_ID_ && !g0.demo && g0.status === 'playing' && ((g0.players || {})[p.squad] || []).indexOf(p.id) === -1) {
+    spWithLock_(function () { const g = spGame_(code); if (spAddPlayer_(g, p.squad, p.id)) spSave_(g); });
+  }
+  return JSON.stringify({ squad: p.squad, code: g0.code, state: JSON.parse(clashSummitState(g0.code, 0)) });
+}
+/** Chromebook (or the one-screen panel): add a teammate's 800# to this squad's players. */
+function clashSummitAddPlayer(id, code, other) {
+  const p = spPlayer_(id, code);
+  return spWithLock_(function () {
+    const g = spGame_(code);
+    if (g.status !== 'playing') throw new Error('This game is over.');
+    if (!spAddPlayer_(g, p.squad, other)) throw new Error('That 800 number is not on the ' + spTitle_(p.squad) + ' Squad.');
+    spSave_(g);
+    return JSON.stringify({ players: g.players[p.squad].length });
+  });
 }
 
 function spMyTurn_(g, squad) {
@@ -1160,4 +1241,4 @@ function serveSummitPlay_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_63_SummitParty = '2976d0743d';
+var FILE_STAMP_63_SummitParty = '00ef076cfb';

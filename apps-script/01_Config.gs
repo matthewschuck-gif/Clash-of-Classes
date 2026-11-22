@@ -318,7 +318,10 @@ const DEFAULT_SETTINGS = [
   ['SUMMIT_PARTY_LIVE', 'ON', 'Summit Party: ON = the minigame every third round is a live Move, Make or Talk challenge (the Summit Live Challenges tab; staff tap the winner). OFF = every minigame is on the Chromebooks.'],
   ['SUMMIT_PARTY_ITEMS', 'ON', 'Summit Party: ON = items (Double Dice, Golden Compass, Sticky Paws, Zipline), item spaces and the Camp Store. OFF = no items.'],
   ['SUMMIT_PARTY_BONUS', 'ON', 'Summit Party: ON = bonus flags at the end (Minigame Champ, Coin Keeper, Trail Explorer). OFF = none.'],
-  ['SUMMIT_PARTY_POINTS', '25,15,10,5', 'Summit Party: Clash points by place (1st,2nd,3rd,4th). They wait for a yes in Admin › System › Waiting for a yes. 0 = no squad points.'],
+  ['SUMMIT_PARTY_PEBBLES', 'ON', 'Summit Party pays Pebbles too (with ARCADE_PEBBLES on): every minigame by place (SUMMIT_PARTY_PEBBLES_MG) plus an end bonus by final place (SUMMIT_PARTY_PEBBLES_END), to each student who played for the squad (joined or added on its Chromebook, or typed in for a one-screen game). Paid when the game ends and is scored.'],
+  ['SUMMIT_PARTY_PEBBLES_MG', '20,15,10,6', 'Summit Party: Pebbles for each minigame by place (1st,2nd,3rd,4th), by coins won in it. Ties share the better place.'],
+  ['SUMMIT_PARTY_PEBBLES_END', '40,30,20,15', 'Summit Party: Pebbles at the end by final place (1st,2nd,3rd,4th), on top of the minigame Pebbles.'],
+  ['SUMMIT_PARTY_POINTS', '30,20,15,10', 'Summit Party: Clash points by place (1st,2nd,3rd,4th). They wait for a yes in Admin › System › Waiting for a yes. 0 = no squad points.'],
   ['QUARTER_RECAP', 'ON', 'Quarter recap on the Tracker (57_Leagues.gs): ON = shows it. OFF = hidden.'],
   ['USAGE_TRACKING', 'ON', 'Page and visitor counts (Usage tab, 22_Week.gs): ON = counted. OFF = nothing is counted.'],
   ['HOPE', 'ON', 'My Hope on My Climb (62_Hope.gs): a goal with two pathways, a weekly 1-5 check, and the six-question Hope Scale each marking period (QUARTER_STARTS). Students see only their own; Climb-er shows staff the scores. OFF hides the Hope tab.'],
@@ -547,4 +550,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = '2c11505332';
+var FILE_STAMP_01_Config = '16d20fd1a5';

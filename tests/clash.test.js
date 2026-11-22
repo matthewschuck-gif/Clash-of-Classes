@@ -3345,7 +3345,7 @@ test('Summit Party (63_SummitParty.gs): OFF until switched on; staff start a cod
   assert.strictEqual(w.book.getSheetByName('Summit Games').rows[1][1], 'Finished');
   const ap = JSON.parse(w.clashApprovals(tok));
   assert.strictEqual(ap.summit.length, 1);
-  assert.strictEqual(ap.summit[0].pts[s.places[0]], 25);
+  assert.strictEqual(ap.summit[0].pts[s.places[0]], 30, 'first place: 30 (was 25 before 11/22)');
   assert.strictEqual(w.book.getSheetByName('events').rows.length, eventsBefore, 'nothing on Clash before the yes');
   w.clashApprove(tok, 'summit', ap.summit[0].row, true);
   assert.strictEqual(w.book.getSheetByName('events').rows.filter(r => r[2] === 'summit_party').length, 1);
@@ -3714,6 +3714,47 @@ test('Summit Party on one screen: the board\'s play panel rolls and plays for ea
   const cb = JSON.parse(w.clashSummitStart(tok, 3, 'trail', false)).game.code;
   assert.throws(() => w.clashSummitHostTicket(tok, cb), /Chromebooks/);
   assert.throws(() => w.clashSummitRoll(as('GOLD'), cb), /another game/);
+});
+
+test('Summit Party Pebbles: each minigame pays by coins won (20/15/10/6, ties share), the end adds 40/30/20/15, paid to every player of the squad when the game is scored; added teammates and one-screen players count; 800#s never reach the page; a stopped game pays none', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureArcadeTab_();
+  w.book.insertSheet('Student Board').rows = [['800#', 'Name', 'Squad', 'Grade'], ['8001111', 'Ann L.', 'Gold', '7'], ['8001112', 'Al M.', 'Gold', '7'], ['8002222', 'Bo K.', 'Grey', '8'], ['8003333', 'Cy D.', 'Purple', '7']];
+  w.setSettingValue_('SUMMIT_PARTY', 'ON'); w.setSettingValue_('SUMMIT_PARTY_AUTO_ROLL', '0'); w.setSettingValue_('SUMMIT_PARTY_LIVE', 'OFF');
+  w.setSettingValue_('SUMMIT_PARTY_TEAMS', 'OFF'); w.setSettingValue_('SUMMIT_PARTY_DUELS', 'OFF'); w.setSettingValue_('SUMMIT_PARTY_MINIGAMES', 'tap'); w.setSettingValue_('SUMMIT_PARTY_PRACTICE', 'OFF');
+  assert.strictEqual(w.getSetting_('SUMMIT_PARTY_POINTS'), '30,20,15,10');
+  w.setSettingValue_('SUMMIT_PARTY_POINTS', '25,15,10,5'); w.ensureSummitPartyTabs_();
+  assert.strictEqual(w.getSetting_('SUMMIT_PARTY_POINTS'), '30,20,15,10', 'a Sheet on the old default moves up');
+  const tok = login(w, 'oldpw');
+  let s = JSON.parse(w.clashSummitStart(tok, 1, 'trail')).game;
+  const code = s.code;
+  w.clashSummitJoin('8001111', code);
+  assert.throws(() => w.clashSummitAddPlayer('8001111', code, '8002222'), /not on the Gold Squad/);
+  assert.strictEqual(JSON.parse(w.clashSummitAddPlayer('8001111', code, '8001112')).players, 2, 'a teammate added on the Chromebook');
+  w.clashSummitJoin('8002222', code);
+  s = JSON.parse(w.clashSummitState(code, 0)).game;
+  assert.deepStrictEqual([s.playerCount.GOLD, s.playerCount.GREY, s.players], [2, 1, undefined], 'counts only, no 800#s on the page');
+  const ids = { GOLD: '8001111', GREY: '8002222', PURPLE: '8003333', BLACK: '8001111' };
+  for (let i = 0; i < 12 && s.phase === 'turn'; i++) { const up = s.pending ? s.pending.squad : s.order[s.turn]; w.clashSummitSkip(tok, code); s = JSON.parse(w.clashSummitState(code, 0)).game; }
+  assert.strictEqual(s.phase, 'minigame');
+  const props = w.PropertiesService.getScriptProperties(), cache = w.CacheService.getScriptCache();
+  const g = JSON.parse(props.getProperty('sp-game-' + code)); g.mg.startAt = Date.now() - 1000; props.setProperty('sp-game-' + code, JSON.stringify(g)); cache.remove('sp-game-' + code);
+  w.clashSummitScore('8001111', code, 50); w.clashSummitScore('8002222', code, 30); w.clashSummitScore('8003333', code, 30);
+  const g2 = JSON.parse(props.getProperty('sp-game-' + code)); g2.mg.endAt = Date.now() - 9000; props.setProperty('sp-game-' + code, JSON.stringify(g2)); cache.remove('sp-game-' + code);
+  s = JSON.parse(w.clashSummitState(code, 0)).game;
+  assert.deepStrictEqual([s.pebbles.GOLD, s.pebbles.GREY, s.pebbles.PURPLE, s.pebbles.BLACK], [20, 15, 15, 6], 'Gold won; Grey and Purple tied for 2nd; Black played nothing');
+  if (s.status === 'playing') s = JSON.parse(w.clashSummitEnd(tok, code, true)).game; // a 1-round game ends by itself
+  const rows = J(w.sheetRows_('Pebble Bonuses')).map(r => [r['800#'], r['Squad'], r['Pebbles']]);
+  const gold = 20 + [40, 30, 20, 15][s.places.indexOf('GOLD')];
+  assert.deepStrictEqual(rows.filter(r => r[1] === 'GOLD'), [['8001111', 'GOLD', gold], ['8001112', 'GOLD', gold]], 'each Gold player gets the squad\'s Pebbles');
+  assert.strictEqual(rows.length, 3, 'Purple and Black had no players: nobody to pay');
+  assert.strictEqual(J(w.pebblePouch_('8001112')).balance, gold, 'they land in the Arcade pouch');
+  // One screen: players typed at the start; a wrong squad is skipped. A stopped game pays nothing.
+  const one = JSON.parse(w.clashSummitStart(tok, 1, 'trail', true, { PURPLE: '8003333, 8001111' })).game;
+  assert.strictEqual(one.playerCount.PURPLE, 1);
+  assert.ok(one.log.some(l => /1 800 number was skipped/.test(l)));
+  w.clashSummitEnd(tok, one.code, false);
+  assert.strictEqual(J(w.sheetRows_('Pebble Bonuses')).length, 3, 'stopped: no Pebbles');
 });
 
 test('Summit Party: several games at once by code; any Staff Access role can run one; a squad that does not roll gets an auto-roll after SUMMIT_PARTY_AUTO_ROLL seconds', () => {

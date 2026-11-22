@@ -33,6 +33,7 @@ const ARCADE_GAMES_ = {
 };
 const ARCADE_HEADERS_ = ['When', '800#', 'Name', 'Squad', 'Game', 'Score', 'Points', 'Free', 'Paid', 'Pebbles'];
 const CASHIN_HEADERS_ = ['When', '800#', 'Squad', 'Pebbles', 'Points', 'Paid'];
+const PEBBLE_BONUS_HEADERS_ = ['When', '800#', 'Squad', 'Pebbles', 'From']; // Pebbles from outside the Arcade (Summit Party)
 
 // CLASS TIME (ARCADE_CLASS_TIMES, e.g. "08:15-11:15, 12:33-14:05"): no Arcade games during instruction.
 // Cash in still works. Blank = no class-time lock (My Climb's own hours still apply).
@@ -72,6 +73,7 @@ function pebblePouch_(id) {
   const mon = mondayOf_(todayYmd_());
   let earned = 0, cashed = 0, week = 0;
   sheetRows_('Arcade Plays').forEach(function (p) { if (id800_(p['800#']) !== id) return; const n = Number(p['Pebbles']) || 0; earned += n; if (String(p['When']).slice(0, 10) >= mon) week += n; });
+  sheetRows_('Pebble Bonuses').forEach(function (p) { if (id800_(p['800#']) !== id) return; const n = Number(p['Pebbles']) || 0; earned += n; if (String(p['When']).slice(0, 10) >= mon) week += n; });
   sheetRows_('Pebble Cash-ins').forEach(function (c) { if (id800_(c['800#']) === id) cashed += Number(c['Pebbles']) || 0; });
   return { on: pebblesOn_(), balance: Math.max(0, earned - cashed), earned: earned, cashed: cashed, week: week, per: pebblesPerPoint_(),
     max: Math.max(1, settingNum_('ARCADE_PEBBLE_MAX', 15)), rates: pebbleRates_() };
@@ -81,7 +83,7 @@ function arcadeOn_() { return String(getSetting_('ARCADE') || 'ON').toUpperCase(
 
 function ensureArcadeTab_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  [['Arcade Plays', ARCADE_HEADERS_], ['Pebble Cash-ins', CASHIN_HEADERS_]].forEach(function (t) {
+  [['Arcade Plays', ARCADE_HEADERS_], ['Pebble Cash-ins', CASHIN_HEADERS_], ['Pebble Bonuses', PEBBLE_BONUS_HEADERS_]].forEach(function (t) {
     const have = ss.getSheetByName(t[0]);
     if (have) { // an older tab: add any missing header at the end (Pebbles)
       const h = have.getRange(1, 1, 1, Math.max(1, have.getLastColumn())).getValues()[0].map(function (x) { return String(x).trim(); });
@@ -286,4 +288,4 @@ function maybePayArcade_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_48_Arcade = '027ae35a2e';
+var FILE_STAMP_48_Arcade = 'adc1c1d193';
