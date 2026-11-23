@@ -295,7 +295,21 @@ function clashPebbleWatch(token) {
   });
   sheetRows_('Pebble Cash-ins').forEach(function (c) { if (String(c['When']).slice(0, 10) >= mon && cash[squadOf_(c['Squad'])] !== undefined) cash[squadOf_(c['Squad'])] += Number(c['Points']) || 0; });
   const top = Object.keys(earned).sort(function (a, b) { return earned[b] - earned[a]; }).slice(0, 8).map(function (id) { return { who: names[id] || 'Student ' + id.slice(-3), squad: squadOf[id] || '', pebbles: earned[id] }; });
+  // SQUAD OR SELF (this season: the tabs are cleared at rollover): Pebbles cashed in for the squad vs. spent in the shop.
+  const toSquad = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 }, toSelf = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 }, per = {};
+  const who = function (id) { return per[id] = per[id] || { squad: 0, self: 0 }; };
+  sheetRows_('Pebble Cash-ins').forEach(function (c) { const id = id800_(c['800#']), s = squadOf_(c['Squad']), n = Number(c['Pebbles']) || 0; if (toSquad[s] !== undefined) toSquad[s] += n; who(id).squad += n; });
+  const kinds = {}; try { perkDefs_().forEach(function (p) { kinds[p.perk] = p.kind; }); } catch (e) { /* no Perks tab */ }
+  const rewards = [];
+  sheetRows_('Pebble Spends').forEach(function (c) {
+    const id = id800_(c['800#']), s = squadOf[id] || '', n = Number(c['Pebbles']) || 0;
+    if (toSelf[s] !== undefined) toSelf[s] += n; who(id).self += n;
+    if (kinds[String(c['Item'])] === 'reward') rewards.push({ who: names[id] || 'Student ' + id.slice(-3), squad: s, item: String(c['Item']), when: String(c['When']) });
+  });
+  const choosers = Object.keys(per).sort(function (a, b) { return (per[b].squad + per[b].self) - (per[a].squad + per[a].self); }).slice(0, 10)
+    .map(function (id) { return { who: names[id] || 'Student ' + id.slice(-3), squad: squadOf[id] || '', toSquad: per[id].squad, toSelf: per[id].self }; });
   return JSON.stringify({ week: mon, top: top, flags: flags.slice(-8).reverse(), cash: cash, summit: fromSummit,
+    choice: { toSquad: toSquad, toSelf: toSelf, students: choosers }, rewards: rewards.slice(-15).reverse(),
     gifts: Object.keys(gifts).map(function (t) { return { teacher: t, pebbles: gifts[t] }; }), cap: String(getSetting_('ARCADE_CASHIN_WEEKLY_MAX') || '') });
 }
 
@@ -319,6 +333,7 @@ function clashMeBuyPerk(perk, asId, adminToken) {
     } finally { lock.releaseLock(); }
   });
 }
+function pebbleCashed_(id) { return sheetRows_('Pebble Cash-ins').filter(function (c) { return id800_(c['800#']) === id; }).reduce(function (n, c) { return n + (Number(c['Points']) || 0); }, 0); }
 function pebbleOwned_(id) { return sheetRows_('Pebble Spends').filter(function (s) { return id800_(s['800#']) === id; }).map(function (s) { return String(s['Item']); }); }
 
 // Once a day: the day's arcade points (games, and Pebble cash-ins), one row per squad.
@@ -348,4 +363,4 @@ function maybePayArcade_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_48_Arcade = '1599ad79a5';
+var FILE_STAMP_48_Arcade = 'a8d83cae20';

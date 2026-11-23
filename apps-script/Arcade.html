@@ -118,7 +118,7 @@
     return '<div class="arc-pouch"><div class="arc-pouch-h"><span class="arc-peb" aria-hidden="true"></span><b>' + P.balance.toLocaleString() + '</b> Pebbles' +
       '<span class="' + subClass + '">· ' + part + ' of ' + P.per + ' toward the next squad point</span></div>' +
       '<div class="arc-bar" role="progressbar" aria-valuemin="0" aria-valuemax="' + P.per + '" aria-valuenow="' + part + '" aria-label="Pebbles toward the next point"><i style="width:' + pct + '%"></i></div>' +
-      '<span class="' + subClass + '">This week +' + P.week + ' · every game earns 1 to ' + P.max + ' Pebbles · ' + P.per + ' Pebbles = 1 point for ' + squad + '</span>' +
+      '<span class="' + subClass + '">This week +' + P.week + ' · every game earns 1 to ' + P.max + ' Pebbles · ' + P.per + ' Pebbles = 1 point for ' + squad + ' · cashing in also unlocks free Squad perks on My Climb</span>' +
       (full ? '<div class="arc-cash"><button class="btn btn-gold craft-press" data-cash>Cash in ' + full + ' point' + (full === 1 ? '' : 's') + ' for ' + squad + '</button></div>' : '') + '</div>';
   }
   // "What are Pebbles?" (why + how) and the class-time note. H = { closed, until, text }.
@@ -335,4 +335,4 @@
   };
 })();
 </script>
-<!-- file-stamp: 75c63f27e6 -->
+<!-- file-stamp: 833a5ecb75 -->

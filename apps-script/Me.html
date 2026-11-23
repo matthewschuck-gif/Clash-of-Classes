@@ -286,6 +286,14 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
   var SCENES = {
     night: 'radial-gradient(110% 130% at 100% 0%, color-mix(in srgb, var(--squad, #bb8ef5) 30%, transparent), transparent 60%), #14082a',
     sunrise: 'radial-gradient(120% 90% at 20% 110%, rgba(255,170,90,.55), transparent 60%), linear-gradient(180deg, #3b1466, #7a2f6b 70%, #c45a4a)',
+    meadow: 'radial-gradient(120% 70% at 50% 115%, rgba(120,200,110,.55), transparent 65%), linear-gradient(180deg, #16324a, #1f4d3a 75%, #2f6b3c)',
+    glacier: 'radial-gradient(90% 70% at 70% 0%, rgba(200,240,255,.45), transparent 65%), linear-gradient(180deg, #0f2a44, #2a5f86 70%, #9fd0ff)',
+    campfire: 'radial-gradient(70% 60% at 50% 115%, rgba(255,140,60,.7), rgba(255,90,40,.25) 45%, transparent 70%), linear-gradient(180deg, #0c0816, #2a1420)',
+    canyon: 'radial-gradient(100% 60% at 30% 0%, rgba(255,200,140,.35), transparent 60%), linear-gradient(180deg, #5a2416, #a0472a 60%, #d87a46)',
+    storm: 'radial-gradient(60% 40% at 70% 20%, rgba(220,230,255,.35), transparent 60%), linear-gradient(180deg, #11131f, #2b3048 60%, #475069)',
+    starfall: 'radial-gradient(2px 2px at 20% 30%, #fff, transparent), radial-gradient(2px 2px at 70% 20%, #fff, transparent), radial-gradient(1.5px 1.5px at 45% 60%, #fff, transparent), radial-gradient(1.5px 1.5px at 85% 70%, #fff, transparent), linear-gradient(160deg, transparent 40%, rgba(255,255,255,.18) 45%, transparent 50%), #0a0820',
+    cairn: 'radial-gradient(90% 70% at 50% 120%, color-mix(in srgb, var(--squad, #bb8ef5) 40%, transparent), transparent 65%), linear-gradient(180deg, #1d1830, #3a3350)',
+    banner: 'linear-gradient(135deg, color-mix(in srgb, var(--squad, #bb8ef5) 55%, #120a22) 0 50%, color-mix(in srgb, var(--squad, #bb8ef5) 30%, #120a22) 50% 100%)',
     forest: 'radial-gradient(100% 80% at 50% 120%, rgba(60,140,90,.5), transparent 65%), linear-gradient(180deg, #0f1f24, #133628)',
     aurora: 'radial-gradient(80% 60% at 30% 0%, rgba(80,255,180,.35), transparent 70%), radial-gradient(70% 60% at 80% 10%, rgba(150,110,255,.45), transparent 70%), #0b0a24'
   };
@@ -314,11 +322,12 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
       }).join('') + '</div></div>';
     };
     var rewards = p.list.filter(function (x) { return x.kind === 'reward'; }).map(function (x) {
+      if (!x.open && x.shop) return '<div class="me-reward locked">🎁 <b>' + esc(x.perk) + '</b>: ' + esc(x.value || x.text) + ' <button class="me-chip shop craft-press" data-buy="' + esc(x.perk) + '" data-cost="' + x.shop + '"' + (D.pebbles != null && D.pebbles < x.shop ? ' aria-disabled="true"' : '') + '><span class="arc-peb" aria-hidden="true"></span>' + x.shop + ' · Buy</button></div>';
       return '<div class="me-reward' + (x.open ? '' : ' locked') + '">' + (x.open ? '🎁 <b>' + esc(x.perk) + '</b>: ' + esc(x.value || x.text) : '🔒 <b>' + esc(x.perk) + '</b>: ' + esc(x.text)) + '</div>';
     }).join('');
     var hasShop = p.list.some(function (x) { return x.shop; });
     return '<h3 style="font-family:Fraunces,serif;margin:16px 0 6px">Perks</h3><p class="me-sub" style="margin-bottom:8px">Unlock them as you climb. Tap one to wear it, tap again to take it off.' +
-      (hasShop && D.pebbles != null ? ' <b>Pebble Shop:</b> the ones with a price are for sale. You have ' + D.pebbles + ' Pebbles.' : '') + '</p><p class="me-sub" id="shopMsg" role="status"></p>' +
+      (hasShop && D.pebbles != null ? ' <b>Pebble Shop:</b> the ones with a price are for sale. You have ' + D.pebbles + ' Pebbles. <b>Squad perks</b> are free: cash in points for your squad on the Arcade to unlock them.' : '') + '</p><p class="me-sub" id="shopMsg" role="status"></p>' +
       '<div class="me-perks">' + row('title', 'Title') + row('frame', 'Frame') + row('scene', 'Scene') + (rewards ? '<div class="me-perk-row"><b>Rewards</b><div class="me-perks">' + rewards + '</div></div>' : '') + '</div>';
   }
 
@@ -682,7 +691,8 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
       b.onclick = function () {
         var name = b.getAttribute('data-buy'), cost = Number(b.getAttribute('data-cost')), m = $('shopMsg');
         if (D.pebbles != null && D.pebbles < cost) { if (m) m.textContent = name + ' costs ' + cost + ' Pebbles. You have ' + D.pebbles + '. Play the Arcade to earn more!'; return; }
-        if (!confirm('Spend ' + cost + ' Pebbles on ' + name + '? Pebbles you spend here do not become squad points.')) return;
+        var pts = Math.floor(cost / 100), sq = D.me && D.me.squad ? D.me.squad.charAt(0) + D.me.squad.slice(1).toLowerCase() : 'your squad';
+        if (!confirm('Spend ' + cost + ' Pebbles on ' + name + '?\n\nThose Pebbles could be ' + pts + ' point' + (pts === 1 ? '' : 's') + ' for ' + sq + ' instead (Arcade › Cash in), and cashing in unlocks free Squad perks.')) return;
         b.disabled = true;
         run.apply(null, ['clashMeBuyPerk', name].concat(who())).then(function () { load(); })
           .catch(function (e) { b.disabled = false; if (m) m.textContent = msg(e); });
@@ -759,4 +769,4 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 </script>
 </body>
 </html>
-<!-- file-stamp: f7d8b493b4 -->
+<!-- file-stamp: 4cf7bbca9d -->

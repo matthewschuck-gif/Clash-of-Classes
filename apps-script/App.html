@@ -3355,7 +3355,12 @@ function renderPebbleWatch(){
       '<div style="font-size:13px;margin-top:4px"><b>Summit Party Pebbles this week:</b> '+row(r.summit)+'</div>'+
       '<div style="font-size:13px;margin-top:8px"><b>Top earners</b>'+(r.top.length?'<ol style="margin:4px 0 0 18px;padding:0">'+r.top.map(function(t){ return '<li>'+pvEsc(t.who)+' · <span style="color:'+(SQ_HEX[t.squad]||'inherit')+'">'+nm(t.squad)+'</span> · '+t.pebbles+'</li>'; }).join('')+'</ol>':' none yet')+'</div>'+
       '<div style="font-size:13px;margin-top:8px"><b>Scores near the top of a game</b> (worth a look)'+(r.flags.length?'<ul style="margin:4px 0 0 18px;padding:0">'+r.flags.map(function(f){ return '<li>'+pvEsc(f.who)+' · '+pvEsc(f.game)+' '+Number(f.score).toLocaleString()+' · '+pvEsc(f.when)+'</li>'; }).join('')+'</ul>':': none')+'</div>'+
-      '<div style="font-size:13px;margin-top:8px"><b>Teacher gifts</b>'+(r.gifts.length?': '+r.gifts.map(function(g){ return pvEsc(g.teacher)+' '+g.pebbles; }).join(' · '):': none this week')+'</div></details>';
+      '<div style="font-size:13px;margin-top:8px"><b>Teacher gifts</b>'+(r.gifts.length?': '+r.gifts.map(function(g){ return pvEsc(g.teacher)+' '+g.pebbles; }).join(' · '):': none this week')+'</div>'+
+      (function(c){ if(!c) return ''; var ts=0,tf=0; ['BLACK','GOLD','GREY','PURPLE'].forEach(function(s){ ts+=c.toSquad[s]; tf+=c.toSelf[s]; }); var pct=ts+tf?Math.round(100*ts/(ts+tf)):0;
+        return '<div style="font-size:13px;margin-top:10px"><b>Squad or self (this season)</b>: '+(ts+tf?pct+'% of used Pebbles went to squads ('+ts.toLocaleString()+' cashed in, '+tf.toLocaleString()+' spent in the shop)':'nobody has cashed in or bought anything yet')+'</div>'+
+          '<div style="font-size:13px">'+['BLACK','GOLD','GREY','PURPLE'].map(function(s){ var a=c.toSquad[s],b=c.toSelf[s],p=a+b?Math.round(100*a/(a+b)):0; return '<span style="color:'+(SQ_HEX[s]||'inherit')+';font-weight:700">'+nm(s)+'</span> '+(a+b?p+'% squad':'—'); }).join(' · ')+'</div>'+
+          (c.students.length?'<table style="font-size:12.5px;margin-top:6px;border-collapse:collapse"><tr style="color:var(--text3)"><td style="padding:2px 10px 2px 0">Student</td><td style="padding:2px 10px">For the squad</td><td style="padding:2px 10px">For themselves</td></tr>'+c.students.map(function(t){ return '<tr><td style="padding:2px 10px 2px 0">'+pvEsc(t.who)+' <span style="color:'+(SQ_HEX[t.squad]||'inherit')+'">'+nm(t.squad)+'</span></td><td style="padding:2px 10px">'+t.toSquad+'</td><td style="padding:2px 10px">'+t.toSelf+'</td></tr>'; }).join('')+'</table>':''); })(r.choice)+
+      (r.rewards&&r.rewards.length?'<div style="font-size:13px;margin-top:10px"><b>🎁 Rewards to hand out</b><ul style="margin:4px 0 0 18px;padding:0">'+r.rewards.map(function(x){ return '<li>'+pvEsc(x.who)+' · '+pvEsc(x.item)+' · '+pvEsc(x.when)+'</li>'; }).join('')+'</ul></div>':'')+'</details>';
   }).catch(function(e){ box.innerHTML='<div style="color:#fca5a5;margin-bottom:14px">Pebble watch: '+pvEsc(e&&e.message||e)+'</div>'; });
 }
 function cupHtml(c){
@@ -6052,4 +6057,4 @@ window.__moduleReady=true;
 // Now that all functions are live, re-render whatever page the user navigated to
 goTo(window.__currentPage || currentPage);
 </script>
-<!-- file-stamp: 3404223152 -->
+<!-- file-stamp: f79f55d3bc -->

@@ -3764,17 +3764,20 @@ test('Pebble Shop, teacher Pebbles, weekly cash-in limit, Pebble watch: buy a sh
   w.CacheService.getScriptCache().put('clash-admin-T', '1');
   w.ensureShopPerks_();
   const perks = J(w.sheetRows_('Perks'));
-  assert.ok(perks.some(p => p.Perk === 'Cairn Builder' && p['Unlock When'] === 'shop: 150'), 'shop items on the Perks tab');
+  assert.ok(perks.some(p => p.Perk === 'Cairn Builder' && p['Unlock When'] === 'shop: 250'), 'shop items on the Perks tab');
+  assert.ok(perks.filter(p => /^shop:/.test(p['Unlock When'])).every(p => Number(p['Unlock When'].slice(5)) > 100), 'every shop item costs more than a squad point (100)');
+  assert.ok(perks.some(p => p.Perk === 'Squad First' && p['Unlock When'] === 'cashed: 1'), 'free Squad perks');
   const n = perks.length; w.ensureShopPerks_(); assert.strictEqual(J(w.sheetRows_('Perks')).length, n, 'added once');
   const give = (id, sq, k) => w.appendByHeader_('Pebble Bonuses', { 'When': w.todayYmd_() + ' 09:00', '800#': id, 'Squad': sq, 'Pebbles': k, 'From': 'Summit Party TEST' });
-  give('8001234', 'GOLD', 130);
-  assert.throws(() => w.clashMeBuyPerk('Cairn Builder', '8001234', 'T'), /costs 150 Pebbles\. You have 130/);
+  give('8001234', 'GOLD', 210);
+  assert.throws(() => w.clashMeBuyPerk('Cairn Builder', '8001234', 'T'), /costs 250 Pebbles\. You have 210/);
   assert.throws(() => w.clashMeBuyPerk('Trailhead Rookie', '8001234', 'T'), /not in the Pebble Shop/);
   assert.strictEqual(JSON.parse(w.clashMeBuyPerk('Gold Glow', '8001234', 'T')).balance, 10);
   assert.throws(() => w.clashMeBuyPerk('Gold Glow', '8001234', 'T'), /already have/);
   assert.strictEqual(J(w.pebblePouch_('8001234')).balance, 10, 'spent Pebbles leave the pouch');
   const pk = J(w.perksFor_({ owned: w.pebbleOwned_('8001234') }, {})).list;
-  assert.deepStrictEqual([pk.find(p => p.perk === 'Gold Glow').open, pk.find(p => p.perk === 'Aurora Sky').open, pk.find(p => p.perk === 'Aurora Sky').shop], [true, false, 200]);
+  assert.deepStrictEqual([pk.find(p => p.perk === 'Gold Glow').open, pk.find(p => p.perk === 'Aurora Sky').open, pk.find(p => p.perk === 'Aurora Sky').shop], [true, false, 450]);
+  assert.strictEqual(pk.find(p => p.perk === 'Squad First').open, false, 'Squad perks need a cash-in');
   assert.throws(() => w.clashMeBuyPerk('Aurora Sky', 'sample-GOLD', 'T'), /sample student/);
   w.setSettingValue_('PEBBLE_SHOP', 'OFF');
   assert.ok(!J(w.perksFor_({}, {})).list.some(p => p.shop), 'PEBBLE_SHOP OFF hides the shop');
@@ -3797,7 +3800,10 @@ test('Pebble Shop, teacher Pebbles, weekly cash-in limit, Pebble watch: buy a sh
   assert.throws(() => w.clashArcadeCashIn('8001234', 'T'), /most you can cash in this week \(1 point\)/);
   const pw = JSON.parse(w.clashPebbleWatch('T'));
   assert.strictEqual(pw.cash.GOLD, 1);
-  assert.ok(pw.top[0].pebbles >= 435 && pw.gifts[0].teacher.indexOf('Ms. Grey') === 0 && pw.cap === '1');
+  assert.ok(pw.top[0].pebbles >= 515 && pw.gifts[0].teacher.indexOf('Ms. Grey') === 0 && pw.cap === '1');
+  // Squad or self: 100 cashed in for Gold, 200 spent on Gold Glow.
+  assert.deepStrictEqual([pw.choice.toSquad.GOLD, pw.choice.toSelf.GOLD, pw.choice.students[0].toSquad, pw.choice.students[0].toSelf], [100, 200, 100, 200]);
+  assert.strictEqual(J(w.perksFor_({ owned: [], cashed: w.pebbleCashed_('8001234') }, {})).list.find(p => p.perk === 'Squad First').open, true, 'cashing in unlocked Squad First');
 });
 
 test('Map data check, Monday map news, Summit Cup (and its Hall of Fame row), the game limit', () => {

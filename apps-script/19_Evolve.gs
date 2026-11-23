@@ -45,25 +45,57 @@ const PERK_KINDS_ = ['title', 'frame', 'scene', 'reward'];
 // Counts this Sheet keeps itself, usable as a boost's Student Board Column.
 const BUILT_IN_COUNTS_ = ['Poll Votes', 'Tickets Completed', 'Event Sign-ups'];
 
-// The Pebble Shop's starting items, added once to the Perks tab (edit, hide or price them there).
+// The Pebble Shop's items, added to the Perks tab (edit, hide or price them there). A point for the squad
+// costs 100 Pebbles, so every shop item costs more than that: helping the squad is always the cheaper choice.
+// SQUAD perks ("cashed: N" = N squad points cashed in) are free and only come from helping the squad.
+// Rewards are real-world (staff hand them out; they show in Admin › System › Pebble watch); they start hidden.
+const SHOP_SEED_VERSION_ = 2;
 const SHOP_PERK_SEED_ = [
-  [true, 'Pebble Pocket', 'title', '', 'A title from the Pebble Shop.', 'shop: 60'],
-  [true, 'Cairn Builder', 'title', '', 'A title from the Pebble Shop.', 'shop: 150'],
-  [true, 'Trail Legend', 'title', '', 'A title from the Pebble Shop.', 'shop: 300'],
-  [true, 'Gold Glow', 'frame', '#ffe100', 'A gold glow around your creature, from the Pebble Shop.', 'shop: 120'],
-  [true, 'Northern Lights', 'frame', 'aurora', 'A northern-lights glow, from the Pebble Shop.', 'shop: 250'],
-  [true, 'Sunrise Camp', 'scene', 'sunrise', 'A sunrise behind your creature, from the Pebble Shop.', 'shop: 100'],
-  [true, 'Starry Night', 'scene', 'night', 'A night sky behind your creature, from the Pebble Shop.', 'shop: 100'],
-  [true, 'Aurora Sky', 'scene', 'aurora', 'An aurora sky behind your creature, from the Pebble Shop.', 'shop: 200'],
+  // titles
+  [true, 'Pebble Pocket', 'title', '', 'A title from the Pebble Shop.', 'shop: 150'],
+  [true, 'Rock Hound', 'title', '', 'A title from the Pebble Shop.', 'shop: 175'],
+  [true, 'Switchback Pro', 'title', '', 'A title from the Pebble Shop.', 'shop: 200'],
+  [true, 'Cairn Builder', 'title', '', 'A title from the Pebble Shop.', 'shop: 250'],
+  [true, 'Ridge Runner', 'title', '', 'A title from the Pebble Shop.', 'shop: 300'],
+  [true, 'Avalanche Dodger', 'title', '', 'A title from the Pebble Shop.', 'shop: 350'],
+  [true, 'Trail Legend', 'title', '', 'A title from the Pebble Shop.', 'shop: 450'],
+  // frames (glows)
+  [true, 'Gold Glow', 'frame', '#ffe100', 'A gold glow around your creature, from the Pebble Shop.', 'shop: 200'],
+  [true, 'Glacier Glow', 'frame', '#7fd6ff', 'An icy blue glow, from the Pebble Shop.', 'shop: 200'],
+  [true, 'Ember Glow', 'frame', '#ff7a45', 'A campfire-orange glow, from the Pebble Shop.', 'shop: 200'],
+  [true, 'Evergreen Glow', 'frame', '#3ddc97', 'A pine-green glow, from the Pebble Shop.', 'shop: 225'],
+  [true, 'Wildflower Glow', 'frame', '#ff6fae', 'A wildflower-pink glow, from the Pebble Shop.', 'shop: 225'],
+  [true, 'Silver Glow', 'frame', '#cfd6e4', 'A silver glow, from the Pebble Shop.', 'shop: 275'],
+  [true, 'Northern Lights', 'frame', 'aurora', 'A northern-lights glow, from the Pebble Shop.', 'shop: 400'],
+  // scenes (backgrounds)
+  [true, 'Sunrise Camp', 'scene', 'sunrise', 'A sunrise behind your creature, from the Pebble Shop.', 'shop: 250'],
+  [true, 'Starry Night', 'scene', 'night', 'A night sky behind your creature, from the Pebble Shop.', 'shop: 250'],
+  [true, 'Pine Meadow', 'scene', 'meadow', 'A green meadow behind your creature, from the Pebble Shop.', 'shop: 275'],
+  [true, 'Glacier Field', 'scene', 'glacier', 'An icy glacier behind your creature, from the Pebble Shop.', 'shop: 300'],
+  [true, 'Campfire', 'scene', 'campfire', 'A warm campfire glow behind your creature, from the Pebble Shop.', 'shop: 300'],
+  [true, 'Red Canyon', 'scene', 'canyon', 'A red-rock canyon behind your creature, from the Pebble Shop.', 'shop: 325'],
+  [true, 'Thunder Ridge', 'scene', 'storm', 'A stormy ridge behind your creature, from the Pebble Shop.', 'shop: 350'],
+  [true, 'Aurora Sky', 'scene', 'aurora', 'An aurora sky behind your creature, from the Pebble Shop.', 'shop: 450'],
+  [true, 'Starfall', 'scene', 'starfall', 'Falling stars behind your creature, from the Pebble Shop.', 'shop: 500'],
+  // SQUAD perks: free, only from cashing Pebbles in for the squad
+  [true, 'Squad First', 'title', '', 'Cash in 1 point for your squad.', 'cashed: 1'],
+  [true, 'Team Glow', 'frame', 'squad', 'Cash in 3 points for your squad.', 'cashed: 3'],
+  [true, 'Cairn Keeper', 'scene', 'cairn', 'Cash in 5 points for your squad.', 'cashed: 5'],
+  [true, 'Squad Backbone', 'title', '', 'Cash in 10 points for your squad.', 'cashed: 10'],
+  [true, 'Summit Banner', 'scene', 'banner', 'Cash in 20 points for your squad.', 'cashed: 20'],
+  // real-world rewards (start hidden: tick Show for the ones staff will honor)
+  [false, 'Pick the Morning Clash Song', 'reward', 'Tell the Clash coordinator your song (school-appropriate).', 'A real reward: staff hand it out.', 'shop: 500'],
+  [false, 'Front of the Lunch Line', 'reward', 'Show this to a lunch duty teacher once.', 'A real reward: staff hand it out.', 'shop: 600'],
+  [false, 'Squad Shout-out on the TV', 'reward', 'Your name on the hallway TV for a day.', 'A real reward: staff hand it out.', 'shop: 400'],
 ];
 function ensureShopPerks_() {
   const props = PropertiesService.getScriptProperties();
-  if (props.getProperty('shop-perks-seeded')) return;
+  if (Number(props.getProperty('shop-perks-seeded') || 0) >= SHOP_SEED_VERSION_) return;
   const sh = getSheetSafe_('Perks');
   if (!sh) return;
   const have = sheetRows_('Perks').map(function (r) { return String(r['Perk'] || '').trim(); });
   SHOP_PERK_SEED_.filter(function (r) { return have.indexOf(r[1]) === -1; }).forEach(function (r) { sh.appendRow(r); });
-  props.setProperty('shop-perks-seeded', '1');
+  props.setProperty('shop-perks-seeded', String(SHOP_SEED_VERSION_));
 }
 function ensureEvolveTabs_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -274,9 +306,9 @@ function cliffInfo_() {
 // ── STUDENT ACTIONS ─────────────────────────────────────────────────
 function climbVals_(id, page) {
   const me = page.me;
-  let owned = [];
-  try { owned = pebbleOwned_(String(id)); } catch (e) { owned = []; } // 48_Arcade.gs: Pebble Shop buys
-  return { owned: owned, bills: me.bills, mindset: me.mindset, shoutouts: me.shoutouts, star: me.star, streak: me.streak, buddy: me.ambassador, journal: me.journal, redemption: me.redemption || 0,
+  let owned = [], cashed = 0;
+  try { owned = pebbleOwned_(String(id)); cashed = pebbleCashed_(String(id)); } catch (e) { owned = []; } // 48_Arcade.gs: shop buys, points cashed in for the squad
+  return { owned: owned, cashed: cashed, bills: me.bills, mindset: me.mindset, shoutouts: me.shoutouts, star: me.star, streak: me.streak, buddy: me.ambassador, journal: me.journal, redemption: me.redemption || 0,
     tickets: (page.tickets || []).filter(function (t) { return t.status === 'Completed'; }).length,
     passport: page.passport && page.passport.complete ? 1 : 0 };
 }
@@ -470,4 +502,4 @@ function setupClimbGuideTab_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_19_Evolve = '816cf3af50';
+var FILE_STAMP_19_Evolve = 'd0535466af';
