@@ -1112,7 +1112,7 @@
       <input type="text" data-pw="1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" id="spinPwInput" placeholder="Admin password (blank = school account)" onkeydown="if(event.key==='Enter')spinAuth()" style="flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s">
       <button onclick="spinAuth()" class="btn btn-purple" style="padding:12px 20px;font-size:14px">Enter</button>
     </div>
-    <button onclick="document.getElementById('spinPwInput').value='';spinAuth()" class="btn btn-purple" style="padding:12px 20px;font-size:14px;margin-top:12px">Sign in with my school account</button>
+    <button onclick="clashSchoolSignIn_(function(){document.getElementById('spinPwInput').value='';spinAuth();})" class="btn btn-purple" style="padding:12px 20px;font-size:14px;margin-top:12px">Sign in with my school account</button>
     <div id="spinAuthErr" style="color:#f87171;font-size:12px;margin-top:10px;display:none;font-family:'DM Mono',monospace;letter-spacing:1px">&#10005; Incorrect password</div>
   </div>
 
@@ -1681,7 +1681,8 @@
   <div class="modal" style="max-width:380px">
     <button class="modal-close" onclick="close1('loginModal')">✕</button>
     <h2>Admin Access</h2>
-    <button class="btn-submit" style="margin-bottom:12px" onclick="document.getElementById('pwIn').value='';tryLogin()">Sign in with my school account</button>
+    <button class="btn-submit" style="margin-bottom:12px" onclick="clashSchoolSignIn_(function(){document.getElementById('pwIn').value='';tryLogin();})">Sign in with my school account</button>
+    <div class="fmsg" id="schoolHint" style="display:none;margin:-4px 0 12px;font-size:13px;opacity:.85">On this site, your school account opens in a new tab (the staff link). Sign in there.</div>
     <div class="fr" id="pwRow"><label>Or the shared admin password</label>
       <input type="text" data-pw="1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" id="pwIn" onkeydown="if(event.key==='Enter')tryLogin()" placeholder="Enter admin password">
     </div>
@@ -2415,6 +2416,18 @@ window.clashLoginMsg_ = function (err) {
   if (/^NO_GOOGLE/.test(m)) return 'This page can\'t see your school account. Open the staff link signed in with your school Google account' + (window.CLASH_CONFIG && CLASH_CONFIG.staffLink ? ': ' + CLASH_CONFIG.staffLink : '.');
   return m.replace(/^NOT_ON_LIST:\s*/, '') || 'Incorrect password.';
 };
+// "Sign in with my school account": when this page can't see who you are (clashofclasses.org shows
+// the public deployment in a frame), open the staff link in a new tab and sign in there.
+window.clashSchoolSignIn_ = function (signIn) {
+  var c = window.CLASH_CONFIG || {};
+  if (c.seesYou === false && c.staffAdminLink) {
+    var w = window.open(c.staffAdminLink, '_blank', 'noopener');
+    if (!w) { try { window.top.location.href = c.staffAdminLink; } catch (e) { location.href = c.staffAdminLink; } }
+    return;
+  }
+  signIn();
+};
+if (window.CLASH_CONFIG && CLASH_CONFIG.seesYou === false && CLASH_CONFIG.staffAdminLink) { var schoolHintEl = document.getElementById('schoolHint'); if (schoolHintEl) schoolHintEl.style.display = 'block'; }
 // The shared password box shows only while Settings PASSWORD_SIGN_IN is ON.
 if (window.CLASH_CONFIG && CLASH_CONFIG.passwordSignIn === false) ['pwRow', 'pwUnlock'].forEach(function (id) { var el = document.getElementById(id); if (el) el.style.display = 'none'; });
 // Unique-visitor flags for the Usage tab: first open of this page / of any page today, on this device.
@@ -2482,4 +2495,4 @@ document.addEventListener('click', function (ev) {
 </script>
 </body>
 </html>
-<!-- file-stamp: 06afe9b5a0 -->
+<!-- file-stamp: aff36996fe -->

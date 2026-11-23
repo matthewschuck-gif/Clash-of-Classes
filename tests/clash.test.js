@@ -3916,4 +3916,24 @@ test('Summit Party: several games at once by code; any Staff Access role can run
   assert.strictEqual(JSON.parse(w.clashSummitState(b.code, 0)).game.seq, g2.seq, '0 = never auto-roll');
 });
 
+test('School-account sign-in on clashofclasses.org: the page learns it cannot see you and opens the staff link (+ ?admin=true) in a new tab', () => {
+  const w = world();
+  w.ensureSettings_();
+  w.setSettingValue_('STAFF_LINK', '');
+  w.setSettingValue_('STUDENT_LINK', 'https:' + '//script.google.com/a/macros/easdpa.org/s/XYZ/exec?page=me');
+  w.Session.getActiveUser = () => ({ getEmail: () => '' });
+  let c = w.indexConfig_();
+  assert.strictEqual(c.seesYou, false);
+  assert.strictEqual(c.staffAdminLink, 'https:' + '//script.google.com/a/macros/easdpa.org/s/XYZ/exec?admin=true');
+  w.setSettingValue_('STAFF_LINK', 'https:' + '//script.google.com/a/macros/easdpa.org/s/XYZ/exec');
+  w.Session.getActiveUser = () => ({ getEmail: () => 'Ann.L@easdpa.org' });
+  c = w.indexConfig_();
+  assert.strictEqual(c.seesYou, true);
+  assert.strictEqual(c.openAdmin, false);
+  assert.strictEqual(w.indexConfig_({ parameter: { admin: 'true' } }).openAdmin, true, 'the new tab opens straight to the sign-in');
+  assert.strictEqual(c.staffAdminLink, 'https:' + '//script.google.com/a/macros/easdpa.org/s/XYZ/exec?admin=true');
+  const idx = fs.readFileSync(path.join(dir, 'Index.html'), 'utf8');
+  assert.strictEqual((idx.match(/clashSchoolSignIn_\(function/g) || []).length, 2, 'both school-account buttons go through the helper');
+});
+
 console.log('\n' + passed + ' tests passed');

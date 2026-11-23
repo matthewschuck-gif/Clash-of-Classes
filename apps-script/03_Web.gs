@@ -41,8 +41,7 @@ function serveSite_(e) {
   if (e && e.parameter && e.parameter.page === 'guides') return serveGuides_(); // one-page role guides from Settings (33_Guides.gs)
   if (e && e.parameter && e.parameter.page === 'frost') return serveFrostPage_(); // Freeze & Thaw slides + frost meter (28_Frost.gs)
   const t = HtmlService.createTemplateFromFile('Index');
-  t.config = JSON.stringify({ pollMs: Math.max(3, Number(getSetting_('POLL_SECONDS')) || 5) * 1000,
-    passwordSignIn: passwordSignInOn_(), staffLink: String(getSetting_('STAFF_LINK') || getSetting_('STUDENT_LINK') || '') });
+  t.config = JSON.stringify(indexConfig_(e));
   // The first load rides inside the page, so it shows without a second trip to the server.
   let boot = 'null', pvSite = false;
   // Admin › Preview as a student › The site (?pv=TICKET): the page as it loads with that preview's switches.
@@ -459,6 +458,17 @@ function menuSetPassword_() {
   ui.alert('Admin password saved.');
 }
 
+// What the main page needs to know at load. seesYou: whether Google told this deployment who is
+// looking. On clashofclasses.org the page sits in a frame on the public deployment, so it is false
+// and "Sign in with my school account" opens staffAdminLink (the staff link + ?admin=true) in a new tab.
+function indexConfig_(e) {
+  const staff = String(getSetting_('STAFF_LINK') || getSetting_('STUDENT_LINK') || '').trim();
+  let admin = staff.split('#')[0].replace(/([?&])page=me(&|$)/, '$1').replace(/[?&]$/, '');
+  if (admin) admin += (admin.indexOf('?') > -1 ? '&' : '?') + 'admin=true';
+  return { pollMs: Math.max(3, Number(getSetting_('POLL_SECONDS')) || 5) * 1000, passwordSignIn: passwordSignInOn_(),
+    staffLink: staff, staffAdminLink: admin, seesYou: !!activeEmail_(), openAdmin: !!(e && e.parameter && e.parameter.admin === 'true') };
+}
+
 function menuOpenSite_() {
   const url = getSetting_('SITE_URL') || ScriptApp.getService().getUrl();
   SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(
@@ -495,4 +505,4 @@ function saveSummary_(before, after, keptFromOthers) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_03_Web = '0f6d56d36a';
+var FILE_STAMP_03_Web = 'bbc6c2137f';

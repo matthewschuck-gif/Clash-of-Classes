@@ -176,7 +176,7 @@ const SESSION_ID = Math.random().toString(36).slice(2);
 let _lastSaveId = null; // set before each save, cleared after Realtime confirms
 
 const params = new URLSearchParams(window.location.search);
-const ADMIN_URL = params.get('admin')==='true';
+const ADMIN_URL = params.get('admin')==='true' || !!(window.CLASH_CONFIG && CLASH_CONFIG.openAdmin); // the server passes ?admin=true (Apps Script pages cannot read the address bar)
 
 // ── KEYBOARD SHORTCUTS ──
 document.addEventListener('keydown', function(e){
@@ -6058,4 +6058,4 @@ window.__moduleReady=true;
 // Now that all functions are live, re-render whatever page the user navigated to
 goTo(window.__currentPage || currentPage);
 </script>
-<!-- file-stamp: acf9464c28 -->
+<!-- file-stamp: 99a76c0b6d -->
