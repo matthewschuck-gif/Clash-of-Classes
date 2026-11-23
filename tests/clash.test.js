@@ -3948,7 +3948,8 @@ test('My Climb on clashofclasses.org/?page=me: the page learns it cannot see the
   c = w.meConfig_();
   assert.deepStrictEqual([c.seesYou, c.meLink], [true, 'https:' + '//script.google.com/a/macros/easdpa.org/s/XYZ/exec?page=me'], 'no doubled ?page=me');
   const me = fs.readFileSync(path.join(dir, 'Me.html'), 'utf8');
-  assert.ok(/var MC = <\?!= meConfig \?>;/.test(me) && /target="_top"[^>]*MC\.meLink/.test(me));
+  assert.ok(me.includes("var MC = <?!= typeof meConfig !== 'undefined' ? meConfig : '{}' ?>;"), 'a half-finished paste (new Me, old 16_Me) must not crash My Climb');
+  assert.ok(/target="_top"[^>]*MC\.meLink/.test(me));
 });
 
 console.log('\n' + passed + ' tests passed');

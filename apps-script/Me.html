@@ -228,7 +228,7 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
     });
   }
   // 16_Me.gs meConfig_: on clashofclasses.org this page can't see the school account, so sign-in offers the student link.
-  var MC = <?!= meConfig ?>;
+  var MC = <?!= typeof meConfig !== 'undefined' ? meConfig : '{}' ?>; // {} = 16_Me.gs not pasted yet: no button, nothing breaks
   function who() { return preview ? [preview.id, preview.token] : []; }
   function msg(e) { return String(e && e.message || e).replace(/^Exception:\s{0,}/, '').replace(/^(SIGN_IN|NOT_FOUND|CLOSED):\s{0,}/, ''); }
 
@@ -780,4 +780,4 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 </script>
 </body>
 </html>
-<!-- file-stamp: 6e6a22597a -->
+<!-- file-stamp: b2e21aa7d3 -->
