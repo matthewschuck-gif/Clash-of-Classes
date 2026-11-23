@@ -2421,8 +2421,8 @@ window.clashLoginMsg_ = function (err) {
 window.clashSchoolSignIn_ = function (signIn) {
   var c = window.CLASH_CONFIG || {};
   if (c.seesYou === false && c.staffAdminLink) {
-    var w = window.open(c.staffAdminLink, '_blank', 'noopener');
-    if (!w) { try { window.top.location.href = c.staffAdminLink; } catch (e) { location.href = c.staffAdminLink; } }
+    var w = window.open(c.staffAdminLink, '_blank'); // no 'noopener' here: with it, window.open returns null even when the tab opened
+    if (w) { try { w.opener = null; } catch (e) {} } else { try { window.top.location.href = c.staffAdminLink; } catch (e) { location.href = c.staffAdminLink; } }
     return;
   }
   signIn();
@@ -2495,4 +2495,4 @@ document.addEventListener('click', function (ev) {
 </script>
 </body>
 </html>
-<!-- file-stamp: aff36996fe -->
+<!-- file-stamp: f9cfae0349 -->
