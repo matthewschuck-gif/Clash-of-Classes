@@ -285,13 +285,14 @@ function clashPebbleWatch(token) {
     earned[id] = (earned[id] || 0) + (Number(p['Pebbles']) || 0);
     if (g && sc >= 0.8 * g.max) flags.push({ who: names[id] || id, squad: squadOf[id] || '', game: g.name, score: sc, when: String(p['When']) });
   });
-  const gifts = {}, cash = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 }, fromSummit = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
+  const gifts = {}, cash = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 }, fromSummit = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 }, fromCamp = { BLACK: 0, GOLD: 0, GREY: 0, PURPLE: 0 };
   sheetRows_('Pebble Bonuses').forEach(function (b) {
     if (String(b['When']).slice(0, 10) < mon) return;
     const id = id800_(b['800#']), n = Number(b['Pebbles']) || 0, from = String(b['From'] || '');
     earned[id] = (earned[id] || 0) + n;
     if (/^Teacher/.test(from)) { const t = from.replace(/^Teacher:\s*/, '').split(' · ')[0]; gifts[t] = (gifts[t] || 0) + n; } // one line per teacher, whatever the note
-    else if (cash[squadOf_(b['Squad'])] !== undefined) fromSummit[squadOf_(b['Squad'])] += n;
+    else if (/^Summit Party/.test(from) && cash[squadOf_(b['Squad'])] !== undefined) fromSummit[squadOf_(b['Squad'])] += n;
+    else if (/^Camp/.test(from) && cash[squadOf_(b['Squad'])] !== undefined) fromCamp[squadOf_(b['Squad'])] += n;
   });
   sheetRows_('Pebble Cash-ins').forEach(function (c) { if (String(c['When']).slice(0, 10) >= mon && cash[squadOf_(c['Squad'])] !== undefined) cash[squadOf_(c['Squad'])] += Number(c['Points']) || 0; });
   const top = Object.keys(earned).sort(function (a, b) { return earned[b] - earned[a]; }).slice(0, 8).map(function (id) { return { who: names[id] || 'Student ' + id.slice(-3), squad: squadOf[id] || '', pebbles: earned[id] }; });
@@ -308,7 +309,7 @@ function clashPebbleWatch(token) {
   });
   const choosers = Object.keys(per).sort(function (a, b) { return (per[b].squad + per[b].self) - (per[a].squad + per[a].self); }).slice(0, 10)
     .map(function (id) { return { who: names[id] || 'Student ' + id.slice(-3), squad: squadOf[id] || '', toSquad: per[id].squad, toSelf: per[id].self }; });
-  return JSON.stringify({ week: mon, top: top, flags: flags.slice(-8).reverse(), cash: cash, summit: fromSummit,
+  return JSON.stringify({ week: mon, top: top, flags: flags.slice(-8).reverse(), cash: cash, summit: fromSummit, camp: fromCamp,
     choice: { toSquad: toSquad, toSelf: toSelf, students: choosers }, rewards: rewards.slice(-15).reverse(),
     gifts: Object.keys(gifts).map(function (t) { return { teacher: t, pebbles: gifts[t] }; }), cap: String(getSetting_('ARCADE_CASHIN_WEEKLY_MAX') || '') });
 }
@@ -363,4 +364,4 @@ function maybePayArcade_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_48_Arcade = 'a8d83cae20';
+var FILE_STAMP_48_Arcade = 'f2ec020465';

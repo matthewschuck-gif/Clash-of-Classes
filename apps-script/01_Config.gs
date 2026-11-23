@@ -280,6 +280,8 @@ const DEFAULT_SETTINGS = [
   ['ARCADE_CLASS_TIMES', '08:15-11:15, 12:33-14:05', 'Arcade: no games during these class times (24-hour clock, comma between times). Cash in still works. Blank = no class-time lock.'],
   ['ARCADE_PEBBLE_WHY', '', 'Arcade: the "Why Pebbles?" paragraph on the Arcade. Blank = the built-in one (cairns: small stones that stack up to mark the trail).'],
   ['ARCADE_CASHIN_WEEKLY_MAX', '', 'Arcade: the most squad points one student can cash in a week (blank = no limit). Their extra Pebbles wait in the pouch.'],
+  ['COMEBACK_GOALS', 'ON', 'Camp Mountaineer comeback goals (66_Comeback.gs): a goal Camp sets when a student goes back to class shows only to that student on My Climb; meeting it counts for the comeback: N perk rule (Comeback Climber). OFF = hidden.'],
+  ['STUDENT_CREATURES', 'ON', 'Once a day the Student Creatures tab (800#, squad, stage, art, Pebbles) is rewritten so the Camp Mountaineer kiosk can greet a student with their own creature. OFF = not updated.'],
   ['PEBBLE_SHOP', 'ON', 'The Pebble Shop on My Climb › Perks: perks whose Unlock When is "shop: N" cost N Pebbles (keep them above 100 so helping the squad stays cheaper). "cashed: N" perks are free for students who cash in N squad points. Edit, price or hide them on the Perks tab. OFF = the shop is hidden.'],
   ['PEBBLE_TEACHER', 'ON', 'Teachers can give Pebbles on the Virtual Trait Dough page (to students in other squads, one gift a day per student). OFF = hidden.'],
   ['PEBBLE_TEACHER_AMOUNT', '5', 'Pebbles in one teacher gift.'],
@@ -560,4 +562,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = '1a22811f5d';
+var FILE_STAMP_01_Config = 'f5248e122f';

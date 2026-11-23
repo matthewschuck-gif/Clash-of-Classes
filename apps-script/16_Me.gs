@@ -322,6 +322,7 @@ function clashMePage_(asId, adminToken) {
   try { page.hope = hopeFor_(id); } catch (e) { page.hope = null; console.warn('My Hope: ' + e); } // 62_Hope.gs
   page.preview = !!(asId && adminToken);
   try { page.pebbles = pebblesOn_() ? pebblePouch_(id).balance : null; } catch (e) { page.pebbles = null; } // 48_Arcade.gs (the Pebble Shop)
+  try { page.comeback = id === SAMPLE_ID_ ? null : comebackFor_(id); } catch (e) { page.comeback = null; } // 66_Comeback.gs: private to this student
   page.sample = id === SAMPLE_ID_; // made-up student: nothing saves
   return JSON.stringify(page);
 }
@@ -358,4 +359,4 @@ function serveMe_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_16_Me = '5141155642';
+var FILE_STAMP_16_Me = 'b3e06e53e2';

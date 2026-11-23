@@ -3806,6 +3806,41 @@ test('Pebble Shop, teacher Pebbles, weekly cash-in limit, Pebble watch: buy a sh
   assert.strictEqual(J(w.perksFor_({ owned: [], cashed: w.pebbleCashed_('8001234') }, {})).list.find(p => p.perk === 'Squad First').open, true, 'cashing in unlocked Squad First');
 });
 
+test('Camp tie-ins: a comeback goal shows only on that student\'s My Climb and a met one unlocks Comeback Climber; Student Creatures for the kiosk; Camp Pebbles on their own Pebble watch line', () => {
+  const w = world();
+  w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureServiceTab_(); w.ensureDoughTabs_(); w.ensureArcadeTab_(); w.ensureEvolveTabs_(); w.ensureMeTabs_();
+  addStudentTabs(w); // Ann 8001234 Gold, Bo 8005678 Grey
+  w.CacheService.getScriptCache().put('clash-admin-T', '1');
+  w.ensureShopPerks_();
+  assert.ok(J(w.sheetRows_('Perks')).some(p => p.Perk === 'Comeback Climber' && p['Unlock When'] === 'comeback: 1'));
+  assert.strictEqual(w.comebackFor_('8001234'), null, 'no tab yet');
+  const cg = w.book.insertSheet('Comeback Goals');
+  cg.rows.push(['800#', 'Goal', 'Set', 'Check By', 'Status', 'Done', 'Key'], ['8001234', 'Ask for a break card first', '2026-11-20', '2026-11-27', 'Open', '', 'DOC1']);
+  let me = JSON.parse(w.clashMe('8001234', 'T'));
+  assert.strictEqual(me.comeback.open[0].goal, 'Ask for a break card first');
+  assert.strictEqual(JSON.parse(w.clashMe('8005678', 'T')).comeback, null, 'nobody else sees it');
+  assert.strictEqual(me.creature.perks.list.find(p => p.perk === 'Comeback Climber').open, false);
+  cg.rows[1][4] = 'Done';
+  me = JSON.parse(w.clashMe('8001234', 'T'));
+  assert.deepStrictEqual([me.comeback.open.length, me.comeback.done], [0, 1]);
+  assert.strictEqual(me.creature.perks.list.find(p => p.perk === 'Comeback Climber').open, true);
+  w.setSettingValue_('COMEBACK_GOALS', 'OFF');
+  assert.strictEqual(JSON.parse(w.clashMe('8001234', 'T')).comeback, null);
+  // Camp milestone Pebbles: in the pouch, on the Camp line of Pebble watch (not Summit Party)
+  w.appendByHeader_('Pebble Bonuses', { 'When': w.todayYmd_() + ' 09:00', '800#': '8001234', 'Squad': 'GOLD', 'Pebbles': 25, 'From': 'Camp milestone' });
+  w.appendByHeader_('Pebble Bonuses', { 'When': w.todayYmd_() + ' 09:00', '800#': '8001234', 'Squad': 'GOLD', 'Pebbles': 10, 'From': 'Summit Party ABC' });
+  const pw = JSON.parse(w.clashPebbleWatch('T'));
+  assert.deepStrictEqual([pw.camp.GOLD, pw.summit.GOLD], [25, 10]);
+  // Student Creatures: once a day, one row per student, with their Pebbles
+  assert.ok(w.maybeStudentCreatures_() >= 2);
+  const sc = w.book.getSheetByName('Student Creatures').rows;
+  const ann = sc.find(r => String(r[0]) === '8001234');
+  assert.ok(ann && ann[1] === 'GOLD' && /creatures\/gold-\d/.test(ann[3]) && ann[4] === 35);
+  assert.strictEqual(w.maybeStudentCreatures_(), 0, 'once a day');
+  w.setSettingValue_('STUDENT_CREATURES', 'OFF');
+  assert.strictEqual(w.maybeStudentCreatures_(true), 0);
+});
+
 test('Map data check, Monday map news, Summit Cup (and its Hall of Fame row), the game limit', () => {
   const w = world({ weeklyMap: true });
   w.ensureSettings_(); w.ensureGameTabs_(); w.ensurePollTabs_(); w.ensureShoutoutTabs_();

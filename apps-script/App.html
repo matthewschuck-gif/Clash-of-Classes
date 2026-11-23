@@ -3353,6 +3353,7 @@ function renderPebbleWatch(){
       '<div class="pv-sub">Who is earning, scores near the top of a game, and where the points are going. Weekly cash-in limit: '+(r.cap!==''?pvEsc(r.cap)+' point'+(r.cap==='1'?'':'s')+' a student':'none')+' (Settings › ARCADE_CASHIN_WEEKLY_MAX).</div>'+
       '<div style="font-size:13px"><b>Cashed in this week (squad points):</b> '+row(r.cash)+'</div>'+
       '<div style="font-size:13px;margin-top:4px"><b>Summit Party Pebbles this week:</b> '+row(r.summit)+'</div>'+
+      (r.camp&&SQS.some(function(s){return r.camp[s];})?'<div style="font-size:13px;margin-top:4px"><b>Camp milestone Pebbles this week:</b> '+row(r.camp)+'</div>':'')+
       '<div style="font-size:13px;margin-top:8px"><b>Top earners</b>'+(r.top.length?'<ol style="margin:4px 0 0 18px;padding:0">'+r.top.map(function(t){ return '<li>'+pvEsc(t.who)+' · <span style="color:'+(SQ_HEX[t.squad]||'inherit')+'">'+nm(t.squad)+'</span> · '+t.pebbles+'</li>'; }).join('')+'</ol>':' none yet')+'</div>'+
       '<div style="font-size:13px;margin-top:8px"><b>Scores near the top of a game</b> (worth a look)'+(r.flags.length?'<ul style="margin:4px 0 0 18px;padding:0">'+r.flags.map(function(f){ return '<li>'+pvEsc(f.who)+' · '+pvEsc(f.game)+' '+Number(f.score).toLocaleString()+' · '+pvEsc(f.when)+'</li>'; }).join('')+'</ul>':': none')+'</div>'+
       '<div style="font-size:13px;margin-top:8px"><b>Teacher gifts</b>'+(r.gifts.length?': '+r.gifts.map(function(g){ return pvEsc(g.teacher)+' '+g.pebbles; }).join(' · '):': none this week')+'</div>'+
@@ -6057,4 +6058,4 @@ window.__moduleReady=true;
 // Now that all functions are live, re-render whatever page the user navigated to
 goTo(window.__currentPage || currentPage);
 </script>
-<!-- file-stamp: f79f55d3bc -->
+<!-- file-stamp: acf9464c28 -->

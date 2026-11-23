@@ -363,10 +363,18 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
       (D.roles || []).map(function (r) { return '<span class="me-pill alt">' + esc(r) + '</span>'; }).join('') + '</div><div class="me-standing">' + standing + '</div></div>' +
       '<div class="me-say"><b>' + esc(cliffName()) + '</b>' + esc(cliffLine()) + '</div><img class="me-cliff" src="' + esc(D.cliff.image) + '" alt="' + esc(cliffName()) + ', the Mountaineer"></section>' +
       '<nav class="me-tabs" role="tablist">' + tabs.map(function (t) { return '<button class="me-tab craft-press" role="tab" data-t="' + t[0] + '" aria-selected="' + (tab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</nav>' +
-      '<div id="meBody">' + ({ me: meTab, tickets: ticketsTab, hope: hopeTab, squad: squadTab, map: mapTab, game: gameTab, arcade: arcadeTab }[tab])() + '</div>';
+      '<div id="meBody">' + (tab === 'me' ? comebackCard() : '') + ({ me: meTab, tickets: ticketsTab, hope: hopeTab, squad: squadTab, map: mapTab, game: gameTab, arcade: arcadeTab }[tab])() + '</div>';
     document.querySelectorAll('.me-tab').forEach(function (b) { b.onclick = function () { if (window.Arcade) Arcade.stop(); tab = b.getAttribute('data-t'); track(tab); render(); }; });
     wire();
     wireHope();
+  }
+
+  // Camp Mountaineer comeback goal: only this student sees it (66_Comeback.gs).
+  function comebackCard() {
+    var c = D.comeback;
+    if (!c || !c.open || !c.open.length) return c && c.done ? '<div class="me-card"><b>🧗 Comeback Climber.</b> You met ' + (c.done === 1 ? 'your comeback goal' : c.done + ' comeback goals') + '. That took grit.</div>' : '';
+    return '<div class="me-card" style="border-color:var(--pop-gold,#ffe100)"><b>🧗 Your comeback goal</b><p style="margin:6px 0 4px;font-size:16px">' + esc(c.open[0].goal) + '</p>' +
+      '<p class="me-sub">Check by ' + esc(c.open[0].checkBy) + '. Only you can see this. Meet it and you unlock the Comeback Climber title (and some Pebbles).</p></div>';
   }
 
   // ── Me: my numbers next to my squad's average, my gear, my mascot ──
@@ -769,4 +777,4 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 </script>
 </body>
 </html>
-<!-- file-stamp: 4cf7bbca9d -->
+<!-- file-stamp: 26cac76fbf -->

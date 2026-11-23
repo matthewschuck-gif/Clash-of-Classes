@@ -49,7 +49,7 @@ const BUILT_IN_COUNTS_ = ['Poll Votes', 'Tickets Completed', 'Event Sign-ups'];
 // costs 100 Pebbles, so every shop item costs more than that: helping the squad is always the cheaper choice.
 // SQUAD perks ("cashed: N" = N squad points cashed in) are free and only come from helping the squad.
 // Rewards are real-world (staff hand them out; they show in Admin › System › Pebble watch); they start hidden.
-const SHOP_SEED_VERSION_ = 2;
+const SHOP_SEED_VERSION_ = 3;
 const SHOP_PERK_SEED_ = [
   // titles
   [true, 'Pebble Pocket', 'title', '', 'A title from the Pebble Shop.', 'shop: 150'],
@@ -83,6 +83,8 @@ const SHOP_PERK_SEED_ = [
   [true, 'Cairn Keeper', 'scene', 'cairn', 'Cash in 5 points for your squad.', 'cashed: 5'],
   [true, 'Squad Backbone', 'title', '', 'Cash in 10 points for your squad.', 'cashed: 10'],
   [true, 'Summit Banner', 'scene', 'banner', 'Cash in 20 points for your squad.', 'cashed: 20'],
+  // Camp Mountaineer: a finished comeback goal (66_Comeback.gs)
+  [true, 'Comeback Climber', 'title', '', 'Meet a comeback goal.', 'comeback: 1'],
   // real-world rewards (start hidden: tick Show for the ones staff will honor)
   [false, 'Pick the Morning Clash Song', 'reward', 'Tell the Clash coordinator your song (school-appropriate).', 'A real reward: staff hand it out.', 'shop: 500'],
   [false, 'Front of the Lunch Line', 'reward', 'Show this to a lunch duty teacher once.', 'A real reward: staff hand it out.', 'shop: 600'],
@@ -308,7 +310,7 @@ function climbVals_(id, page) {
   const me = page.me;
   let owned = [], cashed = 0;
   try { owned = pebbleOwned_(String(id)); cashed = pebbleCashed_(String(id)); } catch (e) { owned = []; } // 48_Arcade.gs: shop buys, points cashed in for the squad
-  return { owned: owned, cashed: cashed, bills: me.bills, mindset: me.mindset, shoutouts: me.shoutouts, star: me.star, streak: me.streak, buddy: me.ambassador, journal: me.journal, redemption: me.redemption || 0,
+  return { owned: owned, cashed: cashed, comeback: comebackDone_(String(id)), bills: me.bills, mindset: me.mindset, shoutouts: me.shoutouts, star: me.star, streak: me.streak, buddy: me.ambassador, journal: me.journal, redemption: me.redemption || 0,
     tickets: (page.tickets || []).filter(function (t) { return t.status === 'Completed'; }).length,
     passport: page.passport && page.passport.complete ? 1 : 0 };
 }
@@ -502,4 +504,4 @@ function setupClimbGuideTab_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_19_Evolve = 'd0535466af';
+var FILE_STAMP_19_Evolve = '17bc3afb41';
