@@ -227,6 +227,8 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
       google.script.run.withSuccessHandler(function (r) { ok(typeof r === 'string' ? JSON.parse(r) : r); }).withFailureHandler(no)[fn].apply(null, args);
     });
   }
+  // 16_Me.gs meConfig_: on clashofclasses.org this page can't see the school account, so sign-in offers the student link.
+  var MC = <?!= meConfig ?>;
   function who() { return preview ? [preview.id, preview.token] : []; }
   function msg(e) { return String(e && e.message || e).replace(/^Exception:\s{0,}/, '').replace(/^(SIGN_IN|NOT_FOUND|CLOSED):\s{0,}/, ''); }
 
@@ -243,6 +245,7 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
         var m = msg(e), raw = String(e && e.message), signin = /SIGN_IN|NOT_FOUND/.test(raw), closed = /CLOSED/.test(raw);
         $('me').innerHTML = '<div class="me-card me-err">' + (closed ? '<img src="https:\/\/raw.githubusercontent.com/matthewschuck-gif/Clash-of-Classes/ready-to-go-live/assets/cliff.png" alt="Cliff, the Mountaineer" style="height:180px;display:block;margin:0 auto 6px">' : '') +
           '<h2>' + (closed ? 'The trail is resting' : signin ? 'Almost there' : 'Something went wrong') + '</h2><p class="me-sub">' + esc(m) + '</p>' +
+          (signin && !MC.seesYou && MC.meLink ? '<p style="margin:14px 0 4px"><a class="btn btn-gold" target="_top" href="' + esc(MC.meLink) + '">🏔️ Open My Climb</a></p><p class="me-sub">It opens with your school account.</p>' : '') +
           '<details style="margin-top:18px;color:#b09ec8"><summary style="cursor:pointer">Staff: preview a student</summary><div class="me-form">' +
           '<input id="pv800" inputmode="numeric" placeholder="Student 800#" aria-label="Student 800 number"><input id="pvPw" type="text" data-pw="1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="Clash admin password" aria-label="Clash admin password">' +
           '<button class="btn btn-purple" id="pvGo">Preview</button></div>' +
@@ -777,4 +780,4 @@ button.me-boost:hover, button.me-boost:focus-visible { background: rgba(255,225,
 </script>
 </body>
 </html>
-<!-- file-stamp: 26cac76fbf -->
+<!-- file-stamp: 6e6a22597a -->

@@ -13,7 +13,7 @@ function build(page) {
   const STANDALONE = { frost: 'FrostPage', pollboard: 'PollBoard', dough: 'Dough', morning: 'Morning', family: 'Family', guides: 'Guides', reveal: 'Reveal', plinko: 'Plinko', announce: 'Announce', hall: 'Hall', recap: 'Recap', summit: 'SummitParty', 'summit-play': 'SummitPlay' };
   let html = (STANDALONE[page] && page !== 'frost' && page !== 'pollboard' ? read(STANDALONE[page] + '.html') : page === 'frost' ? read('FrostPage.html') : page === 'pollboard' ? read('PollBoard.html') : page === 'me' ? read('Me.html').replace(/<? if (shield) { ?>|<? } ?>/g, '').replace('<?= shield ?>', '/shield.png') : read('Index.html'))
     .replace(/<\?!= include\('([A-Za-z]+)'\); \?>/g, (m, f) => read(f + '.html'))
-    .replace('<?!= config ?>', JSON.stringify({ pollMs: 5000 })).replace('<?!= boot ?>', 'null');
+    .replace('<?!= config ?>', JSON.stringify({ pollMs: 5000 })).replace('<?!= meConfig ?>', JSON.stringify({ seesYou: process.env.ME_SEES === '0' ? false : true, meLink: 'https:' + '//example.org/exec?page=me' })).replace('<?!= boot ?>', 'null');
   const gs = fs.readdirSync(dir).filter(f => f.endsWith('.gs')).sort().map(read).join('\n');
   const fake = `<script>
 (function () {
@@ -63,7 +63,7 @@ function build(page) {
   window.Utilities = { getUuid: function () { return 'u' + Math.random().toString(36).slice(2); },
     computeDigest: function (a, s) { return s.split('').map(function (ch) { return ch.charCodeAt(0) % 128; }); }, // preview only
     DigestAlgorithm: {}, Charset: {}, formatDate: function (d) { return d.toISOString().slice(0, 10); } };
-  window.Session = { getScriptTimeZone: function () { return 'America/New_York'; }, getActiveUser: function () { return { getEmail: function () { return 'ann.l@example.org'; } }; } };
+  window.Session = { getScriptTimeZone: function () { return 'America/New_York'; }, getActiveUser: function () { return { getEmail: function () { return '${process.env.ME_SEES === '0' ? '' : 'ann.l@example.org'}'; } }; } };
   window.HtmlService = {}; window.ContentService = {};
   window.__previewTouch = function () { updated = Date.now(); };
   window.__previewSheets = sheets;

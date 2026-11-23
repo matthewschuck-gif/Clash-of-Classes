@@ -3936,4 +3936,19 @@ test('School-account sign-in on clashofclasses.org: the page learns it cannot se
   assert.strictEqual((idx.match(/clashSchoolSignIn_\(function/g) || []).length, 2, 'both school-account buttons go through the helper');
 });
 
+test('My Climb on clashofclasses.org/?page=me: the page learns it cannot see the student and offers Open My Climb (the student link)', () => {
+  const w = world();
+  w.ensureSettings_();
+  w.setSettingValue_('STUDENT_LINK', 'https:' + '//script.google.com/a/macros/easdpa.org/s/XYZ/exec');
+  w.Session.getActiveUser = () => ({ getEmail: () => '' });
+  let c = w.meConfig_();
+  assert.deepStrictEqual([c.seesYou, c.meLink], [false, 'https:' + '//script.google.com/a/macros/easdpa.org/s/XYZ/exec?page=me']);
+  w.setSettingValue_('STUDENT_LINK', 'https:' + '//script.google.com/a/macros/easdpa.org/s/XYZ/exec?page=me');
+  w.Session.getActiveUser = () => ({ getEmail: () => '8090001@gomounts.org' });
+  c = w.meConfig_();
+  assert.deepStrictEqual([c.seesYou, c.meLink], [true, 'https:' + '//script.google.com/a/macros/easdpa.org/s/XYZ/exec?page=me'], 'no doubled ?page=me');
+  const me = fs.readFileSync(path.join(dir, 'Me.html'), 'utf8');
+  assert.ok(/var MC = <\?!= meConfig \?>;/.test(me) && /target="_top"[^>]*MC\.meLink/.test(me));
+});
+
 console.log('\n' + passed + ' tests passed');

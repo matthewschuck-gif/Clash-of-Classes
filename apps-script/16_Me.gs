@@ -348,10 +348,20 @@ function clashMascots() {
 }
 
 // The student page itself: ?page=me on the student link.
+// What My Climb needs at load. seesYou: whether Google told this deployment who is looking. On
+// clashofclasses.org/?page=me the page sits in a frame on the public deployment, so it is false and the
+// sign-in card offers an Open My Climb button to meLink (the student link, ?page=me) in the whole tab.
+function meConfig_() {
+  let link = String(getSetting_('STUDENT_LINK') || '').trim().split('#')[0];
+  if (link && !/[?&]page=me(&|$)/.test(link)) link += (link.indexOf('?') > -1 ? '&' : '?') + 'page=me';
+  return { seesYou: !!activeEmail_(), meLink: link };
+}
+
 function serveMe_() {
   const t = HtmlService.createTemplateFromFile('Me');
   const shield = String(getSetting_('SHIELD_LOGO_URL') || '').trim();
   t.shield = /^https:\/\//i.test(shield) ? shield : '';
+  t.meConfig = JSON.stringify(meConfig_()).replace(/</g, '\\u003c');
   return t.evaluate()
     .setTitle('My Climb · Clash of Classes')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, viewport-fit=cover')
@@ -359,4 +369,4 @@ function serveMe_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_16_Me = 'b3e06e53e2';
+var FILE_STAMP_16_Me = '75a3eba4b7';
