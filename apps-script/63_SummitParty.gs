@@ -138,8 +138,8 @@ const SP_MINIGAMES_ = {
 const SP_COOP_TARGET_ = { escape: 120, rockslide: 6, tap: 90, react: 450, memory: 5, updraft: 7, bounce: 110, runner: 5, slalom: 11, stack: 7, catch: 22, sketch: 100, dodge: 5 };
 const SP_MODES_ = ['ffa', '2v2', 'ffa', '1v3', 'ffa', 'coop'];
 function spSwitch_(k) { return String(getSetting_(k) || 'ON').toUpperCase() !== 'OFF'; }
-/** Trail Sketch needs its switch on and a Claude key (Script Property CLAUDE_API_KEY, the same one Follow-Up uses). */
-function spDrawOn_() { return spSwitch_('SUMMIT_PARTY_DRAW') && !!PropertiesService.getScriptProperties().getProperty('CLAUDE_API_KEY'); }
+/** Trail Sketch needs its switch on and a key for the AI that is on (Claude or Gemini: AiSwitch.gs, saved from the Clash of Classes menu). */
+function spDrawOn_() { return spSwitch_('SUMMIT_PARTY_DRAW') && emsAiHasKey_(); }
 
 /** The minigames in the rotation (Settings › SUMMIT_PARTY_MINIGAMES: ALL, or keys like updraft, bounce, tap). */
 function spMinigameKeys_() {
@@ -664,13 +664,12 @@ function spSketchSetup_(mg) {
   mg.choices = choices.sort();
   mg.guesses = {};
 }
-// Only the drawing and the word list go to Claude: no names, no 800#s. The answer must be one of the choices.
+// Only the drawing and the word list go to the AI (Claude or Gemini): no names, no 800#s. The answer must be one of the choices.
 function spAskClaude_(type, data, choices) {
-  const key = PropertiesService.getScriptProperties().getProperty('CLAUDE_API_KEY');
-  if (!key) throw new Error('Trail Sketch needs the Claude key (Script Property CLAUDE_API_KEY).');
-  const res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+  if (!emsAiHasKey_()) throw new Error('Trail Sketch needs an AI key (Clash of Classes menu › AI: Claude or Gemini).');
+  const res = emsAiFetch_({
     method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+    headers: { 'anthropic-version': '2023-06-01' },
     payload: JSON.stringify({
       model: String(getSetting_('SUMMIT_PARTY_DRAW_MODEL') || 'claude-haiku-5-5'), max_tokens: 20,
       messages: [{ role: 'user', content: [
@@ -678,7 +677,7 @@ function spAskClaude_(type, data, choices) {
         { type: 'text', text: 'This is a quick sketch from a school drawing game. Which ONE of these words does it show: ' + choices.join(', ') + '? Answer with only that word, written exactly as in the list. If the page is blank or you cannot tell yet, answer: unsure' }] }]
     })
   });
-  if (res.getResponseCode() >= 300) { console.warn('Trail Sketch: Claude ' + res.getResponseCode() + ' ' + res.getContentText().slice(0, 200)); return 'unsure'; }
+  if (res.getResponseCode() >= 300) { console.warn('Trail Sketch: AI ' + res.getResponseCode() + ' ' + res.getContentText().slice(0, 200)); return 'unsure'; }
   const body = JSON.parse(res.getContentText() || '{}');
   const text = (body.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text; }).join(' ').toLowerCase().replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ').trim();
   const exact = choices.filter(function (c) { return text === c; })[0];
@@ -1284,4 +1283,4 @@ function serveSummitPlay_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_63_SummitParty = '66ddd7fbc3';
+var FILE_STAMP_63_SummitParty = '04d0d374b0';

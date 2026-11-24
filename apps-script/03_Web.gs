@@ -385,6 +385,7 @@ function onOpen() {
     .addItem('Set admin password…', 'menuSetPassword_')
     .addItem('Back up this Sheet now', 'menuBackupNow_')
     .addItem('Open the site', 'menuOpenSite_')
+    .addSubMenu(emsAiMenu_(SpreadsheetApp.getUi()))
     .addSeparator()
     .addItem('Turn on challenge bonuses', 'menuTurnOnChallenges_')
     .addItem('Turn off challenge bonuses', 'menuTurnOffChallenges_')
@@ -505,4 +506,4 @@ function saveSummary_(before, after, keptFromOthers) {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_03_Web = 'bbc6c2137f';
+var FILE_STAMP_03_Web = 'c235231062';

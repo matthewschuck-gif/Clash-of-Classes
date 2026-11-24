@@ -3553,6 +3553,14 @@ test('Summit Party extras: 2 vs 2, 1 vs 3 and Everyone vs Shady; duel spaces wit
   assert.ok(r.right && r.score > 100 && r.score <= 200, 'a quick right guess scores high');
   answer = 'a dragon';
   assert.strictEqual(w.spAskClaude_('png', 'AAAA', ['tent', 'moon']), 'unsure', 'anything off the list counts as unsure');
+  // AI switch: with Gemini on, the same guess goes to Gemini (drawing as inlineData) and nothing to Claude.
+  props().setProperty('AI_PROVIDER_HERE', 'GEMINI');
+  assert.ok(w.spMinigameKeys_().indexOf('sketch') < 0, 'Gemini on but no Gemini key: skipped');
+  props().setProperty('GEMINI_API_KEY', 'g-test');
+  w.UrlFetchApp = { fetch: (url, o) => { sent = { url, body: JSON.parse(o.payload) }; return { getResponseCode: () => 200, getContentText: () => JSON.stringify({ candidates: [{ content: { parts: [{ text: 'moon' }] }, finishReason: 'STOP' }] }) }; } };
+  assert.strictEqual(w.spAskClaude_('png', 'AAAA', ['tent', 'moon']), 'moon');
+  assert.ok(/generativelanguage/.test(sent.url) && sent.body.contents[0].parts[0].inlineData.mimeType === 'image/png');
+  props().deleteProperty('AI_PROVIDER_HERE');
   w.setSettingValue_('SUMMIT_PARTY_DRAW', 'OFF');
   assert.ok(w.spMinigameKeys_().indexOf('sketch') < 0, 'SUMMIT_PARTY_DRAW = OFF');
 });

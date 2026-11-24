@@ -325,7 +325,7 @@ const DEFAULT_SETTINGS = [
   ['SUMMIT_PARTY_SOUND', 'ON', 'Summit Party: ON = sound effects on the big screen (dice, coins, flags, minigames, the winner). Every page also has its own mute button.'],
   ['SUMMIT_PARTY_SOUND_CHROMEBOOK', 'ON', 'Summit Party: ON = quiet sound effects on the squad Chromebooks too. OFF = Chromebooks stay silent.'],
   ['SUMMIT_PARTY_CHASE', 'ON', 'Summit Party: ON = Trail Chase is in the minigame rotation: a live maze on the big screen; one squad is the hiker and the others steer ghosts from their Chromebooks. The big screen must be signed in as staff to score it.'],
-  ['SUMMIT_PARTY_DRAW', 'ON', 'Summit Party: ON = Trail Sketch is in the minigame rotation (squads draw a word, the AI guesses). It also needs the Script Property CLAUDE_API_KEY; without it the game is skipped. Edit the words on the Summit Sketch Words tab.'],
+  ['SUMMIT_PARTY_DRAW', 'ON', 'Summit Party: ON = Trail Sketch is in the minigame rotation (squads draw a word, the AI guesses). It also needs a key for the AI that is on (Clash of Classes menu › AI: Claude or Gemini); without it the game is skipped. Edit the words on the Summit Sketch Words tab.'],
   ['SUMMIT_PARTY_DRAW_MODEL', 'claude-haiku-5-5', 'Summit Party: the Claude model that guesses Trail Sketch drawings. A fast model keeps guesses quick.'],
   ['SUMMIT_PARTY_LIVE', 'ON', 'Summit Party: ON = the minigame every third round is a live Move, Make or Talk challenge (the Summit Live Challenges tab; staff tap the winner). OFF = every minigame is on the Chromebooks.'],
   ['SUMMIT_PARTY_ITEMS', 'ON', 'Summit Party: ON = items (Double Dice, Golden Compass, Sticky Paws, Zipline), item spaces and the Camp Store. OFF = no items.'],
@@ -562,4 +562,4 @@ function nowIso_() {
 }
 
 // file-stamp (tools/stamp-files.js): lets Admin › System tell whether this file is the newest one
-var FILE_STAMP_01_Config = 'f5248e122f';
+var FILE_STAMP_01_Config = '40a4fd0fef';
